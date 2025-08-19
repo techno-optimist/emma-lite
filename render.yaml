@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: emma-web-app
+    env: static
+    staticPublishPath: ./web-emma
+    buildCommand: echo "No build needed - static files"
+    startCommand: echo "Static site ready"
+    domains:
+      - emma-hjjc.onrender.com
