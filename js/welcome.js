@@ -46,12 +46,33 @@ async function init() {
   } else {
     // Check vault status
     try {
-      const result = await chrome.storage.local.get(['emma_vault_initialized']);
-      if (!result.emma_vault_initialized) {
-        document.getElementById('vault-setup-section').classList.remove('hidden');
+      // Try Electron vault API first
+      if (window.emmaAPI && window.emmaAPI.vault) {
+        console.log('🔍 Welcome: Checking vault status via Electron API');
+        const status = await window.emmaAPI.vault.status();
+        console.log('🔍 Welcome: Vault status:', status);
+        
+        if (!status.initialized) {
+          console.log('🔍 Welcome: No vault initialized, showing setup');
+          document.getElementById('vault-setup-section').classList.remove('hidden');
+        } else if (!status.isUnlocked) {
+          console.log('🔍 Welcome: Vault exists but locked, redirecting to dashboard with unlock prompt');
+          // Redirect to dashboard which will handle vault unlock
+          window.location.href = '../pages/dashboard-new.html';
+        } else {
+          console.log('🔍 Welcome: Vault exists and unlocked, redirecting to dashboard');
+          // Vault exists and is unlocked, redirect to dashboard
+          window.location.href = '../pages/dashboard-new.html';
+        }
+      } else {
+        // Fallback to Chrome extension API
+        const result = await chrome.storage.local.get(['emma_vault_initialized']);
+        if (!result.emma_vault_initialized) {
+          document.getElementById('vault-setup-section').classList.remove('hidden');
+        }
       }
     } catch (e) {
-      console.log('Storage check failed, showing vault setup');
+      console.log('Storage check failed, showing vault setup:', e);
       document.getElementById('vault-setup-section').classList.remove('hidden');
     }
   }
@@ -144,20 +165,34 @@ async function createVault() {
     createBtn.innerHTML = '<span class="btn-icon">⏳</span>Creating Vault...';
     showStatus('Creating your memory vault...', 'loading');
     
-    // Send vault creation message to background
-    const response = await chrome.runtime.sendMessage({
-      action: 'initializeVault',
-      passphrase: passphrase
-    });
+    // Send vault creation message
+    let response;
+    if (window.emmaAPI && window.emmaAPI.vault) {
+      console.log('🔐 Welcome: Creating vault via Electron API');
+      response = await window.emmaAPI.vault.initialize({ 
+        passphrase: passphrase,
+        name: 'My Emma Vault'
+      });
+      console.log('🔐 Welcome: Vault creation response:', response);
+      // Convert Electron response format to expected format
+      response = { success: response.success || response.initialized };
+    } else {
+      console.log('🔐 Welcome: Creating vault via Chrome extension API');
+      response = await chrome.runtime.sendMessage({
+        action: 'initializeVault',
+        passphrase: passphrase
+      });
+    }
 
     if (response.success) {
       // Hide status and show success notification
       statusDiv.classList.add('hidden');
       successDiv.classList.remove('hidden');
       
-      // Hide the entire vault setup after 2 seconds
+      // Redirect to dashboard after 2 seconds
       setTimeout(() => {
-        document.getElementById('vault-setup-section').classList.add('hidden');
+        console.log('🔐 Welcome: Vault created successfully, redirecting to dashboard');
+        window.location.href = '../pages/dashboard-new.html';
       }, 2000);
     } else {
       showStatus(response.error || 'Failed to create vault', 'error');
@@ -183,42 +218,15 @@ window.openTestPage = function() {
   chrome.tabs.create({ url: chrome.runtime.getURL('test.html') });
 };
 
-// EXACT copy from dashboard popup.js
-function initializeEmmaOrb() {
-  console.log('🔍 Initializing Emma Orb...');
-  const orbContainer = document.getElementById('emma-orb');
-  console.log('🔍 Orb container found:', !!orbContainer);
-  console.log('🔍 EmmaOrb class available:', !!window.EmmaOrb);
-  
-  if (orbContainer && window.EmmaOrb) {
-    try {
-      // Use YOUR EXACT orb settings!
-      window.emmaOrbInstance = new EmmaOrb(orbContainer, {
-        hue: 0,
-        hoverIntensity: 0.5,
-        rotateOnHover: true,
-        forceHoverState: false
-      });
-      console.log('✨ Emma orb initialized successfully');
-    } catch (error) {
-      console.warn('❌ Failed to initialize Emma orb:', error);
-    }
-  } else {
-    console.warn('⚠️ Emma orb container or EmmaOrb class not available');
-    console.log('Container:', orbContainer);
-    console.log('EmmaOrb:', window.EmmaOrb);
-  }
-}
+// LEGACY ORB CODE REMOVED - Universal Emma Orb System handles all orb display
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🔄 DOM loaded, initializing...');
-    initializeEmmaOrb();
     init();
   });
 } else {
   console.log('🔄 DOM already ready, initializing...');
-  initializeEmmaOrb();
   init();
 }

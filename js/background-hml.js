@@ -123,8 +123,12 @@ async function saveMemoryMTAP(memoryData, options = {}) {
   console.log('🔄 Using MTAP fallback for memory storage...');
   
   try {
-    // Use existing MTAP system
-    const memoryId = await memoryDB.addMemory(memoryData);
+    // SECURITY FIX: Route to staging instead of legacy unencrypted database
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'ephemeral.add', 
+      data: memoryData 
+    });
+    const memoryId = response?.success ? response.id : null;
     
     console.log('✅ MTAP: Memory saved via fallback', { memoryId });
     
@@ -558,4 +562,9 @@ export {
   validateHMLCompliance, 
   migrateExistingMemories 
 };
+
+
+
+
+
 

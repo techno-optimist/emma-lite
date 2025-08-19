@@ -3,11 +3,20 @@
  * This replaces the old site-specific injection logic
  */
 
+// Desktop shim: prefer Electron bridge (chromeShim) over any ambient window.chrome
+// eslint-disable-next-line no-unused-vars
+const chrome = (typeof window !== 'undefined' && (window.chromeShim || window.chrome)) || undefined;
+
 // Make functions available globally for debugging
 window.emmaDebug = {};
 
 // DOM Elements - will be populated after DOM loads
 let elements = {};
+let hmlSync = {
+  initialized: false,
+  manager: null,
+  pollHandle: null
+};
 
 // Populate DOM elements after DOM is ready
 function populateElements() {
@@ -38,6 +47,17 @@ function populateElements() {
     importBtn: document.getElementById('import-btn'),
     settingsBtn: document.getElementById('settings-btn'),
     personaBtn: document.getElementById('persona-btn'),
+    
+    // Automation elements
+    automationStatus: document.getElementById('automation-status'),
+    automationStatusDot: document.getElementById('automation-status-dot'),
+    automationStatusText: document.getElementById('automation-status-text'),
+    autoCaptureQuery: document.getElementById('auto-capture-query'),
+    startAutoCaptureBtn: document.getElementById('start-auto-capture'),
+    autoCaptureProgress: document.getElementById('auto-capture-progress'),
+    autoCaptureResults: document.getElementById('auto-capture-results'),
+    stagingList: document.getElementById('staging-list'),
+    stagingContainer: document.getElementById('staging-container'),
     
     // Header buttons
     headerCloudBtn: document.getElementById('header-cloud-btn'),
@@ -101,9 +121,6 @@ async function init() {
       await updateVaultStatusUI();
     }
     
-    // Attach event listeners
-    attachEventListeners();
-    
     console.log('✅ Universal Emma Popup: Initialization complete');
     
     // Export debug functions
@@ -117,13 +134,36 @@ async function init() {
     } catch (error) {
     console.error('❌ Universal Emma Popup: Initialization failed:', error);
   }
+
+  // Always attach event listeners, even if initialization had issues
+  try {
+    attachEventListeners();
+    console.log('✅ Event listeners attached');
+  } catch (e) {
+    console.error('❌ Failed to attach event listeners:', e);
+  }
+
+  // Universal orb system handles all orb display
+
+  // Initialize HML Sync indicator in header (cloud icon)
+  try {
+    await initializeHmlSyncIndicator();
+  } catch (e) {
+    console.warn('HML Sync indicator init failed (non-fatal):', e);
+  }
 }
 
 // Check vault status using unified API
 async function checkAndAutoUnlockVault() {
   try {
     console.log('🔐 Popup: Checking vault status...');
-    const response = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
+    let response;
+    try {
+      response = await window.emma.vault.status();
+      response.success = true;
+    } catch {
+      response = { success: false };
+    }
     
     if (response && response.success) {
       console.log('🔐 Popup: Vault status received:', {
@@ -136,9 +176,8 @@ async function checkAndAutoUnlockVault() {
       if (!response.initialized) {
         // Vault not initialized, show setup prompt
         showNotification('Please complete vault setup to start capturing memories', 'info');
-        // Open welcome page with vault setup
-        chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html#vault-setup') });
-        window.close();
+        // Navigate locally in desktop
+        try { window.location.href = 'welcome.html#vault-setup'; } catch {}
         return;
       }
       
@@ -172,12 +211,22 @@ function updateVaultStatusUI(isUnlocked) {
     }
   }
   // Broadcast to other pages for consistency
-  try { chrome.runtime.sendMessage({ action: isUnlocked ? 'vault.unlocked' : 'vault.locked' }); } catch {}
+  try { chrome && chrome.runtime && chrome.runtime.sendMessage && chrome.runtime.sendMessage({ action: isUnlocked ? 'vault.unlocked' : 'vault.locked' }); } catch {}
 }
 
 // Attach event listeners
 function attachEventListeners() {
   console.log('🔧 POPUP: Attaching event listeners...');
+  
+  // Listen for staging refresh messages from background
+  if (chrome && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.action === 'staging.refresh') {
+        console.log('📬 Popup: Received staging refresh signal');
+        renderStaging();
+      }
+    });
+  }
   
   if (elements.captureBtn) {
     console.log('🔧 POPUP: Capture button found, attaching listener');
@@ -201,20 +250,24 @@ function attachEventListeners() {
   }
   
   if (elements.settingsBtn) {
-    elements.settingsBtn.addEventListener('click', openSettings);
+    elements.settingsBtn.addEventListener('click', () => {
+      try { openSettings(); } catch { try { window.location.href = 'options.html'; } catch {} }
+    });
   }
 
   // Memory Management Buttons
   if (elements.createMemoryBtn) {
-    elements.createMemoryBtn.addEventListener('click', openCreateMemory);
+    elements.createMemoryBtn.addEventListener('click', () => {
+      try { openCreateMemory(); } catch { try { window.location.href = 'memories.html?create=true'; } catch {} }
+    });
   }
   
   if (elements.peopleBtn) {
-    elements.peopleBtn.addEventListener('click', openPeople);
+    elements.peopleBtn.addEventListener('click', () => { try { openPeople(); } catch { try { window.location.href='people.html'; } catch {} } });
   }
   
   if (elements.relationshipsBtn) {
-    elements.relationshipsBtn.addEventListener('click', openRelationships);
+    elements.relationshipsBtn.addEventListener('click', () => { try { openRelationships(); } catch { try { window.location.href='relationships.html'; } catch {} } });
   }
   
   // Tool Buttons
@@ -237,6 +290,17 @@ function attachEventListeners() {
   if (elements.personaBtn) {
     elements.personaBtn.addEventListener('click', openPersonaModal);
   }
+  
+  // Automation handlers
+  if (elements.startAutoCaptureBtn) {
+    elements.startAutoCaptureBtn.addEventListener('click', startAutonomousCapture);
+  }
+  
+  // Check automation service status on load
+  checkAutomationStatus();
+
+  // Load staging on popup open (non-blocking)
+  renderStaging().catch(e => console.warn('Staging render failed:', e));
   
   if (elements.exportBtn) {
     elements.exportBtn.addEventListener('click', openExport);
@@ -292,7 +356,7 @@ function attachEventListeners() {
 
   // Header cloud button
   if (elements.headerCloudBtn) {
-    elements.headerCloudBtn.addEventListener('click', openEmmaCloud);
+    elements.headerCloudBtn.addEventListener('click', openHmlModal);
   }
 
   // Header settings button
@@ -304,22 +368,22 @@ function attachEventListeners() {
   if (elements.headerVaultBtn) {
     const refreshVaultIcon = async () => {
       try {
-        const st = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
-        if (st && st.success) {
+        const st = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
+        if (st) {
           elements.headerVaultBtn.textContent = st.isUnlocked ? '🔓' : '🔒';
           elements.headerVaultBtn.title = st.isUnlocked ? 'Lock Vault' : 'Unlock Vault';
         }
-      } catch {}
+      } catch { /* ignore */ }
     };
     refreshVaultIcon();
     elements.headerVaultBtn.addEventListener('click', async () => {
       try {
-        const st = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
+        const st = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
         if (!st || !st.success) return;
         if (st.isUnlocked) {
           const ok = confirm('Lock your vault now? You will need your passphrase to unlock.');
           if (!ok) return;
-          const r = await chrome.runtime.sendMessage({ action: 'vault.lock' });
+          const r = window.emma?.vault ? await window.emma.vault.lock() : await chrome.runtime.sendMessage({ action: 'vault.lock' });
           if (r && r.success) {
             showNotification('Vault locked', 'success');
             await updateStats();
@@ -331,7 +395,14 @@ function attachEventListeners() {
           // Use the existing password modal UX
           try {
             const pass = await showPasswordModal('Unlock Vault');
-            const r = await chrome.runtime.sendMessage({ action: 'vault.unlock', passphrase: pass });
+            let r;
+            if (window.emma?.vault) {
+              // pass vaultId if available
+              const st2 = await window.emma.vault.status();
+              r = await window.emma.vault.unlock(st2?.vaultId ? { passphrase: pass, vaultId: st2.vaultId } : { passphrase: pass });
+            } else {
+              r = await chrome.runtime.sendMessage({ action: 'vault.unlock', passphrase: pass });
+            }
             if (r && r.success) {
               showNotification('Vault unlocked', 'success');
               await updateStats();
@@ -353,15 +424,14 @@ function attachEventListeners() {
   }
   
   if (elements.memoriesGalleryBtn) {
-    elements.memoriesGalleryBtn.addEventListener('click', viewMemoriesGallery);
+    elements.memoriesGalleryBtn.addEventListener('click', () => { try { viewMemoriesGallery(); } catch { try { window.location.href='memory-gallery-new.html'; } catch {} } });
   }
   
   if (elements.searchQuickBtn) {
     elements.searchQuickBtn.addEventListener('click', toggleSearch);
   }
 
-  // Proactive suggestion after init
-  trySuggestionAfterInit();
+  // Proactive suggestion will now be handled directly by content script
   
   if (elements.searchBtn) {
     elements.searchBtn.addEventListener('click', performSearch);
@@ -407,9 +477,128 @@ function attachEventListeners() {
   if (createVaultBtn) {
     createVaultBtn.addEventListener('click', createVaultFromPopup);
   }
+  
+  // Dashboard stat items - navigate to memories page
+  const statItems = document.querySelectorAll('.stat-clickable');
+  statItems.forEach(item => {
+    item.addEventListener('click', () => {
+      try {
+        // Check if we're in Electron or browser extension
+        if (window.emmaAPI) {
+          // Electron environment - navigate directly
+          window.location.href = 'memory-gallery-new.html';
+        } else if (chrome.tabs && chrome.tabs.create) {
+          // Browser extension environment
+          chrome.tabs.create({ url: chrome.runtime.getURL('memory-gallery-new.html') });
+        } else {
+          // Fallback - try direct navigation
+          window.location.href = 'memory-gallery-new.html';
+        }
+      } catch (error) {
+        console.error('Failed to open memories page:', error);
+        showNotification('Could not open memories page', 'error');
+        // Final fallback
+        try {
+          window.location.href = 'memory-gallery-new.html';
+        } catch (e) {
+          console.error('All navigation methods failed:', e);
+        }
+      }
+    });
+  });
 }
 
-// Show suggestion popup above the orb in bottom right
+// --- HML Sync (P2P) Indicator Logic ---
+async function initializeHmlSyncIndicator() {
+  if (hmlSync.initialized) return;
+  try {
+    // Load P2P manager dynamically to respect CSP and avoid blocking
+  const mod = await import('./p2p/p2p-manager.js');
+    const p2pManager = mod.p2pManager || new mod.P2PManager();
+
+    // Prefer GitHub signaling by default in production, fallback to mock
+    try {
+      if (p2pManager?.bulletinBoard?.setMode) {
+        p2pManager.bulletinBoard.setMode('both');
+      }
+    } catch {}
+
+    // Load identity if available
+    const myIdentity = await getMyIdentityForHml();
+    if (!myIdentity) {
+      updateCloudIcon(false, 'HML Sync (setup required)');
+      return;
+    }
+
+    // Initialize the manager (safe to call multiple times across pages)
+    try { await p2pManager.initialize(myIdentity); } catch {}
+
+    hmlSync.manager = p2pManager;
+    hmlSync.initialized = true;
+
+    // Listen to key events to refresh indicator promptly
+    const refresh = () => safeUpdateCloudIconFromManager();
+    p2pManager.addEventListener('shareconnected', refresh);
+    p2pManager.addEventListener('shareaccepted', refresh);
+    p2pManager.addEventListener('invitationreceived', (e) => {
+      appendIncomingInvite(e.detail);
+    });
+    p2pManager.addEventListener('syncstarted', refresh);
+    p2pManager.addEventListener('syncstopped', refresh);
+    p2pManager.addEventListener('error', refresh);
+
+    // EMERGENCY DISABLE: Stop HML polling storm
+    console.log('🚨 POPUP: HML polling setInterval DISABLED to stop vault.status polling storm');
+    if (hmlSync.pollHandle) clearInterval(hmlSync.pollHandle);
+    // hmlSync.pollHandle = setInterval(refresh, 5000); // DISABLED
+
+    // Initial paint
+    refresh();
+  } catch (error) {
+    // If anything fails, leave icon in disconnected state
+    updateCloudIcon(false);
+    throw error;
+  }
+}
+
+async function getMyIdentityForHml() {
+  try {
+    const res = await chrome.storage.local.get(['emma_my_identity']);
+    return res.emma_my_identity || null;
+  } catch {
+    return null;
+  }
+}
+
+function safeUpdateCloudIconFromManager() {
+  try {
+    if (!hmlSync.manager) {
+      updateCloudIcon(false);
+      return;
+    }
+    const stats = hmlSync.manager.connectionManager?.getStats?.() || { connected: 0, total: 0 };
+    const hasConnections = (stats.connected || 0) > 0;
+    updateCloudIcon(hasConnections);
+  } catch (e) {
+    updateCloudIcon(false);
+  }
+}
+
+function updateCloudIcon(connected, tooltipOverride) {
+  const btn = elements.headerCloudBtn || document.getElementById('header-cloud-btn');
+  if (!btn) return;
+  // Toggle classes
+  btn.classList.remove('cloud-connected', 'cloud-disconnected');
+  btn.classList.add(connected ? 'cloud-connected' : 'cloud-disconnected');
+  // Update accessible title
+  const title = connected
+    ? 'HML Sync: Connected (peer-to-peer)'
+    : 'HML Sync: Not connected (will sync when peers are online)';
+  btn.title = tooltipOverride || title + ' · Emma Cloud is optional (tiered pricing).';
+}
+
+// DEPRECATED: Show suggestion popup above the orb in bottom right
+// This is now handled directly by the content script
 function showSuggestionPopup(suggestion) {
   // Remove any existing suggestion
   const existing = document.querySelector('.emma-suggestion-popup');
@@ -483,7 +672,8 @@ function showSuggestionPopup(suggestion) {
   return popup;
 }
 
-// Ask the active tab for a capture suggestion and show it above the orb
+// DEPRECATED: Ask the active tab for a capture suggestion and show it above the orb
+// This is now handled directly by the content script
 async function trySuggestionAfterInit() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -506,18 +696,8 @@ async function captureCurrentPage() {
   showNotification('🔍 Starting page capture...', 'info', 2000);
   
   try {
-    // Require vault unlocked
-    try {
-      const vs = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
-      if (!vs || !vs.success || !vs.isUnlocked) {
-        showNotification('🔒 Please unlock your vault first to capture memories', 'warning', 5000);
-        return;
-      }
-    } catch {
-      // If status unavailable, proceed but warn
-      showNotification('⚠️ Vault status unknown. Please unlock first for secure capture.', 'warning', 5000);
-      return;
-    }
+    // No longer require vault unlock - captures go to staging first
+    console.log('🎯 Capturing to staging area - vault unlock not required');
     
     console.log('🔍 Getting active tab...');
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -800,34 +980,60 @@ function hideSearchResults() {
 
 // Navigation functions
 function viewAllMemories() {
+  // For Electron environment, navigate directly
+  if (window.emmaAPI) {
+    window.location.href = 'memory-gallery-new.html';
+    return;
+  }
+  
+  // For browser extension environment
   chrome.tabs.create({
-    url: chrome.runtime.getURL('memories.html')
+    url: chrome.runtime.getURL('memory-gallery-new.html')
   });
 }
 
 function viewMemoriesGallery() {
+  // For Electron environment, navigate directly
+  if (window.emmaAPI) {
+    window.location.href = 'memory-gallery-new.html';
+    return;
+  }
+  
+  // For browser extension environment
   chrome.tabs.create({
-    url: chrome.runtime.getURL('memories.html')
+    url: chrome.runtime.getURL('memory-gallery-new.html')
   });
 }
 
 // Memory Management Navigation
 function openCreateMemory() {
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('memories.html?create=true')
-  });
+  try {
+    if (chrome && chrome.tabs && chrome.runtime) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('memories.html?create=true') });
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'memories.html?create=true'; } catch {}
 }
 
 function openPeople() {
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('people.html')
-  });
+  try {
+    if (chrome && chrome.tabs && chrome.runtime) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('people.html') });
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'people.html'; } catch {}
 }
 
 function openRelationships() {
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('relationships.html')
-  });
+  try {
+    if (chrome && chrome.tabs && chrome.runtime) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('relationships.html') });
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'relationships.html'; } catch {}
 }
 
 // Tool Navigation Functions
@@ -867,21 +1073,33 @@ async function addMediaOnPageToCapsule() {
 }
 
 function openConstellation() {
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('memories.html?view=constellation')
-  });
+  try {
+    if (chrome && chrome.tabs && chrome.runtime) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('memories.html?view=constellation') });
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'memories.html?view=constellation'; } catch {}
 }
 
 function openExport() {
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('options.html?tab=export')
-  });
+  try {
+    if (chrome && chrome.tabs && chrome.runtime) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('options.html?tab=export') });
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'options.html?tab=export'; } catch {}
 }
 
 function openImport() {
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('options.html?tab=import')
-  });
+  try {
+    if (chrome && chrome.tabs && chrome.runtime) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('options.html?tab=import') });
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'options.html?tab=import'; } catch {}
 }
 
 function openPersonaModal() {
@@ -908,12 +1126,467 @@ function openEmmaCloud() {
   }
 }
 
+// HML Modal controls
+function openHmlModal() {
+  const overlay = document.getElementById('hml-modal-overlay');
+  const closeBtn = document.getElementById('hml-close');
+  if (!overlay || !closeBtn) return openEmmaCloud();
+  overlay.style.display = 'flex';
+  
+  // Initialize tabs - load enhanced functions
+  import('./hml-modal-enhanced.js').then(module => {
+    // Pass the HML manager reference to the enhanced module
+    module.setHmlManager(window.hmlSync);
+    module.initializeTabs();
+    module.updateSyncStats();
+  }).catch(err => {
+    console.error('Failed to load HML modal enhancements:', err);
+  });
+  
+  const onClose = () => { overlay.style.display = 'none'; cleanup(); };
+  function onKey(e){ if (e.key === 'Escape') onClose(); }
+  function onOverlay(e){ if (e.target === overlay) onClose(); }
+  function cleanup(){
+    closeBtn.removeEventListener('click', onClose);
+    document.removeEventListener('keydown', onKey);
+    overlay.removeEventListener('click', onOverlay);
+  }
+  closeBtn.addEventListener('click', onClose);
+  document.addEventListener('keydown', onKey);
+  overlay.addEventListener('click', onOverlay);
+  
+  // Wire modal actions
+  const cloudBtn = document.getElementById('hml-cloud-btn');
+  if (cloudBtn) cloudBtn.onclick = openEmmaCloud;
+  const refreshBtn = document.getElementById('hml-refresh');
+  if (refreshBtn) refreshBtn.onclick = () => {
+    safeUpdateCloudIconFromManager();
+    // Update sync stats if module is loaded
+    import('./hml-modal-enhanced.js').then(module => {
+      module.setHmlManager(window.hmlSync);
+      module.updateSyncStats();
+    }).catch(() => {});
+  };
+  const copyBtn = document.getElementById('hml-copy-fp');
+  if (copyBtn) copyBtn.onclick = async () => {
+    const fp = document.getElementById('hml-fingerprint')?.textContent || '';
+    if (fp) { try { await navigator.clipboard.writeText(fp); showNotification('Fingerprint copied', 'success'); } catch {} }
+  };
+  const createIdBtn = document.getElementById('hml-create-id');
+  if (createIdBtn) createIdBtn.onclick = async () => {
+    try {
+      const mod = await import('./vault/identity-crypto.js');
+      const identity = await mod.generateIdentity();
+      await chrome.storage.local.set({ emma_my_identity: identity });
+      showNotification('HML identity created', 'success');
+      // Re-init HML manager with new identity
+      hmlSync.initialized = false;
+      await initializeHmlSyncIndicator();
+      renderHmlPanel();
+    } catch (e) {
+      showNotification('Failed to create identity: ' + e.message, 'error');
+    }
+  };
+  const monitorBtn = document.getElementById('hml-monitor-btn');
+  if (monitorBtn) monitorBtn.onclick = async () => {
+    try {
+      const input = document.getElementById('hml-monitor-input');
+      const fp = input?.value.trim();
+      if (!fp) return;
+      if (hmlSync.manager?.addPeerToMonitor) await hmlSync.manager.addPeerToMonitor(fp);
+      showNotification('Peer added to monitor list', 'success');
+      renderHmlPanel();
+    } catch (e) { showNotification('Failed to monitor peer', 'error'); }
+  };
+  const checkRendezvousBtn = document.getElementById('hml-check-rendezvous');
+  if (checkRendezvousBtn) checkRendezvousBtn.onclick = async () => {
+    try {
+      const input = document.getElementById('hml-monitor-input');
+      const fp = input?.value.trim();
+      const me = await getMyIdentityForHml();
+      if (!fp || !me) return;
+      
+      appendHmlBoardLog('=== Connection Diagnostics ===');
+      
+      // Check rendezvous channel
+      const mod = await import('./vault/crypto-utils.js');
+      const channel = await mod.calculateRendezvousId(me.fingerprint, fp);
+      appendHmlBoardLog('Rendezvous channel: ' + channel);
+      
+      // Check messages
+      const msgs = await hmlSync.manager?.bulletinBoard?.get?.(channel, { limit: 10 });
+      appendHmlBoardLog(`Channel has ${msgs?.length || 0} recent messages`);
+      
+      // Show message types
+      if (msgs && msgs.length > 0) {
+        const types = msgs.map(m => m.data?.type || 'unknown');
+        appendHmlBoardLog('Message types: ' + [...new Set(types)].join(', '));
+        
+        // Show ICE candidates
+        const iceCandidates = msgs.filter(m => m.data?.type === 'ice-candidate');
+        if (iceCandidates.length > 0) {
+          appendHmlBoardLog(`Found ${iceCandidates.length} ICE candidates`);
+        }
+      }
+      
+      // Check peer connection status
+      const conn = hmlSync.manager?.connectionManager?.getConnection?.(fp);
+      if (conn) {
+        appendHmlBoardLog(`Connection state: ${conn.state}`);
+        appendHmlBoardLog(`ICE state: ${conn.pc?.iceConnectionState || 'no pc'}`);
+        appendHmlBoardLog(`DC state: ${conn.dataChannel?.readyState || 'no dc'}`);
+        
+        // Get ICE gathering state
+        if (conn.pc) {
+          appendHmlBoardLog(`ICE gathering: ${conn.pc.iceGatheringState}`);
+          
+          // Get connection stats
+          try {
+            const stats = await conn.pc.getStats();
+            let candidatePairs = 0;
+            stats.forEach(report => {
+              if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                candidatePairs++;
+              }
+            });
+            appendHmlBoardLog(`Active candidate pairs: ${candidatePairs}`);
+          } catch (e) {
+            appendHmlBoardLog('Could not get stats: ' + e.message);
+          }
+        }
+      } else {
+        appendHmlBoardLog('No active connection to peer');
+      }
+      
+      // Check TURN servers
+      const iceServers = await chrome.storage.local.get(['emma_ice_servers']);
+      const turnServers = (iceServers.emma_ice_servers || []).filter(s => s.urls?.includes('turn:'));
+      appendHmlBoardLog(`TURN servers configured: ${turnServers.length}`);
+      
+    } catch (e) { 
+      appendHmlBoardLog('Diagnostic check failed: ' + e.message); 
+    }
+  };
+  const inviteBtn = document.getElementById('hml-invite-btn');
+  if (inviteBtn) inviteBtn.onclick = async () => {
+    try {
+      const input = document.getElementById('hml-monitor-input');
+      const fp = input?.value.trim();
+      if (!fp) return;
+      // Attempt a minimal share to open a connection (viewer permissions)
+      const { getVaultManager } = await import('./vault/vault-manager.js');
+      const vm = getVaultManager();
+      const st = await vm.getStatus();
+      const vaultId = st?.vaultId || 'default';
+      const perms = { read: true, write: false, delete: false, share: false, admin: false };
+      await hmlSync.manager.shareVault(vaultId, fp, perms);
+      showNotification('Invitation posted. Peer can accept when online.', 'success');
+    } catch (e) { showNotification('Invite failed: ' + e.message, 'error'); }
+  };
+
+  // Toggle: auto-accept viewer invites
+  const autoAccept = document.getElementById('hml-auto-accept-viewer');
+  if (autoAccept) {
+    (async () => {
+      try {
+        const s = await chrome.storage.local.get(['emma_hml_auto_accept_viewer']);
+        autoAccept.checked = !!s.emma_hml_auto_accept_viewer;
+      } catch {}
+    })();
+    autoAccept.onchange = async (e) => {
+      await chrome.storage.local.set({ emma_hml_auto_accept_viewer: !!e.target.checked });
+      showNotification('Auto‑accept setting updated', 'success');
+    };
+  }
+
+  // Signaling provider select
+  const providerSelect = document.getElementById('hml-provider');
+  if (providerSelect) {
+    // load saved
+    (async () => {
+      try {
+        const s = await chrome.storage.local.get(['emma_hml_provider']);
+        const val = s.emma_hml_provider || 'both';
+        providerSelect.value = val;
+        if (hmlSync.manager?.bulletinBoard?.setMode) {
+          hmlSync.manager.bulletinBoard.setMode(val);
+        }
+      } catch {}
+    })();
+    providerSelect.onchange = async (e) => {
+      const mode = e.target.value;
+      await chrome.storage.local.set({ emma_hml_provider: mode });
+      try { hmlSync.manager?.bulletinBoard?.setMode?.(mode); } catch {}
+      showNotification('Signaling provider set to ' + mode, 'success');
+    };
+  }
+  
+  // TURN server management
+  const turnContainer = document.getElementById('hml-turn-servers');
+  const addTurnBtn = document.getElementById('hml-add-turn');
+  
+  async function loadTurnServers() {
+    if (!turnContainer) return;
+    
+    try {
+      const result = await chrome.storage.local.get(['emma_ice_servers']);
+      const servers = result.emma_ice_servers || [];
+      
+      turnContainer.innerHTML = '';
+      
+      // Show only TURN servers
+      const turnServers = servers.filter(s => s.urls && s.urls.includes('turn:'));
+      
+      if (turnServers.length === 0) {
+        turnContainer.innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 11px;">No TURN servers configured</div>';
+      } else {
+        turnServers.forEach((server, index) => {
+          const item = document.createElement('div');
+          item.className = 'hml-turn-item';
+          
+          const urlInput = document.createElement('input');
+          urlInput.type = 'text';
+          urlInput.value = server.urls;
+          urlInput.placeholder = 'turn:example.com:3478';
+          urlInput.disabled = true;
+          
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'remove-turn';
+          removeBtn.innerHTML = '×';
+          removeBtn.onclick = () => removeTurnServer(index);
+          
+          item.appendChild(urlInput);
+          if (server.username) {
+            const userSpan = document.createElement('span');
+            userSpan.style.fontSize = '10px';
+            userSpan.style.color = 'rgba(255,255,255,0.5)';
+            userSpan.textContent = `@${server.username}`;
+            item.appendChild(userSpan);
+          }
+          item.appendChild(removeBtn);
+          
+          turnContainer.appendChild(item);
+        });
+      }
+    } catch (e) {
+      console.error('Failed to load TURN servers:', e);
+    }
+  }
+  
+  async function removeTurnServer(index) {
+    try {
+      const result = await chrome.storage.local.get(['emma_ice_servers']);
+      const servers = result.emma_ice_servers || [];
+      const turnServers = servers.filter(s => s.urls && s.urls.includes('turn:'));
+      
+      if (index >= 0 && index < turnServers.length) {
+        const turnUrl = turnServers[index].urls;
+        const newServers = servers.filter(s => s.urls !== turnUrl);
+        await chrome.storage.local.set({ emma_ice_servers: newServers });
+        await loadTurnServers();
+        showNotification('TURN server removed', 'success');
+      }
+    } catch (e) {
+      console.error('Failed to remove TURN server:', e);
+      showNotification('Failed to remove TURN server', 'error');
+    }
+  }
+  
+  if (addTurnBtn) {
+    addTurnBtn.onclick = async () => {
+      const url = prompt('Enter TURN server URL:\n(e.g., turn:example.com:3478)');
+      if (!url || !url.startsWith('turn:')) {
+        if (url) showNotification('Invalid TURN URL format', 'error');
+        return;
+      }
+      
+      const username = prompt('Username (optional):');
+      const credential = username ? prompt('Password:') : null;
+      
+      try {
+        const result = await chrome.storage.local.get(['emma_ice_servers']);
+        const servers = result.emma_ice_servers || [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+          { urls: 'stun:stun.services.mozilla.com' },
+          { urls: 'stun:stun.stunprotocol.org:3478' }
+        ];
+        
+        const newServer = { urls: url };
+        if (username) {
+          newServer.username = username;
+          newServer.credential = credential;
+        }
+        
+        servers.push(newServer);
+        await chrome.storage.local.set({ emma_ice_servers: servers });
+        await loadTurnServers();
+        showNotification('TURN server added', 'success');
+      } catch (e) {
+        console.error('Failed to add TURN server:', e);
+        showNotification('Failed to add TURN server', 'error');
+      }
+    };
+  }
+  
+  // Load TURN servers when modal opens
+  loadTurnServers();
+  
+  const testPost = document.getElementById('hml-test-post');
+  const testCheck = document.getElementById('hml-test-check');
+  if (testPost) testPost.onclick = async () => {
+    try {
+      const res = await hmlSync.manager?.bulletinBoard?.post?.('hml-test', { type: 'test', ts: Date.now() });
+      appendHmlBoardLog(`Posted test message: ${res?.id || 'ok'}`);
+    } catch (e) { appendHmlBoardLog('Post failed: ' + e.message); }
+  };
+  if (testCheck) testCheck.onclick = async () => {
+    try {
+      const msgs = await hmlSync.manager?.bulletinBoard?.get?.('hml-test', { limit: 5 });
+      appendHmlBoardLog(`Found ${msgs?.length || 0} messages`);
+    } catch (e) { appendHmlBoardLog('Check failed: ' + e.message); }
+  };
+  // Connect Now (ping) – send a trivial message to all active peers
+  const connectNow = document.getElementById('hml-connect-now');
+  if (connectNow) connectNow.onclick = async () => {
+    try {
+      const active = hmlSync.manager?.connectionManager?.getActiveConnections?.() || [];
+      if (!active.length) return showNotification('No active peers to ping', 'warning');
+      const count = await hmlSync.manager.connectionManager.broadcast({ type: 'hml-ping', ts: Date.now() });
+      showNotification(`Ping sent to ${count} peer(s)`, 'success');
+    } catch (e) { showNotification('Ping failed: ' + e.message, 'error'); }
+  };
+  renderHmlPanel();
+}
+
+function appendHmlBoardLog(line) {
+  const el = document.getElementById('hml-board-log');
+  if (!el) return;
+  const d = document.createElement('div');
+  d.textContent = `[${new Date().toLocaleTimeString()}] ${line}`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function renderHmlPanel() {
+  try {
+    // fingerprint
+    const fpEl = document.getElementById('hml-fingerprint');
+    const id = await getMyIdentityForHml();
+    if (fpEl) fpEl.textContent = id?.fingerprint || '—';
+    // Identity hint + create button
+    const hint = document.getElementById('hml-identity-hint');
+    const createBtn = document.getElementById('hml-create-id');
+    if (!id) {
+      if (hint) hint.style.display = 'block';
+      if (createBtn) createBtn.style.display = 'inline-flex';
+    } else {
+      if (hint) hint.style.display = 'none';
+      if (createBtn) createBtn.style.display = 'none';
+    }
+    // pill
+    const pill = document.getElementById('hml-connection-pill');
+    const stats = hmlSync.manager?.connectionManager?.getStats?.() || { connected: 0, total: 0 };
+    const connected = (stats.connected || 0) > 0;
+    if (pill) {
+      pill.classList.remove('connected','disconnected');
+      pill.classList.add(connected ? 'connected' : 'disconnected');
+      pill.textContent = connected ? `Connected • ${stats.connected} peer(s)` : 'Not connected';
+    }
+    // peers list with detailed connection states
+    const peersEl = document.getElementById('hml-peers');
+    const active = hmlSync.manager?.connectionManager?.getActiveConnections?.() || [];
+    if (peersEl) {
+      if (!active.length) {
+        peersEl.textContent = 'No active peers';
+      } else {
+        peersEl.innerHTML = active.map(p => {
+          const stateClass = p.state?.toLowerCase() || 'disconnected';
+          const iceState = p.pc?.iceConnectionState || 'unknown';
+          const dcState = p.dataChannel?.readyState || 'closed';
+          const stats = p.stats || {};
+          
+          return `
+            <div class="hml-peer-item">
+              <div class="hml-peer-header">
+                <span class="hml-peer-fingerprint">${(p.peerFingerprint||'').slice(0,32)}…</span>
+                <span class="hml-peer-state ${stateClass}">${p.state}</span>
+              </div>
+              <div class="hml-peer-details">
+                <div class="hml-peer-detail">
+                  <span class="hml-peer-detail-label">ICE:</span>
+                  <span>${iceState}</span>
+                </div>
+                <div class="hml-peer-detail">
+                  <span class="hml-peer-detail-label">DC:</span>
+                  <span>${dcState}</span>
+                </div>
+                ${stats.messagesSent ? `
+                  <div class="hml-peer-detail">
+                    <span class="hml-peer-detail-label">Msgs:</span>
+                    <span>↑${stats.messagesSent} ↓${stats.messagesReceived || 0}</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Render pending invites if present
+    const list = document.getElementById('hml-invites');
+    if (list) {
+      const invites = hmlSync.__invites || [];
+      if (!invites.length) list.textContent = 'No pending invitations';
+      else list.innerHTML = invites.map(inv => `
+        <div class="hml-invite-item">
+          <div>
+            <div style="font-size:12px;color:#b3a6ff">${(inv.issuerFingerprint||'').slice(0,24)}…</div>
+            <div style="font-size:12px;opacity:.8">Vault: ${inv.vaultName || inv.vaultId || ''}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn tiny" data-accept="${inv.shareId}">Accept</button>
+            <button class="btn tiny" data-decline="${inv.shareId}">Decline</button>
+          </div>
+        </div>`).join('');
+      list.querySelectorAll('[data-accept]').forEach(btn => {
+        btn.addEventListener('click', async (ev) => {
+          const idAttr = ev.currentTarget.getAttribute('data-accept');
+          const inv = (hmlSync.__invites || []).find(i => i.shareId === idAttr);
+          if (!inv) return;
+          try { await hmlSync.manager.acceptShare(inv); showNotification('Invite accepted', 'success'); hmlSync.__invites = (hmlSync.__invites || []).filter(i => i.shareId !== idAttr); renderHmlPanel(); } catch (e) { showNotification('Accept failed: ' + e.message, 'error'); }
+        });
+      });
+      list.querySelectorAll('[data-decline]').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          const idAttr = ev.currentTarget.getAttribute('data-decline');
+          hmlSync.__invites = (hmlSync.__invites || []).filter(i => i.shareId !== idAttr);
+          renderHmlPanel();
+        });
+      });
+    }
+  } catch {}
+}
+
+function appendIncomingInvite(invitation) {
+  hmlSync.__invites = hmlSync.__invites || [];
+  if (!hmlSync.__invites.find(i => i.shareId === invitation.shareId)) {
+    hmlSync.__invites.push(invitation);
+    appendHmlBoardLog('Incoming invite from ' + (invitation.issuerFingerprint || '').slice(0, 18) + '…');
+    renderHmlPanel();
+  }
+}
+
 function openSettings() {
   try {
-    chrome.runtime.openOptionsPage();
-  } catch (error) {
-    console.error('Failed to open settings:', error);
-    chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+    if (chrome && chrome.runtime && chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+      return;
+    }
+  } catch {}
+  try { window.location.href = 'options.html'; } catch (e) {
+    console.error('Failed to open settings:', e);
   }
 }
 
@@ -944,6 +1617,233 @@ function closeChat() {
     elements.chatPanel.classList.add('hidden');
   }
 }
+
+// Automation Functions
+async function checkAutomationStatus() {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'checkAutomationStatus'
+    });
+    
+    if (response.success && response.available) {
+      updateAutomationStatus('connected', 'Service connected');
+    } else {
+      updateAutomationStatus('disconnected', 'Service not available');
+    }
+  } catch (error) {
+    updateAutomationStatus('disconnected', 'Service not available');
+  }
+}
+
+function updateAutomationStatus(status, message) {
+  if (elements.automationStatus) {
+    elements.automationStatus.className = `automation-status ${status}`;
+  }
+  if (elements.automationStatusText) {
+    elements.automationStatusText.textContent = message;
+  }
+}
+
+async function startAutonomousCapture() {
+  const query = elements.autoCaptureQuery?.value?.trim();
+  
+  if (!query) {
+    showNotification('Please enter a capture query', 'error');
+    return;
+  }
+  
+  if (query.length < 10) {
+    showNotification('Please provide a more detailed query', 'error');
+    return;
+  }
+  
+  // Disable button and show progress
+  if (elements.startAutoCaptureBtn) {
+    elements.startAutoCaptureBtn.disabled = true;
+    elements.startAutoCaptureBtn.textContent = 'Starting...';
+  }
+  
+  if (elements.autoCaptureProgress) {
+    elements.autoCaptureProgress.classList.remove('hidden');
+    updateProgress('Initializing autonomous capture...', 10);
+  }
+  
+  try {
+    const result = await chrome.runtime.sendMessage({
+      action: 'startAutonomousCapture',
+      query: query,
+      options: {
+        headless: false // Show browser for demo
+      }
+    });
+    
+    if (result.success) {
+      updateProgress(`Captured ${result.count} memories!`, 100);
+      showNotification(`✅ Successfully captured ${result.count} memories from ${result.platform}`, 'success', 5000);
+      renderAutoCaptureResults(result);
+      
+      // Clear the query input
+      if (elements.autoCaptureQuery) {
+        elements.autoCaptureQuery.value = '';
+      }
+      
+      // Hide progress after delay
+      setTimeout(() => {
+        if (elements.autoCaptureProgress) {
+          elements.autoCaptureProgress.classList.add('hidden');
+        }
+      }, 3000);
+    } else {
+      throw new Error(result.error || 'Capture failed');
+    }
+  } catch (error) {
+    console.error('Autonomous capture error:', error);
+    showNotification(`❌ Error: ${error.message}`, 'error', 5000);
+    updateProgress('Capture failed', 0);
+  } finally {
+    // Re-enable button
+    if (elements.startAutoCaptureBtn) {
+      elements.startAutoCaptureBtn.disabled = false;
+      elements.startAutoCaptureBtn.textContent = 'Start Autonomous Capture';
+    }
+  }
+}
+
+function updateProgress(message, percentage) {
+  const progressMessage = elements.autoCaptureProgress?.querySelector('.progress-message');
+  const progressFill = elements.autoCaptureProgress?.querySelector('.progress-fill');
+  
+  if (progressMessage) {
+    progressMessage.textContent = message;
+  }
+  
+  if (progressFill) {
+    progressFill.style.width = `${percentage}%`;
+  }
+}
+
+function renderAutoCaptureResults(result) {
+  if (!elements.autoCaptureResults) return;
+  const list = Array.isArray(result.memories) ? result.memories : [];
+  if (!list.length) { elements.autoCaptureResults.innerHTML = ''; return; }
+  const cards = list.slice(0, 5).map(m => {
+    const title = (m.title || m.content || '').toString().slice(0, 80) + ((m.title||m.content||'').length>80?'…':'');
+    return `<div class="auto-result-card"><div class="auto-result-title">${escapeHtml(title)}</div><button class="auto-result-link" data-memory-id="${m.id || ''}">Open</button></div>`;
+  }).join('');
+  elements.autoCaptureResults.innerHTML = cards;
+  elements.autoCaptureResults.querySelectorAll('.auto-result-link').forEach(btn => {
+    btn.addEventListener('click', () => openMemoryFromPopup(btn.getAttribute('data-memory-id')));
+  });
+}
+
+function escapeHtml(s) {
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+}
+
+async function openMemoryFromPopup(memoryId) {
+  try {
+    const url = 'memories.html' + (memoryId ? `#${encodeURIComponent(memoryId)}` : '');
+    window.location.href = url;
+  } catch (e) {
+    console.error('Failed to open memory:', e);
+  }
+}
+
+// ---------- Staging (Ephemeral) ----------
+async function renderStaging() {
+  console.log('📋 Popup: renderStaging called');
+  if (!elements.stagingList) {
+    console.log('❌ Popup: stagingList element not found');
+    return;
+  }
+  console.log('📡 Popup: Requesting ephemeral.list...');
+  const resp = { success: true, items: [] }; // Desktop: staging disabled for now
+  console.log('📦 Popup: ephemeral.list response:', resp);
+  const list = (resp && resp.success && Array.isArray(resp.items)) ? resp.items : [];
+  console.log('📋 Popup: staging list items:', list.length);
+  if (!list.length) {
+    console.log('📭 Popup: No staging items, showing empty state');
+    const empty = document.getElementById('staging-empty');
+    if (empty) empty.style.display = 'block';
+    elements.stagingList.innerHTML = '';
+    return;
+  }
+  const empty = document.getElementById('staging-empty');
+  if (empty) empty.style.display = 'none';
+  elements.stagingList.innerHTML = list.map(item => {
+    const title = sanitize((item.data?.title || item.data?.content || 'Untitled').toString().slice(0, 120));
+    const platform = sanitize(item.data?.platform || item.data?.metadata?.platform || 'web');
+    const t = new Date(item.createdAt || Date.now()).toLocaleString();
+    return `<div class="staging-card">
+      <div>
+        <div class="title">${title}</div>
+        <div class="meta">${platform} • ${t}</div>
+      </div>
+      <div class="staging-actions">
+        <button class="btn-approve" data-id="${item.id}">Approve</button>
+        <button class="btn-reject" data-id="${item.id}">Dismiss</button>
+      </div>
+    </div>`;
+  }).join('');
+  // Attach event listeners with debugging
+  const approveButtons = elements.stagingList.querySelectorAll('.btn-approve');
+  const rejectButtons = elements.stagingList.querySelectorAll('.btn-reject');
+  
+  console.log(`🔧 Popup: Attaching listeners to ${approveButtons.length} approve buttons and ${rejectButtons.length} reject buttons`);
+  
+  approveButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      console.log('✅ Approve button clicked for ID:', btn.getAttribute('data-id'));
+      approveStaged(btn.getAttribute('data-id'));
+    });
+  });
+  
+  rejectButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      console.log('🗑️ Reject button clicked for ID:', btn.getAttribute('data-id'));
+      rejectStaged(btn.getAttribute('data-id'));
+    });
+  });
+}
+
+async function approveStaged(id) {
+  try {
+    const res = { success: false, error: 'Staging not available in desktop yet' };
+    if (res?.success) {
+      showNotification('✅ Saved to Vault', 'success', 2000);
+      await renderStaging();
+    } else {
+      throw new Error(res?.error || 'Commit failed');
+    }
+  } catch (e) {
+    showNotification('❌ ' + e.message, 'error', 3000);
+  }
+}
+
+async function rejectStaged(id) {
+  console.log('🗑️ Popup: Dismiss clicked for ID:', id);
+  try {
+    const res = { success: false, error: 'Staging not available in desktop yet' };
+    console.log('🗑️ Popup: Delete response:', res);
+    if (res?.success) {
+      showNotification('✅ Dismissed', 'success', 1500);
+      await renderStaging();
+    } else {
+      throw new Error(res?.error || 'Delete failed');
+    }
+  } catch (e) {
+    console.error('🗑️ Popup: Delete error:', e);
+    
+    // Handle extension context invalidated error
+    if (e.message?.includes('Extension context invalidated') || e.message?.includes('message port closed')) {
+      showNotification('🔄 Extension reloaded - please refresh the page', 'warning', 5000);
+    } else {
+      showNotification('❌ ' + (e.message || 'Delete failed'), 'error', 3000);
+    }
+  }
+}
+
+function sanitize(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
 
 // Persona prompt generation (inline dashboard)
 async function generatePersonaPrompt() {
@@ -1167,7 +2067,12 @@ function escapeHtml(text) {
 // Vault Setup Functions
 async function checkVaultSetupStatus() {
   try {
-    // Simple check using storage directly to avoid message routing issues
+    // Prefer real backend status
+    if (window.emma?.vault) {
+      const st = await window.emma.vault.status();
+      return { initialized: !!st.initialized };
+    }
+    // Fallback: storage flag (legacy)
     const storage = await chrome.storage.local.get(['emma_vault_initialized']);
     return { initialized: !!storage.emma_vault_initialized };
   } catch (e) {
@@ -1238,10 +2143,13 @@ async function createVaultFromPopup() {
     createBtn.disabled = true;
     createBtn.textContent = 'Creating Vault...';
     showVaultSetupStatus('Creating your secure vault...', 'loading');
-    
-    // Use direct storage approach to avoid message routing issues
-    await createVaultDirectly(passphrase);
-    
+    let res;
+    if (window.emma?.vault) {
+      res = await window.emma.vault.initialize({ passphrase, name: 'My Vault' });
+    } else if (chrome?.runtime?.sendMessage) {
+      res = await chrome.runtime.sendMessage({ action: 'vault.initialize', passphrase, name: 'My Vault' });
+    }
+    if (!res || !res.success) throw new Error(res?.error || 'Initialize failed');
     showVaultSetupStatus('✅ Vault created successfully!', 'success');
     
     // Wait a moment then switch to dashboard
@@ -1358,11 +2266,13 @@ async function unlockVault() {
     const passphrase = await showPasswordModal();
     
     showNotification('Unlocking vault...', 'info');
-    
-    const result = await chrome.runtime.sendMessage({
-      action: 'vault.unlock',
-      passphrase: passphrase
-    });
+    let result;
+    if (window.emma?.vault) {
+      const st = await window.emma.vault.status();
+      result = await window.emma.vault.unlock(st?.vaultId ? { passphrase, vaultId: st.vaultId } : { passphrase });
+    } else if (chrome?.runtime?.sendMessage) {
+      result = await chrome.runtime.sendMessage({ action: 'vault.unlock', passphrase });
+    }
     
     if (result && result.success) {
       showNotification('Vault unlocked successfully! 🔓', 'success');
@@ -1407,9 +2317,7 @@ async function showVaultStatus() {
   try {
     showNotification('Checking vault status...', 'info');
     
-    const result = await chrome.runtime.sendMessage({
-      action: 'vault.getStatus'
-    });
+    const result = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
     
     if (result && result.success) {
       const status = result;
@@ -1440,7 +2348,7 @@ ${status.lastUnlockedAt ? `• Last Unlocked: ${new Date(status.lastUnlockedAt).
 
 async function updateVaultStatusUI() {
   try {
-    const result = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
+    const result = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
     if (result && result.success) {
       const statusSubtitle = document.getElementById('vault-status-text');
       if (statusSubtitle) {
@@ -1466,42 +2374,8 @@ async function updateVaultStatusUI() {
   }
 }
 
-// Initialize the Emma Orb with retry
-function initializeEmmaOrb(retryCount = 0) {
-  const orbContainer = document.getElementById('emma-orb');
-  
-  if (!orbContainer) {
-    console.warn('❌ Emma orb container not found');
-    return;
-  }
-  
-  if (window.EmmaOrb) {
-    try {
-      // Use YOUR EXACT orb settings!
-      window.emmaOrbInstance = new EmmaOrb(orbContainer, {
-        hue: 0,
-        hoverIntensity: 0.5,
-        rotateOnHover: true,
-        forceHoverState: false
-      });
-      console.log('✨ Emma orb initialized successfully');
-      return;
-    } catch (error) {
-      console.warn('❌ Failed to initialize Emma orb:', error);
-    }
-  }
-  
-  // If EmmaOrb class not loaded yet and we haven't exceeded retries
-  if (retryCount < 3) {
-    console.log(`⏳ Emma orb not ready, retrying in 100ms... (attempt ${retryCount + 1}/3)`);
-    setTimeout(() => initializeEmmaOrb(retryCount + 1), 100);
-    return;
-  }
-  
-  // Fallback to simple icon after all retries
-  console.warn('⚠️ Emma orb class not available, using fallback');
-  orbContainer.innerHTML = '<div style="width: 48px; height: 48px; background: var(--emma-gradient-1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">🧠</div>';
-}
+// LEGACY ORB CODE REMOVED - Universal Emma Orb System handles all orb display
+// All orb initialization is now handled by the universal system
 
 // Save Selection function
 async function saveSelection() {
@@ -1519,7 +2393,7 @@ async function saveSelection() {
     console.log('📄 Capturing selection from:', tab.url);
     
     // Check vault status first
-    const vaultStatus = await sendMessage({ action: 'vault.getStatus' });
+    const vaultStatus = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
     console.log('🔐 Vault status for selection:', vaultStatus);
     
     if (!vaultStatus.success || !vaultStatus.isUnlocked) {
@@ -1546,11 +2420,17 @@ async function saveSelection() {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     init();
-    initializeEmmaOrb();
+    initializeUniversalOrbSystem();
   });
 } else {
   init();
-  initializeEmmaOrb();
+  initializeUniversalOrbSystem();
+}
+
+// Universal orb system handles orb initialization
+function initializeUniversalOrbSystem() {
+  console.log('🎯 Popup: Universal orb system will handle orb display');
+  // The universal orb injection script handles everything now
 }
 
 

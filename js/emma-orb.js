@@ -30,6 +30,7 @@ class EmmaOrb {
   setupWebGL() {
     // Create canvas like the React component
     this.canvas = document.createElement('canvas');
+    this.canvas.className = 'emma-orb-canvas';
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
     this.canvas.style.display = 'block';

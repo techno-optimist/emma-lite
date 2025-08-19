@@ -101,7 +101,7 @@ class EmmaHybridEngine {
     try {
       for (const memory of batch) {
         await chrome.runtime.sendMessage({
-          action: 'saveMemory',
+          action: 'ephemeral.add',
           data: memory
         });
       }

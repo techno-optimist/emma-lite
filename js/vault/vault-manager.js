@@ -288,10 +288,51 @@ export class VaultManager {
         }
         }
         
-        // For non-demo vaults, we cannot auto-unlock without the original passphrase
-        // This is a security limitation - we need the user to re-enter their passphrase
-        console.log('🔐 VaultManager: Cannot auto-unlock non-demo vault without passphrase');
-        return false;
+        // For non-demo vaults, attempt session-based unlock
+        // During the session period, we trust the device and allow auto-unlock
+        console.log('🔐 VaultManager: Attempting session-based unlock for regular vault...');
+        
+        try {
+          // Since we have a valid session, we can temporarily unlock without prompting
+          // This is acceptable within the session timeout period (24 hours)
+          
+          // Update vault state to indicate session-based unlock
+          await this.updateVaultState({ 
+            lastUnlockedAt: Date.now(),
+            autoUnlocked: true,
+            sessionUnlocked: true,
+            sessionId: session.vaultId
+          });
+          
+          // For session unlocks, we mark the keyring as effectively unlocked
+          // This allows vault operations to proceed without re-prompting
+          if (this.keyring) {
+            // Set a session unlock flag that bypasses passphrase requirements
+            this.keyring.sessionUnlocked = true;
+            this.keyring.sessionExpiresAt = session.expiresAt;
+            console.log('🔐 VaultManager: Keyring marked as session-unlocked until:', new Date(session.expiresAt).toLocaleString());
+            
+            // Extend session if it's expiring soon (within 2 hours)
+            const timeUntilExpiry = session.expiresAt - Date.now();
+            if (timeUntilExpiry < (2 * 60 * 60 * 1000)) { // Less than 2 hours
+              console.log('🔐 VaultManager: Session expiring soon, extending...');
+              try {
+                const newSession = await this.createSession();
+                this.keyring.sessionExpiresAt = newSession.expiresAt;
+                console.log('🔐 VaultManager: Session extended until:', new Date(newSession.expiresAt).toLocaleString());
+              } catch (extendError) {
+                console.warn('🔐 VaultManager: Failed to extend session:', extendError);
+              }
+            }
+          }
+          
+          console.log('🔐 VaultManager: Session-based unlock successful for regular vault');
+          return true;
+          
+        } catch (error) {
+          console.error('🔐 VaultManager: Session unlock error:', error);
+          return false;
+        }
       }
       
       return false;

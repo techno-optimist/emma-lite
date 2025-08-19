@@ -60,7 +60,7 @@ function attachEventListeners() {
   // Back button
   if (elements.backBtn) {
     elements.backBtn.addEventListener('click', () => {
-      window.close();
+      try { window.location.href = 'popup.html'; } catch {}
     });
   }
   

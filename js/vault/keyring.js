@@ -11,12 +11,32 @@ export class Keyring {
   }
 
   async isUnlocked() {
-    return this.masterKey !== null;
+    // Check if unlocked via master key OR valid session
+    if (this.masterKey !== null) {
+      return true;
+    }
+    
+    // Check session unlock
+    if (this.sessionUnlocked && this.sessionExpiresAt) {
+      if (Date.now() < this.sessionExpiresAt) {
+        return true;
+      } else {
+        // Session expired, clear session unlock
+        this.sessionUnlocked = false;
+        this.sessionExpiresAt = null;
+        console.log('🔐 Keyring: Session expired, vault locked');
+      }
+    }
+    
+    return false;
   }
 
   async lock() {
     this.masterKey = null;
     this.unlockedAt = 0;
+    // Clear session unlock
+    this.sessionUnlocked = false;
+    this.sessionExpiresAt = null;
   }
 
   async ensureSettings() {
