@@ -592,6 +592,29 @@
           if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
             console.log('🔗 GALLERY: Extension detected - setting up extension-aware mode');
             
+            // CRITICAL: Actually open a mock vault for the web app to use
+            window.emmaWebVault.isOpen = true;
+            window.emmaWebVault.currentVault = 'extension-managed-vault';
+            window.emmaWebVault.vaultData = {
+              version: '1.0',
+              name: 'Extension Vault',
+              created: new Date().toISOString(),
+              encryption: {
+                enabled: true,
+                algorithm: 'AES-GCM'
+              },
+              content: {
+                memories: {},
+                people: {},
+                settings: {}
+              },
+              stats: {
+                memoryCount: 0,
+                peopleCount: 0,
+                totalSize: 0
+              }
+            };
+            
             // Set vault as active for extension mode
             sessionStorage.setItem('emmaVaultActive', 'true');
             sessionStorage.setItem('emmaVaultName', 'Extension Vault');
@@ -603,6 +626,7 @@
             };
             
             console.log('✅ GALLERY: Extension vault mode configured');
+            console.log('✅ GALLERY: Mock vault opened for web app compatibility');
             
           } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
             (async () => {
