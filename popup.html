@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Memory</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-content">
+        <div class="emma-header">
+          <div class="emma-orb-container" id="emma-orb"></div>
+          <div class="emma-header-content">
+            <span class="emma-title">emma</span>
+            <span class="emma-subtitle">intelligent memory</span>
+          </div>
+        </div>
+        <div class="header-right-actions">
+          <button type="button" id="header-cloud-btn" class="icon-btn cloud-disconnected" title="Emma Cloud (Disconnected)">☁️</button>
+          <button type="button" id="header-vault-btn" class="icon-btn" title="Unlock Vault">🔒</button>
+          <button type="button" id="header-settings-btn" class="icon-btn" title="Settings">⚙️</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Vault Setup Section (shown when vault not initialized) -->
+    <section id="vault-setup-section" class="vault-setup-compact" style="display: none;">
+      <div class="vault-setup-compact-content">
+        <div class="vault-setup-header-compact">
+          <div class="vault-icon-small">🔐</div>
+          <div class="vault-text">
+            <h3>Create Your Memory Vault</h3>
+            <p>Secure encryption for your memories</p>
+          </div>
+        </div>
+        
+        <div class="vault-form-compact">
+          <div class="form-row">
+            <input 
+              type="password" 
+              id="popup-vault-passphrase" 
+              class="form-input-compact" 
+              placeholder="Create passcode"
+              autocomplete="new-password"
+            >
+            <input 
+              type="password" 
+              id="popup-vault-confirm" 
+              class="form-input-compact" 
+              placeholder="Confirm passcode"
+              autocomplete="new-password"
+            >
+          </div>
+          
+          <button type="button" id="create-vault-btn" class="btn-primary-compact">
+            <span class="btn-icon">🔐</span>
+            Create Vault
+          </button>
+          
+          <div id="vault-setup-status" class="vault-status-compact"></div>
+          <div id="vault-success-notification" class="vault-success-compact" style="display: none;">
+            <span class="success-icon">✅</span>
+            <span class="success-text">Vault created successfully!</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Memory Stats (Top Priority) -->
+    <section class="memory-management-top">
+      <div class="memory-stats-bar">
+        <div class="stat-item">
+          <span class="stat-icon">📊</span>
+          <div class="stat-content">
+            <span class="stat-value" id="total-memories">0</span>
+            <span class="stat-label">Total Memories</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">📅</span>
+          <div class="stat-content">
+            <span class="stat-value" id="today-count">0</span>
+            <span class="stat-label">Today</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">💾</span>
+          <div class="stat-content">
+            <span class="stat-value" id="storage-used">0 KB</span>
+            <span class="stat-label">Storage</span>
+          </div>
+        </div>
+      </div>
+      <!-- Manage shortcuts inside the stats card -->
+      <div class="memory-manage-grid memory-tools-grid">
+        <button type="button" id="create-memory-btn" class="tool-btn">
+          <span class="tool-icon">✨</span>
+          <span class="tool-label">Create</span>
+        </button>
+        <button type="button" id="people-btn" class="tool-btn">
+          <span class="tool-icon">👥</span>
+          <span class="tool-label">People</span>
+        </button>
+        <button type="button" id="relationships-btn" class="tool-btn">
+          <span class="tool-icon">💝</span>
+          <span class="tool-label">Relations</span>
+        </button>
+        <button type="button" id="export-btn" class="tool-btn">
+          <span class="tool-icon">📤</span>
+          <span class="tool-label">Export</span>
+        </button>
+        <button type="button" id="import-btn" class="tool-btn">
+          <span class="tool-icon">📥</span>
+          <span class="tool-label">Import</span>
+        </button>
+        <button type="button" id="settings-btn" class="tool-btn">
+          <span class="tool-icon">⚙️</span>
+          <span class="tool-label">Settings</span>
+        </button>
+        <button type="button" id="memories-gallery-btn" class="tool-btn">
+          <span class="tool-icon">📖</span>
+          <span class="tool-label">Gallery</span>
+        </button>
+        <button type="button" id="chat-btn" class="tool-btn">
+          <span class="tool-icon">💬</span>
+          <span class="tool-label">Chat</span>
+        </button>
+        <button type="button" id="persona-btn" class="tool-btn">
+          <span class="tool-icon">🧬</span>
+          <span class="tool-label">Persona</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Dashboard -->
+    <section class="dashboard-main dashboard-compact">
+      <!-- Capture Category -->
+      <div class="feature-section">
+        <div class="section-title"><span class="section-icon">📸</span>Capture</div>
+        <div class="memory-tools-grid">
+          <button type="button" id="capture-btn" class="tool-btn">
+            <span class="tool-icon">📸</span>
+            <span class="tool-label">Capture</span>
+          </button>
+          <button type="button" id="save-selection-btn" class="tool-btn">
+            <span class="tool-icon">✂️</span>
+            <span class="tool-label">Selection</span>
+          </button>
+          <button type="button" id="batch-import-btn" class="tool-btn">
+            <span class="tool-icon">🖼️</span>
+            <span class="tool-label">Import Media</span>
+          </button>
+          <button type="button" id="add-media-only-btn" class="tool-btn">
+            <span class="tool-icon">➕</span>
+            <span class="tool-label">Add Media</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Explore Category -->
+      <div class="feature-section">
+        <div class="section-title"><span class="section-icon">🧭</span>Explore</div>
+        <div class="memory-tools-grid">
+          <button type="button" id="search-quick-btn" class="tool-btn">
+            <span class="tool-icon">🔍</span>
+            <span class="tool-label">Search</span>
+          </button>
+          <button type="button" id="chat-btn" class="tool-btn">
+            <span class="tool-icon">💬</span>
+            <span class="tool-label">Chat</span>
+          </button>
+          <button type="button" id="constellation-btn" class="tool-btn">
+            <span class="tool-icon">✨</span>
+            <span class="tool-label">Constellation</span>
+          </button>
+          <button type="button" id="memories-gallery-btn" class="tool-btn">
+            <span class="tool-icon">📖</span>
+            <span class="tool-label">Gallery</span>
+          </button>
+        </div>
+      </div>
+
+      
+
+      <!-- Inline Emma Chat Panel (hidden by default) -->
+      <section id="chat-panel" class="chat-panel hidden">
+        <div class="chat-header-inline">
+          <div class="chat-title">
+            <div class="emma-orb-container small" id="chat-orb"></div>
+            <div>
+              <div class="chat-title-text">Emma</div>
+              <div class="chat-subtitle-text">Your memory companion</div>
+            </div>
+          </div>
+          <button type="button" id="close-chat" class="close-chat-btn">×</button>
+        </div>
+        <div id="chat-messages-inline" class="chat-messages-inline">
+          <div class="chat-welcome">
+            Ask me about your memories. For example: "What did I discuss about onboarding last week?"
+          </div>
+        </div>
+        <div class="chat-input-inline">
+          <textarea id="chat-input-inline" rows="1" placeholder="Type a message..." ></textarea>
+          <button type="button" id="chat-send-inline" class="send-inline">→</button>
+        </div>
+      </section>
+
+      
+
+    </section>
+
+    <!-- Search Panel (Hidden by default) -->
+    <section id="search-panel" class="search-panel hidden">
+      <div class="search-header">
+        <div class="search-container">
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="Search your memories..."
+          >
+          <button type="button" id="search-btn" class="search-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+        <button type="button" id="close-search" class="close-search-btn">×</button>
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+      <div class="footer-version">Emma v1.1.0</div>
+      <div class="footer-status" id="mtap-status-footer">MTAP Enabled</div>
+    </footer>
+  </div>
+
+  <!-- Hidden file input for import -->
+  <input type="file" id="import-file" accept=".json" class="hidden-input">
+
+  <!-- Persona Modal -->
+  <div id="persona-modal" class="persona-modal-overlay">
+    <div class="persona-modal">
+      <div class="persona-modal-header">
+        <div class="chat-title" style="gap:10px;">
+          <div class="emma-orb-container small" id="persona-orb"></div>
+          <div>
+            <div class="chat-title-text">Emma Persona</div>
+            <div class="chat-subtitle-text">A living summary of your HML</div>
+          </div>
+        </div>
+        <button type="button" id="persona-close" class="persona-close">×</button>
+      </div>
+      <div class="persona-modal-body">
+        <div id="persona-status" class="vault-status-compact" style="margin: 4px 0 8px 0;"></div>
+        <textarea id="persona-textarea" rows="14" style="width:100%; box-sizing:border-box; background: rgba(0,0,0,0.35); color:#e9d5ff; border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+        <div id="persona-highlights" class="chips" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
+      <div class="persona-modal-actions">
+        <div class="group">
+          <button type="button" id="persona-refresh" class="btn small">Regenerate</button>
+        </div>
+        <div class="group">
+          <button type="button" id="persona-copy" class="btn primary small">Copy Prompt</button>
+          <button type="button" id="persona-copy-openai" class="btn small">Copy → Open ChatGPT</button>
+          <button type="button" id="persona-copy-claude" class="btn small">Copy → Open Claude</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Input Modal -->
+  <div id="password-modal" class="password-modal" style="display: none;">
+    <div class="password-modal-content">
+      <div class="password-modal-header">
+        <h3 id="password-modal-title">Enter Vault Code</h3>
+        <button type="button" id="password-modal-close" class="password-modal-close">×</button>
+      </div>
+      <div class="password-modal-body">
+        <input 
+          type="password" 
+          id="password-modal-input" 
+          class="password-modal-input"
+          placeholder="•••••••••"
+          autocomplete="current-password"
+        >
+        <div class="password-modal-actions">
+          <button type="button" id="password-modal-cancel" class="btn-secondary">Cancel</button>
+          <button type="button" id="password-modal-confirm" class="btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/emma-orb.js"></script>
+  <script src="js/popup.js"></script>
+</body>
+</html>

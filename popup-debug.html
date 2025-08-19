@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Debug</title>
+  <style>
+    body {
+      width: 300px;
+      height: 400px;
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #log {
+      background: #333;
+      padding: 10px;
+      border-radius: 5px;
+      height: 150px;
+      overflow-y: auto;
+      font-size: 12px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h3>🔍 Emma Debug Console</h3>
+  
+  <button id="test1">Test 1: Basic Click</button>
+  <button id="test2">Test 2: Chrome APIs</button>
+  <button id="test3">Test 3: Settings</button>
+  
+  <div id="log"></div>
+
+  <script>
+    // Immediate console logs
+    console.log('🚀 DEBUG: Script started');
+    console.log('🚀 DEBUG: Document ready state:', document.readyState);
+    console.log('🚀 DEBUG: Chrome available:', typeof chrome);
+    
+    function log(message) {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log('DEBUG:', message);
+    }
+    
+    // Log that we got this far
+    log('Script execution started ✅');
+    log('DOM ready state: ' + document.readyState);
+    log('Chrome APIs: ' + (typeof chrome !== 'undefined' ? 'Available ✅' : 'Not available ❌'));
+    
+    // Test buttons
+    document.addEventListener('DOMContentLoaded', function() {
+      log('DOMContentLoaded fired ✅');
+      
+      // Test 1: Basic click
+      const test1 = document.getElementById('test1');
+      if (test1) {
+        log('Test1 button found ✅');
+        test1.addEventListener('click', function() {
+          log('TEST 1 CLICKED! ✅');
+          console.log('TEST 1 CLICKED!');
+        });
+      } else {
+        log('Test1 button NOT found ❌');
+      }
+      
+      // Test 2: Chrome APIs
+      const test2 = document.getElementById('test2');
+      if (test2) {
+        log('Test2 button found ✅');
+        test2.addEventListener('click', function() {
+          log('TEST 2 CLICKED! ✅');
+          if (typeof chrome !== 'undefined' && chrome.runtime) {
+            log('Chrome APIs work ✅');
+            try {
+              chrome.runtime.openOptionsPage();
+              log('Options page opened ✅');
+            } catch (e) {
+              log('Options error: ' + e.message);
+            }
+          } else {
+            log('Chrome APIs not available ❌');
+          }
+        });
+      }
+      
+      // Test 3: Settings
+      const test3 = document.getElementById('test3');
+      if (test3) {
+        log('Test3 button found ✅');
+        test3.addEventListener('click', function() {
+          log('TEST 3 CLICKED! ✅');
+          alert('Test 3 clicked!');
+        });
+      }
+      
+      log('All event listeners attached ✅');
+    });
+    
+    // Also try immediate execution if DOM is ready
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      log('DOM already loaded, setting up immediately...');
+      // Duplicate the setup code here if needed
+    }
+    
+    log('Script setup complete ✅');
+    console.log('🚀 DEBUG: Script setup complete');
+  </script>
+</body>
+</html>

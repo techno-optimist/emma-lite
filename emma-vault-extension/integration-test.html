@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Vault Extension - Integration Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: white;
+    }
+    
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #8B5CF6, #EC4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .test-section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin: 20px 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .test-section h2 {
+      color: #A78BFA;
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+    }
+    
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    
+    .status-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    
+    .status-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    
+    .status-text {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    
+    .status-detail {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
+    .test-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 25px 0;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .log-container {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+    
+    .log-info { background: rgba(59, 130, 246, 0.2); }
+    .log-success { background: rgba(16, 185, 129, 0.2); }
+    .log-error { background: rgba(239, 68, 68, 0.2); }
+    .log-warning { background: rgba(245, 158, 11, 0.2); }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8B5CF6, #EC4899);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .dedication {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-style: italic;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Emma Vault Extension Integration Test</h1>
+    
+    <div class="dedication">
+      <p>💜 Testing with love for Debbe and all precious memories</p>
+      <p>In honor of Kevin's father - a software visionary who would be proud</p>
+    </div>
+    
+    <!-- Status Overview -->
+    <div class="test-section">
+      <h2>📊 System Status</h2>
+      <div class="status-grid">
+        <div class="status-card" id="extensionStatus">
+          <div class="status-icon">🔍</div>
+          <div class="status-text">Extension</div>
+          <div class="status-detail">Checking...</div>
+        </div>
+        
+        <div class="status-card" id="emmaWebAppStatus">
+          <div class="status-icon">🌐</div>
+          <div class="status-text">Emma Web App</div>
+          <div class="status-detail">Checking...</div>
+        </div>
+        
+        <div class="status-card" id="fileSystemStatus">
+          <div class="status-icon">💾</div>
+          <div class="status-text">File System API</div>
+          <div class="status-detail">Checking...</div>
+        </div>
+        
+        <div class="status-card" id="syncStatus">
+          <div class="status-icon">🔄</div>
+          <div class="status-text">Sync Status</div>
+          <div class="status-detail">Not configured</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Test Controls -->
+    <div class="test-section">
+      <h2>🧪 Test Suite</h2>
+      
+      <div class="test-buttons">
+        <button onclick="runSystemCheck()">System Check</button>
+        <button onclick="testExtensionComms()">Test Communication</button>
+        <button onclick="simulateMemoryCreation()">Create Test Memory</button>
+        <button onclick="testBulkSync()">Bulk Sync Test</button>
+        <button onclick="testErrorScenarios()">Error Scenarios</button>
+        <button onclick="runFullSuite()">🚀 Full Test Suite</button>
+      </div>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="testProgress"></div>
+      </div>
+    </div>
+    
+    <!-- Test Results -->
+    <div class="test-section">
+      <h2>📝 Test Log</h2>
+      <div class="log-container" id="testLog"></div>
+      <button onclick="clearLog()">Clear Log</button>
+      <button onclick="exportResults()">Export Results</button>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="test-section">
+      <h2>⚡ Quick Actions</h2>
+      <div class="test-buttons">
+        <button onclick="openEmmaWebApp()">Open Emma Web App</button>
+        <button onclick="openExtensionPopup()">Open Extension</button>
+        <button onclick="checkVaultFile()">Check Vault File</button>
+        <button onclick="showDebugInfo()">Debug Info</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Test state
+    let testResults = {
+      extension: false,
+      emmaWebApp: false,
+      fileSystem: false,
+      sync: false
+    };
+    
+    let currentTest = 0;
+    let totalTests = 0;
+    
+    // Initialize on load
+    window.addEventListener('load', () => {
+      log('🚀 Emma Vault Extension Integration Test Started', 'info');
+      log('💜 Testing with love for Debbe and honoring Kevin\'s father', 'info');
+      runSystemCheck();
+    });
+    
+    // Logging function
+    function log(message, type = 'info') {
+      const logContainer = document.getElementById('testLog');
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+    
+    // Update status card
+    function updateStatus(cardId, icon, text, detail, success = null) {
+      const card = document.getElementById(cardId);
+      const iconEl = card.querySelector('.status-icon');
+      const textEl = card.querySelector('.status-text');
+      const detailEl = card.querySelector('.status-detail');
+      
+      iconEl.textContent = icon;
+      textEl.textContent = text;
+      detailEl.textContent = detail;
+      
+      if (success === true) {
+        card.style.background = 'rgba(16, 185, 129, 0.2)';
+      } else if (success === false) {
+        card.style.background = 'rgba(239, 68, 68, 0.2)';
+      }
+    }
+    
+    // Update progress
+    function updateProgress(percent) {
+      document.getElementById('testProgress').style.width = percent + '%';
+    }
+    
+    // System check
+    async function runSystemCheck() {
+      log('🔍 Running system compatibility check...', 'info');
+      updateProgress(0);
+      
+      // Check extension
+      const extensionAvailable = !!(
+        document.getElementById('emma-vault-extension-marker') ||
+        window.EmmaVaultExtension
+      );
+      
+      if (extensionAvailable) {
+        testResults.extension = true;
+        updateStatus('extensionStatus', '✅', 'Extension', 'Detected', true);
+        log('✅ Extension detected successfully', 'success');
+      } else {
+        testResults.extension = false;
+        updateStatus('extensionStatus', '❌', 'Extension', 'Not found', false);
+        log('❌ Extension not detected - please install and refresh', 'error');
+      }
+      
+      updateProgress(25);
+      
+      // Check Emma Web App
+      const emmaAvailable = !!(window.emmaWebVault || window.emmaAPI);
+      
+      if (emmaAvailable) {
+        testResults.emmaWebApp = true;
+        updateStatus('emmaWebAppStatus', '✅', 'Emma Web App', 'Ready', true);
+        log('✅ Emma Web App detected', 'success');
+      } else {
+        testResults.emmaWebApp = false;
+        updateStatus('emmaWebAppStatus', '❌', 'Emma Web App', 'Not found', false);
+        log('❌ Emma Web App not detected - please visit Emma Web App', 'error');
+      }
+      
+      updateProgress(50);
+      
+      // Check File System API
+      const fileSystemAvailable = !!(window.showSaveFilePicker);
+      
+      if (fileSystemAvailable) {
+        testResults.fileSystem = true;
+        updateStatus('fileSystemStatus', '✅', 'File System API', 'Supported', true);
+        log('✅ File System Access API supported', 'success');
+      } else {
+        testResults.fileSystem = false;
+        updateStatus('fileSystemStatus', '❌', 'File System API', 'Not supported', false);
+        log('❌ File System Access API not supported - use Chrome/Edge', 'error');
+      }
+      
+      updateProgress(75);
+      
+      // Check sync status
+      if (extensionAvailable && emmaAvailable) {
+        try {
+          // Try to get sync status
+          const syncEnabled = window.emmaWebVault?.extensionSyncEnabled || false;
+          
+          if (syncEnabled) {
+            testResults.sync = true;
+            updateStatus('syncStatus', '✅', 'Sync Status', 'Enabled', true);
+            log('✅ Sync is enabled and ready', 'success');
+          } else {
+            testResults.sync = false;
+            updateStatus('syncStatus', '⚠️', 'Sync Status', 'Not enabled', null);
+            log('⚠️ Sync not enabled - click extension icon to enable', 'warning');
+          }
+        } catch (error) {
+          testResults.sync = false;
+          updateStatus('syncStatus', '❌', 'Sync Status', 'Error', false);
+          log('❌ Error checking sync status: ' + error.message, 'error');
+        }
+      }
+      
+      updateProgress(100);
+      
+      // Summary
+      const passedTests = Object.values(testResults).filter(Boolean).length;
+      const totalTests = Object.values(testResults).length;
+      log(`📊 System check complete: ${passedTests}/${totalTests} components ready`, 'info');
+      
+      if (passedTests === totalTests) {
+        log('🎉 All systems ready for testing!', 'success');
+      } else {
+        log('⚠️ Some components need attention before full testing', 'warning');
+      }
+    }
+    
+    // Test extension communication
+    async function testExtensionComms() {
+      log('💬 Testing extension communication...', 'info');
+      
+      if (!testResults.extension) {
+        log('❌ Cannot test communication - extension not detected', 'error');
+        return;
+      }
+      
+      return new Promise((resolve) => {
+        let responseReceived = false;
+        
+        const messageHandler = (event) => {
+          if (event.data?.channel === 'emma-vault-bridge') {
+            log('📨 Received extension response: ' + event.data.type, 'success');
+            responseReceived = true;
+            window.removeEventListener('message', messageHandler);
+            resolve(true);
+          }
+        };
+        
+        window.addEventListener('message', messageHandler);
+        
+        // Send test message
+        window.postMessage({
+          channel: 'emma-vault-bridge',
+          type: 'REQUEST_SYNC_STATUS'
+        }, window.location.origin);
+        
+        log('📤 Sent communication test message', 'info');
+        
+        // Timeout after 3 seconds
+        setTimeout(() => {
+          if (!responseReceived) {
+            window.removeEventListener('message', messageHandler);
+            log('❌ Communication test timeout - extension may not be responding', 'error');
+            resolve(false);
+          }
+        }, 3000);
+      });
+    }
+    
+    // Simulate memory creation
+    async function simulateMemoryCreation() {
+      log('📝 Testing memory creation and sync...', 'info');
+      
+      if (!testResults.emmaWebApp) {
+        log('❌ Cannot test memory creation - Emma Web App not available', 'error');
+        return;
+      }
+      
+      try {
+        const testMemory = {
+          content: `Test memory created at ${new Date().toLocaleString()} - Integration test for Debbe 💜`,
+          metadata: {
+            emotion: 'happy',
+            importance: 8,
+            tags: ['test', 'integration', 'debbe'],
+            source: 'integration-test'
+          }
+        };
+        
+        log('📤 Creating test memory...', 'info');
+        
+        if (window.emmaWebVault) {
+          const result = await window.emmaWebVault.addMemory(testMemory);
+          log('✅ Memory created successfully: ' + result.id, 'success');
+          
+          // Check if sync occurred
+          if (testResults.extension && testResults.sync) {
+            log('🔄 Sync should have been triggered automatically', 'info');
+          }
+        } else if (window.emmaAPI) {
+          const result = await window.emmaAPI.memories.save(testMemory);
+          log('✅ Memory saved via API: ' + JSON.stringify(result), 'success');
+        }
+        
+      } catch (error) {
+        log('❌ Memory creation failed: ' + error.message, 'error');
+      }
+    }
+    
+    // Test bulk sync
+    async function testBulkSync() {
+      log('📚 Testing bulk sync performance...', 'info');
+      
+      if (!testResults.emmaWebApp || !testResults.extension) {
+        log('❌ Cannot test bulk sync - missing dependencies', 'error');
+        return;
+      }
+      
+      const startTime = Date.now();
+      const testCount = 10;
+      
+      try {
+        for (let i = 0; i < testCount; i++) {
+          const memory = {
+            content: `Bulk test memory ${i + 1} - Created for integration testing. This memory contains enough text to test sync performance with realistic content length.`,
+            metadata: {
+              emotion: 'neutral',
+              importance: Math.floor(Math.random() * 10) + 1,
+              tags: ['bulk-test', `test-${i + 1}`],
+              source: 'bulk-integration-test'
+            }
+          };
+          
+          if (window.emmaWebVault) {
+            await window.emmaWebVault.addMemory(memory);
+          }
+          
+          // Small delay to prevent overwhelming
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          log(`📝 Created bulk memory ${i + 1}/${testCount}`, 'info');
+        }
+        
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        
+        log(`✅ Bulk sync test completed: ${testCount} memories in ${duration}ms`, 'success');
+        log(`⚡ Average: ${Math.round(duration / testCount)}ms per memory`, 'info');
+        
+      } catch (error) {
+        log('❌ Bulk sync test failed: ' + error.message, 'error');
+      }
+    }
+    
+    // Test error scenarios
+    async function testErrorScenarios() {
+      log('🧪 Testing error handling scenarios...', 'info');
+      
+      // Test invalid memory data
+      try {
+        if (window.emmaWebVault) {
+          await window.emmaWebVault.addMemory(null);
+        }
+      } catch (error) {
+        log('✅ Correctly handled null memory data', 'success');
+      }
+      
+      // Test communication with non-existent extension features
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'INVALID_TEST_MESSAGE',
+        data: { test: true }
+      }, window.location.origin);
+      
+      log('📤 Sent invalid message to test error handling', 'info');
+      
+      log('✅ Error scenario testing completed', 'success');
+    }
+    
+    // Run full test suite
+    async function runFullSuite() {
+      log('🚀 Starting full integration test suite...', 'info');
+      log('💜 This comprehensive test honors both Debbe\'s memory and Kevin\'s father\'s legacy', 'info');
+      
+      totalTests = 5;
+      currentTest = 0;
+      
+      // Test 1: System Check
+      currentTest++;
+      updateProgress((currentTest / totalTests) * 100);
+      await runSystemCheck();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Test 2: Communication
+      currentTest++;
+      updateProgress((currentTest / totalTests) * 100);
+      await testExtensionComms();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Test 3: Memory Creation
+      currentTest++;
+      updateProgress((currentTest / totalTests) * 100);
+      await simulateMemoryCreation();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Test 4: Bulk Sync
+      currentTest++;
+      updateProgress((currentTest / totalTests) * 100);
+      await testBulkSync();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Test 5: Error Scenarios
+      currentTest++;
+      updateProgress((currentTest / totalTests) * 100);
+      await testErrorScenarios();
+      
+      // Complete
+      log('🎉 Full test suite completed!', 'success');
+      log('💜 Emma Vault Extension ready to preserve precious memories', 'success');
+      
+      // Generate summary
+      const passedComponents = Object.values(testResults).filter(Boolean).length;
+      const totalComponents = Object.values(testResults).length;
+      
+      if (passedComponents === totalComponents) {
+        log('✅ All systems operational - ready for family use!', 'success');
+      } else {
+        log(`⚠️ ${passedComponents}/${totalComponents} components ready - some setup needed`, 'warning');
+      }
+    }
+    
+    // Utility functions
+    function clearLog() {
+      document.getElementById('testLog').innerHTML = '';
+      log('🧹 Test log cleared', 'info');
+    }
+    
+    function exportResults() {
+      const logContainer = document.getElementById('testLog');
+      const logs = Array.from(logContainer.children).map(el => el.textContent).join('\n');
+      
+      const report = `Emma Vault Extension Integration Test Report
+Generated: ${new Date().toLocaleString()}
+Tested by: Integration Test Suite
+
+System Status:
+- Extension: ${testResults.extension ? 'PASS' : 'FAIL'}
+- Emma Web App: ${testResults.emmaWebApp ? 'PASS' : 'FAIL'}
+- File System API: ${testResults.fileSystem ? 'PASS' : 'FAIL'}
+- Sync Status: ${testResults.sync ? 'PASS' : 'FAIL'}
+
+Test Log:
+${logs}
+
+Built with love for Debbe 💜
+In honor of Kevin's father - a software visionary`;
+      
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `emma-extension-test-report-${new Date().toISOString().slice(0, 10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      log('📄 Test report exported', 'success');
+    }
+    
+    function openEmmaWebApp() {
+      window.open('https://emma-vault.onrender.com', '_blank');
+      log('🌐 Opened Emma Web App in new tab', 'info');
+    }
+    
+    function openExtensionPopup() {
+      log('🔒 Please click the Emma extension icon in your browser toolbar', 'info');
+    }
+    
+    function checkVaultFile() {
+      log('📁 Please check your selected .emma file location for updates', 'info');
+      log('💡 Tip: File size should increase after creating memories', 'info');
+    }
+    
+    function showDebugInfo() {
+      const debugInfo = {
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+        extensionMarker: !!document.getElementById('emma-vault-extension-marker'),
+        windowExtension: !!window.EmmaVaultExtension,
+        emmaWebVault: !!window.emmaWebVault,
+        emmaAPI: !!window.emmaAPI,
+        fileSystemAPI: !!window.showSaveFilePicker,
+        testResults: testResults
+      };
+      
+      log('🔍 Debug Info: ' + JSON.stringify(debugInfo, null, 2), 'info');
+      console.log('Emma Extension Debug Info:', debugInfo);
+    }
+  </script>
+</body>
+</html>

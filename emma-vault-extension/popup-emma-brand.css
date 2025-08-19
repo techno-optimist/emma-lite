@@ -1,0 +1,592 @@
+/**
+ * Emma Vault Extension - True Emma Brand Design
+ * Using the actual Emma design system and orb
+ * Built with love for Debbe 💜
+ */
+
+/* Emma Brand CSS Variables - EXACT from web app */
+:root {
+  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
+  --emma-purple: #764ba2;
+  --emma-pink: #f093fb;
+  --emma-dark: #1a1033;
+  --emma-card-bg: rgba(255, 255, 255, 0.05);
+  --emma-border: rgba(255, 255, 255, 0.1);
+  --emma-text: #ffffff;
+  --emma-text-secondary: rgba(255, 255, 255, 0.7);
+  --emma-text-tertiary: rgba(255, 255, 255, 0.5);
+  --emma-success: #4ade80;
+  --emma-error: #f87171;
+  --emma-warning: #fbbf24;
+  --emma-glass: rgba(255, 255, 255, 0.1);
+  --emma-glow: 0 8px 32px rgba(139, 92, 246, 0.15);
+}
+
+/* Kill ALL animations to prevent shaking */
+*, *::before, *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--emma-text);
+  background: var(--emma-bg-gradient);
+  margin: 0;
+  overflow: hidden;
+  width: 420px;
+  height: 500px;
+}
+
+/* Popup Container */
+.popup-container {
+  width: 420px;
+  height: 500px;
+  background: var(--emma-bg-gradient);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Add subtle background pattern like Emma web app */
+.popup-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.2) 0%, transparent 50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Minimal header - removed as requested */
+
+/* Main Interface */
+.main-interface {
+  flex: 1;
+  padding: 20px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+/* Welcome State */
+.welcome-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Vault Drop Zone - Emma Glass Card Style */
+.vault-drop-zone {
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 24px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.vault-drop-zone:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Emma Orb Container */
+.emma-orb-container {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px auto;
+  position: relative;
+}
+
+/* Simple CSS orb fallback when WebGL isn't available - no background circle */
+.emma-orb {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  position: relative;
+  /* Removed border-radius and background - just container for WebGL orb */
+}
+
+.drop-zone-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.drop-zone-subtitle {
+  color: var(--emma-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-primary, .btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: var(--emma-gradient-1);
+  color: white;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  color: var(--emma-text);
+  border: 1px solid var(--emma-border);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+/* Recent Vaults - Emma Glass Card */
+.recent-vaults {
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.section-icon {
+  font-size: 1rem;
+  color: var(--emma-pink);
+}
+
+.section-title {
+  font-weight: 500;
+  color: var(--emma-text);
+  font-size: 0.9rem;
+}
+
+.recent-vault-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.recent-vault-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vault-icon {
+  font-size: 1.3rem;
+  color: var(--emma-purple);
+}
+
+.vault-info {
+  flex: 1;
+}
+
+.vault-name {
+  font-weight: 500;
+  color: var(--emma-text);
+  margin-bottom: 2px;
+  font-size: 0.9rem;
+}
+
+.vault-details {
+  font-size: 0.8rem;
+  color: var(--emma-text-secondary);
+}
+
+.no-recent-vaults {
+  text-align: center;
+  padding: 16px;
+}
+
+.no-recent-vaults p {
+  color: var(--emma-text-secondary);
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+}
+
+.help-text {
+  font-size: 0.8rem;
+  color: var(--emma-text-tertiary);
+}
+
+/* Active Vault State */
+.active-vault-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vault-info-card {
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.vault-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.vault-icon-large {
+  font-size: 2.2rem;
+  color: var(--emma-purple);
+}
+
+.vault-details {
+  flex: 1;
+}
+
+.vault-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.vault-path {
+  color: var(--emma-text-secondary);
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.vault-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  font-size: 1.1rem;
+}
+
+.vault-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--emma-text-tertiary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--emma-text);
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 16px;
+  color: var(--emma-text);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-icon {
+  font-size: 1.4rem;
+}
+
+.action-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Footer */
+.popup-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--emma-border);
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 2;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: var(--emma-text-tertiary);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 24px;
+  padding: 28px;
+  max-width: 380px;
+  width: 90%;
+  max-height: 90%;
+  overflow-y: auto;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+}
+
+.modal-header p {
+  color: var(--emma-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  color: var(--emma-text);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background: var(--emma-card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--emma-text);
+  font-size: 0.85rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--emma-purple);
+  box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.2);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--emma-text-tertiary);
+}
+
+.form-group input[type="file"] {
+  padding: 8px;
+  font-size: 0.8rem;
+}
+
+.form-group input[type="range"] {
+  padding: 0;
+  background: transparent;
+  border: none;
+  height: 6px;
+}
+
+.form-group input[type="range"]::-webkit-slider-track {
+  background: var(--emma-border);
+  height: 4px;
+  border-radius: 2px;
+}
+
+.form-group input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--emma-gradient-1);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.form-actions .btn-primary,
+.form-actions .btn-secondary {
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+}
+
+/* Help Notes */
+.help-note {
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--emma-text-secondary);
+  line-height: 1.4;
+}
+
+.help-note strong {
+  color: var(--emma-warning);
+}
+
+/* Utility Classes */
+.hidden {
+  display: none !important;
+}
+
+/* Emma Orb Canvas Styles */
+.emma-orb-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  border-radius: 50%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .popup-container {
+    width: 100vw;
+    height: 100vh;
+  }
+  
+  .emma-header {
+    padding: 20px 16px 16px 16px;
+  }
+  
+  .main-interface {
+    padding: 0 16px 16px 16px;
+  }
+}

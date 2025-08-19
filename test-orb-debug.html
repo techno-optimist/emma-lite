@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emma Orb Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .orb-container { width: 100px; height: 100px; margin: 20px; border: 2px solid #ccc; }
+        .debug-info { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Emma Orb Debug Test</h1>
+    
+    <div class="debug-info">
+        <h3>Dashboard Orb Test:</h3>
+        <div id="dashboard-orb" class="orb-container"></div>
+        <p id="dashboard-status">Loading...</p>
+    </div>
+    
+    <div class="debug-info">
+        <h3>Your Exact Orb Test:</h3>
+        <div id="your-orb" class="orb-container"></div>
+        <p id="your-status">Loading...</p>
+    </div>
+    
+    <div class="debug-info">
+        <h3>Console Logs:</h3>
+        <div id="console-output" style="background: black; color: green; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace;"></div>
+    </div>
+
+    <script src="js/emma-orb.js"></script>
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addLog(type, ...args) {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? 'red' : 'green';
+            div.textContent = `[${type}] ${args.join(' ')}`;
+            consoleOutput.appendChild(div);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addLog('log', ...args);
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addLog('error', ...args);
+        };
+        
+        // Test dashboard orb settings
+        function testDashboardOrb() {
+            const container = document.getElementById('dashboard-orb');
+            const status = document.getElementById('dashboard-status');
+            
+            if (!window.EmmaOrb) {
+                status.textContent = 'ERROR: EmmaOrb class not available';
+                return;
+            }
+            
+            try {
+                const orb = new EmmaOrb(container, {
+                    hue: 270, // Old dashboard settings
+                    hoverIntensity: 0.4,
+                    rotateOnHover: true,
+                    size: 48
+                });
+                status.textContent = 'SUCCESS: Dashboard orb created';
+                console.log('Dashboard orb created:', orb);
+            } catch (error) {
+                status.textContent = 'ERROR: ' + error.message;
+                console.error('Dashboard orb failed:', error);
+            }
+        }
+        
+        // Test your exact orb settings
+        function testYourOrb() {
+            const container = document.getElementById('your-orb');
+            const status = document.getElementById('your-status');
+            
+            if (!window.EmmaOrb) {
+                status.textContent = 'ERROR: EmmaOrb class not available';
+                return;
+            }
+            
+            try {
+                const orb = new EmmaOrb(container, {
+                    hue: 0,
+                    hoverIntensity: 0.5,
+                    rotateOnHover: true,
+                    forceHoverState: false
+                });
+                status.textContent = 'SUCCESS: Your exact orb created';
+                console.log('Your exact orb created:', orb);
+            } catch (error) {
+                status.textContent = 'ERROR: ' + error.message;
+                console.error('Your orb failed:', error);
+            }
+        }
+        
+        // Wait a bit then test
+        setTimeout(() => {
+            console.log('Starting orb tests...');
+            console.log('EmmaOrb class available:', !!window.EmmaOrb);
+            testDashboardOrb();
+            testYourOrb();
+        }, 100);
+    </script>
+</body>
+</html>
+

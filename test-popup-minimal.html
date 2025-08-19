@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Popup</title>
+  <style>
+    body {
+      width: 300px;
+      height: 200px;
+      background: #1a1033;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 0;
+      display: block;
+      width: 100%;
+    }
+    
+    button:hover {
+      background: #764ba2;
+    }
+    
+    #debug {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 5px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Emma Test Popup</h2>
+  
+  <button id="test-btn">Test Button</button>
+  <button id="capture-btn">Capture Test</button>
+  <button id="debug-console">Open Console & Debug</button>
+  
+  <div id="debug">Debug info will appear here...</div>
+
+  <script src="js/test-popup.js"></script>
+</body>
+</html>

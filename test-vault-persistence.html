@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Vault Persistence</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1033;
+      color: white;
+    }
+    .test-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { opacity: 0.9; }
+    .result {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .status-unlocked { border-left: 4px solid #10b981; }
+    .status-locked { border-left: 4px solid #ef4444; }
+    .status-unknown { border-left: 4px solid #f59e0b; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Vault Persistence Test</h1>
+  
+  <div class="test-card">
+    <h2>Current Vault Status</h2>
+    <button onclick="checkStatus()">🔍 Check Status</button>
+    <button onclick="checkStatusContinuous()">🔄 Monitor (5s intervals)</button>
+    <button onclick="stopMonitoring()">⏹️ Stop Monitor</button>
+    <div id="status-result" class="result">Click "Check Status" to see current vault state</div>
+  </div>
+
+  <div class="test-card">
+    <h2>Test Memory Creation</h2>
+    <button onclick="testCreateMemory()">💾 Test Create Memory</button>
+    <div id="create-result" class="result">Click "Test Create Memory" to test vault access</div>
+  </div>
+
+  <div class="test-card">
+    <h2>Test Vault Actions</h2>
+    <button onclick="unlockVault()">🔓 Unlock Vault</button>
+    <button onclick="lockVault()">🔒 Lock Vault</button>
+    <div id="action-result" class="result">Test vault lock/unlock actions</div>
+  </div>
+
+  <div class="test-card">
+    <h2>Debug Information</h2>
+    <button onclick="getDebugInfo()">🐛 Get Debug Info</button>
+    <div id="debug-result" class="result">Detailed vault debug information</div>
+  </div>
+
+  <script>
+    let monitorInterval = null;
+    
+    async function checkStatus() {
+      try {
+        const start = Date.now();
+        const status = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
+        const elapsed = Date.now() - start;
+        
+        let statusClass = 'status-unknown';
+        let statusText = 'Unknown';
+        
+        if (status && status.success) {
+          if (!status.initialized) {
+            statusClass = 'status-unknown';
+            statusText = 'Not Initialized';
+          } else if (status.isUnlocked) {
+            statusClass = 'status-unlocked';
+            statusText = 'UNLOCKED ✅';
+          } else {
+            statusClass = 'status-locked';
+            statusText = 'LOCKED 🔒';
+          }
+        }
+        
+        const result = `
+[${new Date().toLocaleTimeString()}] Response time: ${elapsed}ms
+Status: ${statusText}
+Initialized: ${status?.initialized || false}
+Unlocked: ${status?.isUnlocked || false}
+Has Valid Session: ${status?.hasValidSession || false}
+Session Expires: ${status?.sessionExpiresAt ? new Date(status.sessionExpiresAt).toLocaleString() : 'None'}
+Last Unlocked: ${status?.lastUnlockedAt ? new Date(status.lastUnlockedAt).toLocaleString() : 'Never'}
+Keyring State: ${status?.keyringState || 'Unknown'}
+        `.trim();
+        
+        const resultEl = document.getElementById('status-result');
+        resultEl.textContent = result;
+        resultEl.className = `result ${statusClass}`;
+        
+        return status;
+      } catch (error) {
+        document.getElementById('status-result').textContent = `Error: ${error.message}`;
+        document.getElementById('status-result').className = 'result status-unknown';
+      }
+    }
+    
+    function checkStatusContinuous() {
+      if (monitorInterval) {
+        clearInterval(monitorInterval);
+      }
+      
+      checkStatus(); // Check immediately
+      monitorInterval = setInterval(checkStatus, 5000);
+      
+      document.getElementById('status-result').textContent = 'Monitoring vault status every 5 seconds...';
+    }
+    
+    function stopMonitoring() {
+      if (monitorInterval) {
+        clearInterval(monitorInterval);
+        monitorInterval = null;
+      }
+    }
+    
+    async function testCreateMemory() {
+      try {
+        const start = Date.now();
+        const result = await chrome.runtime.sendMessage({
+          action: 'vault.createCapsule',
+          data: {
+            content: `Test memory created at ${new Date().toLocaleString()}`,
+            metadata: {
+              title: 'Vault Persistence Test',
+              category: 'test',
+              source: 'vault-persistence-test',
+              date: new Date().toISOString()
+            }
+          }
+        });
+        const elapsed = Date.now() - start;
+        
+        let resultText = `[${new Date().toLocaleTimeString()}] Create Memory Test (${elapsed}ms)\n`;
+        
+        if (result && result.success) {
+          resultText += `✅ SUCCESS: Memory created successfully\n`;
+          resultText += `Capsule ID: ${result.id || 'Not provided'}\n`;
+        } else {
+          resultText += `❌ FAILED: ${result?.error || 'Unknown error'}\n`;
+        }
+        
+        document.getElementById('create-result').textContent = resultText;
+      } catch (error) {
+        document.getElementById('create-result').textContent = `Error: ${error.message}`;
+      }
+    }
+    
+    async function unlockVault() {
+      try {
+        const passphrase = prompt('Enter vault passphrase (or "demo" for demo vault):') || 'demo';
+        
+        const start = Date.now();
+        const result = await chrome.runtime.sendMessage({
+          action: 'vault.unlock',
+          passphrase: passphrase
+        });
+        const elapsed = Date.now() - start;
+        
+        let resultText = `[${new Date().toLocaleTimeString()}] Unlock Test (${elapsed}ms)\n`;
+        
+        if (result && result.success) {
+          resultText += `✅ SUCCESS: Vault unlocked\n`;
+          resultText += `Session Expires: ${result.sessionExpiresAt ? new Date(result.sessionExpiresAt).toLocaleString() : 'None'}\n`;
+        } else {
+          resultText += `❌ FAILED: ${result?.error || 'Unknown error'}\n`;
+        }
+        
+        document.getElementById('action-result').textContent = resultText;
+        
+        // Auto-refresh status
+        setTimeout(() => checkStatus(), 500);
+      } catch (error) {
+        document.getElementById('action-result').textContent = `Error: ${error.message}`;
+      }
+    }
+    
+    async function lockVault() {
+      try {
+        const start = Date.now();
+        const result = await chrome.runtime.sendMessage({ action: 'vault.lock' });
+        const elapsed = Date.now() - start;
+        
+        let resultText = `[${new Date().toLocaleTimeString()}] Lock Test (${elapsed}ms)\n`;
+        
+        if (result && result.success) {
+          resultText += `✅ SUCCESS: Vault locked\n`;
+        } else {
+          resultText += `❌ FAILED: ${result?.error || 'Unknown error'}\n`;
+        }
+        
+        document.getElementById('action-result').textContent = resultText;
+        
+        // Auto-refresh status
+        setTimeout(() => checkStatus(), 500);
+      } catch (error) {
+        document.getElementById('action-result').textContent = `Error: ${error.message}`;
+      }
+    }
+    
+    async function getDebugInfo() {
+      try {
+        const debug = await chrome.runtime.sendMessage({ action: 'vault.debug' });
+        
+        if (debug && debug.success) {
+          document.getElementById('debug-result').textContent = JSON.stringify(debug.debug, null, 2);
+        } else {
+          document.getElementById('debug-result').textContent = `Debug failed: ${debug?.error || 'Unknown error'}`;
+        }
+      } catch (error) {
+        document.getElementById('debug-result').textContent = `Error: ${error.message}`;
+      }
+    }
+    
+    // Auto-check status on load
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => checkStatus(), 1000);
+    });
+  </script>
+</body>
+</html>

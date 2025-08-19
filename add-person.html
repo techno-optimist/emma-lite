@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Person - Emma</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .add-person-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      min-height: 100vh;
+      background: var(--emma-bg-gradient);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .add-person-card {
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(118, 75, 162, 0.15);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--emma-text);
+      margin: 0 0 12px 0;
+    }
+
+    .header p {
+      color: var(--emma-text-secondary);
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--emma-text);
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--emma-bg);
+      border: 1px solid var(--emma-border);
+      border-radius: 12px;
+      color: var(--emma-text);
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      border-color: var(--emma-purple);
+      box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+    }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: var(--emma-purple);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--emma-purple-hover);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: var(--emma-border);
+      color: var(--emma-text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--emma-text-secondary);
+      color: white;
+    }
+
+    .success-message {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      color: #059669;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .add-person-container {
+        padding: 20px 16px;
+      }
+
+      .add-person-card {
+        padding: 24px;
+      }
+
+      .form-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="add-person-container">
+    <div class="add-person-card">
+      <div class="header">
+        <h1>Add New Person</h1>
+        <p>Add someone to your network of family, friends, and connections</p>
+      </div>
+
+      <div class="success-message" id="successMessage">
+        Person added successfully! <a href="people.html">View all people</a>
+      </div>
+
+      <form id="addPersonForm" onsubmit="addPerson(event)">
+        <div class="form-group">
+          <label class="form-label" for="personName">Full Name *</label>
+          <input type="text" class="form-input" id="personName" required placeholder="Enter full name">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="personEmail">Email Address</label>
+          <input type="email" class="form-input" id="personEmail" placeholder="person@example.com">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="personPhone">Phone Number</label>
+          <input type="tel" class="form-input" id="personPhone" placeholder="+1 (555) 123-4567">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="personRelationship">Relationship *</label>
+          <select class="form-input" id="personRelationship" required>
+            <option value="">Select relationship type</option>
+            <option value="family">👨‍👩‍👧‍👦 Family Member</option>
+            <option value="friend">👫 Friend</option>
+            <option value="best_friend">💝 Best Friend</option>
+            <option value="romantic">💕 Romantic Partner</option>
+            <option value="colleague">💼 Colleague</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="personNotes">Notes</label>
+          <textarea class="form-input form-textarea" id="personNotes" placeholder="Add any additional notes about this person, how you met, shared interests, etc."></textarea>
+        </div>
+
+        <div class="form-buttons">
+          <button type="button" class="btn btn-secondary" onclick="goBack()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Person</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Add person functionality
+    function addPerson(event) {
+      event.preventDefault();
+      
+      const newPerson = {
+        id: Date.now(),
+        name: document.getElementById('personName').value.trim(),
+        email: document.getElementById('personEmail').value.trim(),
+        phone: document.getElementById('personPhone').value.trim(),
+        relationship: document.getElementById('personRelationship').value,
+        notes: document.getElementById('personNotes').value.trim(),
+        dateAdded: new Date().toISOString()
+      };
+      
+      if (!newPerson.name || !newPerson.relationship) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+      // Get existing people from localStorage
+      const storedPeople = localStorage.getItem('emma-people');
+      const allPeople = storedPeople ? JSON.parse(storedPeople) : [];
+      
+      // Add new person
+      allPeople.push(newPerson);
+      
+      // Save back to localStorage
+      localStorage.setItem('emma-people', JSON.stringify(allPeople));
+      
+      // Show success message
+      document.getElementById('successMessage').style.display = 'block';
+      document.getElementById('addPersonForm').reset();
+      
+      // Scroll to top to show success message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        document.getElementById('successMessage').style.display = 'none';
+      }, 5000);
+    }
+    
+    // Go back to previous page
+    function goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = 'people.html';
+      }
+    }
+    
+    // Focus on name field when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('personName').focus();
+    });
+  </script>
+</body>
+</html>

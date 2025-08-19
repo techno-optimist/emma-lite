@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Database Debug</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .debug-container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background: var(--emma-card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--emma-border);
+    }
+    .debug-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+    .debug-result {
+      background: #1a1a2e;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #00ff00;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+    .btn {
+      padding: 8px 16px;
+      margin: 5px;
+      background: var(--emma-purple);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: var(--emma-pink);
+    }
+  </style>
+</head>
+<body>
+  <div class="container fade-in">
+    <div class="emma-logo">
+      <div class="emma-logo-icon">🔍</div>
+      <h1 class="emma-logo-text">Emma Database Debug</h1>
+    </div>
+    
+    <div class="debug-container">
+      <div class="debug-section">
+        <h3>🔧 System Status</h3>
+        <button class="btn" onclick="checkSystemStatus()">Check System Status</button>
+        <div id="system-status" class="debug-result"></div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>📊 Database Stats</h3>
+        <button class="btn" onclick="checkStats()">Get Stats</button>
+        <div id="stats-result" class="debug-result"></div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>💾 Memory Counts</h3>
+        <button class="btn" onclick="checkMemoryCounts()">Check Both Databases</button>
+        <div id="memory-counts" class="debug-result"></div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>🧠 Get All Memories</h3>
+        <button class="btn" onclick="getAllMemories()">Get All Memories</button>
+        <div id="all-memories" class="debug-result"></div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>🔄 Fix Mode Mismatch</h3>
+        <button class="btn" onclick="toggleMTAP(false)">Force Simple Mode</button>
+        <button class="btn" onclick="toggleMTAP(true)">Force MTAP Mode</button>
+        <div id="toggle-result" class="debug-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function checkSystemStatus() {
+      const result = document.getElementById('system-status');
+      try {
+        // Check localStorage
+        const mtapSetting = localStorage.getItem('emma_use_mtap');
+        
+        // Check background script MTAP status
+        const mtapResponse = await chrome.runtime.sendMessage({ action: 'getMTAPStatus' });
+        
+        const status = {
+          localStorage_mtap: mtapSetting,
+          background_mtap: mtapResponse?.mtapMode,
+          browser: navigator.userAgent.split(' ').pop(),
+          timestamp: new Date().toISOString()
+        };
+        
+        result.textContent = JSON.stringify(status, null, 2);
+        
+      } catch (error) {
+        result.textContent = 'Error: ' + error.message;
+      }
+    }
+    
+    async function checkStats() {
+      const result = document.getElementById('stats-result');
+      try {
+        const response = await chrome.runtime.sendMessage({ action: 'getStats' });
+        result.textContent = JSON.stringify(response, null, 2);
+      } catch (error) {
+        result.textContent = 'Error: ' + error.message;
+      }
+    }
+    
+    async function checkMemoryCounts() {
+      const result = document.getElementById('memory-counts');
+      try {
+        // Open IndexedDB directly to check both stores
+        const dbRequest = indexedDB.open('EmmaLiteDB');
+        
+        dbRequest.onsuccess = (event) => {
+          const db = event.target.result;
+          const stores = Array.from(db.objectStoreNames);
+          
+          const counts = {};
+          let completed = 0;
+          const totalStores = stores.length;
+          
+          stores.forEach(storeName => {
+            if (storeName === 'memories' || storeName === 'mtap_memories') {
+              const transaction = db.transaction([storeName], 'readonly');
+              const store = transaction.objectStore(storeName);
+              const countRequest = store.count();
+              
+              countRequest.onsuccess = () => {
+                counts[storeName] = countRequest.result;
+                completed++;
+                
+                if (completed === totalStores || completed === 2) {
+                  result.textContent = JSON.stringify({
+                    stores: stores,
+                    counts: counts,
+                    total_records: Object.values(counts).reduce((a, b) => a + b, 0)
+                  }, null, 2);
+                }
+              };
+            } else {
+              completed++;
+            }
+          });
+          
+          if (totalStores === 0) {
+            result.textContent = 'No database found';
+          }
+        };
+        
+        dbRequest.onerror = () => {
+          result.textContent = 'Error opening database: ' + dbRequest.error;
+        };
+        
+      } catch (error) {
+        result.textContent = 'Error: ' + error.message;
+      }
+    }
+    
+    async function getAllMemories() {
+      const result = document.getElementById('all-memories');
+      try {
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'getAllMemories',
+          limit: 1000
+        });
+        
+        const summary = {
+          success: response.success,
+          count: response.memories?.length || 0,
+          first_few: response.memories?.slice(0, 3).map(m => ({
+            id: m.id,
+            content: m.content?.substring(0, 100) + '...',
+            source: m.source,
+            timestamp: m.timestamp
+          })) || []
+        };
+        
+        result.textContent = JSON.stringify(summary, null, 2);
+        
+      } catch (error) {
+        result.textContent = 'Error: ' + error.message;
+      }
+    }
+    
+    async function toggleMTAP(enabled) {
+      const result = document.getElementById('toggle-result');
+      try {
+        // Set localStorage
+        localStorage.setItem('emma_use_mtap', enabled.toString());
+        
+        // Toggle in background
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'toggleMTAP',
+          enabled: enabled
+        });
+        
+        result.textContent = `MTAP ${enabled ? 'enabled' : 'disabled'}: ${JSON.stringify(response, null, 2)}`;
+        
+        // Refresh stats after toggle
+        setTimeout(() => {
+          checkSystemStatus();
+          checkStats();
+        }, 500);
+        
+      } catch (error) {
+        result.textContent = 'Error: ' + error.message;
+      }
+    }
+    
+    // Auto-run system check on load
+    document.addEventListener('DOMContentLoaded', () => {
+      checkSystemStatus();
+    });
+  </script>
+</body>
+</html>

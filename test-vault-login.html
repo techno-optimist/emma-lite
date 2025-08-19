@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault Login Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1033;
+      color: white;
+    }
+    .test-section {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+    }
+    .success { background: rgba(74, 222, 128, 0.2); }
+    .error { background: rgba(248, 113, 113, 0.2); }
+    .info { background: rgba(59, 130, 246, 0.2); }
+    input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 5px;
+    }
+    pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Emma Vault Login Diagnostics</h1>
+  
+  <div class="test-section">
+    <h2>Current Status</h2>
+    <button onclick="checkStatus()">🔍 Check Vault Status</button>
+    <div id="status-display" class="status info">Click "Check Vault Status" to see current state</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Vault Initialization</h2>
+    <input type="password" id="init-pass" placeholder="Enter passphrase" value="demo">
+    <button onclick="initializeVault()">🔧 Initialize Vault</button>
+    <div id="init-result" class="status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Vault Unlock/Lock</h2>
+    <input type="password" id="unlock-pass" placeholder="Enter passphrase" value="demo">
+    <button onclick="unlockVault()">🔓 Unlock Vault</button>
+    <button onclick="lockVault()">🔒 Lock Vault</button>
+    <div id="unlock-result" class="status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Session Management</h2>
+    <button onclick="testSession()">🕐 Test Session Auto-Unlock</button>
+    <button onclick="clearSession()">🗑️ Clear Session</button>
+    <div id="session-result" class="status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Debug Information</h2>
+    <button onclick="getDebugInfo()">🐛 Get Debug Info</button>
+    <pre id="debug-info">Click "Get Debug Info" to see detailed information</pre>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Log</h2>
+    <button onclick="clearLog()">🧹 Clear Log</button>
+    <div id="test-log"></div>
+  </div>
+
+  <script>
+    let logCount = 0;
+
+    function log(message, type = 'info') {
+      logCount++;
+      const logDiv = document.getElementById('test-log');
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.className = `status ${type}`;
+      logEntry.innerHTML = `<small>[${timestamp}] #${logCount}</small><br>${message}`;
+      logDiv.insertBefore(logEntry, logDiv.firstChild);
+      console.log(`[${timestamp}] ${message}`);
+    }
+
+    function clearLog() {
+      document.getElementById('test-log').innerHTML = '';
+      logCount = 0;
+    }
+
+    async function checkStatus() {
+      try {
+        log('🔍 Checking vault status...', 'info');
+        const response = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
+        console.log('Status response:', response);
+        
+        if (response && response.success) {
+          const statusEl = document.getElementById('status-display');
+          statusEl.className = 'status success';
+          statusEl.innerHTML = `
+            <strong>✅ Vault Status:</strong><br>
+            Initialized: <strong>${response.initialized}</strong><br>
+            Unlocked: <strong>${response.isUnlocked}</strong><br>
+            Has Valid Session: <strong>${response.hasValidSession}</strong><br>
+            Keyring State: <strong>${response.keyringState}</strong><br>
+            ${response.sessionExpiresAt ? `Session Expires: ${new Date(response.sessionExpiresAt).toLocaleString()}<br>` : ''}
+            ${response.lastUnlockedAt ? `Last Unlocked: ${new Date(response.lastUnlockedAt).toLocaleString()}<br>` : ''}
+          `;
+          log(`✅ Status retrieved: Initialized=${response.initialized}, Unlocked=${response.isUnlocked}`, 'success');
+        } else {
+          throw new Error(response?.error || 'No response');
+        }
+      } catch (error) {
+        log(`❌ Status check failed: ${error.message}`, 'error');
+        document.getElementById('status-display').className = 'status error';
+        document.getElementById('status-display').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+      }
+    }
+
+    async function initializeVault() {
+      try {
+        const passphrase = document.getElementById('init-pass').value;
+        if (!passphrase) {
+          throw new Error('Please enter a passphrase');
+        }
+        
+        log(`🔧 Initializing vault with passphrase: "${passphrase}"`, 'info');
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'initializeVault', 
+          passphrase: passphrase 
+        });
+        console.log('Initialize response:', response);
+        
+        const resultEl = document.getElementById('init-result');
+        if (response && response.success) {
+          resultEl.className = 'status success';
+          resultEl.innerHTML = `<strong>✅ Vault initialized successfully!</strong><br>Session expires: ${new Date(response.sessionExpiresAt).toLocaleString()}`;
+          log('✅ Vault initialized successfully', 'success');
+          setTimeout(() => checkStatus(), 500);
+        } else {
+          throw new Error(response?.error || 'Unknown error');
+        }
+      } catch (error) {
+        log(`❌ Vault initialization failed: ${error.message}`, 'error');
+        document.getElementById('init-result').className = 'status error';
+        document.getElementById('init-result').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+      }
+    }
+
+    async function unlockVault() {
+      try {
+        const passphrase = document.getElementById('unlock-pass').value;
+        if (!passphrase) {
+          throw new Error('Please enter a passphrase');
+        }
+        
+        log(`🔓 Unlocking vault with passphrase: "${passphrase}"`, 'info');
+        const response = await chrome.runtime.sendMessage({ 
+          action: 'vault.unlock', 
+          passphrase: passphrase 
+        });
+        console.log('Unlock response:', response);
+        
+        const resultEl = document.getElementById('unlock-result');
+        if (response && response.success) {
+          resultEl.className = 'status success';
+          resultEl.innerHTML = `<strong>✅ Vault unlocked successfully!</strong>`;
+          log('✅ Vault unlocked successfully', 'success');
+          setTimeout(() => checkStatus(), 500);
+        } else {
+          throw new Error(response?.error || 'Unknown error');
+        }
+      } catch (error) {
+        log(`❌ Vault unlock failed: ${error.message}`, 'error');
+        document.getElementById('unlock-result').className = 'status error';
+        document.getElementById('unlock-result').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+      }
+    }
+
+    async function lockVault() {
+      try {
+        log('🔒 Locking vault...', 'info');
+        const response = await chrome.runtime.sendMessage({ action: 'vault.lock' });
+        console.log('Lock response:', response);
+        
+        const resultEl = document.getElementById('unlock-result');
+        if (response && response.success) {
+          resultEl.className = 'status success';
+          resultEl.innerHTML = `<strong>✅ Vault locked successfully!</strong>`;
+          log('✅ Vault locked successfully', 'success');
+          setTimeout(() => checkStatus(), 500);
+        } else {
+          throw new Error(response?.error || 'Unknown error');
+        }
+      } catch (error) {
+        log(`❌ Vault lock failed: ${error.message}`, 'error');
+        document.getElementById('unlock-result').className = 'status error';
+        document.getElementById('unlock-result').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+      }
+    }
+
+    async function testSession() {
+      try {
+        log('🕐 Testing session auto-unlock...', 'info');
+        
+        // First check current status
+        await checkStatus();
+        
+        // Simulate service worker restart by checking if session unlock works
+        const response = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
+        
+        const resultEl = document.getElementById('session-result');
+        if (response && response.success) {
+          if (response.hasValidSession) {
+            resultEl.className = 'status success';
+            resultEl.innerHTML = `<strong>✅ Valid session found!</strong><br>Should auto-unlock on restart`;
+            log('✅ Valid session detected', 'success');
+          } else {
+            resultEl.className = 'status error';
+            resultEl.innerHTML = `<strong>⚠️ No valid session</strong><br>Please unlock vault first`;
+            log('⚠️ No valid session found', 'error');
+          }
+        }
+      } catch (error) {
+        log(`❌ Session test failed: ${error.message}`, 'error');
+        document.getElementById('session-result').className = 'status error';
+        document.getElementById('session-result').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+      }
+    }
+
+    async function clearSession() {
+      try {
+        log('🗑️ Clearing session data...', 'info');
+        await chrome.storage.local.remove(['emma_vault_session']);
+        
+        document.getElementById('session-result').className = 'status success';
+        document.getElementById('session-result').innerHTML = `<strong>✅ Session cleared!</strong>`;
+        log('✅ Session data cleared', 'success');
+        setTimeout(() => checkStatus(), 500);
+      } catch (error) {
+        log(`❌ Clear session failed: ${error.message}`, 'error');
+        document.getElementById('session-result').className = 'status error';
+        document.getElementById('session-result').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+      }
+    }
+
+    async function getDebugInfo() {
+      try {
+        log('🐛 Getting debug information...', 'info');
+        const response = await chrome.runtime.sendMessage({ action: 'vault.debug' });
+        console.log('Debug response:', response);
+        
+        if (response && response.success) {
+          document.getElementById('debug-info').textContent = JSON.stringify(response.debug, null, 2);
+          log('✅ Debug info retrieved', 'success');
+        } else {
+          throw new Error(response?.error || 'No debug info available');
+        }
+      } catch (error) {
+        log(`❌ Debug info failed: ${error.message}`, 'error');
+        document.getElementById('debug-info').textContent = `Error: ${error.message}`;
+      }
+    }
+
+    // Auto-run initial status check
+    document.addEventListener('DOMContentLoaded', () => {
+      log('🚀 Vault Login Test Page Loaded', 'info');
+      setTimeout(() => checkStatus(), 1000);
+    });
+  </script>
+</body>
+</html>

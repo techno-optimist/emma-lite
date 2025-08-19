@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Verifier</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #1a1033;
+      color: white;
+    }
+    .section {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { opacity: 0.9; }
+    pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    input {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 5px;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Verifier Debug Tool</h1>
+  
+  <div class="section">
+    <h2>Current Vault Settings</h2>
+    <button onclick="showSettings()">📋 Show Current Settings</button>
+    <pre id="settings-display">Click "Show Current Settings" to view vault settings</pre>
+  </div>
+
+  <div class="section">
+    <h2>Test Passphrase</h2>
+    <input type="password" id="test-passphrase" placeholder="Enter passphrase" value="demo">
+    <button onclick="testPassphrase()">🔑 Test Passphrase</button>
+    <pre id="test-result">Click "Test Passphrase" to validate against verifier</pre>
+  </div>
+
+  <div class="section">
+    <h2>Manual Verifier Test</h2>
+    <button onclick="manualTest()">🧪 Manual Decrypt Test</button>
+    <pre id="manual-result">Click "Manual Decrypt Test" for detailed analysis</pre>
+  </div>
+
+  <div class="section">
+    <h2>Fix Actions</h2>
+    <button onclick="clearVerifier()">🗑️ Clear Verifier (Reset)</button>
+    <button onclick="recreateVerifier()">🔧 Recreate Verifier</button>
+    <pre id="fix-result">Actions will show results here</pre>
+  </div>
+
+  <script>
+    async function showSettings() {
+      try {
+        const storage = await chrome.storage.local.get(['emma_vault_settings']);
+        const settings = storage.emma_vault_settings;
+        
+        if (settings) {
+          document.getElementById('settings-display').textContent = JSON.stringify(settings, null, 2);
+        } else {
+          document.getElementById('settings-display').textContent = 'No vault settings found';
+        }
+      } catch (error) {
+        document.getElementById('settings-display').textContent = `Error: ${error.message}`;
+      }
+    }
+
+    async function testPassphrase() {
+      try {
+        const passphrase = document.getElementById('test-passphrase').value;
+        if (!passphrase) {
+          document.getElementById('test-result').textContent = 'Please enter a passphrase';
+          return;
+        }
+
+        // Try to unlock with the passphrase
+        const result = await chrome.runtime.sendMessage({
+          action: 'vault.unlock',
+          passphrase: passphrase
+        });
+
+        document.getElementById('test-result').textContent = 
+          `Unlock Result:\n${JSON.stringify(result, null, 2)}`;
+      } catch (error) {
+        document.getElementById('test-result').textContent = `Error: ${error.message}`;
+      }
+    }
+
+    async function manualTest() {
+      try {
+        const storage = await chrome.storage.local.get(['emma_vault_settings']);
+        const settings = storage.emma_vault_settings;
+        
+        if (!settings || !settings.verifier) {
+          document.getElementById('manual-result').textContent = 'No verifier found to test';
+          return;
+        }
+
+        const result = {
+          verifier_exists: !!settings.verifier,
+          has_iv: !!(settings.verifier && settings.verifier.iv),
+          has_data: !!(settings.verifier && settings.verifier.data),
+          iv_length: settings.verifier?.iv?.length || 0,
+          data_length: settings.verifier?.data?.length || 0,
+          iv_type: typeof settings.verifier?.iv,
+          data_type: typeof settings.verifier?.data,
+          settings_keys: Object.keys(settings),
+          kdf: settings.kdf,
+          iterations: settings.iterations,
+          has_salt: !!settings.salt,
+          demo_mode: !!settings.demo
+        };
+
+        document.getElementById('manual-result').textContent = 
+          `Verifier Analysis:\n${JSON.stringify(result, null, 2)}`;
+      } catch (error) {
+        document.getElementById('manual-result').textContent = `Error: ${error.message}`;
+      }
+    }
+
+    async function clearVerifier() {
+      try {
+        const storage = await chrome.storage.local.get(['emma_vault_settings']);
+        const settings = storage.emma_vault_settings;
+        
+        if (settings) {
+          delete settings.verifier;
+          await chrome.storage.local.set({ emma_vault_settings: settings });
+          document.getElementById('fix-result').textContent = 'Verifier cleared. Next unlock will recreate it.';
+        } else {
+          document.getElementById('fix-result').textContent = 'No settings found to clear';
+        }
+      } catch (error) {
+        document.getElementById('fix-result').textContent = `Error: ${error.message}`;
+      }
+    }
+
+    async function recreateVerifier() {
+      try {
+        // First clear the verifier
+        await clearVerifier();
+        
+        // Then try to unlock with demo passphrase to recreate it
+        const result = await chrome.runtime.sendMessage({
+          action: 'vault.unlock',
+          passphrase: 'demo'
+        });
+
+        document.getElementById('fix-result').textContent = 
+          `Recreate Result:\n${JSON.stringify(result, null, 2)}`;
+      } catch (error) {
+        document.getElementById('fix-result').textContent = `Error: ${error.message}`;
+      }
+    }
+
+    // Auto-load settings on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => showSettings(), 1000);
+    });
+  </script>
+</body>
+</html>

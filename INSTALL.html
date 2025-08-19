@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Install Emma Extension - Quick Guide</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .logo {
+      text-align: center;
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 30px;
+    }
+    
+    .steps {
+      counter-reset: step;
+      margin-bottom: 30px;
+    }
+    
+    .step {
+      position: relative;
+      padding-left: 50px;
+      margin-bottom: 24px;
+      counter-increment: step;
+    }
+    
+    .step::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 36px;
+      height: 36px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    .step-title {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+    
+    .step-desc {
+      color: #64748b;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    
+    .highlight {
+      background: #fef3c7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      color: #92400e;
+    }
+    
+    .path-section {
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .path-label {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    
+    .path-input {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .path-field {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      background: white;
+      color: #1e293b;
+    }
+    
+    .copy-btn {
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    
+    .copy-btn:hover {
+      background: #2563eb;
+    }
+    
+    .copy-btn.copied {
+      background: #10b981;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      font-size: 15px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+    
+    .success-message {
+      display: none;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      color: #166534;
+      text-align: center;
+    }
+    
+    .success-message.show {
+      display: block;
+    }
+    
+    .mtap-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🧠</div>
+    <h1>Install Emma Extension
+      <span class="mtap-badge">MTAP v1.0</span>
+    </h1>
+    <p class="subtitle">Quick installation guide for Chrome</p>
+    
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">Open Chrome Extensions</div>
+        <div class="step-desc">
+          Type <span class="highlight">chrome://extensions/</span> in your Chrome address bar and press Enter
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-title">Enable Developer Mode</div>
+        <div class="step-desc">
+          Toggle the <span class="highlight">Developer mode</span> switch in the top-right corner of the page
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-title">Load Extension</div>
+        <div class="step-desc">
+          Click the <span class="highlight">Load unpacked</span> button that appears
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-title">Select Extension Folder</div>
+        <div class="step-desc">
+          Navigate to and select the Emma extension folder shown below
+        </div>
+      </div>
+    </div>
+    
+    <div class="path-section">
+      <div class="path-label">📁 Extension folder path:</div>
+      <div class="path-input">
+        <input type="text" class="path-field" id="extensionPath" readonly>
+        <button class="copy-btn" onclick="copyPath()">Copy</button>
+      </div>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="openExtensions()">
+        🚀 Open Extensions Page
+      </button>
+      <button class="btn btn-secondary" onclick="openFolder()">
+        📂 Open Folder
+      </button>
+    </div>
+    
+    <div class="success-message" id="successMessage">
+      ✅ Path copied! Now paste it in the Chrome extensions page
+    </div>
+  </div>
+  
+  <script>
+    // Set the extension path based on the current location
+    document.addEventListener('DOMContentLoaded', function() {
+      const pathField = document.getElementById('extensionPath');
+      
+      // Get the current file path
+      const currentPath = window.location.pathname;
+      
+      // Remove the filename to get the directory
+      const extensionDir = currentPath.substring(0, currentPath.lastIndexOf('/'));
+      
+      // Set appropriate path based on OS
+      if (navigator.platform.indexOf('Win') > -1) {
+        // Windows path
+        pathField.value = 'C:\\Users\\Kevin\\Desktop\\claude\\emma-lite-extension';
+      } else if (navigator.platform.indexOf('Mac') > -1) {
+        // Mac path
+        pathField.value = '/Users/Kevin/Desktop/claude/emma-lite-extension';
+      } else {
+        // Linux path
+        pathField.value = '/home/kevin/Desktop/claude/emma-lite-extension';
+      }
+    });
+    
+    function copyPath() {
+      const pathField = document.getElementById('extensionPath');
+      const copyBtn = event.target;
+      const successMsg = document.getElementById('successMessage');
+      
+      pathField.select();
+      document.execCommand('copy');
+      
+      // Visual feedback
+      copyBtn.textContent = '✓ Copied!';
+      copyBtn.classList.add('copied');
+      successMsg.classList.add('show');
+      
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+      }, 2000);
+      
+      setTimeout(() => {
+        successMsg.classList.remove('show');
+      }, 5000);
+    }
+    
+    function openExtensions() {
+      // Try to open Chrome extensions page
+      const extensionsUrl = 'chrome://extensions/';
+      
+      // Create a temporary link and click it
+      const link = document.createElement('a');
+      link.href = extensionsUrl;
+      link.target = '_blank';
+      
+      // Show instruction since chrome:// URLs can't be opened directly
+      alert('Chrome security prevents direct opening of chrome://extensions/\n\nPlease:\n1. Copy this URL: chrome://extensions/\n2. Paste it in a new tab\n3. Press Enter');
+      
+      // Copy the URL to clipboard
+      const tempInput = document.createElement('input');
+      tempInput.value = 'chrome://extensions/';
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+    }
+    
+    function openFolder() {
+      const pathField = document.getElementById('extensionPath');
+      alert(`Please manually navigate to:\n\n${pathField.value}\n\nChrome security prevents automatic folder opening.`);
+    }
+  </script>
+</body>
+</html>

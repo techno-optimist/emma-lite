@@ -1,0 +1,348 @@
+/**
+ * Emma Vault Bridge - Background Service Worker
+ * Enables real-time synchronization between Emma Web App and local .emma files
+ * Built with love for Debbe
+ */
+
+// Track active vault connections
+const vaultConnections = new Map();
+
+// File System Access API handle storage
+let fileHandle = null;
+let lastSyncTime = null;
+
+/**
+ * Initialize extension on install
+ */
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('Emma Vault Extension installed - Ready to preserve memories');
+  
+  // Set initial badge
+  chrome.action.setBadgeBackgroundColor({ color: '#8B5CF6' });
+  chrome.action.setBadgeText({ text: '' });
+  
+  // Initialize storage
+  chrome.storage.local.set({
+    vaultPath: null,
+    syncEnabled: false,
+    lastSync: null,
+    syncStats: {
+      totalSyncs: 0,
+      lastSyncSize: 0,
+      errors: 0
+    }
+  });
+  
+  // Open welcome page on first install
+  if (details.reason === 'install') {
+    console.log('🎉 First install - opening welcome page');
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('welcome.html')
+    });
+  }
+});
+
+/**
+ * Handle messages from content script
+ */
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Received message:', request.action);
+  
+  switch (request.action) {
+    case 'VAULT_UPDATE':
+      handleVaultUpdate(request.data, sender.tab.id)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true; // Keep channel open for async response
+      
+    case 'CHECK_STATUS':
+      checkExtensionStatus()
+        .then(status => sendResponse(status))
+        .catch(error => sendResponse({ connected: false, error: error.message }));
+      return true;
+      
+    case 'ENABLE_SYNC':
+      enableSync()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    case 'DISABLE_SYNC':
+      disableSync()
+        .then(() => sendResponse({ success: true }))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    case 'SET_FILE_HANDLE':
+      setFileHandle(request.handle)
+        .then(() => sendResponse({ success: true }))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    default:
+      sendResponse({ success: false, error: 'Unknown action' });
+  }
+});
+
+/**
+ * Handle vault update from Emma Web App
+ */
+async function handleVaultUpdate(vaultData, tabId) {
+  try {
+    // Check if sync is enabled
+    const { syncEnabled } = await chrome.storage.local.get('syncEnabled');
+    if (!syncEnabled) {
+      return { success: false, error: 'Sync not enabled' };
+    }
+    
+    // Validate vault data
+    if (!vaultData || !vaultData.id || !vaultData.content) {
+      throw new Error('Invalid vault data');
+    }
+    
+    // Update sync status badge
+    await updateBadge('syncing');
+    
+    // Write to file system
+    const result = await writeToEmmaFile(vaultData);
+    
+    // Update statistics
+    await updateSyncStats(vaultData.content.length);
+    
+    // Update badge to show success
+    await updateBadge('synced');
+    
+    // Notify user of successful sync (optional)
+    if (result.bytesWritten > 1024 * 100) { // Only notify for significant updates > 100KB
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Emma Vault Synced',
+        message: `Successfully saved ${formatBytes(result.bytesWritten)} to your vault`
+      });
+    }
+    
+    return { success: true, bytesWritten: result.bytesWritten };
+    
+  } catch (error) {
+    console.error('Vault update error:', error);
+    await updateBadge('error');
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Write data to .emma file using File System Access API
+ */
+async function writeToEmmaFile(vaultData) {
+  if (!fileHandle) {
+    // File handle expired or not set - user needs to re-enable sync
+    throw new Error('File access expired - please click the extension icon and re-enable sync');
+  }
+  
+  try {
+    // Verify file handle is still valid
+    const permission = await fileHandle.queryPermission({ mode: 'readwrite' });
+    if (permission !== 'granted') {
+      // Try to request permission again
+      const newPermission = await fileHandle.requestPermission({ mode: 'readwrite' });
+      if (newPermission !== 'granted') {
+        throw new Error('File access permission denied - please re-enable sync');
+      }
+    }
+    
+    // Create a writable stream
+    const writable = await fileHandle.createWritable();
+    
+    // Prepare vault data for .emma format
+    const emmaFileContent = prepareEmmaFileContent(vaultData);
+    
+    // Write the data atomically
+    await writable.write(emmaFileContent);
+    await writable.close();
+    
+    lastSyncTime = new Date();
+    
+    return {
+      success: true,
+      bytesWritten: emmaFileContent.byteLength,
+      timestamp: lastSyncTime,
+      fileName: fileHandle.name
+    };
+    
+  } catch (error) {
+    console.error('File write error:', error);
+    
+    // Handle specific error cases
+    if (error.name === 'NotAllowedError') {
+      throw new Error('File access denied - please re-enable sync');
+    } else if (error.name === 'InvalidStateError') {
+      throw new Error('File is busy - please try again in a moment');
+    } else if (error.name === 'NotFoundError') {
+      throw new Error('File not found - it may have been moved or deleted');
+    } else {
+      throw new Error(`File write failed: ${error.message}`);
+    }
+  }
+}
+
+/**
+ * Prepare vault data for .emma file format
+ */
+function prepareEmmaFileContent(vaultData) {
+  // Structure according to .emma format specification
+  const emmaFormat = {
+    version: '1.0',
+    vault: {
+      id: vaultData.id,
+      name: vaultData.name || 'My Memories',
+      created: vaultData.created || new Date().toISOString(),
+      lastModified: new Date().toISOString()
+    },
+    memories: vaultData.content.memories || [],
+    people: vaultData.content.people || [],
+    settings: vaultData.content.settings || {}
+  };
+  
+  // Convert to JSON and then to Uint8Array
+  const jsonString = JSON.stringify(emmaFormat, null, 2);
+  return new TextEncoder().encode(jsonString);
+}
+
+/**
+ * Enable sync by requesting file access
+ */
+async function enableSync() {
+  try {
+    // Note: File System Access API must be triggered by user gesture
+    // This will be called from the popup or content script with user interaction
+    
+    // For now, store sync enabled state
+    await chrome.storage.local.set({ syncEnabled: true });
+    await updateBadge('ready');
+    
+    return { 
+      success: true, 
+      message: 'Sync enabled - Click extension icon to select vault file' 
+    };
+    
+  } catch (error) {
+    console.error('Enable sync error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Disable sync
+ */
+async function disableSync() {
+  fileHandle = null;
+  await chrome.storage.local.set({ 
+    syncEnabled: false,
+    fileHandleId: null 
+  });
+  await updateBadge('');
+  
+  // Clear any active connections
+  vaultConnections.clear();
+}
+
+/**
+ * Set file handle from popup
+ */
+async function setFileHandle(handle) {
+  try {
+    fileHandle = handle;
+    console.log('File handle set:', handle.name);
+    
+    // Store basic info (can't store handle directly)
+    await chrome.storage.local.set({
+      fileHandleId: handle.name,
+      fileSelected: true,
+      lastFileSet: new Date().toISOString()
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting file handle:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check extension status
+ */
+async function checkExtensionStatus() {
+  const storage = await chrome.storage.local.get([
+    'syncEnabled', 
+    'lastSync',
+    'syncStats'
+  ]);
+  
+  return {
+    connected: true,
+    syncEnabled: storage.syncEnabled || false,
+    lastSync: storage.lastSync,
+    stats: storage.syncStats || {},
+    version: chrome.runtime.getManifest().version
+  };
+}
+
+/**
+ * Update badge to show sync status
+ */
+async function updateBadge(status) {
+  const badges = {
+    'syncing': { text: '↻', color: '#2196F3' },
+    'synced': { text: '✓', color: '#4CAF50' },
+    'error': { text: '!', color: '#F44336' },
+    'ready': { text: '●', color: '#4CAF50' },
+    '': { text: '', color: '#757575' }
+  };
+  
+  const badge = badges[status] || badges[''];
+  
+  await chrome.action.setBadgeText({ text: badge.text });
+  await chrome.action.setBadgeBackgroundColor({ color: badge.color });
+  
+  // Auto-clear success badge after 3 seconds
+  if (status === 'synced') {
+    setTimeout(() => updateBadge('ready'), 3000);
+  }
+}
+
+/**
+ * Update sync statistics
+ */
+async function updateSyncStats(bytesWritten) {
+  const { syncStats } = await chrome.storage.local.get('syncStats');
+  const stats = syncStats || { totalSyncs: 0, lastSyncSize: 0, errors: 0 };
+  
+  stats.totalSyncs++;
+  stats.lastSyncSize = bytesWritten;
+  stats.lastSyncTime = new Date().toISOString();
+  
+  await chrome.storage.local.set({ 
+    syncStats: stats,
+    lastSync: stats.lastSyncTime
+  });
+}
+
+/**
+ * Format bytes for display
+ */
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/**
+ * Handle extension icon click - open popup
+ */
+chrome.action.onClicked.addListener((tab) => {
+  // The popup will handle file selection UI
+  console.log('Extension icon clicked');
+});
+
+console.log('Emma Vault Bridge background service initialized');

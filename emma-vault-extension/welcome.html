@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Emma</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
+      color: white;
+      margin: 0;
+      padding: 40px;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .welcome-container {
+      max-width: 600px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+    }
+    
+    .emma-logo {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+    
+    .welcome-message {
+      font-size: 1.2rem;
+      margin-bottom: 24px;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.5;
+    }
+    
+    .dashboard-btn {
+      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      border: none;
+      color: white;
+      padding: 16px 32px;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 20px 0;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+    }
+    
+    .dashboard-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    }
+    
+    .dedication {
+      margin-top: 32px;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+    }
+    
+    .countdown {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="welcome-container">
+    <div class="emma-logo">Emma</div>
+    
+    <div class="welcome-message">
+      🎉 Welcome to Emma Vault Extension!<br>
+      Your complete memory companion is now installed.
+    </div>
+    
+    <button class="dashboard-btn" onclick="openDashboard()">
+      📊 Open Emma Dashboard
+    </button>
+    
+    <div class="countdown" id="countdown">
+      Dashboard will open automatically in <span id="timer">5</span> seconds...
+    </div>
+    
+    <div class="dedication">
+      💜 Built with love for Debbe and all precious memories
+    </div>
+  </div>
+
+  <script>
+    // Auto-open dashboard after 5 seconds
+    let timeLeft = 5;
+    
+    const timer = document.getElementById('timer');
+    const countdown = setInterval(() => {
+      timeLeft--;
+      timer.textContent = timeLeft;
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        openDashboard();
+      }
+    }, 1000);
+    
+    function openDashboard() {
+      const dashboardUrl = chrome.runtime.getURL('web-app/dashboard-extension.html');
+      window.location.href = dashboardUrl;
+    }
+    
+    // Skip countdown on click anywhere
+    document.addEventListener('click', () => {
+      clearInterval(countdown);
+      openDashboard();
+    });
+    
+    console.log('💜 Emma Vault Extension Welcome Page - Opening dashboard...');
+  </script>
+</body>
+</html>
