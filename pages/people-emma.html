@@ -1417,16 +1417,16 @@
           try {
             console.log('📷 AVATAR: Saving avatar to vault for person:', name);
             
-            // Use the web vault to store avatar - SAME AS MEMORY GALLERY
-            if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+            // Use extension for avatar storage
+            if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
               avatarAttachmentId = await window.emmaWebVault.addMedia({
                 name: `avatar_${currentAvatarFile.name}`,
                 type: currentAvatarFile.type,
                 data: currentAvatarDataUrl
               });
-              console.log('📷 AVATAR: Avatar saved to web vault with ID:', avatarAttachmentId);
+              console.log('📷 AVATAR: Avatar saved via extension with ID:', avatarAttachmentId);
             } else {
-              console.warn('📷 AVATAR: Web vault not available - avatar will not be saved');
+              console.warn('📷 AVATAR: Extension not available - avatar will not be saved');
             }
           } catch (avatarError) {
             console.error('📷 AVATAR: Failed to save avatar to vault:', avatarError);
