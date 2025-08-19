@@ -1018,8 +1018,23 @@
         console.log('✅ PEOPLE: WebVaultStatus created');
       }
       
-      // ELEGANT: Restore complete vault state if session is active
-      if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+      // Extension mode - Check if extension is managing vault
+      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        console.log('🔗 PEOPLE: Extension detected - setting up extension-aware mode');
+        
+        // Set vault as active for extension mode
+        sessionStorage.setItem('emmaVaultActive', 'true');
+        sessionStorage.setItem('emmaVaultName', 'Extension Vault');
+        
+        // Mock vault status for smooth operation
+        window.currentVaultStatus = { 
+          isUnlocked: true, 
+          managedByExtension: true 
+        };
+        
+        console.log('✅ PEOPLE: Extension vault mode configured');
+        
+      } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
         (async () => {
           try {
             console.log('🔄 PEOPLE: Restoring elegant vault state...');

@@ -2641,6 +2641,13 @@
       }
 
       openVaultModal() {
+        // Check if extension is available first
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          // Extension is managing vault - show helpful message instead of modal
+          this.showToast('💜 Vault managed by extension! Click the Emma extension icon 🔒 to manage your vault.', 'info');
+          return;
+        }
+        
         const modal = document.getElementById('vault-modal');
         const statusIcon = document.getElementById('status-icon');
         const statusTitle = document.getElementById('status-title');
@@ -2650,20 +2657,22 @@
         const unlockSection = document.getElementById('unlock-section');
         const createVaultSection = document.getElementById('create-vault-section');
 
-        // Check if .emma vault is active
+        // Check if .emma vault is active (only if extension not available)
         const vaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
         const vaultName = sessionStorage.getItem('emmaVaultName') || 'Unknown Vault';
+        const extensionVaultActive = false; // Extension not available in this branch
         
-        if (!vaultActive) {
-          // No .emma vault active - show open vault option
-          statusIcon.textContent = '📁';
-          statusTitle.textContent = 'No .emma Vault Loaded';
-          statusDescription.textContent = 'Open an existing .emma vault file or create a new one';
-          actionBtn.textContent = '📂 Open .emma Vault';
-          actionBtn.onclick = () => console.log('Vault management handled by extension');
+        if (extensionVaultActive) {
+          // Extension is managing vault - show connected status
+          statusIcon.textContent = '🔗';
+          statusTitle.textContent = 'Extension Connected';
+          statusDescription.textContent = 'Vault managed by Emma Extension - changes auto-save to local file';
+          actionBtn.textContent = '🔒 Manage via Extension';
+          actionBtn.onclick = () => alert('Click the Emma extension icon 🔒 in your browser toolbar to manage your vault!');
           actionBtn.style.display = 'block';
           unlockSection.style.display = 'none';
           createVaultSection.style.display = 'none';
+          statusCard.classList.add('unlocked'); // Show as unlocked/connected
         } else if (window.currentVaultStatus && window.currentVaultStatus.isUnlocked) {
           statusIcon.textContent = '🔓';
           statusTitle.textContent = `${vaultName} - Unlocked`;
@@ -4987,8 +4996,23 @@
           console.log('🔧 EMERGENCY: Created WebVaultStatus instance');
         }
         
-        // ELEGANT: Restore vault state if session is active but vault is not open
-        if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault && !window.emmaWebVault.isOpen) {
+        // Extension mode - Set up extension-aware vault status
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          console.log('🔗 Extension detected - setting up extension-aware vault status');
+          
+          // Mock vault as unlocked for extension mode
+          window.currentVaultStatus = { 
+            isUnlocked: true, 
+            managedByExtension: true,
+            name: 'Extension Vault'
+          };
+          
+          // Set session storage to prevent vault prompts
+          sessionStorage.setItem('emmaVaultActive', 'true');
+          sessionStorage.setItem('emmaVaultName', 'Extension Vault');
+          
+          console.log('✅ Extension vault status configured');
+        } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault && !window.emmaWebVault.isOpen) {
           (async () => {
             try {
               console.log('🔄 DASHBOARD: Restoring elegant vault state...');

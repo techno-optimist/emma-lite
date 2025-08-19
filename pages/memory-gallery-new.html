@@ -588,8 +588,23 @@
           console.log('🔍 GALLERY VAULT DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
           console.log('🔍 GALLERY VAULT DEBUG: webVaultStatus exists?', !!window.webVaultStatus);
           
-          // ELEGANT: Restore complete vault state if session is active
-          if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+          // Extension mode - Check if extension is managing vault
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            console.log('🔗 GALLERY: Extension detected - setting up extension-aware mode');
+            
+            // Set vault as active for extension mode
+            sessionStorage.setItem('emmaVaultActive', 'true');
+            sessionStorage.setItem('emmaVaultName', 'Extension Vault');
+            
+            // Mock vault status for smooth operation
+            window.currentVaultStatus = { 
+              isUnlocked: true, 
+              managedByExtension: true 
+            };
+            
+            console.log('✅ GALLERY: Extension vault mode configured');
+            
+          } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
             (async () => {
               try {
                 console.log('🔄 GALLERY: Restoring elegant vault state...');
@@ -643,8 +658,12 @@
           console.log('✅ GALLERY: WebVaultStatus created (fallback)');
         }
         
-        // CRITICAL: Restore vault data if session is active (fallback)
-        if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+        // Extension mode fallback - Ensure vault is considered active
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          console.log('🔗 GALLERY: Extension fallback - ensuring vault is active');
+          sessionStorage.setItem('emmaVaultActive', 'true');
+          window.currentVaultStatus = { isUnlocked: true, managedByExtension: true };
+        } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
           (async () => {
             try {
               console.log('🔄 GALLERY: Attempting to restore vault data (fallback)...');
