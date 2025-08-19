@@ -211,11 +211,39 @@ class EmmaWebVault {
     if (this.extensionAvailable) {
       console.log('🔗 Extension mode: Routing memory save through extension');
       
+      // Process attachments to base64 for extension
+      const processedAttachments = [];
+      for (const attachment of attachments) {
+        if (attachment.file) {
+          // Convert file to base64
+          const reader = new FileReader();
+          const base64Data = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(attachment.file);
+          });
+          
+          processedAttachments.push({
+            name: attachment.name || attachment.file.name,
+            type: attachment.type || attachment.file.type,
+            size: attachment.size || attachment.file.size,
+            data: base64Data
+          });
+        } else if (attachment.data) {
+          processedAttachments.push({
+            name: attachment.name,
+            type: attachment.type,
+            size: attachment.size || 0,
+            data: attachment.data
+          });
+        }
+      }
+      
       // Send memory to extension for saving to actual vault
       const memoryData = {
         content: content,
         metadata: metadata,
-        attachments: attachments,
+        attachments: processedAttachments, // Pre-processed attachments
         created: new Date().toISOString()
       };
       

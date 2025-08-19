@@ -381,6 +381,37 @@ async function handleSaveMemoryToVault(memoryData) {
     // Generate memory ID
     const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     
+    // Process attachments and save media files
+    const processedAttachments = [];
+    for (const attachment of memoryData.attachments || []) {
+      // Save each attachment as media
+      const mediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      const media = {
+        id: mediaId,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        name: attachment.name,
+        type: attachment.type,
+        size: attachment.size || 0,
+        data: attachment.data // Base64 data
+      };
+      
+      // Add to vault media
+      if (!currentData.content.media) {
+        currentData.content.media = {};
+      }
+      currentData.content.media[mediaId] = media;
+      
+      // Create attachment reference for memory
+      processedAttachments.push({
+        id: mediaId,
+        type: attachment.type,
+        name: attachment.name,
+        size: attachment.size || 0
+      });
+    }
+    
     // Create memory object
     const memory = {
       id: memoryId,
@@ -388,7 +419,7 @@ async function handleSaveMemoryToVault(memoryData) {
       updated: new Date().toISOString(),
       content: memoryData.content,
       metadata: memoryData.metadata || {},
-      attachments: memoryData.attachments || []
+      attachments: processedAttachments
     };
     
     // Add to vault
