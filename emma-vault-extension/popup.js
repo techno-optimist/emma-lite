@@ -279,8 +279,11 @@ class EmmaVaultExtension {
         </div>
         
         <div class="form-group">
-          <label for="vaultPasswordFallback">Password (optional):</label>
-          <input type="password" id="vaultPasswordFallback" placeholder="Leave empty for no password">
+          <label for="vaultPasswordFallback">Vault Password (required for security):</label>
+          <input type="password" id="vaultPasswordFallback" placeholder="Enter a strong password" required>
+          <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px; display: block;">
+            🔒 Protects your precious memories - choose something memorable but secure
+          </small>
         </div>
         
         <div class="form-actions">
@@ -302,6 +305,17 @@ class EmmaVaultExtension {
       
       const name = document.getElementById('vaultNameFallback').value;
       const password = document.getElementById('vaultPasswordFallback').value;
+      
+      // SECURITY: Validate password is provided
+      if (!password || password.trim().length === 0) {
+        alert('🔒 Password is required to protect your memories!');
+        return;
+      }
+      
+      if (password.length < 6) {
+        alert('🔒 Password must be at least 6 characters for security!');
+        return;
+      }
       
       await this.performVaultCreationFallback(name, password);
     });
@@ -564,8 +578,11 @@ class EmmaVaultExtension {
         </div>
         
         <div class="form-group">
-          <label for="vaultPassword">Password (optional):</label>
-          <input type="password" id="vaultPassword" placeholder="Leave empty for no password">
+          <label for="vaultPassword">Vault Password (required for security):</label>
+          <input type="password" id="vaultPassword" placeholder="Enter a strong password" required>
+          <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px; display: block;">
+            🔒 Protects your precious memories - choose something memorable but secure
+          </small>
         </div>
         
         <div class="form-actions">
@@ -583,6 +600,17 @@ class EmmaVaultExtension {
       
       const name = document.getElementById('vaultName').value;
       const password = document.getElementById('vaultPassword').value;
+      
+      // SECURITY: Validate password is provided
+      if (!password || password.trim().length === 0) {
+        alert('🔒 Password is required to protect your memories!');
+        return;
+      }
+      
+      if (password.length < 6) {
+        alert('🔒 Password must be at least 6 characters for security!');
+        return;
+      }
       
       await this.performVaultCreation(name, password);
     });
@@ -658,14 +686,19 @@ class EmmaVaultExtension {
   // Vault Operations
   async performVaultCreationFallback(name, password) {
     try {
+      // SECURITY: Validate password before creating vault
+      if (!password || password.trim().length === 0) {
+        throw new Error('Password is required for vault security');
+      }
+      
       // Create vault data structure
       const vaultData = {
         version: '1.0',
         name: name,
         created: new Date().toISOString(),
         encryption: {
-          enabled: !!password,
-          algorithm: password ? 'AES-GCM' : null
+          enabled: true, // Always enabled for security
+          algorithm: 'AES-GCM'
         },
         content: {
           memories: {},
@@ -726,14 +759,19 @@ class EmmaVaultExtension {
 
   async performVaultCreation(name, password) {
     try {
+      // SECURITY: Validate password before creating vault
+      if (!password || password.trim().length === 0) {
+        throw new Error('Password is required for vault security');
+      }
+      
       // Create vault data structure
       const vaultData = {
         version: '1.0',
         name: name,
         created: new Date().toISOString(),
         encryption: {
-          enabled: !!password,
-          algorithm: password ? 'AES-GCM' : null
+          enabled: true, // Always enabled for security
+          algorithm: 'AES-GCM'
         },
         content: {
           memories: {},
