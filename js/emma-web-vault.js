@@ -1639,8 +1639,8 @@ class EmmaWebVault {
       this.extensionAvailable = true;
       console.log('🔗 Emma Vault Extension detected! Version:', window.EmmaVaultExtension?.version);
       
-      // CRITICAL: Initialize mock vault immediately when extension detected
-      await this.initializeExtensionVault();
+      // Extension handles vault - web app just provides UI
+      console.log('🔗 Extension manages vault - web app is pure UI');
       
       // Listen for extension messages
       this.setupExtensionListeners();
@@ -1651,53 +1651,6 @@ class EmmaWebVault {
       // Check again after a delay (extension might still be loading)
       setTimeout(() => this.checkExtensionAvailability(), 1000);
     }
-  }
-
-  /**
-   * Connect to extension's actual vault - NO MOCK VAULTS!
-   */
-  async initializeExtensionVault() {
-    console.log('🔗 Connecting to extension\'s actual vault...');
-    
-    // Simply mark as extension-managed - extension handles all vault operations
-    this.isOpen = true;
-    this.extensionManaged = true;
-    this.currentVault = 'extension-managed';
-    
-    // Set minimal state to prevent errors, but extension manages actual data
-    this.vaultData = {
-      managedByExtension: true,
-      content: { 
-        media: {},
-        people: {},  // CRITICAL: Add people object to prevent listPeople errors
-        memories: {},
-        settings: {}
-      },
-      encryption: {
-        enabled: true,
-        algorithm: 'AES-GCM',
-        salt: 'extension-managed' // CRITICAL: Add salt to prevent encryption errors
-      }
-    };
-    
-    // Set session storage
-    sessionStorage.setItem('emmaVaultActive', 'true');
-    sessionStorage.setItem('emmaVaultName', 'Extension Vault');
-    
-    // Set global vault status
-    window.currentVaultStatus = { 
-      isUnlocked: true, 
-      managedByExtension: true,
-      name: 'Extension Vault'
-    };
-    
-    console.log('✅ Mock vault initialized for extension mode');
-    console.log('✅ Vault state: isOpen =', this.isOpen, ', currentVault =', this.currentVault);
-    
-    // Notify other components that vault is ready
-    window.dispatchEvent(new CustomEvent('extension-vault-ready', {
-      detail: { vaultData: this.vaultData }
-    }));
   }
 
   /**
