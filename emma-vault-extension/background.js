@@ -91,6 +91,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'SAVE_MEDIA_TO_VAULT':
+      handleSaveMediaToVault(request.data)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     default:
       sendResponse({ success: false, error: 'Unknown action' });
   }
@@ -460,6 +466,59 @@ async function handleSavePersonToVault(personData) {
     
   } catch (error) {
     console.error('❌ Failed to save person to vault:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Handle saving media to vault file
+ */
+async function handleSaveMediaToVault(mediaData) {
+  try {
+    console.log('📷 Background: Saving media to vault file:', mediaData);
+    
+    if (!fileHandle) {
+      throw new Error('No vault file is open. Please open a vault first.');
+    }
+    
+    // Read current vault data
+    const file = await fileHandle.getFile();
+    const currentData = JSON.parse(await file.text());
+    
+    // Generate media ID
+    const mediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Create media object
+    const media = {
+      id: mediaId,
+      created: mediaData.created || new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: mediaData.name,
+      type: mediaData.type,
+      size: mediaData.size || 0,
+      data: mediaData.data // Base64 data
+    };
+    
+    // Add to vault
+    if (!currentData.content.media) {
+      currentData.content.media = {};
+    }
+    currentData.content.media[mediaId] = media;
+    
+    // Update stats
+    if (!currentData.stats) {
+      currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
+    }
+    currentData.stats.totalSize += JSON.stringify(media).length;
+    
+    // Write back to file using existing function
+    const result = await writeToEmmaFile(currentData);
+    
+    console.log('✅ Media saved to vault file successfully');
+    return { success: true, id: mediaId };
+    
+  } catch (error) {
+    console.error('❌ Failed to save media to vault:', error);
     return { success: false, error: error.message };
   }
 }

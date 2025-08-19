@@ -553,6 +553,44 @@ class EmmaWebVault {
    * Add media file with encryption
    */
   async addMedia({ type, data, name, file }) {
+    // Extension mode: Route media saving through extension
+    if (this.extensionAvailable) {
+      console.log('🔗 Extension mode: Routing media save through extension');
+      
+      // Convert file to base64 for sending to extension
+      let base64Data;
+      if (file) {
+        const reader = new FileReader();
+        base64Data = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      } else {
+        base64Data = data; // Already base64 or data URL
+      }
+      
+      // Send media to extension for saving
+      const mediaData = {
+        name: name || file?.name,
+        type: type || file?.type,
+        size: file?.size || 0,
+        data: base64Data,
+        created: new Date().toISOString()
+      };
+      
+      // Notify extension to save this media
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'SAVE_MEDIA',
+        data: mediaData
+      }, window.location.origin);
+      
+      // Return success immediately - extension handles actual saving
+      const mediaId = this.generateId('media');
+      return mediaId;
+    }
+    
     try {
       const mediaId = this.generateId('media');
       
@@ -1601,7 +1639,17 @@ class EmmaWebVault {
     // Set minimal state to prevent errors, but extension manages actual data
     this.vaultData = {
       managedByExtension: true,
-      content: { media: {} } // Minimal structure to prevent undefined errors
+      content: { 
+        media: {},
+        people: {},  // CRITICAL: Add people object to prevent listPeople errors
+        memories: {},
+        settings: {}
+      },
+      encryption: {
+        enabled: true,
+        algorithm: 'AES-GCM',
+        salt: 'extension-managed' // CRITICAL: Add salt to prevent encryption errors
+      }
     };
     
     // Set session storage

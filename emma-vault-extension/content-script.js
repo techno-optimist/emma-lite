@@ -137,6 +137,20 @@ function handleEmmaMessage(message) {
       handleSavePerson(message.data);
       break;
       
+    case 'SAVE_MEDIA':
+      handleSaveMedia(message.data);
+      break;
+      
+    case 'EXTENSION_READY':
+      console.log('✅ Extension ready message received');
+      sendSyncStatus();
+      break;
+      
+    case 'SYNC_STATUS':
+      console.log('📊 Sync status message received');
+      // Extension already knows its own status, just acknowledge
+      break;
+      
     default:
       console.warn('Unknown message type:', message.type);
   }
@@ -359,6 +373,37 @@ function handleSavePerson(personData) {
       postToEmma({
         channel: EMMA_VAULT_CHANNEL,
         type: 'PERSON_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle media save from web app
+ */
+function handleSaveMedia(mediaData) {
+  console.log('📷 Extension: Handling media save from web app:', mediaData);
+  
+  // Forward to background script for actual vault saving
+  chrome.runtime.sendMessage({
+    action: 'SAVE_MEDIA_TO_VAULT',
+    data: mediaData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Media saved to vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEDIA_SAVED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to save media to vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEDIA_SAVE_ERROR',
         data: { success: false, error: response?.error || 'Unknown error' }
       });
     }
