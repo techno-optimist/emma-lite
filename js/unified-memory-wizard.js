@@ -1832,7 +1832,11 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         }
       }
       
-      if (window.emmaWebVault && window.webVaultStatus && window.webVaultStatus.isUnlocked()) {
+      // CRITICAL: Check for extension mode OR normal vault unlock
+      const extensionMode = window.emmaWebVault && window.emmaWebVault.extensionAvailable;
+      const normalVaultUnlocked = window.emmaWebVault && window.webVaultStatus && window.webVaultStatus.isUnlocked();
+      
+      if (extensionMode || normalVaultUnlocked) {
         try {
           console.log('💾 Using emmaWebVault.addMemory() for .emma vault');
           // Convert media items to vault format

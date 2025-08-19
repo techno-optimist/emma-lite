@@ -44,3 +44,26 @@ Emma Lite is the first app built for the Human Memory Layer (HML). Phase 1 deliv
 ## Lessons (Phase 2)
 - Jest ESM + Chrome extension context: keep tests Node-based with minimal mocking; avoid heavy reporters; ensure deterministic hashing by using canonical JSON.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

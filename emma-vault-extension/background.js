@@ -79,6 +79,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'SAVE_MEMORY_TO_VAULT':
+      handleSaveMemoryToVault(request.data)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    case 'SAVE_PERSON_TO_VAULT':
+      handleSavePersonToVault(request.data)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     default:
       sendResponse({ success: false, error: 'Unknown action' });
   }
@@ -344,5 +356,112 @@ chrome.action.onClicked.addListener((tab) => {
   // The popup will handle file selection UI
   console.log('Extension icon clicked');
 });
+
+/**
+ * Handle saving memory to vault file
+ */
+async function handleSaveMemoryToVault(memoryData) {
+  try {
+    console.log('💾 Background: Saving memory to vault file:', memoryData);
+    
+    if (!fileHandle) {
+      throw new Error('No vault file is open. Please open a vault first.');
+    }
+    
+    // Read current vault data
+    const file = await fileHandle.getFile();
+    const currentData = JSON.parse(await file.text());
+    
+    // Generate memory ID
+    const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Create memory object
+    const memory = {
+      id: memoryId,
+      created: memoryData.created || new Date().toISOString(),
+      updated: new Date().toISOString(),
+      content: memoryData.content,
+      metadata: memoryData.metadata || {},
+      attachments: memoryData.attachments || []
+    };
+    
+    // Add to vault
+    if (!currentData.content.memories) {
+      currentData.content.memories = {};
+    }
+    currentData.content.memories[memoryId] = memory;
+    
+    // Update stats
+    if (!currentData.stats) {
+      currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
+    }
+    currentData.stats.memoryCount = Object.keys(currentData.content.memories).length;
+    currentData.stats.totalSize += JSON.stringify(memory).length;
+    
+    // Write back to file using existing function
+    const result = await writeToEmmaFile(currentData);
+    
+    console.log('✅ Memory saved to vault file successfully');
+    return { success: true, id: memoryId };
+    
+  } catch (error) {
+    console.error('❌ Failed to save memory to vault:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Handle saving person to vault file
+ */
+async function handleSavePersonToVault(personData) {
+  try {
+    console.log('👥 Background: Saving person to vault file:', personData);
+    
+    if (!fileHandle) {
+      throw new Error('No vault file is open. Please open a vault first.');
+    }
+    
+    // Read current vault data
+    const file = await fileHandle.getFile();
+    const currentData = JSON.parse(await file.text());
+    
+    // Generate person ID
+    const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Create person object
+    const person = {
+      id: personId,
+      created: personData.created || new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: personData.name,
+      relation: personData.relation || '',
+      contact: personData.contact || '',
+      avatar: personData.avatar || null
+    };
+    
+    // Add to vault
+    if (!currentData.content.people) {
+      currentData.content.people = {};
+    }
+    currentData.content.people[personId] = person;
+    
+    // Update stats
+    if (!currentData.stats) {
+      currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
+    }
+    currentData.stats.peopleCount = Object.keys(currentData.content.people).length;
+    currentData.stats.totalSize += JSON.stringify(person).length;
+    
+    // Write back to file using existing function
+    const result = await writeToEmmaFile(currentData);
+    
+    console.log('✅ Person saved to vault file successfully');
+    return { success: true, id: personId };
+    
+  } catch (error) {
+    console.error('❌ Failed to save person to vault:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 console.log('Emma Vault Bridge background service initialized');

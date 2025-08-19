@@ -5000,42 +5000,9 @@
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
           console.log('🔗 Extension detected - setting up extension-aware vault status');
           
-          // CRITICAL: Actually open a mock vault for the web app to use
-          window.emmaWebVault.isOpen = true;
-          window.emmaWebVault.currentVault = 'extension-managed-vault';
-          window.emmaWebVault.vaultData = {
-            version: '1.0',
-            name: 'Extension Vault',
-            created: new Date().toISOString(),
-            encryption: {
-              enabled: true,
-              algorithm: 'AES-GCM'
-            },
-            content: {
-              memories: {},
-              people: {},
-              settings: {}
-            },
-            stats: {
-              memoryCount: 0,
-              peopleCount: 0,
-              totalSize: 0
-            }
-          };
-          
-          // Mock vault as unlocked for extension mode
-          window.currentVaultStatus = { 
-            isUnlocked: true, 
-            managedByExtension: true,
-            name: 'Extension Vault'
-          };
-          
-          // Set session storage to prevent vault prompts
-          sessionStorage.setItem('emmaVaultActive', 'true');
-          sessionStorage.setItem('emmaVaultName', 'Extension Vault');
-          
-          console.log('✅ Extension vault status configured');
-          console.log('✅ Mock vault opened for web app compatibility');
+          // NO MOCK VAULT! Extension handles all vault operations
+          // Web app just provides the beautiful interface
+          console.log('✅ Extension vault mode configured - no mock vault needed');
         } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault && !window.emmaWebVault.isOpen) {
           (async () => {
             try {

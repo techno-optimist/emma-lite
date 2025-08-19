@@ -117,12 +117,24 @@ function handleEmmaMessage(message) {
       sendSyncStatus();
       break;
       
+    case 'REQUEST_VAULT_DATA':
+      sendVaultData();
+      break;
+      
     case 'ENABLE_SYNC':
       enableSync();
       break;
       
     case 'DISABLE_SYNC':
       disableSync();
+      break;
+      
+    case 'SAVE_MEMORY':
+      handleSaveMemory(message.data);
+      break;
+      
+    case 'SAVE_PERSON':
+      handleSavePerson(message.data);
       break;
       
     default:
@@ -270,6 +282,85 @@ function sendSyncStatus(status = {}) {
       extensionVersion: chrome.runtime.getManifest().version,
       syncEnabled: syncEnabled,
       ...status
+    }
+  });
+}
+
+/**
+ * Send vault data to Emma Web App (extension manages vault, not web app)
+ */
+function sendVaultData() {
+  console.log('📦 Web app requesting vault data - extension manages vault, not web app');
+  
+  // Tell web app that extension manages the vault
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'EXTENSION_MANAGES_VAULT',
+    data: {
+      message: 'Extension manages vault - web app should route all saves through extension',
+      extensionVersion: chrome.runtime.getManifest().version
+    }
+  });
+}
+
+/**
+ * Handle memory save from web app
+ */
+function handleSaveMemory(memoryData) {
+  console.log('💾 Extension: Handling memory save from web app:', memoryData);
+  
+  // Forward to background script for actual vault saving
+  chrome.runtime.sendMessage({
+    action: 'SAVE_MEMORY_TO_VAULT',
+    data: memoryData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Memory saved to vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_SAVED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to save memory to vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle person save from web app
+ */
+function handleSavePerson(personData) {
+  console.log('👥 Extension: Handling person save from web app:', personData);
+  
+  // Forward to background script for actual vault saving
+  chrome.runtime.sendMessage({
+    action: 'SAVE_PERSON_TO_VAULT',
+    data: personData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Person saved to vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_SAVED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to save person to vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
     }
   });
 }

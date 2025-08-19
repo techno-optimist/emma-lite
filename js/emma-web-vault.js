@@ -30,6 +30,12 @@ class EmmaWebVault {
    * Same API as desktop version!
    */
   async createVaultFile(name, passphrase) {
+    // Extension mode: Route vault creation to extension
+    if (this.extensionAvailable) {
+      console.log('🔗 Extension mode: Routing vault creation to extension');
+      throw new Error('Please use the browser extension to create vaults. Click the Emma extension icon.');
+    }
+    
     try {
       console.log('🌟 EmmaWebVault.createVaultFile called with name:', name, 'passphrase length:', passphrase?.length);
       
@@ -201,15 +207,33 @@ class EmmaWebVault {
    * Add memory (IDENTICAL API to desktop version!)
    */
   async addMemory({ content, metadata = {}, attachments = [] }) {
-    // CRITICAL: Allow memory saving when extension is managing vault
-    if (!this.isOpen && !this.extensionAvailable) {
-      throw new Error('No vault is open');
+    // Extension mode: Route through extension instead of web app vault
+    if (this.extensionAvailable) {
+      console.log('🔗 Extension mode: Routing memory save through extension');
+      
+      // Send memory to extension for saving to actual vault
+      const memoryData = {
+        content: content,
+        metadata: metadata,
+        attachments: attachments,
+        created: new Date().toISOString()
+      };
+      
+      // Notify extension to save this memory
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'SAVE_MEMORY',
+        data: memoryData
+      }, window.location.origin);
+      
+      // Return success immediately - extension handles actual saving
+      const memoryId = this.generateId('memory');
+      return { id: memoryId, success: true };
     }
     
-    // Extension mode: Initialize vault on-demand if needed
-    if (this.extensionAvailable && !this.isOpen) {
-      console.log('🔗 Extension mode: Auto-initializing vault for memory save');
-      await this.initializeExtensionVault();
+    // Normal vault mode
+    if (!this.isOpen) {
+      throw new Error('No vault is open');
     }
     
     // Check if we need passphrase for encryption and don't have it
@@ -360,15 +384,34 @@ class EmmaWebVault {
    * Add person (IDENTICAL API to desktop version!)
    */
   async addPerson({ name, relation, contact, avatar }) {
-    // CRITICAL: Allow person saving when extension is managing vault
-    if (!this.isOpen && !this.extensionAvailable) {
-      throw new Error('No vault is open');
+    // Extension mode: Route through extension instead of web app vault
+    if (this.extensionAvailable) {
+      console.log('🔗 Extension mode: Routing person save through extension');
+      
+      // Send person to extension for saving to actual vault
+      const personData = {
+        name: name,
+        relation: relation,
+        contact: contact,
+        avatar: avatar,
+        created: new Date().toISOString()
+      };
+      
+      // Notify extension to save this person
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'SAVE_PERSON',
+        data: personData
+      }, window.location.origin);
+      
+      // Return success immediately - extension handles actual saving
+      const personId = this.generateId('person');
+      return { id: personId, success: true };
     }
     
-    // Extension mode: Initialize vault on-demand if needed
-    if (this.extensionAvailable && !this.isOpen) {
-      console.log('🔗 Extension mode: Auto-initializing vault for person save');
-      await this.initializeExtensionVault();
+    // Normal vault mode
+    if (!this.isOpen) {
+      throw new Error('No vault is open');
     }
     
     try {
@@ -537,6 +580,11 @@ class EmmaWebVault {
         encrypted: true,
         data: encryptedData
       };
+      
+      // Ensure media storage exists
+      if (!this.vaultData.content.media) {
+        this.vaultData.content.media = {};
+      }
       
       this.vaultData.content.media[mediaId] = media;
       this.vaultData.stats.mediaCount++;
@@ -1540,32 +1588,20 @@ class EmmaWebVault {
   }
 
   /**
-   * Initialize mock vault for extension mode
+   * Connect to extension's actual vault - NO MOCK VAULTS!
    */
   async initializeExtensionVault() {
-    console.log('🔗 Initializing mock vault for extension mode...');
+    console.log('🔗 Connecting to extension\'s actual vault...');
     
-    // Set up mock vault data
+    // Simply mark as extension-managed - extension handles all vault operations
     this.isOpen = true;
-    this.currentVault = 'extension-managed-vault';
+    this.extensionManaged = true;
+    this.currentVault = 'extension-managed';
+    
+    // Set minimal state to prevent errors, but extension manages actual data
     this.vaultData = {
-      version: '1.0',
-      name: 'Extension Vault',
-      created: new Date().toISOString(),
-      encryption: {
-        enabled: true,
-        algorithm: 'AES-GCM'
-      },
-      content: {
-        memories: {},
-        people: {},
-        settings: {}
-      },
-      stats: {
-        memoryCount: 0,
-        peopleCount: 0,
-        totalSize: 0
-      }
+      managedByExtension: true,
+      content: { media: {} } // Minimal structure to prevent undefined errors
     };
     
     // Set session storage
