@@ -11,13 +11,7 @@ class EmmaVaultExtension {
     this.vaultData = null;
     this.isVaultOpen = false;
     this.recentVaults = [];
-    this.activeFileHandle = null; // Store active file handle
-    
-    // Listen for messages from background script
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      this.handleBackgroundMessage(request, sender, sendResponse);
-      return true; // Keep channel open for async response
-    });
+
     
     // DOM Elements
     this.elements = {
@@ -373,9 +367,16 @@ class EmmaVaultExtension {
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
-      // CRITICAL: Store file handle in popup for vault operations
-      this.activeFileHandle = fileHandle;
-      console.log('✅ File handle stored in popup for vault operations');
+      // SIMPLE: Store complete vault data in background storage
+      console.log('📤 Storing vault data in background for direct saves...');
+      await chrome.storage.local.set({
+        vaultData: vaultData,
+        vaultFileName: fileHandle.name,
+        vaultReady: true,
+        lastSaved: new Date().toISOString()
+      });
+      
+      console.log('✅ Vault data stored in background - ready for direct saves');
       
       // Add to recent vaults
       this.addToRecentVaults({
@@ -834,18 +835,16 @@ class EmmaVaultExtension {
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
-      // CRITICAL: Store vault info - background will handle saves via popup
-      console.log('📤 Storing vault info for background script...');
+      // SIMPLE: Store complete vault data in background storage
+      console.log('📤 Storing vault data in background for direct saves...');
       await chrome.storage.local.set({
-        vaultReady: true,
+        vaultData: vaultData,
         vaultFileName: fileHandle.name,
-        vaultCreated: new Date().toISOString()
+        vaultReady: true,
+        lastSaved: new Date().toISOString()
       });
       
-      // Store file handle in popup context for background to request
-      this.activeFileHandle = fileHandle;
-      
-      console.log('✅ Vault ready for background saves');
+      console.log('✅ Vault data stored in background - ready for direct saves');
       
       // Add to recent vaults
       this.addToRecentVaults({
@@ -997,187 +996,7 @@ class EmmaVaultExtension {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
   
-  /**
-   * Handle messages from background script
-   */
-  async handleBackgroundMessage(request, sender, sendResponse) {
-    console.log('📨 Popup received message from background:', request.action);
-    
-    try {
-      switch (request.action) {
-        case 'SAVE_MEMORY_TO_VAULT':
-          const memoryResult = await this.saveMemoryToFile(request.data);
-          sendResponse(memoryResult);
-          break;
-          
-        case 'SAVE_PERSON_TO_VAULT':
-          const personResult = await this.savePersonToFile(request.data);
-          sendResponse(personResult);
-          break;
-          
-        case 'SAVE_MEDIA_TO_VAULT':
-          const mediaResult = await this.saveMediaToFile(request.data);
-          sendResponse(mediaResult);
-          break;
-          
-        default:
-          sendResponse({ success: false, error: 'Unknown action' });
-      }
-    } catch (error) {
-      console.error('❌ Popup message handler error:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-  }
-  
-  /**
-   * Save memory to vault file using popup's file handle
-   */
-  async saveMemoryToFile(memoryData) {
-    if (!this.activeFileHandle) {
-      throw new Error('No file handle available in popup');
-    }
-    
-    // Read current vault data
-    const file = await this.activeFileHandle.getFile();
-    const currentData = JSON.parse(await file.text());
-    
-    // Generate memory ID
-    const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    // Process attachments and save media files
-    const processedAttachments = [];
-    for (const attachment of memoryData.attachments || []) {
-      const mediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      
-      const media = {
-        id: mediaId,
-        created: new Date().toISOString(),
-        name: attachment.name,
-        type: attachment.type,
-        size: attachment.size || 0,
-        data: attachment.data
-      };
-      
-      if (!currentData.content.media) currentData.content.media = {};
-      currentData.content.media[mediaId] = media;
-      
-      processedAttachments.push({
-        id: mediaId,
-        type: attachment.type,
-        name: attachment.name,
-        size: attachment.size || 0
-      });
-    }
-    
-    // Create memory object
-    const memory = {
-      id: memoryId,
-      created: memoryData.created || new Date().toISOString(),
-      content: memoryData.content,
-      metadata: memoryData.metadata || {},
-      attachments: processedAttachments
-    };
-    
-    // Add to vault
-    if (!currentData.content.memories) currentData.content.memories = {};
-    currentData.content.memories[memoryId] = memory;
-    
-    // Update stats
-    if (!currentData.stats) currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
-    currentData.stats.memoryCount = Object.keys(currentData.content.memories).length;
-    
-    // Write to file
-    const writable = await this.activeFileHandle.createWritable();
-    await writable.write(JSON.stringify(currentData, null, 2));
-    await writable.close();
-    
-    console.log('✅ Memory saved to vault file via popup');
-    return { success: true, id: memoryId };
-  }
-  
-  /**
-   * Save person to vault file using popup's file handle
-   */
-  async savePersonToFile(personData) {
-    if (!this.activeFileHandle) {
-      throw new Error('No file handle available in popup');
-    }
-    
-    // Read current vault data
-    const file = await this.activeFileHandle.getFile();
-    const currentData = JSON.parse(await file.text());
-    
-    // Generate person ID
-    const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    // Create person object
-    const person = {
-      id: personId,
-      created: personData.created || new Date().toISOString(),
-      name: personData.name,
-      relation: personData.relation || '',
-      contact: personData.contact || '',
-      avatar: personData.avatar || null
-    };
-    
-    // Add to vault
-    if (!currentData.content.people) currentData.content.people = {};
-    currentData.content.people[personId] = person;
-    
-    // Update stats
-    if (!currentData.stats) currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
-    currentData.stats.peopleCount = Object.keys(currentData.content.people).length;
-    
-    // Write to file
-    const writable = await this.activeFileHandle.createWritable();
-    await writable.write(JSON.stringify(currentData, null, 2));
-    await writable.close();
-    
-    console.log('✅ Person saved to vault file via popup');
-    return { success: true, id: personId };
-  }
-  
-  /**
-   * Save media to vault file using popup's file handle
-   */
-  async saveMediaToFile(mediaData) {
-    if (!this.activeFileHandle) {
-      throw new Error('No file handle available in popup');
-    }
-    
-    // Read current vault data
-    const file = await this.activeFileHandle.getFile();
-    const currentData = JSON.parse(await file.text());
-    
-    // Generate media ID
-    const mediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    // Create media object
-    const media = {
-      id: mediaId,
-      created: mediaData.created || new Date().toISOString(),
-      name: mediaData.name,
-      type: mediaData.type,
-      size: mediaData.size || 0,
-      data: mediaData.data
-    };
-    
-    // Add to vault
-    if (!currentData.content.media) currentData.content.media = {};
-    currentData.content.media[mediaId] = media;
-    
-    // Update stats
-    if (!currentData.stats) currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
-    currentData.stats.totalSize += JSON.stringify(media).length;
-    
-    // Write to file
-    const writable = await this.activeFileHandle.createWritable();
-    await writable.write(JSON.stringify(currentData, null, 2));
-    await writable.close();
-    
-    console.log('✅ Media saved to vault file via popup');
-    return { success: true, id: mediaId };
-  }
+
   
   calculateVaultSize() {
     if (!this.vaultData) return 0;

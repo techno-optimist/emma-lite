@@ -80,19 +80,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
       
     case 'SAVE_MEMORY_TO_VAULT':
-      delegateToPopup('SAVE_MEMORY_TO_VAULT', request.data)
+      handleSaveMemoryToVault(request.data)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
     case 'SAVE_PERSON_TO_VAULT':
-      delegateToPopup('SAVE_PERSON_TO_VAULT', request.data)
+      handleSavePersonToVault(request.data)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
     case 'SAVE_MEDIA_TO_VAULT':
-      delegateToPopup('SAVE_MEDIA_TO_VAULT', request.data)
+      handleSaveMediaToVault(request.data)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    case 'DOWNLOAD_VAULT':
+      downloadCurrentVault()
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
@@ -368,15 +374,15 @@ chrome.action.onClicked.addListener((tab) => {
  */
 async function handleSaveMemoryToVault(memoryData) {
   try {
-    console.log('💾 Background: Saving memory to vault file:', memoryData);
+    console.log('💾 Background: Saving memory directly to vault storage');
     
-    if (!fileHandle) {
-      throw new Error('No vault file is open. Please open a vault first in the extension popup.');
+    // Get current vault data from storage
+    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
+    if (!vaultReady || !vaultData) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    // Read current vault data
-    const file = await fileHandle.getFile();
-    const currentData = JSON.parse(await file.text());
+    const currentData = { ...vaultData };
     
     // Generate memory ID
     const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -435,10 +441,13 @@ async function handleSaveMemoryToVault(memoryData) {
     currentData.stats.memoryCount = Object.keys(currentData.content.memories).length;
     currentData.stats.totalSize += JSON.stringify(memory).length;
     
-    // Write back to file using existing function
-    const result = await writeToEmmaFile(currentData);
+    // Save updated vault data back to storage
+    await chrome.storage.local.set({
+      vaultData: currentData,
+      lastSaved: new Date().toISOString()
+    });
     
-    console.log('✅ Memory saved to vault file successfully');
+    console.log('✅ Memory saved to vault storage successfully');
     return { success: true, id: memoryId };
     
   } catch (error) {
@@ -452,15 +461,15 @@ async function handleSaveMemoryToVault(memoryData) {
  */
 async function handleSavePersonToVault(personData) {
   try {
-    console.log('👥 Background: Saving person to vault file:', personData);
+    console.log('👥 Background: Saving person directly to vault storage');
     
-    if (!fileHandle) {
-      throw new Error('No vault file is open. Please open a vault first.');
+    // Get current vault data from storage
+    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
+    if (!vaultReady || !vaultData) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    // Read current vault data
-    const file = await fileHandle.getFile();
-    const currentData = JSON.parse(await file.text());
+    const currentData = { ...vaultData };
     
     // Generate person ID
     const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -489,10 +498,13 @@ async function handleSavePersonToVault(personData) {
     currentData.stats.peopleCount = Object.keys(currentData.content.people).length;
     currentData.stats.totalSize += JSON.stringify(person).length;
     
-    // Write back to file using existing function
-    const result = await writeToEmmaFile(currentData);
+    // Save updated vault data back to storage
+    await chrome.storage.local.set({
+      vaultData: currentData,
+      lastSaved: new Date().toISOString()
+    });
     
-    console.log('✅ Person saved to vault file successfully');
+    console.log('✅ Person saved to vault storage successfully');
     return { success: true, id: personId };
     
   } catch (error) {
@@ -506,15 +518,15 @@ async function handleSavePersonToVault(personData) {
  */
 async function handleSaveMediaToVault(mediaData) {
   try {
-    console.log('📷 Background: Saving media to vault file:', mediaData);
+    console.log('📷 Background: Saving media directly to vault storage');
     
-    if (!fileHandle) {
-      throw new Error('No vault file is open. Please open a vault first.');
+    // Get current vault data from storage
+    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
+    if (!vaultReady || !vaultData) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    // Read current vault data
-    const file = await fileHandle.getFile();
-    const currentData = JSON.parse(await file.text());
+    const currentData = { ...vaultData };
     
     // Generate media ID
     const mediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -542,10 +554,13 @@ async function handleSaveMediaToVault(mediaData) {
     }
     currentData.stats.totalSize += JSON.stringify(media).length;
     
-    // Write back to file using existing function
-    const result = await writeToEmmaFile(currentData);
+    // Save updated vault data back to storage
+    await chrome.storage.local.set({
+      vaultData: currentData,
+      lastSaved: new Date().toISOString()
+    });
     
-    console.log('✅ Media saved to vault file successfully');
+    console.log('✅ Media saved to vault storage successfully');
     return { success: true, id: mediaId };
     
   } catch (error) {
@@ -554,39 +569,39 @@ async function handleSaveMediaToVault(mediaData) {
   }
 }
 
+
+
 /**
- * Delegate vault operations to popup (which has the file handle)
+ * Download current vault as .emma file
  */
-async function delegateToPopup(action, data) {
+async function downloadCurrentVault() {
   try {
-    console.log('🔄 Delegating to popup:', action);
+    console.log('📥 Downloading current vault...');
     
-    // Check if vault is ready
-    const { vaultReady } = await chrome.storage.local.get('vaultReady');
-    if (!vaultReady) {
-      throw new Error('No vault is open. Please open a vault first in the extension popup.');
+    // Get current vault data from storage
+    const { vaultData, vaultFileName } = await chrome.storage.local.get(['vaultData', 'vaultFileName']);
+    if (!vaultData) {
+      throw new Error('No vault data available to download');
     }
     
-    // Send message to popup to handle the save
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        action: action,
-        data: data,
-        target: 'popup'
-      }, (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else if (response && response.success) {
-          resolve(response);
-        } else {
-          reject(new Error(response?.error || 'Unknown popup error'));
-        }
-      });
+    // Create download
+    const vaultJson = JSON.stringify(vaultData, null, 2);
+    const blob = new Blob([vaultJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Trigger download
+    await chrome.downloads.download({
+      url: url,
+      filename: vaultFileName || 'my-memories.emma',
+      saveAs: true
     });
     
+    console.log('✅ Vault download initiated');
+    return { success: true };
+    
   } catch (error) {
-    console.error('❌ Delegation failed:', error);
-    throw error;
+    console.error('❌ Failed to download vault:', error);
+    return { success: false, error: error.message };
   }
 }
 
