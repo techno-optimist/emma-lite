@@ -80,19 +80,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
       
     case 'SAVE_MEMORY_TO_VAULT':
-      handleSaveMemoryToVault(request.data)
+      delegateToPopup('SAVE_MEMORY_TO_VAULT', request.data)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
     case 'SAVE_PERSON_TO_VAULT':
-      handleSavePersonToVault(request.data)
+      delegateToPopup('SAVE_PERSON_TO_VAULT', request.data)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
     case 'SAVE_MEDIA_TO_VAULT':
-      handleSaveMediaToVault(request.data)
+      delegateToPopup('SAVE_MEDIA_TO_VAULT', request.data)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
@@ -371,7 +371,7 @@ async function handleSaveMemoryToVault(memoryData) {
     console.log('💾 Background: Saving memory to vault file:', memoryData);
     
     if (!fileHandle) {
-      throw new Error('No vault file is open. Please open a vault first.');
+      throw new Error('No vault file is open. Please open a vault first in the extension popup.');
     }
     
     // Read current vault data
@@ -551,6 +551,42 @@ async function handleSaveMediaToVault(mediaData) {
   } catch (error) {
     console.error('❌ Failed to save media to vault:', error);
     return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Delegate vault operations to popup (which has the file handle)
+ */
+async function delegateToPopup(action, data) {
+  try {
+    console.log('🔄 Delegating to popup:', action);
+    
+    // Check if vault is ready
+    const { vaultReady } = await chrome.storage.local.get('vaultReady');
+    if (!vaultReady) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
+    }
+    
+    // Send message to popup to handle the save
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({
+        action: action,
+        data: data,
+        target: 'popup'
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Unknown popup error'));
+        }
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ Delegation failed:', error);
+    throw error;
   }
 }
 
