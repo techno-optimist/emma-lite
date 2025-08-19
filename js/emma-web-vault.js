@@ -201,7 +201,16 @@ class EmmaWebVault {
    * Add memory (IDENTICAL API to desktop version!)
    */
   async addMemory({ content, metadata = {}, attachments = [] }) {
-    if (!this.isOpen) throw new Error('No vault is open');
+    // CRITICAL: Allow memory saving when extension is managing vault
+    if (!this.isOpen && !this.extensionAvailable) {
+      throw new Error('No vault is open');
+    }
+    
+    // Extension mode: Initialize vault on-demand if needed
+    if (this.extensionAvailable && !this.isOpen) {
+      console.log('🔗 Extension mode: Auto-initializing vault for memory save');
+      await this.initializeExtensionVault();
+    }
     
     // Check if we need passphrase for encryption and don't have it
     if (attachments.length > 0 && !this.passphrase) {
@@ -351,7 +360,16 @@ class EmmaWebVault {
    * Add person (IDENTICAL API to desktop version!)
    */
   async addPerson({ name, relation, contact, avatar }) {
-    if (!this.isOpen) throw new Error('No vault is open');
+    // CRITICAL: Allow person saving when extension is managing vault
+    if (!this.isOpen && !this.extensionAvailable) {
+      throw new Error('No vault is open');
+    }
+    
+    // Extension mode: Initialize vault on-demand if needed
+    if (this.extensionAvailable && !this.isOpen) {
+      console.log('🔗 Extension mode: Auto-initializing vault for person save');
+      await this.initializeExtensionVault();
+    }
     
     try {
       const personId = this.generateId('person');
