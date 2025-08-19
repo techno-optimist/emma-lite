@@ -279,11 +279,11 @@
   </div>
 
   <!-- Core Emma Web Vault System -->
-  <script src="web-emma/js/emma-input-modal.js"></script>
-  <script src="web-emma/js/clean-password-modal.js"></script>
-  <script src="web-emma/js/emma-orb.js"></script>
-  <script src="web-emma/js/emma-web-vault.js"></script>
-  <script src="web-emma/js/universal-vault-modal.js"></script>
+  <script src="js/emma-input-modal.js"></script>
+  <script src="js/clean-password-modal.js"></script>
+  <script src="js/emma-orb.js"></script>
+  <script src="js/emma-web-vault.js"></script>
+  <script src="js/universal-vault-modal.js"></script>
   
   <script>
     console.log('💜 Emma Web App - Preserving Memories with Love');
@@ -776,7 +776,7 @@
       console.log('🚀 Extension detected - redirecting to dashboard in 3 seconds...');
       setTimeout(() => {
         console.log('📱 Redirecting to dashboard...');
-        window.location.href = 'pages/dashboard-secure.html';
+        window.location.href = 'web-emma/working-desktop-dashboard.html';
       }, 3000);
       
       // Update banner to show countdown
@@ -801,7 +801,7 @@
         banner.style.cursor = 'pointer';
         banner.onclick = () => {
           clearInterval(countdownInterval);
-          window.location.href = 'pages/dashboard-secure.html';
+          window.location.href = 'web-emma/working-desktop-dashboard.html';
         };
       }
     }
