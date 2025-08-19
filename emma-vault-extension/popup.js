@@ -391,6 +391,15 @@ class EmmaVaultExtension {
       console.log('✅ Vault opened successfully:', fileHandle.name);
       this.showSuccess('Vault opened successfully!');
       
+      // CRITICAL: Redirect directly to dashboard since vault is now ready
+      console.log('🚀 Redirecting to Emma dashboard...');
+      setTimeout(() => {
+        chrome.tabs.create({
+          url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html'
+        });
+        window.close(); // Close popup after redirect
+      }, 1500);
+      
     } catch (error) {
       if (error.name === 'AbortError') {
         console.log('User cancelled file selection');
@@ -516,9 +525,9 @@ class EmmaVaultExtension {
     console.log('🌐 Opening Emma Web App...');
     
     try {
-      // Open the REAL Emma Web App with ALL your features
+      // Open directly to dashboard since vault is already managed by extension
       await chrome.tabs.create({
-        url: 'https://emma-hjjc.onrender.com'
+        url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html'
       });
       
       // Close popup
@@ -852,6 +861,15 @@ class EmmaVaultExtension {
       
       console.log('✅ Vault created successfully:', fileHandle.name);
       this.showSuccess('Vault created successfully!');
+      
+      // CRITICAL: Redirect directly to dashboard since vault is now ready
+      console.log('🚀 Redirecting to Emma dashboard...');
+      setTimeout(() => {
+        chrome.tabs.create({
+          url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html'
+        });
+        window.close(); // Close popup after redirect
+      }, 1500);
       
     } catch (error) {
       if (error.name === 'AbortError') {

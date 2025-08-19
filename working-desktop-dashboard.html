@@ -2643,9 +2643,9 @@
       openVaultModal() {
         // Check if extension is available first
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-          // Extension is managing vault - show helpful message instead of modal
-          this.showToast('💜 Vault managed by extension! Click the Emma extension icon 🔒 to manage your vault.', 'info');
-          return;
+          // Extension is managing vault - dashboard should work automatically
+          console.log('🔗 Extension detected - dashboard ready for use!');
+          return; // Don't show vault modal, extension handles everything
         }
         
         const modal = document.getElementById('vault-modal');
@@ -4998,11 +4998,20 @@
         
         // Extension mode - Set up extension-aware vault status
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-          console.log('🔗 Extension detected - setting up extension-aware vault status');
+          console.log('🔗 Extension detected - dashboard ready for immediate use!');
           
-          // NO MOCK VAULT! Extension handles all vault operations
-          // Web app just provides the beautiful interface
-          console.log('✅ Extension vault mode configured - no mock vault needed');
+          // Set dashboard as ready - extension handles all vault operations
+          const statusIcon = document.getElementById('status-icon');
+          const statusTitle = document.getElementById('status-title');
+          const statusDescription = document.getElementById('status-description');
+          const actionBtn = document.getElementById('vault-action-btn');
+          
+          if (statusIcon) statusIcon.textContent = '🔗';
+          if (statusTitle) statusTitle.textContent = 'Extension Connected';
+          if (statusDescription) statusDescription.textContent = 'Ready to preserve memories! Extension manages your vault automatically.';
+          if (actionBtn) actionBtn.style.display = 'none'; // Hide action button
+          
+          console.log('✅ Dashboard configured for extension mode - ready to use!');
         } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault && !window.emmaWebVault.isOpen) {
           (async () => {
             try {
