@@ -165,6 +165,11 @@ function handleEmmaMessage(message) {
       // These are responses from extension to web app, just log
       break;
       
+    case 'VAULT_STATUS':
+      console.log('📊 Vault status response - forwarding to web app');
+      // This is a response from background to web app, just pass through
+      break;
+      
     default:
       console.warn('Unknown message type:', message.type);
   }
