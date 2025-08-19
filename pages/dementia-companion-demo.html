@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Dementia Companion - Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    
+    .demo-section {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    
+    .memory-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .memory-card {
+      background: #f9f9f9;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .memory-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .memory-card.memory-active {
+      border: 3px solid #2196F3;
+    }
+    
+    .memory-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .memory-caption {
+      padding: 15px;
+      font-size: 16px;
+      color: #666;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    select, input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #2196F3;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #1976D2;
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .status-panel {
+      background: #E3F2FD;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+    }
+    
+    .emma-orb-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 72px;
+      height: 72px;
+      cursor: pointer;
+      z-index: 10000;
+    }
+    
+    .instructions {
+      background: #FFF3E0;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #FFE0B2;
+    }
+    
+    .instructions h3 {
+      margin-top: 0;
+      color: #E65100;
+    }
+    
+    .sample-memories {
+      display: none;
+    }
+    
+    @media (max-width: 768px) {
+      .memory-gallery {
+        grid-template-columns: 1fr;
+      }
+      
+      .emma-orb-container {
+        width: 60px;
+        height: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Emma Dementia Companion - Interactive Demo</h1>
+    
+    <div class="instructions">
+      <h3>🎤 Voice Interaction Instructions</h3>
+      <p><strong>To activate Emma:</strong></p>
+      <ol>
+        <li>Click the glowing orb in the bottom right corner</li>
+        <li>Say "Emma" or "Hey Emma" to activate listening mode</li>
+        <li>Try these example phrases:
+          <ul>
+            <li>"Who is this person?" (while viewing a photo)</li>
+            <li>"Tell me about this photo"</li>
+            <li>"When was this taken?"</li>
+            <li>"I'm confused"</li>
+            <li>"Help me remember"</li>
+          </ul>
+        </li>
+      </ol>
+      <p><strong>Note:</strong> This demo requires microphone access. Emma will respond with voice and visual cues.</p>
+    </div>
+    
+    <div class="demo-section">
+      <h2>Configuration</h2>
+      <div class="controls">
+        <div class="control-group">
+          <label for="stage-select">Dementia Stage:</label>
+          <select id="stage-select">
+            <option value="EARLY">Early Stage (Mild Cognitive Impairment)</option>
+            <option value="MIDDLE">Middle Stage (Moderate Dementia)</option>
+            <option value="LATE">Late Stage (Severe Dementia)</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label for="voice-select">Voice Enabled:</label>
+          <select id="voice-select">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label for="name-input">User Name:</label>
+          <input type="text" id="name-input" value="dear" placeholder="How Emma addresses the user">
+        </div>
+        
+        <button class="btn-primary" onclick="updateCompanionSettings()">Apply Settings</button>
+        <button class="btn-secondary" onclick="showCaregiverReport()">View Caregiver Report</button>
+      </div>
+    </div>
+    
+    <div class="demo-section">
+      <h2>Memory Gallery - Click photos to view</h2>
+      <p>Select a photo below and then interact with Emma to ask questions about it.</p>
+      
+      <div class="memory-gallery">
+        <div class="memory-card" data-memory-id="mem-001" data-memory-type="photo" onclick="selectMemory(this)">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect fill='%23E3F2FD' width='300' height='200'/%3E%3Ctext x='150' y='100' text-anchor='middle' font-family='Arial' font-size='20' fill='%232196F3'%3EFamily Wedding%3C/text%3E%3C/svg%3E" alt="Family Wedding" class="memory-image">
+          <div class="memory-caption">Susan's wedding day - June 2018</div>
+        </div>
+        
+        <div class="memory-card" data-memory-id="mem-002" data-memory-type="photo" onclick="selectMemory(this)">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect fill='%23F3E5F5' width='300' height='200'/%3E%3Ctext x='150' y='100' text-anchor='middle' font-family='Arial' font-size='20' fill='%239C27B0'%3EGraduation Day%3C/text%3E%3C/svg%3E" alt="Graduation" class="memory-image">
+          <div class="memory-caption">David's graduation from medical school</div>
+        </div>
+        
+        <div class="memory-card" data-memory-id="mem-003" data-memory-type="photo" onclick="selectMemory(this)">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect fill='%23E8F5E9' width='300' height='200'/%3E%3Ctext x='150' y='100' text-anchor='middle' font-family='Arial' font-size='20' fill='%234CAF50'%3EFamily Vacation%3C/text%3E%3C/svg%3E" alt="Vacation" class="memory-image">
+          <div class="memory-caption">Summer vacation at the lake house</div>
+        </div>
+        
+        <div class="memory-card" data-memory-id="mem-004" data-memory-type="photo" onclick="selectMemory(this)">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect fill='%23FFF3E0' width='300' height='200'/%3E%3Ctext x='150' y='100' text-anchor='middle' font-family='Arial' font-size='20' fill='%23FF9800'%3EHoliday Dinner%3C/text%3E%3C/svg%3E" alt="Holiday" class="memory-image">
+          <div class="memory-caption">Christmas dinner with the whole family</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="demo-section">
+      <h2>Emma Status</h2>
+      <div class="status-panel">
+        <div class="status-item">
+          <span>Current State:</span>
+          <span id="emma-state">Idle</span>
+        </div>
+        <div class="status-item">
+          <span>Last Interaction:</span>
+          <span id="last-interaction">None</span>
+        </div>
+        <div class="status-item">
+          <span>Repeated Questions:</span>
+          <span id="repetition-count">0</span>
+        </div>
+        <div class="status-item">
+          <span>Session Duration:</span>
+          <span id="session-duration">0 minutes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Emma Orb Container -->
+  <div class="emma-orb-container" id="emma-orb"></div>
+  
+  <!-- Caregiver Report Modal -->
+  <div id="caregiver-report" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10002;">
+    <div style="background: white; margin: 50px auto; max-width: 600px; padding: 30px; border-radius: 12px; max-height: 80vh; overflow-y: auto;">
+      <h2>Caregiver Report</h2>
+      <div id="report-content"></div>
+      <button class="btn-primary" onclick="closeCaregiverReport()" style="margin-top: 20px;">Close</button>
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script src="../js/emma-orb.js"></script>
+  
+  <!-- CTO Intelligence Enhancement: Load intelligent components -->
+  <script src="../js/memory-context-analyzer.js"></script>
+  <script src="../js/emma-question-engine.js"></script>
+  
+  <script src="../js/emma-dementia-companion.js"></script>
+  <script>
+    let companion;
+    let sessionStart = Date.now();
+    let statusUpdateInterval;
+    
+    // Initialize Emma Dementia Companion
+    window.addEventListener('DOMContentLoaded', () => {
+      const orbContainer = document.getElementById('emma-orb');
+      companion = new EmmaDementiaCompanion(orbContainer, {
+        stage: 'EARLY',
+        voiceEnabled: true,
+        userName: 'dear'
+      });
+      
+      // Start status updates
+      statusUpdateInterval = setInterval(updateStatus, 1000);
+    });
+    
+    function selectMemory(card) {
+      // Remove active class from all cards
+      document.querySelectorAll('.memory-card').forEach(c => c.classList.remove('memory-active'));
+      // Add active class to selected card
+      card.classList.add('memory-active');
+      
+      // Update companion context
+      if (companion) {
+        companion.state.currentActivity = 'viewing_memory';
+        
+        // Simulate Emma noticing the selection
+        setTimeout(() => {
+          if (companion.state.isListening) {
+            companion.speak("I see you're looking at a photo. Would you like to tell me about it?", { gentle: true });
+          }
+        }, 1000);
+      }
+    }
+    
+    function updateCompanionSettings() {
+      const stage = document.getElementById('stage-select').value;
+      const voiceEnabled = document.getElementById('voice-select').value === 'true';
+      const userName = document.getElementById('name-input').value;
+      
+      if (companion) {
+        companion.options.stage = stage;
+        companion.options.voiceEnabled = voiceEnabled;
+        companion.options.userName = userName;
+        
+        // Update conversation templates
+        companion.initializeConversationEngine();
+        
+        alert('Settings updated successfully!');
+      }
+    }
+    
+    function updateStatus() {
+      // Update session duration
+      const duration = Math.floor((Date.now() - sessionStart) / 60000);
+      document.getElementById('session-duration').textContent = `${duration} minutes`;
+      
+      // Update Emma state
+      if (companion) {
+        const stateText = companion.state.isListening ? 'Listening' : 
+                         companion.state.isProcessing ? 'Processing' : 'Idle';
+        document.getElementById('emma-state').textContent = stateText;
+        
+        // Update repetition count
+        const repetitions = Array.from(companion.state.recentQuestions.values())
+          .filter(q => q.count > 1).length;
+        document.getElementById('repetition-count').textContent = repetitions;
+        
+        // Update last interaction
+        if (companion.state.lastInteraction) {
+          const time = new Date(companion.state.lastInteraction.timestamp).toLocaleTimeString();
+          document.getElementById('last-interaction').textContent = time;
+        }
+      }
+    }
+    
+    function showCaregiverReport() {
+      if (!companion) return;
+      
+      const report = companion.generateCaregiverReport();
+      const reportContent = document.getElementById('report-content');
+      
+      reportContent.innerHTML = `
+        <h3>Daily Summary - ${report.date}</h3>
+        
+        <div style="background: #E3F2FD; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Overview</h4>
+          <p>Total Interactions: ${report.interactions}</p>
+          <p>Session Time: ${Math.floor((Date.now() - sessionStart) / 60000)} minutes</p>
+        </div>
+        
+        <div style="background: #FFF3E0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Patterns Observed</h4>
+          ${report.patterns.repetition.size > 0 ? 
+            `<p>⚠️ Repetitive questions detected (${report.patterns.repetition.size} unique questions repeated)</p>` : 
+            '<p>✓ No concerning repetition patterns</p>'}
+          ${report.patterns.emotional.length > 0 ? 
+            `<p>Emotional moments: ${report.patterns.emotional.length}</p>` : ''}
+        </div>
+        
+        <div style="background: #E8F5E9; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Recommendations</h4>
+          ${report.recommendations.length > 0 ? 
+            report.recommendations.map(r => `<p>• ${r.message}</p>`).join('') :
+            '<p>No specific recommendations at this time.</p>'}
+        </div>
+        
+        <div style="background: #F3E5F5; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4>Interaction Quality</h4>
+          <p>The user engaged well with photo memories today. Consider scheduling similar activities during morning hours when engagement appears highest.</p>
+        </div>
+      `;
+      
+      document.getElementById('caregiver-report').style.display = 'block';
+    }
+    
+    function closeCaregiverReport() {
+      document.getElementById('caregiver-report').style.display = 'none';
+    }
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (statusUpdateInterval) {
+        clearInterval(statusUpdateInterval);
+      }
+      if (companion && companion.recognition) {
+        companion.recognition.stop();
+      }
+    });
+  </script>
+</body>
+</html>

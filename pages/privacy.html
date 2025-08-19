@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Emma</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .privacy-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .privacy-section {
+      margin-bottom: 40px;
+    }
+    
+    .privacy-highlight {
+      background: rgba(74, 222, 128, 0.1);
+      border-left: 4px solid var(--emma-success);
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 8px;
+    }
+    
+    .privacy-highlight h3 {
+      color: var(--emma-success);
+      margin-bottom: 8px;
+    }
+    
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    
+    ul li {
+      position: relative;
+      padding-left: 24px;
+      margin-bottom: 12px;
+      color: var(--emma-text-secondary);
+    }
+    
+    ul li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--emma-purple);
+      font-weight: bold;
+    }
+    
+    .data-table {
+      width: 100%;
+      margin: 24px 0;
+      border-collapse: collapse;
+    }
+    
+    .data-table th,
+    .data-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--emma-border);
+    }
+    
+    .data-table th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--emma-text);
+      font-weight: 500;
+    }
+    
+    .data-table td {
+      color: var(--emma-text-secondary);
+    }
+    
+    .contact-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--emma-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 32px;
+    }
+    
+    .last-updated {
+      text-align: center;
+      color: var(--emma-text-tertiary);
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--emma-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container fade-in">
+    <div class="emma-logo">
+      <div class="emma-logo-icon">🧠</div>
+      <h1 class="emma-logo-text">emma</h1>
+    </div>
+    
+    <div class="glass-card privacy-content">
+      <h2>Privacy Policy</h2>
+      <p style="font-size: 18px; line-height: 1.6; color: var(--emma-text-secondary); margin-bottom: 32px;">
+        Your privacy is our top priority. Emma is designed with privacy-first principles, 
+        ensuring your AI conversations remain completely under your control.
+      </p>
+      
+      <div class="privacy-highlight">
+        <h3>🔒 Key Privacy Promise</h3>
+        <p>All your data stays on your device. Emma never sends your conversations, 
+        memories, or any personal information to external servers.</p>
+      </div>
+      
+      <div class="privacy-section">
+        <h3>Data Collection & Storage</h3>
+        <p>Emma collects and stores the following data locally on your device:</p>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Data Type</th>
+              <th>Purpose</th>
+              <th>Storage Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AI Conversations</td>
+              <td>Memory preservation and search</td>
+              <td>Local IndexedDB</td>
+            </tr>
+            <tr>
+              <td>Timestamps</td>
+              <td>Chronological organization</td>
+              <td>Local IndexedDB</td>
+            </tr>
+            <tr>
+              <td>Source URLs</td>
+              <td>Context tracking</td>
+              <td>Local IndexedDB</td>
+            </tr>
+            <tr>
+              <td>User Preferences</td>
+              <td>Personalization</td>
+              <td>Chrome Storage API</td>
+            </tr>
+            <tr>
+              <td>MTAP Metadata</td>
+              <td>Protocol compliance</td>
+              <td>Local IndexedDB</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="privacy-section">
+        <h3>MTAP Protocol & Security</h3>
+        <p>Emma uses the Memory Transport & Access Protocol (MTAP) which provides:</p>
+        <ul>
+          <li>Content-addressed storage with cryptographic hashing</li>
+          <li>Local-first architecture with optional federation</li>
+          <li>Secure memory referencing via mtap:// addresses</li>
+          <li>Agent permission system for controlled access</li>
+        </ul>
+      </div>
+      
+      <div class="privacy-section">
+        <h3>Third-Party Services</h3>
+        <p>Emma operates entirely within your browser and does not use any third-party services for:</p>
+        <ul>
+          <li>Analytics or tracking</li>
+          <li>Data storage or processing</li>
+          <li>User identification</li>
+          <li>Advertising or marketing</li>
+        </ul>
+      </div>
+      
+      <div class="privacy-section">
+        <h3>Your Rights & Control</h3>
+        <p>You have complete control over your data:</p>
+        <ul>
+          <li><strong>Export:</strong> Download all your memories in MTAP-compliant JSON format</li>
+          <li><strong>Delete:</strong> Remove individual memories or clear all data</li>
+          <li><strong>Disable:</strong> Turn off auto-capture at any time</li>
+          <li><strong>Uninstall:</strong> Remove the extension and all associated data</li>
+        </ul>
+      </div>
+      
+      <div class="privacy-section">
+        <h3>Data Retention</h3>
+        <p>Your memories are stored locally until you choose to delete them. Emma does not 
+        automatically expire or remove your data. The storage is limited only by your 
+        browser's quota for extensions.</p>
+      </div>
+      
+      <div class="privacy-section">
+        <h3>Updates to This Policy</h3>
+        <p>We may update this privacy policy as Emma evolves. Any changes will be 
+        reflected in the extension and on this page with an updated revision date.</p>
+      </div>
+      
+      <div class="contact-card">
+        <h3>Questions or Concerns?</h3>
+        <p>If you have any questions about Emma's privacy practices, please:</p>
+        <ul>
+          <li>Visit our <a href="https://github.com/emma-hml/emma-lite" target="_blank">GitHub repository</a></li>
+          <li>Open an issue for privacy-related concerns</li>
+          <li>Review our open-source code for full transparency</li>
+        </ul>
+      </div>
+      
+      <div class="last-updated">
+        <p>Last updated: January 2025 | Emma v1.1.0</p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 32px;">
+        <a href="#" class="btn btn-secondary" onclick="window.close()">
+          Back to Extension
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

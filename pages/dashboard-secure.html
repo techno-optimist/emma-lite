@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma - Your Intelligent Memory Companion</title>
+  
+  <!-- SECURITY: External CSS files for CSP compliance -->
+  <link rel="stylesheet" href="../css/dashboard-secure.css">
+  <link rel="stylesheet" href="../css/voice-capture-minimal.css">
+  <link rel="stylesheet" href="../css/emma-chat.css">
+  <link rel="stylesheet" href="../css/emma-share.css">
+</head>
+<body>
+  <!-- Aurora Background -->
+  <div class="aurora-bg">
+    <div class="aurora"></div>
+  </div>
+
+  <!-- Memory Constellation Canvas -->
+  <canvas id="constellation" class="constellation-canvas"></canvas>
+
+  <!-- Welcome Text -->
+  <div class="welcome-text">
+    <h1 class="welcome-title">emma</h1>
+    <p class="welcome-subtitle">Your Intelligent Memory Companion</p>
+  </div>
+
+  <!-- Neural Network Background -->
+  <div class="neural-network">
+    <canvas id="neural-canvas" class="neural-canvas"></canvas>
+  </div>
+
+  <!-- Main Dashboard -->
+  <div class="dashboard">
+    <div class="command-center">
+      <!-- Central Emma Orb (WebGL) -->
+      <div class="emma-orb-container" id="emma-orb">
+        <div class="emma-orb-webgl" id="webgl-orb-container">
+          <!-- WebGL Emma Orb will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Radial Menu (Neural Nodes) -->
+  <div class="radial-menu" id="radial-menu">
+    <div class="radial-item" data-action="voice" id="voice-node">
+      <div class="radial-item-icon">🎤</div>
+      <div class="radial-item-label">Voice</div>
+    </div>
+    
+    <div class="radial-item" data-action="chat" id="chat-node">
+      <div class="radial-item-icon">💬</div>
+      <div class="radial-item-label">Chat</div>
+    </div>
+    
+    <div class="radial-item" data-action="memories" id="memories-node">
+      <div class="radial-item-icon">💎</div>
+      <div class="radial-item-label">Memories</div>
+    </div>
+    
+    <div class="radial-item" data-action="vault" id="vault-node">
+      <div class="radial-item-icon">🔒</div>
+      <div class="radial-item-label">Vault</div>
+    </div>
+    
+    <div class="radial-item" data-action="share" id="share-node">
+      <div class="radial-item-icon">📱</div>
+      <div class="radial-item-label">Share</div>
+    </div>
+    
+    <div class="radial-item" data-action="search" id="search-node">
+      <div class="radial-item-icon">🔍</div>
+      <div class="radial-item-label">Search</div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Vault Modal -->
+  <div class="vault-modal" id="vault-modal">
+    <div class="vault-modal-content">
+      <button class="btn-close" id="close-vault-modal">&times;</button>
+      <h2 class="vault-modal-title">Emma Vault</h2>
+      
+      <div class="vault-status" id="vault-status">
+        <span>🔒 Vault Status Loading...</span>
+      </div>
+      
+      <div class="unlock-section" id="unlock-section">
+        <div class="form-group">
+          <label class="form-label" for="vault-password">Vault Passphrase</label>
+          <input type="password" id="vault-password" class="form-input" placeholder="Enter your vault passphrase">
+        </div>
+        
+        <div style="display: flex; gap: 12px; margin-top: 20px;">
+          <button class="btn btn-primary" id="unlock-btn">🔓 Unlock</button>
+          <button class="btn btn-secondary" id="cancel-unlock-btn">Cancel</button>
+        </div>
+      </div>
+      
+      <div style="margin-top: 20px; text-align: center;">
+        <button class="btn btn-secondary" id="generate-vault-qr-dashboard">📱 Generate QR</button>
+        <button class="btn btn-secondary" id="open-qr-scanner-dashboard">📷 Scan QR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY: External JavaScript files for CSP compliance -->
+  <script src="../js/emma-orb.js"></script>
+  <script src="../js/experience-popup-base.js"></script>
+  <script src="../js/voice-capture-experience.js"></script>
+  <script src="../js/emma-chat-experience.js"></script>
+  <script src="../js/emma-qr-generator.js"></script>
+  <script src="../js/qr-service.js"></script>
+  <script src="../js/emma-share-experience.js"></script>
+  
+  <!-- SECURITY: Main dashboard script (extracted from inline) -->
+  <script src="../js/dashboard-secure.js"></script>
+</body>
+</html>

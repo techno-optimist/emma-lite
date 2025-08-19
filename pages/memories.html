@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self';">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Capsules - Emma</title>
+  <link rel="stylesheet" href="../css/memories.css">
+</head>
+<body>
+  <div class="memories-container">
+    <!-- Header -->
+    <header class="memories-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">Memory Capsules</h1>
+          <p class="page-subtitle">Your personal memory collection</p>
+          <div id="vault-banner" class="vault-banner" style="display:none; margin-top:8px;
+            padding:10px 12px; border-radius:8px; font-size:14px;">
+          </div>
+        </div>
+        <div class="header-actions">
+          <button type="button" id="create-memory-btn" class="btn-primary">
+            <span class="btn-icon">+</span>
+            Create New Capsule
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Search and Filter -->
+    <section class="search-filter-section">
+      <div class="search-filter-controls">
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Search memories..." 
+            class="search-input"
+          >
+        </div>
+        
+        <div class="filter-container">
+          <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+          </svg>
+          <select id="category-filter" class="category-filter">
+            <option value="All">All Categories</option>
+            <option value="Family">Family</option>
+            <option value="Friends">Friends</option>
+            <option value="Travel">Travel</option>
+            <option value="Celebration">Celebration</option>
+            <option value="Achievement">Achievement</option>
+            <option value="Daily Life">Daily Life</option>
+            <option value="Other">Other</option>
+          </select>
+          <!-- Vault filter (always show for consistency) -->
+          <select id="vault-filter" class="category-filter" style="margin-left:8px;">
+            <option value="current">My Vault</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Count -->
+    <div class="results-info">
+      <p class="results-count">
+        Showing <span id="filtered-count">0</span> of <span id="total-count">0</span> memories
+      </p>
+    </div>
+
+    <!-- Memory Grid -->
+    <section class="memory-grid-section">
+      <div id="memory-grid" class="memory-grid">
+        <!-- Loading State -->
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Loading your memories...</p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">💝</div>
+        <h3 class="empty-title">No memories found</h3>
+        <p class="empty-message">
+          <span id="empty-message-text">Start creating your first memory capsule</span>
+        </p>
+        <button type="button" id="empty-create-btn" class="btn-primary empty-action">
+          Create Your First Memory
+        </button>
+        <button type="button" id="generate-sample-btn" class="btn-secondary empty-action" style="margin-left: 12px;">
+          Generate Sample Data
+        </button>
+      </div>
+    </section>
+
+    <!-- Back Button -->
+    <div class="back-section">
+      <button type="button" id="back-btn" class="btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m12 19-7-7 7-7"/>
+          <path d="m19 12H5"/>
+        </svg>
+        Back to Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- Home Navigation Button -->
+  <button id="home-nav-button" class="home-nav-button" title="Return to Dashboard" aria-label="Return to Dashboard">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- HML Sync Initialization (CSP-compliant) -->
+  <script type="module" src="../js/memories-hml-init.js"></script>
+  
+  <!-- Core Orb System -->
+  <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
+  <script src="../js/emma-orb.js"></script>
+  <script src="../js/settings-service.js"></script> 
+  <script src="../js/orb-experience-manager.js"></script>
+  <script src="../js/experience-popup-base.js?v=20250814115222"></script>
+  <script src="../js/assistant-experience-popup.js"></script>
+  <script src="../js/dementia-experience-popup.js"></script>
+  <script src="../js/mirror-experience-popup.js"></script>
+  <script src="../js/universal-emma-orb.js"></script>
+  
+  <!-- Initialize Universal Orb for Extension Page -->
+  <script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
+      });
+    } else {
+      setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
+    }
+  </script>
+  
+  <!-- Load VaultGuardian first -->
+  <script type="module">
+    import VaultGuardian from '../lib/vault-guardian.js';
+    window.VaultGuardian = VaultGuardian;
+    await VaultGuardian.initialize();
+    console.log('🛡️ VaultGuardian loaded and ready');
+  </script>
+  
+  <script src="../js/memories.js?v=20250814115553" 
+          onload="console.log('🔥 SCRIPT LOADED: memories.js loaded successfully')" 
+          onerror="console.error('🚨 SCRIPT ERROR: Failed to load memories.js')"></script>
+
+  <!-- Home Navigation Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🏠 HOME NAV: Setting up home button...');
+      const homeBtn = document.getElementById('home-nav-button');
+      console.log('🏠 HOME NAV: Found home button:', homeBtn);
+      
+      if (homeBtn) {
+        homeBtn.addEventListener('click', () => {
+          console.log('🏠 HOME NAV: Home button clicked!');
+          // Navigate back to the HTML dashboard
+          window.location.href = 'dashboard-new.html';
+        });
+        console.log('🏠 HOME NAV: Event listener attached');
+      } else {
+        console.error('🏠 HOME NAV: Home button not found!');
+      }
+    });
+  </script>
+
+</body>
+</html>
