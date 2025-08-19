@@ -121,6 +121,10 @@ function handleEmmaMessage(message) {
       sendVaultData();
       break;
       
+    case 'REQUEST_VAULT_STATUS':
+      sendVaultStatus();
+      break;
+      
     case 'ENABLE_SYNC':
       enableSync();
       break;
@@ -322,6 +326,26 @@ function sendVaultData() {
     type: 'EXTENSION_MANAGES_VAULT',
     data: {
       message: 'Extension manages vault - web app should route all saves through extension',
+      extensionVersion: chrome.runtime.getManifest().version
+    }
+  });
+}
+
+/**
+ * Send vault status to web app
+ */
+async function sendVaultStatus() {
+  console.log('📊 Checking vault status in extension...');
+  
+  // Check if extension has a vault open
+  const response = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
+  
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'VAULT_STATUS',
+    data: {
+      vaultOpen: response?.vaultReady || false,
+      vaultName: response?.vaultFileName || null,
       extensionVersion: chrome.runtime.getManifest().version
     }
   });

@@ -1698,6 +1698,29 @@ class EmmaWebVault {
         console.error('❌ Sync error:', message.error);
         this.showSyncNotification('error', 'Sync failed: ' + message.error);
         break;
+        
+      case 'VAULT_STATUS':
+        console.log('📊 Vault status received from extension:', message.data);
+        if (message.data.vaultOpen) {
+          console.log('✅ Extension has vault open:', message.data.vaultName);
+          // Update web app status to show vault is ready
+          sessionStorage.setItem('emmaVaultActive', 'true');
+          sessionStorage.setItem('emmaVaultName', message.data.vaultName || 'Extension Vault');
+          
+          // Notify dashboard that vault is ready
+          window.dispatchEvent(new CustomEvent('extension-vault-ready', {
+            detail: { 
+              vaultReady: true,
+              vaultName: message.data.vaultName,
+              memoryCount: message.data.memoryCount,
+              peopleCount: message.data.peopleCount
+            }
+          }));
+        } else {
+          console.log('⚠️ Extension has no vault open');
+        }
+        break;
+        
     }
   }
 
@@ -1707,10 +1730,11 @@ class EmmaWebVault {
   async checkExtensionSyncStatus() {
     if (!this.extensionAvailable) return;
     
-    // Request sync status from extension
+    // Request vault status from extension
+    console.log('📊 Requesting vault status from extension...');
     window.postMessage({
       channel: 'emma-vault-bridge',
-      type: 'REQUEST_SYNC_STATUS'
+      type: 'REQUEST_VAULT_STATUS'
     }, window.location.origin);
   }
 

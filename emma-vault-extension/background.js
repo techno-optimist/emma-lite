@@ -101,6 +101,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'CHECK_VAULT_STATUS':
+      checkVaultStatus()
+        .then(status => sendResponse(status))
+        .catch(error => sendResponse({ vaultReady: false, error: error.message }));
+      return true;
+      
     default:
       sendResponse({ success: false, error: 'Unknown action' });
   }
@@ -568,6 +574,25 @@ async function handleSaveMediaToVault(mediaData) {
 }
 
 
+
+/**
+ * Check vault status
+ */
+async function checkVaultStatus() {
+  try {
+    const { vaultReady, vaultFileName, vaultData } = await chrome.storage.local.get(['vaultReady', 'vaultFileName', 'vaultData']);
+    
+    return {
+      vaultReady: vaultReady || false,
+      vaultFileName: vaultFileName || null,
+      memoryCount: vaultData?.content?.memories ? Object.keys(vaultData.content.memories).length : 0,
+      peopleCount: vaultData?.content?.people ? Object.keys(vaultData.content.people).length : 0
+    };
+  } catch (error) {
+    console.error('❌ Failed to check vault status:', error);
+    return { vaultReady: false, error: error.message };
+  }
+}
 
 /**
  * Download current vault as .emma file
