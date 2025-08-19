@@ -1160,8 +1160,6 @@ class EmmaVaultExtension {
     console.log('✅ Media saved to vault file via popup');
     return { success: true, id: mediaId };
   }
-
-console.log('Emma Vault Bridge background service initialized');
   
   calculateVaultSize() {
     if (!this.vaultData) return 0;
