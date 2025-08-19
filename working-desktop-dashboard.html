@@ -1828,25 +1828,9 @@
   <script src="js/unified-memory-wizard.js"></script>
 
   <script>
-    // Web App Initialization - Check vault status
-    if (sessionStorage.getItem('emmaVaultActive') !== 'true') {
-      console.warn('⚠️ No active vault - redirecting to vault creation');
-      window.location.href = 'index.html';
-    } else {
-      console.log('✅ Vault is active:', sessionStorage.getItem('emmaVaultName'));
-      
-      // Check if 12-hour session is still valid
-      const sessionExpiry = localStorage.getItem('emmaVaultSessionExpiry');
-      const isSessionValid = sessionExpiry && Date.now() < parseInt(sessionExpiry);
-      
-      if (isSessionValid) {
-        console.log('✅ 12-hour session still valid - vault remains unlocked');
-      } else {
-        console.log('🔒 12-hour session expired - vault needs unlock');
-      }
-      
-      // WebVaultStatus manager will handle all status
-    }
+    // Extension mode - Skip vault session validation
+    console.log('🔗 Dashboard loaded via extension - skipping session checks');
+    console.log('💜 Emma Dashboard ready for Debbe and all precious memories!');
 
     // Vault initialization moved to end of page after ALL scripts load
 
@@ -2676,7 +2660,7 @@
           statusTitle.textContent = 'No .emma Vault Loaded';
           statusDescription.textContent = 'Open an existing .emma vault file or create a new one';
           actionBtn.textContent = '📂 Open .emma Vault';
-          actionBtn.onclick = () => window.location.href = '../index.html';
+          actionBtn.onclick = () => console.log('Vault management handled by extension');
           actionBtn.style.display = 'block';
           unlockSection.style.display = 'none';
           createVaultSection.style.display = 'none';
