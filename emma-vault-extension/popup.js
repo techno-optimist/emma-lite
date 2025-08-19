@@ -366,6 +366,14 @@ class EmmaVaultExtension {
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
+      // CRITICAL: Send file handle to background script so it can save data
+      console.log('📤 Sending file handle to background script for saves...');
+      await chrome.runtime.sendMessage({
+        action: 'SET_FILE_HANDLE',
+        handle: fileHandle
+      });
+      console.log('✅ File handle sent to background script');
+      
       // Add to recent vaults
       this.addToRecentVaults({
         name: vaultData.name || 'Unnamed Vault',
@@ -813,6 +821,14 @@ class EmmaVaultExtension {
       
       this.vaultData = vaultData;
       this.isVaultOpen = true;
+      
+      // CRITICAL: Send file handle to background script so it can save data
+      console.log('📤 Sending file handle to background script for saves...');
+      await chrome.runtime.sendMessage({
+        action: 'SET_FILE_HANDLE',
+        handle: fileHandle
+      });
+      console.log('✅ File handle sent to background script');
       
       // Add to recent vaults
       this.addToRecentVaults({

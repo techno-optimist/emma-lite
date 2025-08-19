@@ -151,6 +151,16 @@ function handleEmmaMessage(message) {
       // Extension already knows its own status, just acknowledge
       break;
       
+    case 'MEMORY_SAVED':
+    case 'MEMORY_SAVE_ERROR':
+    case 'PERSON_SAVED':
+    case 'PERSON_SAVE_ERROR':
+    case 'MEDIA_SAVED':
+    case 'MEDIA_SAVE_ERROR':
+      console.log('📨 Save response received:', message.type);
+      // These are responses from extension to web app, just log
+      break;
+      
     default:
       console.warn('Unknown message type:', message.type);
   }
