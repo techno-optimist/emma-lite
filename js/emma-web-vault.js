@@ -1703,6 +1703,14 @@ class EmmaWebVault {
         console.log('📊 Vault status received from extension:', message.data);
         if (message.data.vaultOpen) {
           console.log('✅ Extension has vault open:', message.data.vaultName);
+          
+          // CRITICAL: Set global vault status for dashboard
+          window.currentVaultStatus = { 
+            isUnlocked: true,
+            managedByExtension: true,
+            name: message.data.vaultName
+          };
+          
           // Update web app status to show vault is ready
           sessionStorage.setItem('emmaVaultActive', 'true');
           sessionStorage.setItem('emmaVaultName', message.data.vaultName || 'Extension Vault');
@@ -1716,8 +1724,11 @@ class EmmaWebVault {
               peopleCount: message.data.peopleCount
             }
           }));
+          
+          console.log('🔓 CRITICAL: Set window.currentVaultStatus.isUnlocked = true');
         } else {
           console.log('⚠️ Extension has no vault open');
+          window.currentVaultStatus = { isUnlocked: false };
         }
         break;
         

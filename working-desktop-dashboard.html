@@ -5012,6 +5012,26 @@
           if (actionBtn) actionBtn.style.display = 'none'; // Hide action button
           
           console.log('✅ Dashboard configured for extension mode - ready to use!');
+          
+          // Listen for extension vault ready event
+          window.addEventListener('extension-vault-ready', (event) => {
+            console.log('🔓 Extension vault ready event received:', event.detail);
+            
+            // Force update vault icon to unlocked
+            const vaultIcon = document.querySelector('#vault-node .radial-item-icon');
+            if (vaultIcon) {
+              vaultIcon.textContent = '🔓';
+              console.log('🔓 FORCED: Vault icon updated to unlocked via event');
+            }
+            
+            // Update vault node status
+            setTimeout(() => {
+              if (window.dashboard && window.dashboard.updateVaultNodeStatus) {
+                window.dashboard.updateVaultNodeStatus();
+                console.log('🔓 Dashboard vault node status updated');
+              }
+            }, 100);
+          });
         } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault && !window.emmaWebVault.isOpen) {
           (async () => {
             try {
