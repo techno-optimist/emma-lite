@@ -33,12 +33,10 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
   });
   
-  // Open welcome page on first install
+  // Skip welcome page - users just click extension icon
   if (details.reason === 'install') {
-    console.log('🎉 First install - opening welcome page');
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('welcome.html')
-    });
+    console.log('🎉 Emma Vault Extension installed - click the extension icon to get started!');
+    // No welcome page needed - popup is the interface
   }
 });
 
