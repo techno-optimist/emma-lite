@@ -1031,13 +1031,15 @@
           try {
             console.log('🔄 PEOPLE: Restoring elegant vault state...');
             const result = await window.emmaWebVault.restoreVaultState();
-            if (result && result.vaultData) {
-              console.log('✅ PEOPLE: Elegant vault state restored successfully');
+            if (result) {
+              console.log('✅ PEOPLE: Vault state restored successfully');
               console.log('📊 PEOPLE: Passphrase available:', result.hasPassphrase);
               console.log('📁 PEOPLE: Filename available:', result.hasFileName);
+            } else {
+              console.log('🔒 PEOPLE: Vault session is locked or invalid');
             }
           } catch (error) {
-            console.warn('⚠️ PEOPLE: Could not restore elegant vault state:', error);
+            console.warn('⚠️ PEOPLE: Could not restore vault state:', error);
           }
         })();
       }

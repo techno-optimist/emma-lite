@@ -208,17 +208,10 @@ class UniversalVaultModal {
       if (result.success) {
         console.log('✅ VAULT: Successfully unlocked via universal modal');
         
-        // For web app: Set 12-hour session in localStorage
-        if (extendSession) {
-          const twelveHoursFromNow = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
-          localStorage.setItem('emmaVaultSessionExpiry', twelveHoursFromNow.toString());
-          console.log('✅ VAULT: Session extended to 12 hours');
-        } else {
-          // Default 30 minute session
-          const thirtyMinutesFromNow = Date.now() + (30 * 60 * 1000);
-          localStorage.setItem('emmaVaultSessionExpiry', thirtyMinutesFromNow.toString());
-          console.log('✅ VAULT: Session set to 30 minutes');
-        }
+        // CRITICAL FIX: Remove session timers - vault stays unlocked until user locks it
+        // Sessions now persist indefinitely until user manually locks vault
+        localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
+        console.log('✅ VAULT: Session active (no expiry - user controlled locking)');
 
         // Success animation with null checks
         if (btnText) {

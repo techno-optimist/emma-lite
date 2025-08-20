@@ -18,21 +18,16 @@ class WebVaultStatus {
     const vaultName = sessionStorage.getItem('emmaVaultName');
     
     if (vaultActive && vaultName) {
-      // Check if session is still valid (12-hour expiry)
-      const sessionExpiry = localStorage.getItem('emmaVaultSessionExpiry');
-      const isSessionValid = sessionExpiry && Date.now() < parseInt(sessionExpiry);
+      // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
+      // Sessions now persist indefinitely until user manually locks vault
       
       this.status = {
-        isUnlocked: isSessionValid,
+        isUnlocked: true, // Always unlocked if vault is active
         hasVault: true,
         name: vaultName
       };
       
-      if (isSessionValid) {
-        console.log('✅ WebVaultStatus: Vault is active and unlocked (session valid):', vaultName);
-      } else {
-        console.log('🔒 WebVaultStatus: Vault is active but session expired:', vaultName);
-      }
+      console.log('✅ WebVaultStatus: Vault is active and unlocked (no expiry - user controlled):', vaultName);
     } else {
       this.status = {
         isUnlocked: false,
@@ -63,11 +58,10 @@ class WebVaultStatus {
   }
   
   isUnlocked() {
-    // Check current session validity
-    const sessionExpiry = localStorage.getItem('emmaVaultSessionExpiry');
-    const isSessionValid = sessionExpiry && Date.now() < parseInt(sessionExpiry);
+    // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
+    // Sessions now persist indefinitely until user manually locks vault
     
-    this.status.isUnlocked = isSessionValid && this.status.hasVault;
+    this.status.isUnlocked = this.status.hasVault; // Unlocked if vault exists
     window.currentVaultStatus = this.status;
     
     return this.status.isUnlocked;

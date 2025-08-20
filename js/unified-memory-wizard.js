@@ -1800,21 +1800,19 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       console.log('💾 VAULT DEBUG: localStorage sessionExpiry:', localStorage.getItem('emmaVaultSessionExpiry'));
       
       if (window.webVaultStatus) {
-        const sessionExpiry = localStorage.getItem('emmaVaultSessionExpiry');
-        const currentTime = Date.now();
-        const isSessionValid = sessionExpiry && currentTime < parseInt(sessionExpiry);
+          // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
+        const isSessionValid = true; // Always valid - user controlled locking
         
-        console.log('💾 VAULT DEBUG: Session expiry timestamp:', sessionExpiry);
-        console.log('💾 VAULT DEBUG: Current timestamp:', currentTime);
-        console.log('💾 VAULT DEBUG: Session valid?', isSessionValid);
+        console.log('💾 VAULT DEBUG: Session expiry check DISABLED - user controlled locking');
+        console.log('💾 VAULT DEBUG: Session always valid until user locks vault');
         console.log('💾 VAULT DEBUG: webVaultStatus.status:', window.webVaultStatus.getStatus());
         console.log('💾 VAULT DEBUG: isUnlocked() result:', window.webVaultStatus.isUnlocked());
       }
       
       // CRITICAL: Force vault open if session is active but vault thinks it's closed
       if (window.emmaWebVault && sessionStorage.getItem('emmaVaultActive') === 'true') {
-        const sessionExpiry = localStorage.getItem('emmaVaultSessionExpiry');
-        const isSessionValid = sessionExpiry && Date.now() < parseInt(sessionExpiry);
+        // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
+        const isSessionValid = true; // Always valid - user controlled locking
         
         if (isSessionValid && !window.emmaWebVault.isOpen) {
           console.log('🔧 FORCE OPENING: Session is valid but vault thinks it\'s closed - forcing open');

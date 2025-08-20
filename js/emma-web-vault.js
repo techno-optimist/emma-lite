@@ -78,10 +78,9 @@ class EmmaWebVault {
       sessionStorage.setItem('emmaVaultName', name);
       sessionStorage.setItem('emmaVaultPassphrase', passphrase); // CRITICAL: Store passphrase for session
       
-      // CRITICAL: Set 12-hour auto-unlock when creating .emma file
-      const twelveHoursFromNow = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
-      localStorage.setItem('emmaVaultSessionExpiry', twelveHoursFromNow.toString());
-      console.log('✅ Session storage set - new vault active AND unlocked for 12 hours!');
+      // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
+      localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
+      console.log('✅ Session storage set - new vault active AND unlocked (no expiry - user controlled)!');
       
       // Save to IndexedDB as backup
       await this.saveToIndexedDB();
@@ -184,10 +183,9 @@ class EmmaWebVault {
       sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || 'Web Vault');
       sessionStorage.setItem('emmaVaultPassphrase', passphrase); // CRITICAL: Store passphrase for session
       
-      // CRITICAL: Set 12-hour auto-unlock when opening .emma file
-      const twelveHoursFromNow = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
-      localStorage.setItem('emmaVaultSessionExpiry', twelveHoursFromNow.toString());
-      console.log('✅ Session storage set - vault active AND unlocked for 12 hours!');
+      // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
+      localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
+      console.log('✅ Session storage set - vault active AND unlocked (no expiry - user controlled)!');
       
       // Save to IndexedDB as backup AFTER loading from file
       await this.saveToIndexedDB();
@@ -765,7 +763,7 @@ class EmmaWebVault {
     }
     
     if (!this.passphrase) {
-      throw new Error('No passphrase available - vault session may have expired');
+      throw new Error('No passphrase available - please unlock vault first');
     }
     
     try {
@@ -1030,7 +1028,7 @@ class EmmaWebVault {
       sessionStorage.removeItem('emmaVaultActive');
       sessionStorage.removeItem('emmaVaultPassphrase');
       sessionStorage.removeItem('emmaVaultOriginalFileName');
-      localStorage.removeItem('emmaVaultSessionExpiry');
+      // No session expiry to remove - sessions persist until manual lock
       
       console.log('✅ DIRECT-SAVE: Vault locked successfully');
       return { success: true };
@@ -1084,30 +1082,45 @@ class EmmaWebVault {
     try {
       console.log('🔄 ELEGANT: Restoring complete vault state...');
       
-      // Restore vault data from IndexedDB
-      const vaultData = await this.loadFromIndexedDB();
-      if (vaultData) {
-        this.vaultData = vaultData;
+      // CRITICAL FIX: Check if session indicates vault should be unlocked
+      const vaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+      const vaultName = sessionStorage.getItem('emmaVaultName');
+      const passphrase = sessionStorage.getItem('emmaVaultPassphrase');
+      
+      if (vaultActive && passphrase) {
+        console.log('🔓 CRITICAL FIX: Session indicates vault should be unlocked - restoring unlocked state');
+        
+        // Restore vault data from IndexedDB if available
+        const vaultData = await this.loadFromIndexedDB();
+        if (vaultData) {
+          this.vaultData = vaultData;
+          console.log('✅ ELEGANT: Vault data restored from IndexedDB');
+        } else {
+          // Create minimal vault structure if no IndexedDB data
+          this.vaultData = {
+            content: { memories: {}, people: {}, media: {} },
+            stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
+            metadata: { name: vaultName || 'Web Vault' }
+          };
+          console.log('🔧 CRITICAL FIX: Created minimal vault data - IndexedDB was empty');
+        }
+        
+        // ALWAYS set vault as open if session is active with passphrase
         this.isOpen = true;
-        console.log('✅ ELEGANT: Vault data restored');
+        this.passphrase = passphrase;
+        console.log('✅ CRITICAL FIX: Vault restored to UNLOCKED state based on session');
+        
+        // Restore original filename
+        this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName');
+        if (this.originalFileName) {
+          console.log('✅ ELEGANT: Original filename restored:', this.originalFileName);
+        }
+        
+        return { vaultData: this.vaultData, hasPassphrase: true, hasFileName: !!this.originalFileName };
+      } else {
+        console.log('🔒 Session indicates vault is locked - no restoration needed');
+        return null;
       }
-      
-      // Restore passphrase from session
-      this.passphrase = sessionStorage.getItem('emmaVaultPassphrase');
-      if (this.passphrase) {
-        console.log('✅ ELEGANT: Passphrase restored from session');
-      }
-      
-      // Restore original filename
-      this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName');
-      if (this.originalFileName) {
-        console.log('✅ ELEGANT: Original filename restored:', this.originalFileName);
-      }
-      
-      // Note: fileHandle cannot be restored from storage (not serializable)
-      // It will be re-established on first save attempt if needed
-      
-      return { vaultData, hasPassphrase: !!this.passphrase, hasFileName: !!this.originalFileName };
       
     } catch (error) {
       console.error('❌ ELEGANT: Failed to restore vault state:', error);

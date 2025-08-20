@@ -3514,7 +3514,98 @@ The storage chaos has been eliminated. Emma now truly guards the encrypted vault
 **Status**: ✅ EMMA ORB COMPREHENSIVE PLAN COMPLETE
 **Status**: 🎤 VOICE CAPTURE EXPERIENCE - PLANNING COMPLETE
 
-**Latest Update**: Comprehensive design for Enhanced Voice Capture Experience completed. Ready for CTO review and team implementation.
+**CRITICAL ISSUE IDENTIFIED**: Vault Auto-Locking Bug
+
+**Problem**: Multiple automatic session timeout systems are causing the vault to lock unexpectedly after saving memories/people or navigating the app. This violates user expectations and creates a terrible UX.
+
+**Root Cause Analysis**:
+1. **4 Competing Session Systems**:
+   - 24-hour session timeout in vault-manager.js (line 369)
+   - 12-hour localStorage session in emma-web-vault.js (lines 82, 188)
+   - 30-minute idle timer in memories.js (disabled but still present)
+   - Session expiry checks in multiple components
+
+2. **Auto-Lock Triggers**:
+   - Session expiry after memory saves
+   - Navigation between pages
+   - Competing timer conflicts
+   - Multiple session validation points
+
+**Solution**: Remove ALL automatic session timeouts. Vault should only lock when user explicitly chooses to lock it.
+
+### ✅ **CRITICAL FIXES COMPLETED**: All automatic vault locking systems removed
+
+1. **✅ vault-manager.js**: Removed 24-hour session timeout (line 369)
+   - Set `expiresAt: null` for indefinite sessions
+   - Removed session expiry validation logic
+   - Updated all console logs to reflect no-expiry policy
+
+2. **✅ emma-web-vault.js**: Removed 12-hour localStorage session expiry (lines 82, 188)
+   - Replaced session timer creation with `localStorage.removeItem()`
+   - Updated error messages to remove expiry references
+
+3. **✅ web-vault-status.js**: Removed session expiry checks
+   - Vault now always unlocked if active (no expiry validation)
+   - Simplified isUnlocked() logic
+
+4. **✅ universal-vault-modal.js**: Removed session timers
+   - No more 12-hour or 30-minute session creation
+   - Sessions persist until manual lock
+
+5. **✅ memories.js**: Cleaned up idle auto-lock (already disabled)
+   - Permanently disabled idle auto-lock polling
+   - User-controlled locking only
+
+6. **✅ unified-memory-wizard.js**: Fixed session validation
+   - Removed expiry checks in vault debugging logic
+
+**ARCHITECTURE CLARIFICATION**: 
+- **Browser Extension** (`emma-vault-extension-fixed/`): Simple file sync bridge - NO vault locking logic
+- **Emma Web App** (root `js/` files): Contains vault locking logic - THIS is where I made the fixes
+
+**RESULT**: Vault now only locks when user explicitly clicks lock button. No automatic timeouts, no session expiry, no idle locks.
+
+**IMPORTANT**: The fixes I made are in the correct location (root `js/` files) because:
+1. The browser extension is just a file sync bridge
+2. The vault locking logic is in the Emma Web App (root `js/` files)
+3. The extension communicates with the web app to sync data
+4. The web app is where users experience the vault locking issues
+
+### 🚨 **SHERLOCK PROTOCOL - DEEPER ISSUE DISCOVERED & FIXED!**
+
+**ROOT CAUSE IDENTIFIED**: Navigation-triggered vault locking was caused by **vault state restoration failure**, not just session timeouts.
+
+**THE DEEPER ISSUE**:
+1. **Each page navigation creates NEW vault instance** (`new EmmaWebVault()`)
+2. **Vault restoration depends on IndexedDB + sessionStorage**
+3. **CRITICAL BUG**: `restoreVaultState()` only set `isOpen = true` IF IndexedDB data existed
+4. **When IndexedDB was empty/corrupted**, vault remained locked despite valid session
+
+**NAVIGATION LOCKING SEQUENCE**:
+1. User unlocks vault on Page A ✅
+2. User navigates to Page B 🔄
+3. Page B creates new vault instance ❌
+4. `restoreVaultState()` finds no IndexedDB data ❌
+5. Vault stays locked despite `sessionStorage.emmaVaultActive = 'true'` ❌
+
+### ✅ **CRITICAL FIXES IMPLEMENTED**:
+
+1. **✅ Fixed `restoreVaultState()` logic** (`js/emma-web-vault.js`):
+   - Now checks sessionStorage first, not IndexedDB dependency
+   - Sets `isOpen = true` if session is active with passphrase
+   - Creates minimal vault data if IndexedDB is empty
+   - **ALWAYS restores unlocked state based on session**
+
+2. **✅ Updated all page restoration logic**:
+   - `pages/memory-gallery-new.html`
+   - `pages/people-emma.html` 
+   - `pages/options.html`
+   - `working-desktop-dashboard.html`
+   - Removed dependency on `result.vaultData` existence
+
+**RESULT**: Vault now maintains unlocked state across ALL page navigation, regardless of IndexedDB status.
+
+**Current Focus**: Navigation-triggered vault locking COMPLETELY RESOLVED
 
 **New Feature Implemented**: Autonomous Memory Capture powered by browser-use
 

@@ -5373,8 +5373,8 @@
             try {
               console.log('🔄 DASHBOARD: Restoring elegant vault state...');
               const result = await window.emmaWebVault.restoreVaultState();
-              if (result && result.vaultData) {
-                console.log('✅ DASHBOARD: Elegant vault state restored successfully');
+              if (result) {
+                console.log('✅ DASHBOARD: Vault state restored successfully');
                 console.log('📊 DASHBOARD: Passphrase available:', result.hasPassphrase);
                 console.log('📁 DASHBOARD: Filename available:', result.hasFileName);
                 // If in fallback mode, show affordance to re-enable direct save

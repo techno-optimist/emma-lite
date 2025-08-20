@@ -1814,21 +1814,8 @@ function setupIdleAutoLock() {
     clearInterval(window.emmaIdleAutoLockInterval);
   }
   
-  // EMERGENCY DISABLE: Stop idle auto-lock polling
-  console.log('🚨 MEMORIES: Idle auto-lock interval DISABLED to stop vault.status polling storm');
-  // window.emmaIdleAutoLockInterval = setInterval(async () => {
-    try {
-      // USE VAULTGUARDIAN CACHED STATUS INSTEAD OF DIRECT CALLS
-      const st = window.VaultGuardian ? await window.VaultGuardian.getStatus() : await window.emma.vault.status();
-      if (st.locked) return; // VaultGuardian uses 'locked' property
-      const idleMs = Date.now() - lastActivity;
-      // No expiry prompts when sessions are indefinite
-      // Auto-lock after 30 minutes idle for safety
-      if (idleMs > 30 * 60 * 1000) {
-        await window.emma.vault.lock();
-      }
-    } catch {}
-  }, 30000); // Check every 30 seconds instead of every second
+  // CRITICAL FIX: Idle auto-lock permanently disabled - vault only locks when user chooses
+  console.log('✅ MEMORIES: Idle auto-lock PERMANENTLY DISABLED - user controlled vault locking only');
 }
 
 // Simple password prompt for Electron (since prompt() doesn't work)

@@ -633,8 +633,8 @@
               try {
                 console.log('🔄 GALLERY: Restoring elegant vault state...');
                 const result = await window.emmaWebVault.restoreVaultState();
-                if (result && result.vaultData) {
-                  console.log('✅ GALLERY: Elegant vault state restored successfully');
+                if (result) {
+                  console.log('✅ GALLERY: Vault state restored successfully');
                   console.log('📊 GALLERY: Passphrase available:', result.hasPassphrase);
                   console.log('📁 GALLERY: Filename available:', result.hasFileName);
                   // If in fallback mode, show affordance to re-enable direct save
@@ -643,19 +643,19 @@
                       window.emmaWebVault.showDirectSaveAffordance && window.emmaWebVault.showDirectSaveAffordance();
                     }
                   } catch (_) {}
+                } else {
+                  console.log('🔒 GALLERY: Vault session is locked or invalid');
+                }
                 
-                // NOW load memories after vault is restored
+                // ALWAYS load memories after vault restoration attempt
                 console.log('🔄 GALLERY: Loading memories after vault restoration...');
                 setTimeout(() => {
                   if (window.loadMemories) {
                     window.loadMemories();
                   }
                 }, 100);
-              } else {
-                console.log('📝 GALLERY: No vault data found in IndexedDB');
-              }
               } catch (error) {
-                console.warn('⚠️ GALLERY: Could not restore vault from IndexedDB:', error);
+                console.warn('⚠️ GALLERY: Could not restore vault state:', error);
               }
             })();
           }

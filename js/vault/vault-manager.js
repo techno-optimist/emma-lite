@@ -102,7 +102,7 @@ export class VaultManager {
         initialized,
         isUnlocked,
         hasValidSession: sessionValid,
-        sessionExpiresAt: session?.expiresAt || null,
+        sessionExpiresAt: null, // No expiry - user controlled
         lastUnlockedAt: state.lastUnlockedAt || null,
         vaultId: session?.vaultId || null,
         hasSettings: !!settings,
@@ -111,7 +111,7 @@ export class VaultManager {
         debug: {
           memoryUnlocked,
           sessionValid,
-          sessionExpiry: session?.expiresAt ? new Date(session.expiresAt).toISOString() : null,
+          sessionExpiry: null, // No expiry - user controlled
           timezoneOffset: new Date().getTimezoneOffset()
         }
       };
@@ -162,7 +162,7 @@ export class VaultManager {
       await this.notifyListeners();
       
       console.log('🔐 VaultManager: Vault unlocked successfully');
-      return { success: true, sessionExpiresAt: sessionData.expiresAt };
+      return { success: true, sessionExpiresAt: null }; // No expiry
     } catch (error) {
       console.error('🔐 VaultManager: Unlock failed:', error);
       throw error;
@@ -233,7 +233,7 @@ export class VaultManager {
       // Create session
       console.log('🔐 VaultManager: Step 5 - Creating session...');
       const sessionData = await this.createSession();
-      console.log('🔐 VaultManager: Step 5 ✅ - Session created, expires:', new Date(sessionData.expiresAt).toLocaleString());
+      console.log('🔐 VaultManager: Step 5 ✅ - Session created (no expiry - user controlled)');
       
       // Set initial state
       await this.updateVaultState({
@@ -247,7 +247,7 @@ export class VaultManager {
       await this.notifyListeners();
       
       console.log('🔐 VaultManager: Vault initialized successfully - all steps complete');
-      return { success: true, sessionExpiresAt: sessionData.expiresAt };
+      return { success: true, sessionExpiresAt: null }; // No expiry
     } catch (error) {
       console.error('🔐 VaultManager: Vault initialization failed:', error);
       console.error('🔐 VaultManager: Error stack:', error.stack);
@@ -308,22 +308,8 @@ export class VaultManager {
           // This allows vault operations to proceed without re-prompting
           if (this.keyring) {
             // Set a session unlock flag that bypasses passphrase requirements
-            this.keyring.sessionUnlocked = true;
-            this.keyring.sessionExpiresAt = session.expiresAt;
-            console.log('🔐 VaultManager: Keyring marked as session-unlocked until:', new Date(session.expiresAt).toLocaleString());
-            
-            // Extend session if it's expiring soon (within 2 hours)
-            const timeUntilExpiry = session.expiresAt - Date.now();
-            if (timeUntilExpiry < (2 * 60 * 60 * 1000)) { // Less than 2 hours
-              console.log('🔐 VaultManager: Session expiring soon, extending...');
-              try {
-                const newSession = await this.createSession();
-                this.keyring.sessionExpiresAt = newSession.expiresAt;
-                console.log('🔐 VaultManager: Session extended until:', new Date(newSession.expiresAt).toLocaleString());
-              } catch (extendError) {
-                console.warn('🔐 VaultManager: Failed to extend session:', extendError);
-              }
-            }
+            this.keyring.sessionUnlocked = true; // No expiry tracking needed
+            console.log('🔐 VaultManager: Keyring marked as session-unlocked (indefinite until user locks)');
           }
           
           console.log('🔐 VaultManager: Session-based unlock successful for regular vault');
@@ -365,14 +351,14 @@ export class VaultManager {
     const sessionToken = crypto.getRandomValues(new Uint8Array(32));
     const deviceFingerprint = await this.generateDeviceFingerprint();
     
-    // Configure session timeout based on vault type
-    const sessionTimeout = isDemo ? (4 * 60 * 60 * 1000) : (24 * 60 * 60 * 1000); // 4h for demo, 24h for regular
+    // CRITICAL FIX: Remove automatic session timeout - vault should only lock when user chooses
+    // Sessions now persist indefinitely until user manually locks vault
     
     const sessionData = {
       token: this.bytesToBase64(sessionToken),
       vaultId: `vault_${Date.now()}_${this.bytesToBase64(crypto.getRandomValues(new Uint8Array(8)))}`,
       createdAt: Date.now(),
-      expiresAt: Date.now() + sessionTimeout,
+      expiresAt: null, // No automatic expiry - user controls vault locking
       deviceFingerprint: deviceFingerprint,
       version: 2, // Updated version for secure sessions
       isDemo: isDemo,
@@ -380,7 +366,7 @@ export class VaultManager {
     };
     
     await chrome.storage.local.set({ [SESSION_KEY]: sessionData });
-    console.log('🔐 VaultManager: Secure session created, expires:', new Date(sessionData.expiresAt).toLocaleString(), 'Demo:', isDemo);
+    console.log('🔐 VaultManager: Secure session created (no expiry - user controlled locking), Demo:', isDemo);
     
     return sessionData;
   }
@@ -471,11 +457,9 @@ export class VaultManager {
       return false;
     }
 
-    // Basic expiration check
-    if (!session.expiresAt || session.expiresAt <= currentTime) {
-      console.log('🔐 VaultManager: Session expired');
-      return false;
-    }
+    // CRITICAL FIX: Remove expiration check - sessions now persist until user manually locks
+    // No automatic session expiry - user controls vault locking
+    console.log('🔐 VaultManager: Session validation (no expiry check - user controlled)');
 
     // Check session version
     if (session.version !== 2) {

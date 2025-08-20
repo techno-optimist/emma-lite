@@ -2335,8 +2335,8 @@
             try {
               console.log('🔄 OPTIONS: Restoring elegant vault state...');
               const result = await window.emmaWebVault.restoreVaultState();
-              if (result && result.vaultData) {
-                console.log('✅ OPTIONS: Elegant vault state restored successfully');
+              if (result) {
+                console.log('✅ OPTIONS: Vault state restored successfully');
                 console.log('📊 OPTIONS: Passphrase available:', result.hasPassphrase);
                 console.log('📁 OPTIONS: Filename available:', result.hasFileName);
                 // If in fallback mode, show affordance to re-enable direct save
@@ -2345,9 +2345,11 @@
                     window.emmaWebVault.showDirectSaveAffordance && window.emmaWebVault.showDirectSaveAffordance();
                   }
                 } catch (_) {}
+              } else {
+                console.log('🔒 OPTIONS: Vault session is locked or invalid');
               }
             } catch (error) {
-              console.warn('⚠️ OPTIONS: Could not restore elegant vault state:', error);
+              console.warn('⚠️ OPTIONS: Could not restore vault state:', error);
             }
           })();
         }
