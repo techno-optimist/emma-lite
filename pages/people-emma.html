@@ -1450,7 +1450,11 @@
           
           if (response.success) {
             closeAddPersonModal();
-            await loadPeople(); // Reload to show the new person
+            
+            // Wait a moment for extension to finish saving to storage
+            setTimeout(async () => {
+              await loadPeople(); // Reload to show the new person
+            }, 500);
             
             // Show success message
             const message = avatarAttachmentId ? '✨ Person and avatar added successfully!' : '✨ Person added successfully!';
