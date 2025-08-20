@@ -356,8 +356,8 @@ class EmmaVaultExtension {
       if (rawVaultData.encryption && rawVaultData.encryption.enabled) {
         console.log('🔐 Vault is encrypted - requesting passphrase...');
         
-        // Request passphrase from user
-        const passphrase = prompt('Enter your vault passphrase to unlock:');
+        // Request passphrase using beautiful Emma modal
+        const passphrase = await this.showPassphraseModal();
         if (!passphrase) {
           throw new Error('Passphrase required to unlock encrypted vault');
         }
@@ -1166,6 +1166,135 @@ class EmmaVaultExtension {
     // Simple error notification
     console.error('❌', message);
     alert(message); // Temporary - replace with toast
+  }
+  
+  /**
+   * Show beautiful Emma-branded passphrase modal
+   */
+  async showPassphraseModal() {
+    return new Promise((resolve, reject) => {
+      // Create beautiful modal overlay
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      `;
+      
+      // Create modal content
+      overlay.innerHTML = `
+        <div style="
+          background: var(--emma-glass);
+          backdrop-filter: blur(20px);
+          border: 1px solid var(--emma-border);
+          border-radius: 20px;
+          padding: 32px;
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+          box-shadow: var(--emma-glow);
+        ">
+          <div style="
+            font-size: 2rem;
+            margin-bottom: 16px;
+          ">🔐</div>
+          
+          <h2 style="
+            color: var(--emma-text);
+            margin-bottom: 12px;
+            font-size: 1.4rem;
+          ">Unlock Vault</h2>
+          
+          <p style="
+            color: var(--emma-text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+          ">Enter your vault passphrase to decrypt and access your precious memories</p>
+          
+          <input type="password" id="passphraseInput" placeholder="Enter vault passphrase..." style="
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--emma-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--emma-text);
+            font-size: 1rem;
+            margin-bottom: 24px;
+            box-sizing: border-box;
+          ">
+          
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button id="cancelBtn" style="
+              padding: 12px 24px;
+              border: 2px solid var(--emma-border);
+              border-radius: 12px;
+              background: transparent;
+              color: var(--emma-text);
+              cursor: pointer;
+              font-size: 1rem;
+            ">Cancel</button>
+            
+            <button id="unlockBtn" style="
+              padding: 12px 24px;
+              border: none;
+              border-radius: 12px;
+              background: var(--emma-gradient-2);
+              color: white;
+              cursor: pointer;
+              font-size: 1rem;
+              font-weight: 600;
+            ">🔓 Unlock</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(overlay);
+      
+      const input = overlay.querySelector('#passphraseInput');
+      const unlockBtn = overlay.querySelector('#unlockBtn');
+      const cancelBtn = overlay.querySelector('#cancelBtn');
+      
+      // Focus input
+      setTimeout(() => input.focus(), 100);
+      
+      // Handle unlock
+      const handleUnlock = () => {
+        const passphrase = input.value.trim();
+        if (passphrase) {
+          document.body.removeChild(overlay);
+          resolve(passphrase);
+        } else {
+          input.focus();
+        }
+      };
+      
+      // Handle cancel
+      const handleCancel = () => {
+        document.body.removeChild(overlay);
+        resolve(null);
+      };
+      
+      // Event listeners
+      unlockBtn.addEventListener('click', handleUnlock);
+      cancelBtn.addEventListener('click', handleCancel);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleUnlock();
+        if (e.key === 'Escape') handleCancel();
+      });
+      
+      // Close on overlay click
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) handleCancel();
+      });
+    });
   }
 }
 
