@@ -222,26 +222,33 @@ class EmmaVaultExtension {
         peopleCount: this.vaultData?.content?.people ? Object.keys(this.vaultData.content.people).length : 0
       });
       
-      // CRITICAL: Check if vault is actually accessible with real data
-      const hasAccessibleData = this.vaultData && 
-                               this.vaultData.content && 
-                               (Object.keys(this.vaultData.content.memories || {}).length > 0 || 
-                                Object.keys(this.vaultData.content.people || {}).length > 0 ||
-                                storage.vaultReady === true);
+      // CRITICAL: Get real vault status from background script
+      const backgroundStatus = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
       
-      if (storage.vaultFileName && !hasAccessibleData) {
-        console.log('🔒 POPUP: Vault file exists but not accessible - showing unlock overlay');
+      console.log('🔍 POPUP: Background vault status:', backgroundStatus);
+      
+      // CRITICAL: Use background script as source of truth
+      const vaultActuallyReady = backgroundStatus && backgroundStatus.vaultReady && !backgroundStatus.dataLost;
+      const hasRealData = backgroundStatus && (backgroundStatus.memoryCount > 0 || backgroundStatus.peopleCount > 0);
+      
+      if (storage.vaultFileName && !vaultActuallyReady) {
+        console.log('🔒 POPUP: Background reports vault not ready - showing unlock overlay');
         this.showVaultUnlockOverlay(storage.vaultFileName);
         
-        // CRITICAL: Also update vault status indicator to show locked
+        // CRITICAL: Update vault status indicator to show locked
         this.elements.vaultStatusIndicator.textContent = '🔒';
         this.isVaultOpen = false;
-      } else if (hasAccessibleData) {
-        console.log('✅ POPUP: Vault is accessible - hiding unlock overlay');
+      } else if (vaultActuallyReady && hasRealData) {
+        console.log('✅ POPUP: Background confirms vault is ready with data - hiding unlock overlay');
         this.hideVaultUnlockOverlay();
         
         // Update vault status indicator to show unlocked
         this.elements.vaultStatusIndicator.textContent = '🟢';
+        this.isVaultOpen = true;
+      } else if (storage.vaultFileName && vaultActuallyReady && !hasRealData) {
+        console.log('⚠️ POPUP: Vault ready but no data - might be empty vault');
+        this.hideVaultUnlockOverlay();
+        this.elements.vaultStatusIndicator.textContent = '🟡';
         this.isVaultOpen = true;
       } else {
         console.log('❓ POPUP: No vault file - showing welcome state');
