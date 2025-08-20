@@ -155,13 +155,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 function toBase64Payload(data) {
   if (!data) return '';
+  
+  let base64Payload = '';
+  
   // If already a data URL, strip the header and keep only base64 payload
   if (typeof data === 'string' && data.startsWith('data:')) {
     const commaIndex = data.indexOf(',');
-    return commaIndex !== -1 ? data.substring(commaIndex + 1) : data;
+    base64Payload = commaIndex !== -1 ? data.substring(commaIndex + 1) : data;
+  } else {
+    // Otherwise, assume it's already base64 payload
+    base64Payload = data;
   }
-  // Otherwise, assume it's already base64 payload
-  return data;
+  
+  // SECURITY FIX: Validate base64 format for data integrity
+  if (base64Payload && typeof base64Payload === 'string') {
+    // Basic base64 format validation
+    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(base64Payload)) {
+      console.warn('⚠️ BASE64 VALIDATION: Invalid base64 format detected, rejecting data');
+      throw new Error('Invalid base64 format in attachment data');
+    }
+    
+    // Check for reasonable size limits (prevent massive data)
+    if (base64Payload.length > 50 * 1024 * 1024) { // 50MB limit
+      console.warn('⚠️ BASE64 VALIDATION: Attachment too large, rejecting');
+      throw new Error('Attachment size exceeds 50MB limit');
+    }
+    
+    console.log(`✅ BASE64 VALIDATION: Valid base64 payload (${base64Payload.length} chars)`);
+  }
+  
+  return base64Payload;
 }
 
 /**

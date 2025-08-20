@@ -1095,6 +1095,39 @@ class EmmaVaultExtension {
   }
   
   /**
+   * Detect if vault content contains encrypted fields
+   */
+  detectEncryptedFields(content) {
+    if (!content || typeof content !== 'object') return false;
+    
+    // Check for common encrypted field patterns
+    const checkObject = (obj) => {
+      if (!obj || typeof obj !== 'object') return false;
+      
+      for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'string') {
+          // Check for base64-encoded encrypted data patterns
+          if (value.length > 100 && /^[A-Za-z0-9+/=]+$/.test(value)) {
+            console.log(`🔍 ENCRYPTION CHECK: Potential encrypted field detected: ${key}`);
+            return true;
+          }
+          // Check for explicit encryption markers
+          if (value.startsWith('ENCRYPTED:') || value.startsWith('AES-GCM:')) {
+            console.log(`🔍 ENCRYPTION CHECK: Explicit encryption marker found: ${key}`);
+            return true;
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          // Recursively check nested objects
+          if (checkObject(value)) return true;
+        }
+      }
+      return false;
+    };
+    
+    return checkObject(content);
+  }
+  
+  /**
    * Decrypt JSON vault content (for JSON files with encrypted fields)
    */
   async decryptJSONVaultContent(rawVaultData, passphrase) {
@@ -1116,6 +1149,12 @@ class EmmaVaultExtension {
         console.log('- Memories:', Object.keys(rawVaultData.content.memories || {}).length);
         console.log('- People:', Object.keys(rawVaultData.content.people || {}).length);
         console.log('- Media:', Object.keys(rawVaultData.content.media || {}).length);
+        
+        // SECURITY FIX: Check for encrypted content fields and block if found
+        const hasEncryptedContent = this.detectEncryptedFields(rawVaultData.content);
+        if (hasEncryptedContent) {
+          throw new Error('This vault contains encrypted JSON fields which are not yet supported. Please use a binary (.emma) vault format or contact support for field-level decryption.');
+        }
       }
       
       return rawVaultData;
