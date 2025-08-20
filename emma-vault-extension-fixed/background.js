@@ -161,6 +161,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
       return true;
       
+    case 'RECOVER_VAULT':
+      recoverVaultFromBackup(request.passphrase)
+        .then(vaultData => {
+          if (vaultData) {
+            currentVaultData = vaultData;
+            vaultPassphrase = request.passphrase;
+            sendResponse({ success: true, vaultData });
+          } else {
+            sendResponse({ success: false, error: 'No backup found or decryption failed' });
+          }
+        })
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'GET_PEOPLE_DATA':
       getPeopleData()
         .then(result => sendResponse(result))

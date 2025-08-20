@@ -557,65 +557,87 @@ class EmmaVaultExtension {
       if (storage.vaultFileName) {
         console.log('🔓 POPUP: Attempting to unlock vault file:', storage.vaultFileName);
         
-        // CRITICAL: Handle unlock directly in popup to avoid file handle issues
+        // SIMPLIFIED: Try to unlock with existing vault data first
         try {
-          console.log('🔓 POPUP: File handle lost - need to reselect vault file');
+          console.log('🔓 POPUP: Attempting to unlock existing vault');
           
-          // Show file picker to reselect the vault file
-          const fileHandle = await window.showOpenFilePicker({
-            types: [{
-              description: 'Emma vault files',
-              accept: { 'application/json': ['.emma'] }
-            }],
-            multiple: false
-          });
-          
-          if (!fileHandle || fileHandle.length === 0) {
-            throw new Error('No file selected');
-          }
-          
-          const selectedFile = fileHandle[0];
-          console.log('🔓 POPUP: File reselected:', selectedFile.name);
-          
-          // Read and decrypt the file
-          const file = await selectedFile.getFile();
-          const vaultData = await this.decryptVaultFile(file, passphrase);
-          
-          // Send file handle to background script
-          await chrome.runtime.sendMessage({
-            action: 'SET_FILE_HANDLE',
-            handle: selectedFile
-          });
-          
-          // Load vault data into background
-          await chrome.runtime.sendMessage({
-            action: 'VAULT_LOAD',
-            data: vaultData
-          });
-          
-          // INNOVATION: Store passphrase for auto-recovery
-          await chrome.runtime.sendMessage({
-            action: 'STORE_PASSPHRASE',
+          // First, try to use auto-recovery from background
+          const recoveryResponse = await chrome.runtime.sendMessage({
+            action: 'RECOVER_VAULT',
             passphrase: passphrase
           });
           
-          // Update local state
-          this.vaultData = vaultData;
-          this.currentVault = {
-            fileHandle: selectedFile,
-            fileName: selectedFile.name,
-            lastSync: new Date().toISOString()
-          };
+          if (recoveryResponse && recoveryResponse.success) {
+            console.log('✅ POPUP: Vault recovered from encrypted backup');
+            this.vaultData = recoveryResponse.vaultData;
+            this.isVaultOpen = true;
+            
+            // Mark vault as ready
+            await chrome.storage.local.set({
+              vaultReady: true,
+              lastUnlocked: new Date().toISOString()
+            });
+            
+          } else {
+            // Fallback: If recovery fails, ask user to reselect file
+            console.log('🔓 POPUP: Recovery failed - asking user to reselect vault file');
+            
+            const fileHandle = await window.showOpenFilePicker({
+              types: [{
+                description: 'Emma vault files',
+                accept: { 'application/json': ['.emma'] }
+              }],
+              multiple: false
+            });
+            
+            if (!fileHandle || fileHandle.length === 0) {
+              throw new Error('No file selected');
+            }
+            
+            const selectedFile = fileHandle[0];
+            console.log('🔓 POPUP: File reselected:', selectedFile.name);
+            
+            // Read and decrypt the file
+            const file = await selectedFile.getFile();
+            const vaultData = await this.decryptVaultFile(file, passphrase);
+            
+            // Send file handle to background script
+            await chrome.runtime.sendMessage({
+              action: 'SET_FILE_HANDLE',
+              handle: selectedFile
+            });
+            
+            // Load vault data into background
+            await chrome.runtime.sendMessage({
+              action: 'VAULT_LOAD',
+              data: vaultData
+            });
+            
+            // Store passphrase for future auto-recovery
+            await chrome.runtime.sendMessage({
+              action: 'STORE_PASSPHRASE',
+              passphrase: passphrase
+            });
+            
+            // Update local state
+            this.vaultData = vaultData;
+            this.currentVault = {
+              fileHandle: selectedFile,
+              fileName: selectedFile.name,
+              lastSync: new Date().toISOString()
+            };
+            
+            // Mark vault as ready
+            await chrome.storage.local.set({
+              vaultFileName: selectedFile.name,
+              vaultReady: true,
+              lastUnlocked: new Date().toISOString()
+            });
+            
+            this.isVaultOpen = true;
+          }
           
-          // Mark vault as ready
-          await chrome.storage.local.set({
-            vaultFileName: selectedFile.name,
-            vaultReady: true,
-            lastUnlocked: new Date().toISOString()
-          });
-          
-          this.isVaultOpen = true;
-          console.log('🔓 POPUP: Vault unlocked and reloaded successfully');
+          console.log('🔓 POPUP: Vault unlock process completed');
           
         } catch (decryptError) {
           throw new Error('Failed to unlock vault: ' + decryptError.message);
