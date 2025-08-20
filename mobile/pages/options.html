@@ -1,42 +1,73 @@
-           <!-- Backup Actions -->
-           <div class="backup-actions-grid">
-            <div class="backup-action-card">
-              <div class="action-icon">🛡️</div>
-              <div class="action-content">
-                <h4>Device Backups</h4>
-                <p>Include your vault in device backups for safety. Exclude for stricter privacy (export manually).</p>
-                <div class="setting-item" style="border-bottom:none;padding:0;">
-                  <div class="setting-label">
-                    <strong>Exclude from device backups</strong>
-                    <small>Recommended OFF. Including helps protect against loss.</small>
-                  </div>
-                  <label class="toggle">
-                    <input type="checkbox" id="backup-exclusion-toggle">
-                    <span class="slider"></span>
-                  </label>
-                </div>
+           </div>
+          <div class="setting-section" style="margin-top:16px;">
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Quick Unlock (Biometrics)</strong>
+                <small>Use Face ID/Touch ID or fingerprint to unlock faster. Passphrase is still required for exports and key changes.</small>
               </div>
-            </div>
-            <div class="backup-action-card export-card">
-              <div class="action-icon">📤</div>
-              <div class="action-content">
-                <h4>Export Vault</h4>
-                <p>Create an encrypted backup of your entire memory vault including all memories and attachments</p>
-                <button type="button" id="export-vault" class="btn btn-primary">
-                  <span class="btn-icon">📤</span> Export Vault
-                </button>
-              </div>
-            </div>
-
-            <div class="backup-action-card import-card">
-              <div class="action-icon">📥</div>
-              <div class="action-content">
-                <h4>Import Vault</h4>
-                <p>Restore a vault from an encrypted backup file with a new passphrase</p>
-                <input type="file" id="import-vault-file" accept=".json" style="display: none;">
-                <button type="button" id="import-vault" class="btn btn-secondary">
-                  <span class="btn-icon">📁</span> Choose Backup File
-                </button>
-              </div>
+              <label class="toggle">
+                <input type="checkbox" id="biometrics-toggle">
+                <span class="slider"></span>
+              </label>
             </div>
           </div>
+          <div id="backup-status" class="backup-status" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script src="../js/vault/backup-control.js"></script>
+  <script src="../js/vault/biometrics.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Backup toggle
+      const backupToggle = document.getElementById('backup-exclusion-toggle');
+      if (backupToggle && window.EmmaBackupControl) {
+        try { backupToggle.checked = !!window.EmmaBackupControl.getBackupExcluded(); } catch {}
+        backupToggle.addEventListener('change', async () => {
+          try {
+            const res = await window.EmmaBackupControl.setBackupExcluded(backupToggle.checked);
+            notify('Vault backup setting updated' + (res.native ? '' : ' (native flag not available here)'));
+          } catch (e) {
+            notify('Failed to update backup setting: ' + e.message, true);
+            backupToggle.checked = !backupToggle.checked;
+          }
+        });
+      }
+
+      // Biometrics toggle
+      const bioToggle = document.getElementById('biometrics-toggle');
+      if (bioToggle && window.EmmaBiometrics) {
+        try { bioToggle.checked = !!window.EmmaBiometrics.getEnabled(); } catch {}
+        bioToggle.addEventListener('change', async () => {
+          try {
+            if (bioToggle.checked) {
+              await window.EmmaBiometrics.enableQuickUnlock();
+              notify('Quick unlock enabled');
+            } else {
+              await window.EmmaBiometrics.disableQuickUnlock();
+              notify('Quick unlock disabled');
+            }
+          } catch (e) {
+            notify('Biometrics error: ' + e.message, true);
+            bioToggle.checked = !bioToggle.checked;
+          }
+        });
+      }
+
+      document.getElementById('settings-close')?.addEventListener('click', () => history.back());
+
+      function notify(msg, isError) {
+        const n = document.getElementById('notification');
+        if (!n) return;
+        n.textContent = msg;
+        n.className = 'notification show ' + (isError ? 'error' : 'success');
+        setTimeout(() => n.classList.remove('show'), 2000);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -213,7 +213,7 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - T4: Implement `CapacitorFilesystemAdapter` with journaling + atomic rename + preflight checks.
 - T5: Chaos and low-space test harnesses; automate kill/restart scenarios.
 - T6: Settings UI for backup exclusion toggle; native flags (iOS/Android) + education modal.
-- T7: Biometrics wrap/unwrap; privileged action gating (export/rotation/disable); failure/lockout fallbacks.
+- T7: Biometrics wrap/unwrap; privileged action gating (export/rotation/disable requires passphrase); failure/lockout fallbacks.
 - T8: Vault Health self-check + repair; results modal; logging (local-only, opt-in diagnostics control).
 - T9: PWA iOS warnings + export cadence; banners and CTAs.
 - T10: Accessibility pass; AA issues; large touch targets and reduced-motion compliance.
@@ -259,6 +259,9 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Backup exclusion toggle added to Settings; wired to stub control. Ensure native plugin integration later sets NSURLIsExcludedFromBackupKey on iOS; defaults remain included per PRD.
 - Next: Biometrics quick unlock setting with proper gating (export/rotation/disable requires passphrase).
 
+### CTO Oversight Notes (Mobile Copies)
+- Web assets copied to `mobile/` for safe customization. Mobile settings page created with backup and biometrics toggles; uses stubbed controls pending native plugins.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests
@@ -266,8 +269,8 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - [x] T3 Capacitor scaffold + asset resolver — scaffold created; selector detects Capacitor
 - [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — implemented
 - [ ] T5 Chaos/low-space harness; pass criteria — desktop/PWA harness added; device scripts pending
-- [x] T6 Backup exclusion UI + native flags + education — UI wired; native flags pending
-- [ ] T7 Biometrics + privileged gating
+- [x] T6 Backup exclusion UI + native flags + education — mobile UI wired; native flags pending
+- [ ] T7 Biometrics + privileged gating — mobile UI toggle wired; gating flows pending
 - [ ] T8 Vault Health self-check + repair UX
 - [ ] T9 PWA iOS banners + export cadence
 - [ ] T10 Accessibility AA pass
