@@ -1260,6 +1260,7 @@
       
       // Prefer direct avatarUrl provided by extension (already reconstructed)
       if (person.avatarUrl) {
+        console.log('📷 AVATAR: Using avatarUrl for person:', person.name);
         const img = document.createElement('img');
         img.src = person.avatarUrl;
         img.alt = `${person.name} avatar`;
@@ -1267,11 +1268,16 @@
         img.onload = () => {
           avatar.innerHTML = '';
           avatar.appendChild(img);
+          console.log('📷 AVATAR: Successfully displayed avatar for:', person.name);
         };
-      // If person has an avatar ID, fetch it from legacy API as fallback
+        img.onerror = () => {
+          console.error('📷 AVATAR: Failed to display avatarUrl for:', person.name);
+          // Keep the letter fallback
+        };
+      // If person has an avatar ID but no avatarUrl, fetch from legacy API as fallback
       } else if (person.avatarId) {
         try {
-          console.log('📷 AVATAR: Loading avatar for person:', person.name, 'ID:', person.avatarId);
+          console.log('📷 AVATAR: Loading avatar via legacy API for person:', person.name, 'ID:', person.avatarId);
           
           // Use web vault to get media directly - SAME AS MEMORY GALLERY
           if (window.emmaWebVault && window.emmaWebVault.isOpen) {
@@ -1305,19 +1311,6 @@
         } catch (error) {
           console.error('📷 AVATAR: Error loading avatar for:', person.name, error);
         }
-      } else if (person.avatarUrl) {
-        // Use direct URL if available (for immediate display)
-        const img = document.createElement('img');
-        img.src = person.avatarUrl;
-        img.alt = `${person.name} avatar`;
-        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
-        img.onload = () => {
-          avatar.innerHTML = '';
-          avatar.appendChild(img);
-        };
-        img.onerror = () => {
-          // Keep the letter fallback
-        };
       }
       
       const name = document.createElement('div');
@@ -2059,7 +2052,10 @@
         
         if (response.success) {
           closeEditPersonModal();
-          await loadPeople(); // Reload to show changes
+          // Add delay to allow extension to process and save the update
+          setTimeout(async () => {
+            await loadPeople(); // Reload to show changes
+          }, 500);
           showToast('✅ Person updated successfully!', 'success');
         } else {
           console.error('Failed to update person:', response);

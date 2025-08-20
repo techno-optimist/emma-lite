@@ -578,6 +578,42 @@ async function handleUpdatePersonInVault(personData) {
       throw new Error('Person not found in vault');
     }
     
+    // Handle avatar update if provided
+    let finalAvatarId = personData.avatarId || existingPerson.avatarId;
+    
+    // If new avatar data is provided, save it as media
+    if (personData.avatar && personData.avatar.startsWith('data:')) {
+      console.log('📷 BACKGROUND: New avatar data provided, saving as media...');
+      
+      // Generate new media ID for avatar
+      const avatarMediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      // Extract type and base64 data from data URL
+      const [header, base64Data] = personData.avatar.split(',');
+      const mimeMatch = header.match(/data:([^;]+)/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      
+      const avatarMedia = {
+        id: avatarMediaId,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        name: `${personData.name}-avatar`,
+        type: mimeType,
+        size: base64Data.length,
+        data: base64Data // Store base64 payload only
+      };
+      
+      // Add to vault media
+      if (!currentData.content.media) {
+        currentData.content.media = {};
+      }
+      currentData.content.media[avatarMediaId] = avatarMedia;
+      
+      // Update avatar ID to point to new media
+      finalAvatarId = avatarMediaId;
+      console.log('📷 BACKGROUND: Avatar saved as media with ID:', avatarMediaId);
+    }
+
     // Update person data
     const updatedPerson = {
       ...existingPerson,
@@ -585,7 +621,7 @@ async function handleUpdatePersonInVault(personData) {
       relation: personData.relation || '',
       contact: personData.contact || '',
       avatar: personData.avatar || existingPerson.avatar,
-      avatarId: personData.avatarId || existingPerson.avatarId,
+      avatarId: finalAvatarId,
       updated: new Date().toISOString()
     };
     
