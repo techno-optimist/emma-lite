@@ -55,6 +55,9 @@ class WebVaultStatus {
     // Set global status for compatibility
     window.currentVaultStatus = this.status;
     
+    // EMERGENCY LOGGING
+    this.logVaultState('initialize');
+    
     // CRITICAL FIX: Listen for extension vault status updates
     this.setupExtensionListener();
     
@@ -88,8 +91,26 @@ class WebVaultStatus {
     window.addEventListener('storage', (e) => {
       if (e.key === 'emmaVaultActive' || e.key === 'emmaVaultName') {
         console.log('🔄 WebVaultStatus: SessionStorage changed, reinitializing...');
+        this.logVaultState('storage-event');
         this.initialize();
       }
+    });
+    
+    // EMERGENCY DEBUGGING: Log browser focus/blur events
+    window.addEventListener('focus', () => {
+      console.log('🔍 FOCUS EVENT: Browser tab gained focus');
+      this.logVaultState('window-focus');
+    });
+    
+    window.addEventListener('blur', () => {
+      console.log('🔍 BLUR EVENT: Browser tab lost focus');
+      this.logVaultState('window-blur');
+    });
+    
+    // Also log visibility changes
+    document.addEventListener('visibilitychange', () => {
+      console.log('🔍 VISIBILITY CHANGE:', document.visibilityState);
+      this.logVaultState(`visibility-${document.visibilityState}`);
     });
   }
   
@@ -101,10 +122,31 @@ class WebVaultStatus {
     }));
   }
   
+  // EMERGENCY DEBUGGING: Log all vault state changes
+  logVaultState(context) {
+    const sessionActive = sessionStorage.getItem('emmaVaultActive');
+    const sessionName = sessionStorage.getItem('emmaVaultName');
+    const localActive = localStorage.getItem('emmaVaultActive');
+    const localName = localStorage.getItem('emmaVaultName');
+    
+    console.log(`🔍 VAULT STATE DEBUG [${context}]:`, {
+      timestamp: new Date().toISOString(),
+      sessionStorage: { active: sessionActive, name: sessionName },
+      localStorage: { active: localActive, name: localName },
+      webVaultStatus: this.status,
+      currentVaultStatus: window.currentVaultStatus,
+      emmaWebVault: window.emmaWebVault ? {
+        isOpen: window.emmaWebVault.isOpen,
+        extensionAvailable: window.emmaWebVault.extensionAvailable
+      } : 'not available'
+    });
+  }
+
   // Periodic sync to ensure vault status stays consistent
   setupPeriodicSync() {
     // CRITICAL FIX: More frequent checks to catch service worker restarts
     setInterval(() => {
+      this.logVaultState('periodic-sync'); // EMERGENCY LOGGING
       const sessionActive = sessionStorage.getItem('emmaVaultActive') === 'true';
       const sessionName = sessionStorage.getItem('emmaVaultName');
       
@@ -115,18 +157,32 @@ class WebVaultStatus {
       const currentActive = sessionActive || localActive;
       const currentName = sessionName || localName;
       
-      // CRITICAL FIX: Always restore sessionStorage from localStorage if localStorage has vault
-      if (localActive && !sessionActive) {
-        console.log('🔧 WebVaultStatus: Auto-restoring sessionStorage from localStorage (likely service worker restart)');
+      // NUCLEAR OPTION: If localStorage says vault is active, FORCE everything to unlocked state
+      if (localActive) {
+        console.log('🚨 NUCLEAR OPTION: localStorage indicates vault active - FORCING all systems to unlocked');
+        
+        // Force sessionStorage
         sessionStorage.setItem('emmaVaultActive', 'true');
         sessionStorage.setItem('emmaVaultName', localName || 'Extension Vault');
         
-        // Also restore EmmaWebVault state if it exists
-        if (window.emmaWebVault && !window.emmaWebVault.isOpen) {
-          console.log('🔧 WebVaultStatus: Also restoring EmmaWebVault.isOpen state');
+        // Force EmmaWebVault state
+        if (window.emmaWebVault) {
           window.emmaWebVault.isOpen = true;
           window.emmaWebVault.extensionAvailable = true;
+          console.log('🚨 NUCLEAR: Forced EmmaWebVault.isOpen = true');
         }
+        
+        // Force WebVaultStatus
+        this.status = {
+          isUnlocked: true,
+          hasVault: true,
+          name: localName || 'Extension Vault'
+        };
+        
+        // Force global status
+        window.currentVaultStatus = this.status;
+        
+        console.log('🚨 NUCLEAR: All vault systems forced to UNLOCKED based on localStorage');
       }
       
       // Check if status is out of sync
