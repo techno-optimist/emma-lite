@@ -2341,6 +2341,56 @@
         
         // Initialize keyboard shortcuts
         this.setupKeyboardShortcuts();
+        
+        // CRITICAL FIX: Listen for vault status changes from extension
+        this.setupVaultStatusListener();
+      }
+      
+      // Listen for vault status changes and update UI
+      setupVaultStatusListener() {
+        window.addEventListener('vault-status-changed', (event) => {
+          console.log('🔄 Dashboard: Vault status changed:', event.detail);
+          
+          // Update global status
+          window.currentVaultStatus = event.detail;
+          
+          // Update vault node status in UI
+          this.updateVaultNodeStatus();
+          
+          // Update any vault-dependent UI elements
+          this.refreshVaultDependentUI();
+        });
+        
+        // Also listen for extension-vault-ready directly
+        window.addEventListener('extension-vault-ready', (event) => {
+          console.log('🔗 Dashboard: Extension vault ready:', event.detail);
+          
+          // Ensure vault status is updated
+          if (window.webVaultStatus) {
+            window.webVaultStatus.status.isUnlocked = true;
+            window.webVaultStatus.status.hasVault = true;
+            window.webVaultStatus.status.name = event.detail.vaultName;
+            window.currentVaultStatus = window.webVaultStatus.status;
+          }
+          
+          // Update UI immediately
+          this.updateVaultNodeStatus();
+        });
+      }
+      
+      // Refresh UI elements that depend on vault status
+      refreshVaultDependentUI() {
+        // Update any vault-dependent elements
+        const vaultElements = document.querySelectorAll('[data-vault-dependent]');
+        vaultElements.forEach(element => {
+          if (window.currentVaultStatus && window.currentVaultStatus.isUnlocked) {
+            element.classList.remove('vault-locked');
+            element.classList.add('vault-unlocked');
+          } else {
+            element.classList.remove('vault-unlocked');
+            element.classList.add('vault-locked');
+          }
+        });
       }
 
       initNeuralNetwork() {
