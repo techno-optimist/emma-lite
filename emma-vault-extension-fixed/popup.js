@@ -182,34 +182,30 @@ class EmmaVaultExtension {
   // Check if vault exists but is locked and show unlock overlay
   async checkVaultLockStatus() {
     try {
-      // Check if we have a vault file but it's encrypted/locked
+      // CRITICAL FIX: Only check for loaded vault files that are locked
       const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
       
-      if (storage.vaultFileName && !storage.vaultReady) {
-        console.log('🔒 POPUP: Vault file exists but is locked - showing unlock overlay');
+      console.log('🔍 POPUP: Checking vault lock status:', {
+        vaultFileName: storage.vaultFileName,
+        vaultReady: storage.vaultReady,
+        isVaultOpen: this.isVaultOpen
+      });
+      
+      // CORRECT LOGIC: Only show unlock overlay when vault file is loaded but locked
+      if (storage.vaultFileName && storage.vaultReady === false) {
+        console.log('🔒 POPUP: Vault file loaded but LOCKED - showing unlock overlay');
         this.showVaultUnlockOverlay(storage.vaultFileName);
         return;
       }
       
-      // Also check if web app indicates vault should be unlocked but extension doesn't have it
-      if (this.shouldShowUnlockOverlay()) {
-        console.log('🔒 POPUP: Web app expects unlocked vault - showing unlock overlay');
-        this.showVaultUnlockOverlay('Your Vault');
-        return;
-      }
-      
-      // Hide unlock overlay if vault is properly unlocked
+      // CRITICAL: Hide unlock overlay in all other cases
       this.hideVaultUnlockOverlay();
       
     } catch (error) {
       console.error('❌ POPUP: Error checking vault lock status:', error);
+      // On error, hide overlay to prevent confusion
+      this.hideVaultUnlockOverlay();
     }
-  }
-  
-  // Determine if unlock overlay should be shown
-  shouldShowUnlockOverlay() {
-    // If we have recent vault activity but no current vault, show unlock
-    return this.recentVaults.length > 0 && !this.isVaultOpen;
   }
   
   // Show elegant vault unlock overlay
@@ -500,23 +496,34 @@ class EmmaVaultExtension {
       unlockBtn.innerHTML = '<span class="btn-icon">⏳</span> Unlocking...';
       unlockBtn.disabled = true;
       
-      // Try to unlock vault with the most recent vault file
-      if (this.recentVaults.length > 0) {
-        const recentVault = this.recentVaults[0];
-        console.log('🔓 POPUP: Attempting to unlock recent vault:', recentVault);
+      // Get the vault file that needs unlocking
+      const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
+      
+      if (storage.vaultFileName && storage.vaultReady === false) {
+        console.log('🔓 POPUP: Attempting to unlock vault file:', storage.vaultFileName);
         
-        // This would need to be implemented based on your vault opening logic
-        // For now, just show success and refresh UI
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate unlock
+        // TODO: Implement actual vault decryption with passphrase
+        // For now, simulate successful unlock
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mark vault as ready after successful unlock
+        await chrome.storage.local.set({
+          vaultReady: true,
+          lastUnlocked: new Date().toISOString()
+        });
+        
+        // Update internal state
+        this.isVaultOpen = true;
         
         // Success
         this.hideVaultUnlockOverlay();
         this.showSuccess('Vault unlocked successfully!');
         
-        // Refresh popup to show unlocked state
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Update UI to show unlocked state
+        this.updateUI();
+        
+      } else {
+        throw new Error('No locked vault file found');
       }
       
     } catch (error) {
