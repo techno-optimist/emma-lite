@@ -3116,17 +3116,17 @@
         try {
           console.log('💝 CONSTELLATION: Loading memories from .emma vault file');
           
-          // Use our web vault system instead of old Electron API
-          if (window.emmaWebVault && window.webVaultStatus && window.webVaultStatus.isUnlocked()) {
-            console.log('💝 CONSTELLATION: Loading from web vault using listMemories()...');
+          // Use extension-based loading like gallery and people pages
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            console.log('💝 CONSTELLATION: Loading from extension vault...');
             const memories = await window.emmaWebVault.listMemories(1000); // Get all memories
             
-            console.log('💝 CONSTELLATION: Found memories in .emma vault:', memories.length);
+            console.log('💝 CONSTELLATION: Found memories in extension vault:', memories.length);
             console.log('💝 CONSTELLATION: Memory data:', memories);
             
             return memories;
           } else {
-            console.log('💝 CONSTELLATION: Web vault not available or locked');
+            console.log('💝 CONSTELLATION: Extension not available - no memories');
             return [];
           }
         } catch (error) {
