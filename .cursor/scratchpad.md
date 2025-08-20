@@ -269,3 +269,45 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - [ ] Localization plan (v1 EN only) and copy readiness for later i18n
 - [ ] RACI and timeline: assign owners for T0–T11, phase dates, gate reviews
 - [ ] Ticketization: issues per task with acceptance criteria/tests and PRD links
+
+### Phase 0 — Comprehensive TODO (Executor + CTO Oversight)
+
+Scope: Establish adapter abstraction, PWA adapter, crypto off-main-thread, and perf harness to pass Gate A.
+
+Tasks
+- T0.1 Define `VaultStorageAdapter` (open/read/write/export/import/listRecent) interface and docs
+  - Acceptance: Type-checked across web/extension code; no direct file APIs imported elsewhere (lint rule enforced)
+  - CTO Note: Keep API minimal; no implicit state; all methods explicit; errors typed
+- T0.2 Create adapter selector (env detection): extension vs PWA vs mobile
+  - Acceptance: Unit tests cover env branches; safe default to PWA in unknown
+  - CTO Note: Avoid UA sniffing; feature-detect capabilities
+- T0.3 Implement `PWA_OPFS_Adapter` (MVP)
+  - open/create vault; read; write with basic temp file; export/import via pickers; listRecent
+  - Acceptance: Works in desktop Chrome and Android; iOS uses IndexedDB fallback with explicit export warning banner
+  - CTO Note: Guard OPFS availability; never assume persistent quota; show warnings from PRD copy
+- T0.4 Wire web/extension paths to use adapter exclusively
+  - Acceptance: Existing flows compile/run; adapter methods logged during E2E
+  - CTO Note: Keep fallbacks; do not regress extension behavior
+- T0.5 Crypto to Web Workers + WASM Argon2id integration
+  - Acceptance: Worker lifecycle stable; unlock perf median < 1500ms (iPhone 12/Pixel 6), p95 < 3000ms; PBKDF2 250k fallback
+  - CTO Note: Cap Argon2 memory to avoid OS kills; cancelable operations
+- T0.6 Perf harness for KDF parameter probing and profile persistence
+  - Acceptance: First unlock benchmarks device; stores profile in vault header; respects budgets
+  - CTO Note: Never silently drop below PBKDF2-250k baseline
+- T0.7 TDD coverage
+  - Unit: adapter contract, OPFS feature detection, Worker lifecycle
+  - Integration: create/open/write/read with OPFS; export/import; recent vaults
+  - Perf: automated latency thresholds; fail build if exceeded
+
+Deliverables
+- Adapter interface + selector + PWA_OPFS_Adapter committed with tests
+- Crypto Worker + WASM Argon2 path with fallback and perf budgets met
+- Lint rule preventing direct file I/O in higher layers
+
+Exit Criteria (Gate A)
+- Unlock benchmarks meet budgets on reference devices; adapter routing complete; tests green
+
+Risk Watch (CTO)
+- Web Crypto quirks on iOS WKWebView; keep native fallback in contingency plan
+- OPFS quota variability; ensure explicit export nudges are wired for PWA iOS
+- Worker termination and memory caps on low-end devices; keep params conservative
