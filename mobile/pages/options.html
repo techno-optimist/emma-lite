@@ -1,3 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Settings - Emma</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .settings-container { max-width: 700px; margin: 0 auto; padding: 16px; }
+    .glass-card { background: var(--emma-card-bg, rgba(255,255,255,0.05)); border: 1px solid var(--emma-border, rgba(255,255,255,0.1)); border-radius: 16px; padding: 16px; }
+    .setting-section { background: rgba(255,255,255,0.02); border: 1px solid var(--emma-border, rgba(255,255,255,0.1)); border-radius: 12px; padding: 16px; margin-top: 16px; }
+    .setting-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .setting-label { flex: 1; }
+    .setting-label strong { display: block; margin-bottom: 4px; }
+    .toggle { position: relative; width: 48px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 24px; background: rgba(255,255,255,0.1); border: 1px solid var(--emma-border, rgba(255,255,255,0.15)); transition: all .2s; }
+    .slider:before { content: ""; position: absolute; left: 4px; bottom: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: all .2s; }
+    input:checked + .slider { background: linear-gradient(135deg, #667eea, #764ba2); border-color: transparent; }
+    input:checked + .slider:before { transform: translateX(24px); }
+    .action-card { background: rgba(255,255,255,0.04); border: 1px solid var(--emma-border, rgba(255,255,255,0.1)); border-radius: 12px; padding: 16px; }
+    .action-card h4 { margin: 0 0 6px 0; }
+    .notification { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; }
+    .notification.show { opacity: 1; }
+  </style>
+  </head>
+<body>
+  <div class="container">
+    <div class="settings-container">
+      <div class="glass-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <h2 style="margin:0;">Settings (Mobile)</h2>
+          <button type="button" id="settings-close" class="btn">Close</button>
+        </div>
+        <p style="color: var(--emma-text-secondary); margin-bottom: 8px;">Configure mobile-only settings. These do not affect desktop or extension.</p>
+
+        <div class="action-card">
+          <h4>Device Backups</h4>
+          <p>Include your vault in device backups for safety. Exclude for stricter privacy (export manually).</p>
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Exclude from device backups</strong>
+              <small>Recommended OFF. Including helps protect against loss.</small>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="backup-exclusion-toggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-section">
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Quick Unlock (Biometrics)</strong>
+              <small>Use Face ID/Touch ID or fingerprint for faster unlock. Passphrase still required for exports and key changes.</small>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="biometrics-toggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div id="backup-status" class="backup-status" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script src="../js/vault/backup-control.js"></script>
+  <script src="../js/vault/biometrics.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Backup toggle
+      const backupToggle = document.getElementById('backup-exclusion-toggle');
+      if (backupToggle && window.EmmaBackupControl) {
+        try { backupToggle.checked = !!window.EmmaBackupControl.getBackupExcluded(); } catch {}
+        backupToggle.addEventListener('change', async () => {
+          try {
+            const res = await window.EmmaBackupControl.setBackupExcluded(backupToggle.checked);
+            notify('Vault backup setting updated' + (res.native ? '' : ' (native flag not available here)'));
+          } catch (e) {
+            notify('Failed to update backup setting: ' + e.message, true);
+            backupToggle.checked = !backupToggle.checked;
+          }
+        });
+      }
+
+      // Biometrics toggle
+      const bioToggle = document.getElementById('biometrics-toggle');
+      if (bioToggle && window.EmmaBiometrics) {
+        try { bioToggle.checked = !!window.EmmaBiometrics.getEnabled(); } catch {}
+        bioToggle.addEventListener('change', async () => {
+          try {
+            if (bioToggle.checked) {
+              await window.EmmaBiometrics.enableQuickUnlock();
+              notify('Quick unlock enabled');
+            } else {
+              await window.EmmaBiometrics.disableQuickUnlock();
+              notify('Quick unlock disabled');
+            }
+          } catch (e) {
+            notify('Biometrics error: ' + e.message, true);
+            bioToggle.checked = !bioToggle.checked;
+          }
+        });
+      }
+
+      document.getElementById('settings-close')?.addEventListener('click', () => history.back());
+
+      function notify(msg, isError) {
+        const n = document.getElementById('notification');
+        if (!n) return;
+        n.textContent = msg;
+        n.className = 'notification show ' + (isError ? 'error' : 'success');
+        setTimeout(() => n.classList.remove('show'), 2000);
+      }
+    });
+  </script>
+</body>
+</html>
            </div>
           <div class="setting-section" style="margin-top:16px;">
             <div class="setting-item">
