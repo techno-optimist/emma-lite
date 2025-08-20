@@ -142,56 +142,45 @@ class WebVaultStatus {
     });
   }
 
-  // Periodic sync to ensure vault status stays consistent
+  // SIMPLIFIED: Check vault status only when needed (no polling)
   setupPeriodicSync() {
-    // CRITICAL FIX: More frequent checks to catch service worker restarts
-    setInterval(() => {
-      this.logVaultState('periodic-sync'); // EMERGENCY LOGGING
-      const sessionActive = sessionStorage.getItem('emmaVaultActive') === 'true';
-      const sessionName = sessionStorage.getItem('emmaVaultName');
+    console.log('✅ VAULT: Periodic sync disabled - using event-driven updates only');
+    
+    // Only check status on focus/blur events, not continuously
+    this.checkStatusOnDemand();
+  }
+  
+  // Check vault status on demand (no continuous polling)
+  checkStatusOnDemand() {
+    const sessionActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+    const sessionName = sessionStorage.getItem('emmaVaultName');
+    
+    const localActive = localStorage.getItem('emmaVaultActive') === 'true';
+    const localName = localStorage.getItem('emmaVaultName');
+    
+    // Use either storage as source of truth
+    const currentActive = sessionActive || localActive;
+    const currentName = sessionName || localName;
+    
+    // SIMPLIFIED: If vault is active, set status accordingly
+    if (currentActive) {
+      console.log('✅ VAULT: Vault is active - setting unlocked status');
       
-      const localActive = localStorage.getItem('emmaVaultActive') === 'true';
-      const localName = localStorage.getItem('emmaVaultName');
+      this.status = {
+        isUnlocked: true,
+        hasVault: true,
+        name: currentName || 'My Vault'
+      };
       
-      // Use either storage as source of truth
-      const currentActive = sessionActive || localActive;
-      const currentName = sessionName || localName;
-      
-      // SIMPLIFIED: If vault is active, set status accordingly
-      if (currentActive) {
-        console.log('✅ VAULT: Vault is active - setting unlocked status');
-        
-        this.status = {
-          isUnlocked: true,
-          hasVault: true,
-          name: currentName || 'My Vault'
-        };
-        
-        window.currentVaultStatus = this.status;
-        console.log('✅ VAULT: Status set to unlocked');
-      }
-      
-      // Check if status is out of sync
-      if (currentActive && !this.status.isUnlocked) {
-        console.log('🔧 WebVaultStatus: Detected vault should be unlocked - fixing status (likely service worker restart)');
-        this.status = {
-          isUnlocked: true,
-          hasVault: true,
-          name: currentName || 'Extension Vault'
-        };
-        window.currentVaultStatus = this.status;
-        this.notifyStatusChange();
-      } else if (!currentActive && this.status.isUnlocked) {
-        console.log('🔒 WebVaultStatus: Detected vault should be locked - fixing status');
-        this.status = {
-          isUnlocked: false,
-          hasVault: false,
-          name: null
-        };
-        window.currentVaultStatus = this.status;
-        this.notifyStatusChange();
-      }
-    }, 1000); // More frequent checks (every 1 second) to catch service worker restarts faster
+      window.currentVaultStatus = this.status;
+    } else {
+      this.status = {
+        isUnlocked: false,
+        hasVault: false,
+        name: null
+      };
+      window.currentVaultStatus = this.status;
+    }
   }
   
   // Attempt to restore vault data when status is unlocked but data is missing
