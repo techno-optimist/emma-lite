@@ -933,13 +933,13 @@ async function handleSaveMediaToVault(mediaData) {
  */
 async function checkVaultStatus() {
   try {
-    const { vaultReady, vaultFileName, vaultData } = await chrome.storage.local.get(['vaultReady', 'vaultFileName', 'vaultData']);
+    const { vaultReady, vaultFileName } = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
     
     return {
       vaultReady: vaultReady || false,
       vaultFileName: vaultFileName || null,
-      memoryCount: vaultData?.content?.memories ? Object.keys(vaultData.content.memories).length : 0,
-      peopleCount: vaultData?.content?.people ? Object.keys(vaultData.content.people).length : 0
+      memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
+      peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0
     };
   } catch (error) {
     console.error('❌ Failed to check vault status:', error);
@@ -952,13 +952,12 @@ async function checkVaultStatus() {
  */
 async function getPeopleData() {
   try {
-    console.log('👥 DEBUG: Getting people data from storage...');
-    const { vaultData } = await chrome.storage.local.get(['vaultData']);
-    console.log('👥 DEBUG: Retrieved vault data:', vaultData);
-    console.log('👥 DEBUG: People object:', vaultData?.content?.people);
+    console.log('👥 DEBUG: Getting people data from memory...');
+    console.log('👥 DEBUG: currentVaultData exists?', !!currentVaultData);
+    console.log('👥 DEBUG: People object:', currentVaultData?.content?.people);
     
-    const people = vaultData?.content?.people || {};
-    const media = vaultData?.content?.media || {};
+    const people = currentVaultData?.content?.people || {};
+    const media = currentVaultData?.content?.media || {};
     
     // Reconstruct people with avatar URLs
     const peopleWithAvatars = Object.values(people).map(person => {
@@ -995,9 +994,12 @@ async function getPeopleData() {
  */
 async function getMemoriesData() {
   try {
-    const { vaultData } = await chrome.storage.local.get(['vaultData']);
-    const memories = vaultData?.content?.memories || {};
-    const media = vaultData?.content?.media || {};
+    console.log('📝 DEBUG: Getting memories data from memory...');
+    console.log('📝 DEBUG: currentVaultData exists?', !!currentVaultData);
+    console.log('📝 DEBUG: Memories object:', currentVaultData?.content?.memories);
+    
+    const memories = currentVaultData?.content?.memories || {};
+    const media = currentVaultData?.content?.media || {};
     
     // Reconstruct memories with media URLs
     const memoriesWithMedia = Object.values(memories).map(memory => {
