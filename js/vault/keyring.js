@@ -45,7 +45,8 @@ export class Keyring {
       iterations: 250000,
       salt: bytesToBase64(salt),
       eMK: null, // reserved
-      verifier: null // { iv: number[], data: number[] }
+      verifier: null, // { iv: number[], data: number[] }
+      kdfProfile: null // { method: 'PBKDF2-250k', ms: number, device: string }
     };
     await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
     return settings;
@@ -71,7 +72,25 @@ export class Keyring {
 
     const settings = await this.ensureSettings();
     const salt = base64ToBytes(settings.salt);
-    const derivedKey = await deriveMasterKey(passphrase, salt, settings.iterations);
+    let derivedKey = null;
+    let kdfMs = null;
+    // Try worker-based PBKDF2 to avoid blocking UI; fallback to SubtleCrypto deriveKey
+    try {
+      const WorkerClient = (typeof self !== 'undefined') ? self.EmmaCryptoWorkerClient : null;
+      if (WorkerClient) {
+        const workerUrl = new URL('./crypto-worker.js', import.meta.url);
+        const client = new WorkerClient(workerUrl);
+        const { key, ms } = await client.pbkdf2(passphrase, salt, settings.iterations);
+        kdfMs = ms;
+        const cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        derivedKey = cryptoKey;
+      }
+    } catch (e) {
+      // Fallback below
+    }
+    if (!derivedKey) {
+      derivedKey = await deriveMasterKey(passphrase, salt, settings.iterations);
+    }
     
     // If a verifier exists, validate passphrase by decrypting it
     if (settings.verifier && settings.verifier.iv && settings.verifier.data) {
@@ -113,6 +132,15 @@ export class Keyring {
     // Accept and store as current key
     this.masterKey = derivedKey;
     this.unlockedAt = Date.now();
+    // Persist KDF profile on first successful unlock if not set
+    try {
+      if (!settings.kdfProfile) {
+        const device = (typeof navigator !== 'undefined') ? (navigator.userAgent || 'unknown') : 'service-worker';
+        const profile = { method: `PBKDF2-${settings.iterations}`, ms: (kdfMs != null ? Math.round(kdfMs) : null), device };
+        settings.kdfProfile = profile;
+        await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+      }
+    } catch {}
     return true;
   }
 }
