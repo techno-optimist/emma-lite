@@ -209,48 +209,50 @@ class EmmaVaultExtension {
     this.updateRecentVaults();
   }
   
-  // Check if vault exists but is locked and show unlock overlay
+  // CRITICAL FIX: Properly detect if vault is actually unlocked and accessible
   async checkVaultLockStatus() {
     try {
-      // CRITICAL FIX: Only check for loaded vault files that are locked
       const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
       
-      console.log('🔍 POPUP: Checking vault lock status:', {
+      console.log('🔍 POPUP: Vault status check:', {
         vaultFileName: storage.vaultFileName,
         vaultReady: storage.vaultReady,
-        isVaultOpen: this.isVaultOpen,
         hasVaultData: !!this.vaultData,
-        memoryCount: this.vaultData?.content?.memories ? Object.keys(this.vaultData.content.memories).length : 0
+        memoryCount: this.vaultData?.content?.memories ? Object.keys(this.vaultData.content.memories).length : 0,
+        peopleCount: this.vaultData?.content?.people ? Object.keys(this.vaultData.content.people).length : 0
       });
       
-      // CORRECT LOGIC: Show unlock overlay when vault file exists but data is inaccessible
-      if (storage.vaultFileName) {
-        // Check if we have actual vault data or just empty/encrypted data
-        const hasRealData = this.vaultData && 
-                           this.vaultData.content && 
-                           (Object.keys(this.vaultData.content.memories || {}).length > 0 || 
-                            Object.keys(this.vaultData.content.people || {}).length > 0);
+      // CRITICAL: Check if vault is actually accessible with real data
+      const hasAccessibleData = this.vaultData && 
+                               this.vaultData.content && 
+                               (Object.keys(this.vaultData.content.memories || {}).length > 0 || 
+                                Object.keys(this.vaultData.content.people || {}).length > 0 ||
+                                storage.vaultReady === true);
+      
+      if (storage.vaultFileName && !hasAccessibleData) {
+        console.log('🔒 POPUP: Vault file exists but not accessible - showing unlock overlay');
+        this.showVaultUnlockOverlay(storage.vaultFileName);
         
-        // If vault file exists but no accessible data, show unlock overlay
-        if (!hasRealData) {
-          console.log('🔒 POPUP: Vault file exists but no accessible data - showing unlock overlay');
-          console.log('🔒 POPUP: Vault data check:', {
-            hasVaultData: !!this.vaultData,
-            memoryCount: this.vaultData?.content?.memories ? Object.keys(this.vaultData.content.memories).length : 0,
-            peopleCount: this.vaultData?.content?.people ? Object.keys(this.vaultData.content.people).length : 0
-          });
-          this.showVaultUnlockOverlay(storage.vaultFileName);
-          return;
-        }
+        // CRITICAL: Also update vault status indicator to show locked
+        this.elements.vaultStatusIndicator.textContent = '🔒';
+        this.isVaultOpen = false;
+      } else if (hasAccessibleData) {
+        console.log('✅ POPUP: Vault is accessible - hiding unlock overlay');
+        this.hideVaultUnlockOverlay();
+        
+        // Update vault status indicator to show unlocked
+        this.elements.vaultStatusIndicator.textContent = '🟢';
+        this.isVaultOpen = true;
+      } else {
+        console.log('❓ POPUP: No vault file - showing welcome state');
+        this.hideVaultUnlockOverlay();
+        this.isVaultOpen = false;
       }
       
-      // CRITICAL: Hide unlock overlay in all other cases
-      this.hideVaultUnlockOverlay();
-      
     } catch (error) {
-      console.error('❌ POPUP: Error checking vault lock status:', error);
-      // On error, hide overlay to prevent confusion
+      console.error('❌ POPUP: Error checking vault status:', error);
       this.hideVaultUnlockOverlay();
+      this.isVaultOpen = false;
     }
   }
   
@@ -545,21 +547,37 @@ class EmmaVaultExtension {
       // Get the vault file that needs unlocking
       const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
       
-      if (storage.vaultFileName && storage.vaultReady === false) {
+      if (storage.vaultFileName) {
         console.log('🔓 POPUP: Attempting to unlock vault file:', storage.vaultFileName);
         
-        // TODO: Implement actual vault decryption with passphrase
-        // For now, simulate successful unlock
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mark vault as ready after successful unlock
-        await chrome.storage.local.set({
-          vaultReady: true,
-          lastUnlocked: new Date().toISOString()
-        });
-        
-        // Update internal state
-        this.isVaultOpen = true;
+        // CRITICAL: Implement actual vault decryption with passphrase
+        try {
+          // Send unlock request to background script with passphrase
+          const unlockResponse = await chrome.runtime.sendMessage({
+            action: 'UNLOCK_VAULT',
+            passphrase: passphrase
+          });
+          
+          if (unlockResponse && unlockResponse.success) {
+            console.log('🔓 POPUP: Vault unlocked successfully');
+            
+            // Load the decrypted vault data
+            this.vaultData = unlockResponse.vaultData;
+            
+            // Mark vault as ready
+            await chrome.storage.local.set({
+              vaultReady: true,
+              lastUnlocked: new Date().toISOString()
+            });
+            
+            // Update internal state
+            this.isVaultOpen = true;
+          } else {
+            throw new Error(unlockResponse?.error || 'Invalid passphrase');
+          }
+        } catch (decryptError) {
+          throw new Error('Failed to decrypt vault: ' + decryptError.message);
+        }
         
         // Success
         this.hideVaultUnlockOverlay();

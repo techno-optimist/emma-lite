@@ -148,6 +148,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ vaultReady: false, error: error.message }));
       return true;
       
+    case 'UNLOCK_VAULT':
+      unlockVaultWithPassphrase(request.passphrase)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'GET_PEOPLE_DATA':
       getPeopleData()
         .then(result => sendResponse(result))
@@ -954,6 +960,69 @@ async function checkVaultStatus() {
   } catch (error) {
     console.error('❌ Failed to check vault status:', error);
     return { vaultReady: false, error: error.message };
+  }
+}
+
+/**
+ * Unlock vault with passphrase - decrypt the vault content
+ */
+async function unlockVaultWithPassphrase(passphrase) {
+  try {
+    console.log('🔓 BACKGROUND: Attempting to unlock vault with passphrase');
+    
+    if (!fileHandle) {
+      throw new Error('No vault file available. Please reopen the vault file.');
+    }
+    
+    // Read the encrypted vault file
+    const file = await fileHandle.getFile();
+    const data = new Uint8Array(await file.arrayBuffer());
+    
+    console.log('🔓 BACKGROUND: Read vault file, size:', data.length);
+    
+    // Try to decrypt the vault data
+    let vaultData;
+    
+    if (data[0] === 0x7B) {
+      // JSON vault - try to parse directly
+      const content = new TextDecoder().decode(data);
+      vaultData = JSON.parse(content);
+      console.log('🔓 BACKGROUND: Loaded unencrypted JSON vault');
+    } else {
+      // Encrypted vault - decrypt with passphrase
+      console.log('🔓 BACKGROUND: Decrypting vault with passphrase...');
+      
+      const decryptedData = await decryptData(data, passphrase);
+      const jsonString = new TextDecoder().decode(decryptedData);
+      vaultData = JSON.parse(jsonString);
+      
+      console.log('🔓 BACKGROUND: Successfully decrypted vault');
+    }
+    
+    // Validate vault structure
+    if (!vaultData.content) {
+      throw new Error('Invalid vault structure - missing content');
+    }
+    
+    // Store decrypted data in memory
+    currentVaultData = vaultData;
+    
+    console.log('🔓 BACKGROUND: Vault unlocked successfully:', {
+      memoryCount: Object.keys(vaultData.content.memories || {}).length,
+      peopleCount: Object.keys(vaultData.content.people || {}).length
+    });
+    
+    return {
+      success: true,
+      vaultData: vaultData
+    };
+    
+  } catch (error) {
+    console.error('🔓 BACKGROUND: Unlock failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
