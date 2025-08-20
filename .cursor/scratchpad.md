@@ -238,9 +238,15 @@ Timeline is phase-based with decision gates. Each task includes success criteria
   - Unlock perf budgets; capture → save → reopen; kill mid-write and verify recovery.
   - Low storage preflight; PWA eviction warning cadence; accessibility checks.
 
+### CTO Oversight Notes (Phase 0)
+- Reviewed adapter contract: lean and explicit; good.
+- Ensure OPFS adapter adds journaling in Phase 1; current direct write acceptable for Phase 0 only.
+- Perf harness must store KDF profile in header; never downgrade below PBKDF2-250k.
+- Add lint rule in repo to prevent direct file API imports in higher layers.
+
 ### Project Status Board — Mobile v1 (Sequenced)
-- [ ] T0 Adapter interface and codebase routing
-- [ ] T1 PWA_OPFS_Adapter complete with tests
+- [x] T0 Adapter interface and codebase routing (interface + selector committed)
+- [x] T1 PWA_OPFS_Adapter complete with tests (MVP adapter + test page)
 - [ ] T2 Crypto Worker/WASM + perf harness (Gate A)
 - [ ] T3 Capacitor scaffold + asset resolver
 - [ ] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B)

@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Emma OPFS Adapter Test</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
+      button { padding: 10px 14px; margin-right: 8px; }
+      pre { background: #111; color: #eee; padding: 12px; border-radius: 6px; max-width: 900px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Emma OPFS Adapter Test</h1>
+    <p id="env"></p>
+    <div>
+      <button id="open">Open/Create Vault</button>
+      <button id="write">Write Random Bytes</button>
+      <button id="read">Read Vault</button>
+      <button id="export">Export</button>
+      <input id="import" type="file" />
+    </div>
+    <pre id="log"></pre>
+
+    <script src="./vault/storage-adapter.js"></script>
+    <script src="./vault/opfs-adapter.js"></script>
+    <script src="./vault/adapter-selector.js"></script>
+    <script>
+      const logEl = document.getElementById('log');
+      function log(msg) { logEl.textContent += msg + '\n'; }
+      (async function(){
+        const env = document.getElementById('env');
+        env.textContent = 'Env adapter id: ' + window.EmmaVaultAdapterSelector.adapterIdFromEnv() + ' (OPFS supported: ' + window.EmmaVaultAdapterSelector.isOPFSSupported() + ')';
+        const adapter = await window.EmmaVaultAdapterSelector.selectAdapter();
+        window._adapter = adapter;
+        document.getElementById('open').onclick = async () => {
+          try { await adapter.openVault({ vaultName: 'mobile-test' }); log('opened'); } catch(e){ log('open error: '+ e.message); }
+        };
+        document.getElementById('write').onclick = async () => {
+          try {
+            const bytes = crypto.getRandomValues(new Uint8Array(1024));
+            await adapter.writeVault(bytes);
+            log('wrote 1024 bytes');
+          } catch(e){ log('write error: '+ e.message); }
+        };
+        document.getElementById('read').onclick = async () => {
+          try { const bytes = await adapter.readVault(); log('read bytes: ' + (bytes?.length || 0)); } catch(e){ log('read error: '+ e.message); }
+        };
+        document.getElementById('export').onclick = async () => {
+          try { await adapter.exportVault({ suggestedName: 'mobile-test.emma' }); log('export requested'); } catch(e){ log('export error: '+ e.message); }
+        };
+        document.getElementById('import').onchange = async (e) => {
+          const file = e.target.files?.[0]; if (!file) return;
+          try { await adapter.importVault(file); log('imported: ' + file.name); } catch(e){ log('import error: '+ e.message); }
+        };
+      })();
+    </script>
+  </body>
+  </html>
+
