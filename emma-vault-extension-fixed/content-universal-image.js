@@ -4,7 +4,9 @@
  * Built with love for Debbe and all precious memories 💜
  */
 
-console.log('🖼️ Emma Image Detection Content Script loaded');
+console.log('🖼️ Emma Image Detection Content Script loaded on:', window.location.href);
+console.log('🖼️ User agent:', navigator.userAgent);
+console.log('🖼️ Document ready state:', document.readyState);
 
 // 🖼️ Emma Image Detection Integration
 let emmaImageDetector = null;
@@ -116,3 +118,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 console.log('🖼️ Emma Image Detection Content Script ready');
+
+// Test if we're on an extension page (content scripts don't normally run there)
+if (window.location.protocol === 'chrome-extension:') {
+  console.log('🖼️ WARNING: Content script running on extension page - this is unusual');
+  console.log('🖼️ Try testing on a regular webpage like google.com or news site');
+}
