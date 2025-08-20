@@ -2362,7 +2362,7 @@ class EmmaVaultExtension {
           const imageData = await this.downloadImageAsBase64(image.url);
           
           if (imageData) {
-            processedAttachments.push({
+            const attachment = {
               type: imageData.mimeType,
               name: image.filename || `image_${successCount + 1}.jpg`,
               data: imageData.dataUrl,
@@ -2375,10 +2375,18 @@ class EmmaVaultExtension {
                 context: image.context,
                 originalMetadata: image.metadata
               }
-            });
+            };
+            
+            processedAttachments.push(attachment);
             successCount++;
             
             console.log(`🖼️ ✅ Successfully processed ${image.filename} (${(imageData.size / 1024).toFixed(1)}KB)`);
+            console.log(`🖼️ DEBUG: Attachment data preview:`, {
+              name: attachment.name,
+              type: attachment.type,
+              dataUrlPreview: attachment.data.substring(0, 50) + '...',
+              sourceUrl: attachment.metadata.sourceUrl.substring(0, 80)
+            });
           }
         } catch (imageError) {
           console.warn(`🖼️ ❌ Failed to download image ${image.filename}:`, imageError);

@@ -516,6 +516,14 @@ async function handleSaveMemoryToVault(memoryData) {
       // Save each attachment as media
       const mediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       
+      console.log(`💾 BACKGROUND: Processing attachment ${processedAttachments.length + 1}:`, {
+        name: attachment.name,
+        type: attachment.type,
+        size: attachment.size,
+        dataPreview: attachment.data ? attachment.data.substring(0, 50) + '...' : 'no-data',
+        mediaId: mediaId
+      });
+      
       const media = {
         id: mediaId,
         created: new Date().toISOString(),
@@ -532,6 +540,8 @@ async function handleSaveMemoryToVault(memoryData) {
         currentData.content.media = {};
       }
       currentData.content.media[mediaId] = media;
+      
+      console.log(`💾 BACKGROUND: Stored media with ID ${mediaId}, data length: ${media.data.length}`);
       
       // Create attachment reference for memory
       processedAttachments.push({
