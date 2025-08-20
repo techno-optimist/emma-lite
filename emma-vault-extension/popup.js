@@ -684,12 +684,21 @@ class EmmaVaultExtension {
     }
     
     try {
-      // CRITICAL FIX: Route download through background script for proper encryption
+      // BEAUTIFUL UX: Show passphrase modal for download encryption
+      console.log('🔐 Requesting passphrase for secure vault download...');
+      
+      const downloadPassphrase = await this.showDownloadPassphraseModal();
+      if (!downloadPassphrase) {
+        console.log('❌ Download cancelled - no passphrase provided');
+        return;
+      }
+      
+      // Route download through background script for proper encryption
       console.log('🔐 Requesting encrypted vault download from background...');
       
       const response = await chrome.runtime.sendMessage({ 
         action: 'DOWNLOAD_ENCRYPTED_VAULT',
-        passphrase: this.passphrase,
+        passphrase: downloadPassphrase,
         vaultName: this.vaultData.name || 'vault'
       });
       
@@ -1545,6 +1554,135 @@ class EmmaVaultExtension {
       cancelBtn.addEventListener('click', handleCancel);
       input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleUnlock();
+        if (e.key === 'Escape') handleCancel();
+      });
+      
+      // Close on overlay click
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) handleCancel();
+      });
+    });
+  }
+
+  /**
+   * Show beautiful Emma-branded download passphrase modal
+   */
+  async showDownloadPassphraseModal() {
+    return new Promise((resolve, reject) => {
+      // Create beautiful modal overlay
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      `;
+      
+      overlay.innerHTML = `
+        <div style="
+          background: var(--emma-glass);
+          backdrop-filter: blur(20px);
+          border: 1px solid var(--emma-border);
+          border-radius: 20px;
+          padding: 32px;
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+          box-shadow: var(--emma-glow);
+        ">
+          <div style="
+            font-size: 2rem;
+            margin-bottom: 16px;
+          ">💾</div>
+          
+          <h2 style="
+            color: var(--emma-text);
+            margin-bottom: 12px;
+            font-size: 1.4rem;
+          ">Encrypt Vault Download</h2>
+          
+          <p style="
+            color: var(--emma-text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+          ">Enter a passphrase to encrypt your vault backup. You'll need this same passphrase to open the downloaded file.</p>
+          
+          <input type="password" id="downloadPassphraseInput" placeholder="Enter passphrase for backup..." style="
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--emma-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--emma-text);
+            font-size: 1rem;
+            margin-bottom: 24px;
+            box-sizing: border-box;
+          ">
+          
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button id="downloadCancelBtn" style="
+              padding: 12px 24px;
+              border: 2px solid var(--emma-border);
+              border-radius: 12px;
+              background: transparent;
+              color: var(--emma-text);
+              cursor: pointer;
+              font-size: 1rem;
+            ">Cancel</button>
+            
+            <button id="downloadBtn" style="
+              padding: 12px 24px;
+              border: none;
+              border-radius: 12px;
+              background: var(--emma-gradient-2);
+              color: white;
+              cursor: pointer;
+              font-size: 1rem;
+              font-weight: 600;
+            ">💾 Download</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(overlay);
+      
+      const input = overlay.querySelector('#downloadPassphraseInput');
+      const downloadBtn = overlay.querySelector('#downloadBtn');
+      const cancelBtn = overlay.querySelector('#downloadCancelBtn');
+      
+      // Focus input
+      setTimeout(() => input.focus(), 100);
+      
+      // Handle download
+      const handleDownload = () => {
+        const passphrase = input.value.trim();
+        if (passphrase) {
+          document.body.removeChild(overlay);
+          resolve(passphrase);
+        } else {
+          input.focus();
+        }
+      };
+      
+      // Handle cancel
+      const handleCancel = () => {
+        document.body.removeChild(overlay);
+        resolve(null);
+      };
+      
+      // Event listeners
+      downloadBtn.addEventListener('click', handleDownload);
+      cancelBtn.addEventListener('click', handleCancel);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleDownload();
         if (e.key === 'Escape') handleCancel();
       });
       
