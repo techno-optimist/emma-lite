@@ -2309,8 +2309,9 @@
         
         console.log('🔄 Nodes repositioned for', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop', 'layout');
       }
-        
-        // Keyboard shortcuts
+      
+      // Keyboard shortcuts  
+      setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
           if (e.code === 'Space' && !e.target.matches('input, textarea')) {
             e.preventDefault();
@@ -2337,6 +2338,9 @@
             el.style.opacity = '1';
           });
         });
+        
+        // Initialize keyboard shortcuts
+        this.setupKeyboardShortcuts();
       }
 
       initNeuralNetwork() {
