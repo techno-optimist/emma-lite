@@ -182,6 +182,26 @@ class EmmaVaultExtension {
     console.log('📋 Showing welcome state');
   }
   
+  async updateStatsFromBackground() {
+    try {
+      // Get current stats from background script
+      const status = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
+      
+      if (status) {
+        this.elements.memoryCount.textContent = status.memoryCount || 0;
+        this.elements.peopleCount.textContent = status.peopleCount || 0;
+        console.log('📊 POPUP: Updated stats from background - memories:', status.memoryCount, 'people:', status.peopleCount);
+      }
+    } catch (error) {
+      console.error('❌ POPUP: Failed to get stats from background:', error);
+      // Fallback to local data
+      const memoryCount = Object.keys(this.vaultData?.content?.memories || {}).length;
+      const peopleCount = Object.keys(this.vaultData?.content?.people || {}).length;
+      this.elements.memoryCount.textContent = memoryCount;
+      this.elements.peopleCount.textContent = peopleCount;
+    }
+  }
+  
   showActiveVaultState() {
     this.elements.welcomeState.classList.add('hidden');
     this.elements.activeVaultState.classList.remove('hidden');
@@ -191,12 +211,8 @@ class EmmaVaultExtension {
       this.elements.activeVaultName.textContent = this.vaultData?.name || 'My Memories';
       this.elements.activeVaultPath.textContent = this.currentVault.fileName || 'vault.emma';
       
-      // Update stats
-      const memoryCount = Object.keys(this.vaultData?.content?.memories || {}).length;
-      const peopleCount = Object.keys(this.vaultData?.content?.people || {}).length;
-      
-      this.elements.memoryCount.textContent = memoryCount;
-      this.elements.peopleCount.textContent = peopleCount;
+      // Update stats from background script (has current data)
+      this.updateStatsFromBackground();
       
       const vaultSize = this.calculateVaultSize();
       this.elements.vaultSize.textContent = this.formatBytes(vaultSize);
