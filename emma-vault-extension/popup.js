@@ -346,10 +346,32 @@ class EmmaVaultExtension {
         ]
       });
       
-      // Read vault file
+      // Read vault file and detect format
       const file = await fileHandle.getFile();
-      const content = await file.text();
-      const rawVaultData = JSON.parse(content);
+      console.log('📁 DEBUG: File name:', file.name);
+      console.log('📁 DEBUG: File size:', file.size);
+      console.log('📁 DEBUG: File type:', file.type);
+      
+      // Check if file is binary (encrypted) or text (JSON)
+      const arrayBuffer = await file.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+      const magic = new TextDecoder().decode(data.slice(0, 4));
+      
+      console.log('📁 DEBUG: First 4 bytes as text:', magic);
+      console.log('📁 DEBUG: First 10 bytes as hex:', Array.from(data.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+      
+      let rawVaultData;
+      if (magic === 'EMMA') {
+        console.log('📁 DETECTED: Binary encrypted .emma file');
+        // This is a binary encrypted file - we'll handle this in the encryption check
+        rawVaultData = { encryption: { enabled: true }, isBinaryFile: true, fileData: data };
+      } else {
+        console.log('📁 DETECTED: Text JSON .emma file');
+        // This is a text JSON file
+        const content = new TextDecoder().decode(data);
+        console.log('📁 DEBUG: JSON content preview:', content.substring(0, 200));
+        rawVaultData = JSON.parse(content);
+      }
       
       // Check if vault is encrypted and decrypt if needed
       let vaultData;
@@ -364,7 +386,13 @@ class EmmaVaultExtension {
         
         // Decrypt the vault using the proven web vault logic
         console.log('🔓 Decrypting vault with passphrase...');
-        vaultData = await this.decryptVaultFile(file, passphrase);
+        if (rawVaultData.isBinaryFile) {
+          // Binary encrypted file
+          vaultData = await this.decryptBinaryVaultFile(rawVaultData.fileData, passphrase);
+        } else {
+          // JSON file with encrypted content
+          vaultData = await this.decryptVaultFile(file, passphrase);
+        }
         console.log('✅ Vault decrypted successfully!');
       } else {
         // Unencrypted vault
@@ -1022,6 +1050,53 @@ class EmmaVaultExtension {
   calculateVaultSize() {
     if (!this.vaultData) return 0;
     return JSON.stringify(this.vaultData).length;
+  }
+  
+  /**
+   * Decrypt binary .emma vault file (for binary encrypted files)
+   */
+  async decryptBinaryVaultFile(data, passphrase) {
+    try {
+      // Check magic bytes
+      const magic = new TextDecoder().decode(data.slice(0, 4));
+      if (magic !== 'EMMA') {
+        throw new Error('Invalid .emma file format - missing EMMA magic bytes');
+      }
+      
+      // Extract components
+      const version = data.slice(4, 6);
+      const salt = data.slice(6, 38); // 32 bytes salt
+      const encryptedData = data.slice(38);
+      
+      console.log('📁 Extension: Decrypting binary vault file...');
+      console.log('🔍 DECRYPT DEBUG: File size:', data.length);
+      console.log('🔍 DECRYPT DEBUG: Magic bytes:', magic);
+      console.log('🔍 DECRYPT DEBUG: Salt length:', salt.length);
+      console.log('🔍 DECRYPT DEBUG: Encrypted data length:', encryptedData.length);
+      
+      // Decrypt data
+      const decryptedData = await this.decryptData(encryptedData.buffer, salt, passphrase);
+      
+      // Parse JSON
+      const decoder = new TextDecoder();
+      const jsonString = decoder.decode(decryptedData);
+      
+      console.log('🔓 Extension: Decrypted JSON length:', jsonString.length);
+      console.log('🔓 Extension: JSON preview (first 200 chars):', jsonString.substring(0, 200));
+      
+      const vaultData = JSON.parse(jsonString);
+      
+      console.log('🔓 Extension: Parsed vault data - checking contents:');
+      console.log('- Memory count in file:', Object.keys(vaultData.content?.memories || {}).length);
+      console.log('- People count in file:', Object.keys(vaultData.content?.people || {}).length);
+      console.log('- Media count in file:', Object.keys(vaultData.content?.media || {}).length);
+      
+      return vaultData;
+      
+    } catch (error) {
+      console.error('❌ Extension: Failed to decrypt binary vault file:', error);
+      throw new Error('Failed to decrypt vault. Please check your passphrase.');
+    }
   }
   
   /**
