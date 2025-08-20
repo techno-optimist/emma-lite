@@ -969,8 +969,8 @@ function renderMiniSlideshow(memory) {
               position: relative;
             ">
               ${item.type.startsWith('image/') ? 
-                `<img src="${item.url}" style="width: 100%; height: 100%; object-fit: cover;">` :
-                `<video src="${item.url}" style="width: 100%; height: 100%; object-fit: cover;" muted autoplay loop></video>`
+                `<img src="${item.url}" style="width: 100%; height: 200px; object-fit: cover; display: block;">` :
+                `<video src="${item.url}" style="width: 100%; height: 200px; object-fit: cover; display: block;" muted autoplay loop></video>`
               }
               <div style="
                 position: absolute;
