@@ -242,12 +242,17 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Worker now supports optional Argon2id via argon2-browser when available; selection policy remains PBKDF2-250k default until device profiling is integrated.
 - For production, load WASM locally (not CDN) and gate by Appendix A policy. Ensure no network requirement.
 
+### CTO Oversight Notes (Phase 1) — Journaling
+- OPFS adapter now writes temp + manifest and verifies before replacing the vault file. Good. OPFS lacks atomic rename-over-existing; truncate+write is acceptable with prior temp+manifest verification.
+- Ensure error paths leave original vault intact; verify cleanup of temp/manifest on success.
+- Next: device chaos tests to validate recovery behavior; consider .recovery file option if verification fails.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing (interface + selector committed)
 - [x] T1 PWA_OPFS_Adapter complete with tests (MVP adapter + test page)
 - [x] T2 Crypto Worker/WASM + perf harness (Gate A) — implemented; validate on devices before closing Gate A
 - [ ] T3 Capacitor scaffold + asset resolver
-- [ ] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B)
+- [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — partial: journaling implemented in OPFS adapter; preflight and Capacitor pending
 - [ ] T5 Chaos/low-space harness; pass criteria
 - [ ] T6 Backup exclusion UI + native flags + education (Gate C)
 - [ ] T7 Biometrics + privileged gating
