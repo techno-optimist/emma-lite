@@ -637,7 +637,34 @@ async function getMemoriesData() {
   try {
     const { vaultData } = await chrome.storage.local.get(['vaultData']);
     const memories = vaultData?.content?.memories || {};
-    return { memories: Object.values(memories) };
+    const media = vaultData?.content?.media || {};
+    
+    // Reconstruct memories with media URLs
+    const memoriesWithMedia = Object.values(memories).map(memory => {
+      // Process attachments to include data URLs
+      const attachments = (memory.attachments || []).map(attachment => {
+        const mediaItem = media[attachment.id];
+        if (mediaItem && mediaItem.data) {
+          // Create data URL from stored base64 data
+          return {
+            ...attachment,
+            url: `data:${mediaItem.type};base64,${mediaItem.data}`,
+            dataUrl: `data:${mediaItem.type};base64,${mediaItem.data}`,
+            isPersisted: true,
+            vaultId: attachment.id
+          };
+        }
+        return attachment;
+      });
+      
+      return {
+        ...memory,
+        attachments
+      };
+    });
+    
+    console.log(`📝 Returning ${memoriesWithMedia.length} memories with reconstructed media URLs`);
+    return { memories: memoriesWithMedia };
   } catch (error) {
     console.error('❌ Failed to get memories data:', error);
     return { memories: [], error: error.message };
