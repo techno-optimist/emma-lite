@@ -5747,8 +5747,8 @@
                   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px;">
                     ${mediaItems.map(item => {
                       // Use the thumbnail from the main process if available
-                      const hasImage = memory.thumbnail || item.dataUrl || item.url;
-                      const imageUrl = memory.thumbnail || item.dataUrl || item.url;
+                      const hasImage = item.dataUrl || item.url;
+                      const imageUrl = item.dataUrl || item.url;
                       const isImage = (item.type || '').startsWith('image') || hasImage;
                       
                       return `
