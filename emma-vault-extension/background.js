@@ -1148,13 +1148,20 @@ async function downloadEncryptedVault(passphrase, vaultName) {
     offset += iv.length;
     result.set(new Uint8Array(encryptedData), offset);
     
-    // Create blob and download
+    // Create blob and download using data URL (compatible with service workers)
     const blob = new Blob([result], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
     
-    // Trigger download
+    // Convert blob to data URL for service worker compatibility
+    const reader = new FileReader();
+    const dataUrl = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    
+    // Trigger download using data URL
     await chrome.downloads.download({
-      url: url,
+      url: dataUrl,
       filename: `${vaultName}-backup.emma`,
       saveAs: true
     });
