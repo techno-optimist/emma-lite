@@ -1099,12 +1099,16 @@ class EmmaWebVault {
     try {
       console.log('🔄 ELEGANT: Restoring complete vault state...');
       
-      // CRITICAL FIX: Check if session indicates vault should be unlocked
-      const vaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
-      const vaultName = sessionStorage.getItem('emmaVaultName');
+      // CRITICAL FIX: Check if session OR localStorage indicates vault should be unlocked
+      const sessionVaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+      const localVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+      const vaultActive = sessionVaultActive || localVaultActive;
+      
+      const vaultName = sessionStorage.getItem('emmaVaultName') || localStorage.getItem('emmaVaultName');
       const passphrase = sessionStorage.getItem('emmaVaultPassphrase');
       
-      if (vaultActive && passphrase) {
+      // SIMPLIFIED: If vault is marked as active, restore it (don't require passphrase)
+      if (vaultActive) {
         console.log('🔓 CRITICAL FIX: Session indicates vault should be unlocked - restoring unlocked state');
         
         // Restore vault data from IndexedDB if available
