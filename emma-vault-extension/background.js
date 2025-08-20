@@ -127,6 +127,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'DOWNLOAD_ENCRYPTED_VAULT':
+      downloadEncryptedVault(request.passphrase, request.vaultName)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'CHECK_VAULT_STATUS':
       checkVaultStatus()
         .then(status => sendResponse(status))
@@ -676,10 +682,7 @@ async function deleteMemory(memoryId) {
     // Write to .emma file if we have file handle
     if (fileHandle) {
       try {
-        const encryptedData = await encryptVaultData(currentData);
-        const writable = await fileHandle.createWritable();
-        await writable.write(encryptedData);
-        await writable.close();
+        await writeToEmmaFile(currentData);
         console.log('🗑️ BACKGROUND: Memory deleted and vault file updated');
       } catch (writeError) {
         console.error('🗑️ BACKGROUND: Failed to write vault file after delete:', writeError);
@@ -1038,6 +1041,103 @@ async function downloadCurrentVault() {
     
   } catch (error) {
     console.error('❌ Failed to download vault:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Download current vault as encrypted .emma file
+ */
+async function downloadEncryptedVault(passphrase, vaultName) {
+  try {
+    console.log('📥 Downloading encrypted vault...');
+    
+    // Get current vault data from memory
+    if (!currentVaultData) {
+      throw new Error('No vault data available in memory. Please reopen the vault.');
+    }
+    
+    if (!passphrase) {
+      throw new Error('Passphrase required for encryption');
+    }
+    
+    console.log('🔐 Encrypting vault data with passphrase...');
+    
+    // Convert vault data to JSON
+    const jsonData = JSON.stringify(currentVaultData);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(jsonData);
+    
+    // Generate salt for encryption
+    const salt = crypto.getRandomValues(new Uint8Array(32));
+    
+    // Derive key from passphrase using PBKDF2 with 250k iterations
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 250000, // Consistent with our security standards
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt']
+    );
+    
+    // Generate IV for AES-GCM
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    
+    // Encrypt the data
+    const encryptedData = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      data
+    );
+    
+    // Create .emma file format: EMMA + version + salt + iv + encrypted data
+    const header = encoder.encode('EMMA'); // Magic bytes (4 bytes)
+    const version = new Uint8Array([1, 0]); // Version 1.0 (2 bytes)
+    
+    // Combine all parts
+    const totalSize = header.length + version.length + salt.length + iv.length + encryptedData.byteLength;
+    const result = new Uint8Array(totalSize);
+    let offset = 0;
+    
+    result.set(header, offset);
+    offset += header.length;
+    result.set(version, offset);
+    offset += version.length;
+    result.set(salt, offset);
+    offset += salt.length;
+    result.set(iv, offset);
+    offset += iv.length;
+    result.set(new Uint8Array(encryptedData), offset);
+    
+    // Create blob and download
+    const blob = new Blob([result], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    
+    // Trigger download
+    await chrome.downloads.download({
+      url: url,
+      filename: `${vaultName}-backup.emma`,
+      saveAs: true
+    });
+    
+    console.log('✅ Encrypted vault download initiated');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Failed to download encrypted vault:', error);
     return { success: false, error: error.message };
   }
 }

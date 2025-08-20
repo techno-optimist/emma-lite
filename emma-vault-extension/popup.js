@@ -659,25 +659,25 @@ class EmmaVaultExtension {
     }
     
     try {
-      // Create download blob
-      const vaultJson = JSON.stringify(this.vaultData, null, 2);
-      const blob = new Blob([vaultJson], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
+      // CRITICAL FIX: Route download through background script for proper encryption
+      console.log('🔐 Requesting encrypted vault download from background...');
       
-      // Trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${this.vaultData.name || 'vault'}-backup.emma`;
-      a.click();
+      const response = await chrome.runtime.sendMessage({ 
+        action: 'DOWNLOAD_ENCRYPTED_VAULT',
+        passphrase: this.passphrase,
+        vaultName: this.vaultData.name || 'vault'
+      });
       
-      URL.revokeObjectURL(url);
-      
-      console.log('✅ Vault downloaded');
-      this.showSuccess('Vault downloaded successfully!');
+      if (response && response.success) {
+        console.log('✅ Encrypted vault download initiated');
+        this.showSuccess('Encrypted vault downloaded successfully!');
+      } else {
+        throw new Error(response?.error || 'Download failed');
+      }
       
     } catch (error) {
       console.error('❌ Download failed:', error);
-      this.showError('Failed to download vault');
+      this.showError('Failed to download vault: ' + error.message);
     }
   }
   
