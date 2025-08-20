@@ -3,6 +3,7 @@
 (function(global){
   const { VaultStorageAdapter } = global.EmmaVaultAdapters || {};
   const { createManifest, verifyManifest } = global.EmmaVaultJournal || {};
+  const { ensureSufficientSpace } = global.EmmaVaultPreflight || {};
 
   async function getRootDirectory() {
     if (!global.navigator?.storage?.getDirectory) {
@@ -47,7 +48,11 @@
     async writeVault(data) {
       if (!this._file) throw new Error('Vault not opened');
       if (!(data instanceof Uint8Array)) throw new Error('writeVault expects Uint8Array');
-      // Phase 1: journaling with temp + manifest, then atomic rename replace
+      // Phase 1: preflight + journaling with temp + manifest, then atomic replace
+      const pre = ensureSufficientSpace ? await ensureSufficientSpace(data.byteLength || data.length || 0) : { ok: true };
+      if (!pre.ok) {
+        throw new Error(pre.message || 'Insufficient storage space');
+      }
       const dir = this._root;
       const tmp = await dir.getFileHandle('vault.tmp', { create: true });
       const man = await dir.getFileHandle('vault.manifest.json', { create: true });
@@ -62,7 +67,17 @@
       await w.close();
       // Verify
       const verifyOk = verifyManifest ? await verifyManifest(data, manifest) : true;
-      if (!verifyOk) throw new Error('Manifest verification failed');
+      if (!verifyOk) {
+        // Move temp to recovery
+        try {
+          const rec = await dir.getFileHandle(`vault.recovery-${Date.now()}.emma`, { create: true });
+          const r = await rec.createWritable();
+          const tf = await tmp.getFile();
+          await r.write(await tf.arrayBuffer());
+          await r.close();
+        } catch {}
+        throw new Error('Manifest verification failed');
+      }
       // Atomic replace: truncate original then write data (OPFS lacks rename over existing)
       const vaultWritable = await this._file.createWritable();
       await vaultWritable.truncate(0);
