@@ -63,7 +63,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["icons/*", "../js/emma-image-detector.js"],
+      "resources": ["icons/*", "emma-image-detector.js"],
       "matches": ["<all_urls>"]
     }
   ]

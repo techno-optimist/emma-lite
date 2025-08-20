@@ -37,7 +37,7 @@ async function initializeImageDetector() {
 function loadImageDetectorModule() {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('../js/emma-image-detector.js');
+    script.src = chrome.runtime.getURL('emma-image-detector.js');
     script.onload = resolve;
     script.onerror = reject;
     document.head.appendChild(script);
