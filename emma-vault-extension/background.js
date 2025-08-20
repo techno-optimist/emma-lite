@@ -10,6 +10,8 @@ const vaultConnections = new Map();
 // File System Access API handle storage
 let fileHandle = null;
 let lastSyncTime = null;
+// Volatile in-memory vault state (never persisted in chrome.storage.local)
+let currentVaultData = null;
 
 /**
  * Initialize extension on install
@@ -47,6 +49,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Received message:', request.action);
   
   switch (request.action) {
+    case 'VAULT_LOAD':
+      loadVaultData(request.data)
+        .then(() => sendResponse({ success: true }))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'VAULT_UPDATE':
       handleVaultUpdate(request.data, sender.tab.id)
         .then(result => sendResponse(result))
@@ -169,11 +177,13 @@ async function handleVaultUpdate(vaultData, tabId) {
     // Update sync status badge
     await updateBadge('syncing');
     
-    // Write to file system
-    const result = await writeToEmmaFile(vaultData);
+    // Update in-memory state and write to file system
+    currentVaultData = vaultData;
+    const result = await writeToEmmaFile(currentVaultData);
     
     // Update statistics
-    await updateSyncStats(vaultData.content.length);
+    const size = JSON.stringify(currentVaultData?.content || {}).length;
+    await updateSyncStats(size);
     
     // Update badge to show success
     await updateBadge('synced');
@@ -221,7 +231,7 @@ async function writeToEmmaFile(vaultData) {
     const writable = await fileHandle.createWritable();
     
     // Prepare vault data for .emma format
-    const emmaFileContent = prepareEmmaFileContent(vaultData);
+    const emmaFileContent = prepareEmmaFileContent(vaultData || currentVaultData || {});
     
     // Write the data atomically
     await writable.write(emmaFileContent);
@@ -336,6 +346,16 @@ async function setFileHandle(handle) {
 }
 
 /**
+ * Accept vault content from trusted UI (popup/content script) into memory only
+ */
+async function loadVaultData(vaultData) {
+  if (!vaultData || !vaultData.id || !vaultData.content) {
+    throw new Error('Invalid vault data');
+  }
+  currentVaultData = vaultData;
+}
+
+/**
  * Check extension status
  */
 async function checkExtensionStatus() {
@@ -419,12 +439,13 @@ async function handleSaveMemoryToVault(memoryData) {
     console.log('💾 Background: Saving memory directly to vault storage');
     
     // Get current vault data from storage
-    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
-    if (!vaultReady || !vaultData) {
+    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
+    if (!vaultReady) {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    const currentData = { ...vaultData };
+    const currentData = currentVaultData ? { ...currentVaultData } : null;
+    if (!currentData) throw new Error('Vault content unavailable in memory. Please reopen the vault.');
     
     // Generate memory ID
     const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -485,10 +506,7 @@ async function handleSaveMemoryToVault(memoryData) {
     currentData.stats.totalSize += JSON.stringify(memory).length;
     
     // Save updated vault data back to storage
-    await chrome.storage.local.set({
-      vaultData: currentData,
-      lastSaved: new Date().toISOString()
-    });
+    currentVaultData = currentData;
     
     console.log('✅ Memory saved to vault storage successfully');
     return { success: true, id: memoryId };
@@ -507,12 +525,13 @@ async function handleSavePersonToVault(personData) {
     console.log('👥 Background: Saving person directly to vault storage');
     
     // Get current vault data from storage
-    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
-    if (!vaultReady || !vaultData) {
+    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
+    if (!vaultReady) {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    const currentData = { ...vaultData };
+    const currentData = currentVaultData ? { ...currentVaultData } : null;
+    if (!currentData) throw new Error('Vault content unavailable in memory. Please reopen the vault.');
     
     // Generate person ID
     const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -575,10 +594,7 @@ async function handleSavePersonToVault(personData) {
     currentData.stats.totalSize += JSON.stringify(person).length;
     
     // Save updated vault data back to storage
-    await chrome.storage.local.set({
-      vaultData: currentData,
-      lastSaved: new Date().toISOString()
-    });
+    currentVaultData = currentData;
     
     console.log('✅ Person saved to vault storage successfully');
     console.log('👥 DEBUG: Updated vault data people count:', Object.keys(currentData.content.people).length);
@@ -600,12 +616,13 @@ async function handleUpdateMemoryInVault(memoryData) {
     console.log('💾 Background: Updating memory in vault storage');
     
     // Get current vault data from storage
-    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
-    if (!vaultReady || !vaultData) {
+    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
+    if (!vaultReady) {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    const currentData = { ...vaultData };
+    const currentData = currentVaultData ? { ...currentVaultData } : null;
+    if (!currentData) throw new Error('Vault content unavailable in memory. Please reopen the vault.');
     
     // Find existing memory
     if (!currentData.content.memories) {
@@ -631,10 +648,7 @@ async function handleUpdateMemoryInVault(memoryData) {
     currentData.content.memories[memoryData.id] = updatedMemory;
     
     // Save updated vault data back to storage
-    await chrome.storage.local.set({
-      vaultData: currentData,
-      lastSaved: new Date().toISOString()
-    });
+    currentVaultData = currentData;
     
     console.log('✅ Memory updated in vault storage successfully');
     return { success: true, id: memoryData.id };
@@ -653,12 +667,13 @@ async function handleUpdatePersonInVault(personData) {
     console.log('👥 Background: Updating person in vault storage');
     
     // Get current vault data from storage
-    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
-    if (!vaultReady || !vaultData) {
+    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
+    if (!vaultReady) {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
-    const currentData = { ...vaultData };
+    const currentData = currentVaultData ? { ...currentVaultData } : null;
+    if (!currentData) throw new Error('Vault content unavailable in memory. Please reopen the vault.');
     
     // Find existing person
     if (!currentData.content.people) {
@@ -727,10 +742,7 @@ async function handleUpdatePersonInVault(personData) {
     currentData.stats.peopleCount = Object.keys(currentData.content.people).length;
     
     // Save updated vault data back to storage
-    await chrome.storage.local.set({
-      vaultData: currentData,
-      lastSaved: new Date().toISOString()
-    });
+    currentVaultData = currentData;
     
     console.log('✅ Person updated in vault storage successfully');
     return { success: true, id: personData.id };

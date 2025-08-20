@@ -96,11 +96,11 @@
           `;
         } else {
           statusEl.className = 'status error';
-          statusEl.innerHTML = `<strong>❌ Failed to get status:</strong> ${response?.error || 'Unknown error'}`;
+          statusEl.textContent = `❌ Failed to get status: ${String(response?.error || 'Unknown error')}`;
         }
       } catch (error) {
         document.getElementById('status-display').className = 'status error';
-        document.getElementById('status-display').innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+        document.getElementById('status-display').textContent = `❌ Error: ${String(error?.message || error)}`;
       }
     }
 

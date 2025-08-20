@@ -33,6 +33,13 @@ function initializeEmmaConnection() {
   // Set up message listeners
   setupMessageListeners();
   
+  // If the web app exposes current vault content (initial sync), accept it into background memory
+  try {
+    if (window.__EMMA_CURRENT_VAULT__) {
+      chrome.runtime.sendMessage({ action: 'VAULT_LOAD', data: window.__EMMA_CURRENT_VAULT__ });
+    }
+  } catch {}
+  
   // Check initial sync status
   checkSyncStatus();
   
@@ -698,12 +705,9 @@ function isValidOrigin(origin) {
   const validOrigins = [
     'http://localhost',
     'http://127.0.0.1',
-    'https://emma-hjjc.onrender.com',
-    'https://emma-vault.onrender.com',
-    window.location.origin
+    'https://emma-hjjc.onrender.com'
   ];
-  
-  return validOrigins.some(valid => origin.startsWith(valid));
+  return validOrigins.includes(origin);
 }
 
 /**

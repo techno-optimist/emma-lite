@@ -430,19 +430,23 @@ class EmmaVaultExtension {
         lastOpened: new Date().toISOString()
       };
       
+      // Provide file handle to background for direct file access
+      try {
+        await chrome.runtime.sendMessage({ action: 'SET_FILE_HANDLE', handle: fileHandle });
+      } catch (e) {
+        console.warn('⚠️ Could not pass file handle to background:', e?.message || e);
+      }
+
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
-      // SIMPLE: Store complete vault data in background storage
-      console.log('📤 Storing vault data in background for direct saves...');
+      // SECURITY: Do NOT persist plaintext vault data in extension storage. Keep in-memory only.
+      // Mark readiness via minimal metadata; actual content remains in this popup's memory.
       await chrome.storage.local.set({
-        vaultData: vaultData,
         vaultFileName: fileHandle.name,
         vaultReady: true,
         lastSaved: new Date().toISOString()
       });
-      
-      console.log('✅ Vault data stored in background - ready for direct saves');
       
       // Add to recent vaults
       this.addToRecentVaults({
@@ -916,19 +920,22 @@ class EmmaVaultExtension {
         lastOpened: new Date().toISOString()
       };
       
+      // Provide file handle to background for direct file access
+      try {
+        await chrome.runtime.sendMessage({ action: 'SET_FILE_HANDLE', handle: fileHandle });
+      } catch (e) {
+        console.warn('⚠️ Could not pass file handle to background:', e?.message || e);
+      }
+
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
-      // SIMPLE: Store complete vault data in background storage
-      console.log('📤 Storing vault data in background for direct saves...');
+      // SECURITY: Do NOT persist plaintext vault data in extension storage.
       await chrome.storage.local.set({
-        vaultData: vaultData,
         vaultFileName: fileHandle.name,
         vaultReady: true,
         lastSaved: new Date().toISOString()
       });
-      
-      console.log('✅ Vault data stored in background - ready for direct saves');
       
       // Add to recent vaults
       this.addToRecentVaults({
@@ -1249,7 +1256,7 @@ class EmmaVaultExtension {
         {
           name: 'PBKDF2',
           salt: saltBuffer,
-          iterations: 100000,
+          iterations: 250000,
           hash: 'SHA-256'
         },
         keyMaterial,

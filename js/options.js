@@ -886,7 +886,7 @@ async function saveSettings() {
       window.postMessage({ 
         type: 'DEMENTIA_SETTINGS_CHANGED',
         timestamp: Date.now()
-      }, '*');
+      }, window.location.origin);
     } catch (e) {
       console.warn('Failed to broadcast dementia refresh:', e.message);
     }
@@ -1805,7 +1805,7 @@ async function activateOrb(orbType) {
         // Special handling for dementia companion
         if (orbType === 'dementia') {
           localStorage.setItem('dementia.settings.bump', Date.now().toString());
-          window.postMessage({ type: 'DEMENTIA_SETTINGS_CHANGED', settings }, '*');
+          window.postMessage({ type: 'DEMENTIA_SETTINGS_CHANGED', settings }, window.location.origin);
           console.log('✅ Triggered dementia-specific updates');
         }
       } catch (e) {
@@ -1815,7 +1815,7 @@ async function activateOrb(orbType) {
     // Universal bumps for all personas
     try {
       localStorage.setItem('orb.settings.bump', Date.now().toString());
-      window.postMessage({ type: 'ORB_SETTINGS_CHANGED', settings }, '*');
+      window.postMessage({ type: 'ORB_SETTINGS_CHANGED', settings }, window.location.origin);
     } catch {}
     
     // Show success

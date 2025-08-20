@@ -53,7 +53,7 @@ User Action → Web App UI → Extension Bridge → Vault Storage → Real-time 
 ### **Vault Encryption Specification**
 
 **Algorithm**: AES-GCM with PBKDF2-SHA256 key derivation
-- **Key Derivation**: PBKDF2-SHA256, 100,000 iterations
+- **Key Derivation**: PBKDF2-SHA256, 250,000 iterations
 - **Salt**: 32-byte cryptographically random salt
 - **IV**: 12-byte initialization vector per operation
 - **Encryption**: AES-GCM 256-bit
@@ -689,7 +689,7 @@ startCommand: ""
 
 **Key Derivation**:
 ```javascript
-// PBKDF2-SHA256 with 100,000 iterations
+// PBKDF2-SHA256 with 250,000 iterations
 const key = await window.crypto.subtle.importKey(
   'raw',
   new TextEncoder().encode(passphrase),
@@ -702,7 +702,7 @@ const derivedKey = await window.crypto.subtle.deriveBits(
   {
     name: 'PBKDF2',
     salt: salt,
-    iterations: 100000,
+    iterations: 250000,
     hash: 'SHA-256'
   },
   key,
