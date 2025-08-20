@@ -52,6 +52,14 @@ function setupEventListeners() {
 }
 
 /**
+ * Refresh gallery (can be called externally)
+ */
+window.refreshMemoryGallery = function() {
+  console.log('🔄 GALLERY: External refresh requested');
+  loadMemories();
+};
+
+/**
  * Load memories from vault storage
  */
 async function loadMemories() {
@@ -63,29 +71,7 @@ async function loadMemories() {
     
     // Check if we have the web vault available
     if (window.emmaWebVault) {
-      console.log('💝 GALLERY: Checking vault state - isOpen:', window.emmaWebVault.isOpen);
-      console.log('💝 GALLERY: Vault data exists:', !!window.emmaWebVault.vaultData);
-      console.log('💝 GALLERY: Session active:', sessionStorage.getItem('emmaVaultActive'));
-      
-      // Force vault open if session is active but vault appears closed
-      if (sessionStorage.getItem('emmaVaultActive') === 'true' && !window.emmaWebVault.isOpen) {
-        console.log('💝 GALLERY: FORCE OPENING vault - session active but vault closed');
-        if (window.emmaWebVault.vaultData) {
-          window.emmaWebVault.isOpen = true;
-        } else {
-          // Try to restore vault data
-          try {
-            const vaultData = await window.emmaWebVault.loadFromIndexedDB();
-            if (vaultData) {
-              window.emmaWebVault.vaultData = vaultData;
-              window.emmaWebVault.isOpen = true;
-              console.log('💝 GALLERY: Vault restored and opened');
-            }
-          } catch (error) {
-            console.error('💝 GALLERY: Failed to restore vault:', error);
-          }
-        }
-      }
+      console.log('💝 GALLERY: Checking extension availability:', window.emmaWebVault.extensionAvailable);
       
       if (window.emmaWebVault.extensionAvailable) {
         console.log('💝 GALLERY: Loading from extension vault...');

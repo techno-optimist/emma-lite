@@ -1880,9 +1880,16 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             this.close();
             
             // Refresh gallery if we're on the gallery page
-            if (window.location.pathname.includes('memory-gallery') && window.loadMemories) {
+            if (window.location.pathname.includes('memory-gallery')) {
               console.log('🔄 WIZARD: Refreshing gallery to show new memory...');
-              window.loadMemories();
+              // Wait for extension to complete saving, then refresh
+              setTimeout(() => {
+                if (window.refreshMemoryGallery) {
+                  window.refreshMemoryGallery();
+                } else if (window.loadMemories) {
+                  window.loadMemories();
+                }
+              }, 500);
             }
           }, 2000);
           return;
