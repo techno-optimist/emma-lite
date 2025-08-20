@@ -92,16 +92,20 @@ async function detectImagesOnPage() {
     for (const el of bgCandidates) {
       const style = getComputedStyle(el);
       const bg = style.backgroundImage;
-      if (!bg || bg === 'none') continue;
+      if (!bg || bg === 'none') { continue; }
       const m = bg.match(/url\(["']?([^"')]+)["']?\)/);
-      if (!m) continue;
+      if (!m) { continue; }
       let url = m[1];
-      // Only googleusercontent or lh#.googleusercontent are useful
-      if (!(url.includes('googleusercontent.com') || url.includes('ggpht.com'))) continue;
-      const w = el.clientWidth || 0;
-      const h = el.clientHeight || 0;
-      // Require reasonably sized tile to avoid icons
-      if (w < 200 || h < 200) continue;
+      // Dimensions: use bounding rect (more reliable in GP)
+      const rect = el.getBoundingClientRect();
+      const w = Math.round(rect.width || el.clientWidth || 0);
+      const h = Math.round(rect.height || el.clientHeight || 0);
+      // Reasonable threshold to avoid icons
+      if (w < 120 || h < 120) {
+        // Debug skip
+        // console.log(`GP SKIP small bg: ${w}x${h} url=${url.substring(0,60)}`);
+        continue;
+      }
       if (addImage(url, w, h, { source: 'css-background' })) telemetry.cssBackground++;
     }
   }
