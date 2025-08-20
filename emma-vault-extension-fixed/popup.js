@@ -2123,6 +2123,22 @@ class EmmaVaultExtension {
       // Update subtitle with page info
       this.elements.captureSubtitle.textContent = `Scanning ${tab.title || tab.url}...`;
       
+      // First, try to inject the content script programmatically
+      try {
+        console.log('🖼️ Injecting content script...');
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content-universal-image.js']
+        });
+        console.log('🖼️ Content script injected successfully');
+        
+        // Wait a moment for the script to initialize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (injectionError) {
+        console.log('🖼️ Script injection failed (might already be injected):', injectionError.message);
+      }
+      
       // Send detection request to content script
       const response = await chrome.tabs.sendMessage(tab.id, { action: 'DETECT_IMAGES' });
       
