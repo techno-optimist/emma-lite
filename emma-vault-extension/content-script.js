@@ -128,6 +128,10 @@ function handleEmmaMessage(message) {
       sendVaultData();
       break;
       
+    case 'EMMA_DELETE_MEMORY':
+      handleDeleteMemory(message);
+      break;
+      
     case 'REQUEST_VAULT_STATUS':
       sendVaultStatus();
       break;
@@ -415,6 +419,44 @@ async function sendMemoriesData() {
     type: 'MEMORIES_DATA',
     data: response?.memories || []
   });
+}
+
+/**
+ * Handle memory deletion request from web app
+ */
+async function handleDeleteMemory(message) {
+  console.log('🗑️ CONTENT SCRIPT: Handling delete memory request:', message.memoryId);
+  
+  try {
+    // Forward delete request to background script
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'DELETE_MEMORY', 
+      memoryId: message.memoryId 
+    });
+    
+    // Send response back to web app
+    postToEmma({
+      channel: EMMA_VAULT_CHANNEL,
+      type: 'EMMA_RESPONSE',
+      messageId: message.messageId,
+      success: response?.success || false,
+      error: response?.error
+    });
+    
+    console.log('🗑️ CONTENT SCRIPT: Delete response sent to web app');
+    
+  } catch (error) {
+    console.error('🗑️ CONTENT SCRIPT: Delete failed:', error);
+    
+    // Send error response back to web app
+    postToEmma({
+      channel: EMMA_VAULT_CHANNEL,
+      type: 'EMMA_RESPONSE',
+      messageId: message.messageId,
+      success: false,
+      error: error.message
+    });
+  }
 }
 
 /**

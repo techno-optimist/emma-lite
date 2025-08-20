@@ -416,8 +416,48 @@ class EmmaWebVault {
    * Delete a memory by id
    */
   async deleteMemory(memoryId) {
-    if (!this.isOpen) throw new Error('No vault is open');
     if (!memoryId) throw new Error('Missing memory id');
+    
+    // Extension mode: Route through extension
+    if (this.extensionAvailable && window.currentVaultStatus?.managedByExtension) {
+      console.log('🗑️ EXTENSION DELETE: Routing memory deletion through extension');
+      
+      return new Promise((resolve, reject) => {
+        const messageId = `delete_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Set up response listener
+        const handleResponse = (event) => {
+          if (event.data.type === 'EMMA_RESPONSE' && event.data.messageId === messageId) {
+            window.removeEventListener('message', handleResponse);
+            if (event.data.success) {
+              console.log('🗑️ EXTENSION DELETE: Memory deleted successfully');
+              resolve({ success: true });
+            } else {
+              console.error('🗑️ EXTENSION DELETE: Failed:', event.data.error);
+              reject(new Error(event.data.error || 'Delete failed'));
+            }
+          }
+        };
+        
+        window.addEventListener('message', handleResponse);
+        
+        // Send delete request to extension
+        window.postMessage({
+          type: 'EMMA_DELETE_MEMORY',
+          messageId: messageId,
+          memoryId: memoryId
+        }, window.location.origin);
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          window.removeEventListener('message', handleResponse);
+          reject(new Error('Delete operation timed out'));
+        }, 10000);
+      });
+    }
+    
+    // Normal vault mode
+    if (!this.isOpen) throw new Error('No vault is open');
     
     if (!this.vaultData.content.memories[memoryId]) {
       return { success: false, error: 'Memory not found' };
@@ -1757,6 +1797,11 @@ class EmmaWebVault {
             name: message.data.vaultName
           };
           
+          // CRITICAL FIX: Update web vault isOpen flag for extension mode
+          this.isOpen = true;
+          this.extensionAvailable = true;
+          console.log('🔓 VAULT SYNC: Set EmmaWebVault.isOpen = true for extension mode');
+          
           // Update web app status to show vault is ready
           sessionStorage.setItem('emmaVaultActive', 'true');
           sessionStorage.setItem('emmaVaultName', message.data.vaultName || 'Extension Vault');
@@ -1775,6 +1820,11 @@ class EmmaWebVault {
         } else {
           console.log('⚠️ Extension has no vault open');
           window.currentVaultStatus = { isUnlocked: false };
+          
+          // CRITICAL FIX: Update web vault isOpen flag when extension vault closes
+          this.isOpen = false;
+          this.extensionAvailable = false;
+          console.log('🔒 VAULT SYNC: Set EmmaWebVault.isOpen = false - extension vault closed');
         }
         break;
         

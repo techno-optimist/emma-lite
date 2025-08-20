@@ -79,6 +79,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'DELETE_MEMORY':
+      deleteMemory(request.memoryId)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'SET_FILE_HANDLE':
       setFileHandle(request.handle)
         .then(() => sendResponse({ success: true }))
@@ -604,6 +610,65 @@ async function handleSavePersonToVault(personData) {
     
   } catch (error) {
     console.error('❌ Failed to save person to vault:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Delete memory from vault
+ */
+async function deleteMemory(memoryId) {
+  try {
+    console.log('🗑️ BACKGROUND: Deleting memory:', memoryId);
+    
+    // Check if vault is ready
+    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
+    if (!vaultReady) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
+    }
+    
+    // Get current vault data from memory
+    const currentData = currentVaultData ? { ...currentVaultData } : null;
+    if (!currentData) {
+      throw new Error('Vault content unavailable in memory. Please reopen the vault.');
+    }
+    
+    // Check if memory exists
+    if (!currentData.content.memories || !currentData.content.memories[memoryId]) {
+      return { success: false, error: 'Memory not found' };
+    }
+    
+    // Delete the memory
+    delete currentData.content.memories[memoryId];
+    
+    // Update stats
+    if (currentData.stats && currentData.stats.memoryCount > 0) {
+      currentData.stats.memoryCount--;
+    }
+    
+    // Update in-memory vault data
+    currentVaultData = currentData;
+    
+    // Write to .emma file if we have file handle
+    if (fileHandle) {
+      try {
+        const encryptedData = await encryptVaultData(currentData);
+        const writable = await fileHandle.createWritable();
+        await writable.write(encryptedData);
+        await writable.close();
+        console.log('🗑️ BACKGROUND: Memory deleted and vault file updated');
+      } catch (writeError) {
+        console.error('🗑️ BACKGROUND: Failed to write vault file after delete:', writeError);
+        // Memory is deleted from memory but file write failed
+        return { success: false, error: 'Memory deleted but failed to save vault file' };
+      }
+    }
+    
+    console.log('✅ BACKGROUND: Memory deleted successfully');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ BACKGROUND: Failed to delete memory:', error);
     return { success: false, error: error.message };
   }
 }
