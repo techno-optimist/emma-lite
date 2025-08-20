@@ -166,7 +166,7 @@
     function showResult(message, type) {
       const resultEl = document.getElementById('reset-result');
       resultEl.className = `status ${type}`;
-      resultEl.innerHTML = message;
+      resultEl.textContent = message; // Safe - prevents HTML injection
     }
 
     // Auto-check status on load

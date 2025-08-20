@@ -433,7 +433,9 @@ class EmmaDashboard {
   showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
+    const span = document.createElement('span');
+    span.textContent = message; // Safe - prevents HTML injection
+    toast.appendChild(span);
     document.body.appendChild(toast);
     
     setTimeout(() => toast.classList.add('show'), 10);

@@ -2204,14 +2204,18 @@
           } else {
             console.warn('🌟 EmmaOrb class not available for loading, using fallback');
             // Fallback to gradient orb if WebGL not available
-            loadingOrbContainer.innerHTML = '<div class="loading-orb-fallback"></div>';
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'loading-orb-fallback';
+            loadingOrbContainer.appendChild(fallbackDiv);
           }
         } catch (error) {
           console.error('🚨 Error initializing Loading Emma Orb:', error);
           // Fallback on error
           const loadingOrbContainer = document.querySelector('.loading-orb');
           if (loadingOrbContainer) {
-            loadingOrbContainer.innerHTML = '<div class="loading-orb-fallback"></div>';
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'loading-orb-fallback';
+            loadingOrbContainer.appendChild(fallbackDiv);
           }
         }
       }
@@ -3502,7 +3506,10 @@
         } else {
           // Fallback to gradient with emoji
           memoryElement.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
-          memoryElement.innerHTML = '<div style="font-size: 24px; color: white;">💝</div>';
+          const emojiDiv = document.createElement('div');
+          emojiDiv.style.cssText = 'font-size: 24px; color: white;';
+          emojiDiv.textContent = '💝';
+          memoryElement.appendChild(emojiDiv);
           console.log(`💝 CONSTELLATION: Clean memory capsule with emoji for ${memory.title}`);
         }
         
@@ -3539,10 +3546,17 @@
       createCreateMemoryNodeElement(x, y) {
         const createElement = document.createElement('div');
         createElement.className = 'memory-node create-memory-node';
-        createElement.innerHTML = `
-          <div class="memory-thumbnail">➕</div>
-          <div class="memory-label">New Memory</div>
-        `;
+        // Safely create child elements
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'memory-thumbnail';
+        thumbnail.textContent = '➕';
+        
+        const label = document.createElement('div');
+        label.className = 'memory-label';
+        label.textContent = 'New Memory';
+        
+        createElement.appendChild(thumbnail);
+        createElement.appendChild(label);
         
         // Style like radial menu items but with create memory styling
         createElement.style.cssText = `
@@ -4192,15 +4206,13 @@
             const avatarElement = document.getElementById('person-summary-avatar');
             if (avatarElement) {
               console.log('📷 SUMMARY: Successfully loaded avatar, updating display');
-              avatarElement.innerHTML = `<img src="${avatarResult.dataUrl}" alt="${person.name}" style="
-                width: 100%; 
-                height: 100%; 
-                object-fit: cover; 
-                border-radius: 50%;
-                position: absolute;
-                top: 0;
-                left: 0;
-              ">`;
+              // Safely create img element with proper attribute setting
+              const img = document.createElement('img');
+              img.src = avatarResult.dataUrl;
+              img.alt = person.name; // Safe - browser automatically escapes alt text
+              img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%; position: absolute; top: 0; left: 0;';
+              avatarElement.innerHTML = ''; // Clear existing content
+              avatarElement.appendChild(img);
             } else {
               console.error('📷 SUMMARY: Avatar element not found in DOM');
             }
@@ -4867,7 +4879,9 @@
       showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.innerHTML = `<span>${message}</span>`;
+        const span = document.createElement('span');
+        span.textContent = message;
+        toast.appendChild(span);
         document.body.appendChild(toast);
         
         setTimeout(() => toast.classList.add('show'), 10);
