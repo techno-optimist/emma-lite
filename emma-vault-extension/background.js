@@ -50,9 +50,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   switch (request.action) {
     case 'VAULT_LOAD':
+      console.log('🚨 BACKGROUND DEBUG: Received VAULT_LOAD message');
+      console.log('🚨 BACKGROUND DEBUG: Request data keys:', Object.keys(request.data || {}));
       loadVaultData(request.data)
-        .then(() => sendResponse({ success: true }))
-        .catch(error => sendResponse({ success: false, error: error.message }));
+        .then(() => {
+          console.log('🚨 BACKGROUND DEBUG: VAULT_LOAD successful, currentVaultData set');
+          console.log('🚨 BACKGROUND DEBUG: Memory count now:', Object.keys(currentVaultData?.content?.memories || {}).length);
+          sendResponse({ success: true });
+        })
+        .catch(error => {
+          console.error('🚨 BACKGROUND DEBUG: VAULT_LOAD failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
       return true;
       
     case 'VAULT_UPDATE':

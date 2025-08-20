@@ -440,15 +440,24 @@ class EmmaVaultExtension {
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
+      // CRITICAL DEBUG: Log vault opening process
+      console.log('🚨 POPUP DEBUG: Vault opened, setting data and sending to background');
+      console.log('🚨 POPUP DEBUG: Vault data keys:', Object.keys(vaultData));
+      console.log('🚨 POPUP DEBUG: Memory count:', Object.keys(vaultData?.content?.memories || {}).length);
+      console.log('🚨 POPUP DEBUG: People count:', Object.keys(vaultData?.content?.people || {}).length);
+      
       // CRITICAL FIX: Send vault data to background script for in-memory storage
       try {
-        await chrome.runtime.sendMessage({ 
+        console.log('🚨 POPUP DEBUG: Sending VAULT_LOAD message to background...');
+        const response = await chrome.runtime.sendMessage({ 
           action: 'VAULT_LOAD', 
           data: vaultData 
         });
+        console.log('🚨 POPUP DEBUG: VAULT_LOAD response:', response);
         console.log('✅ Vault data loaded into background script memory');
       } catch (error) {
-        console.error('❌ Failed to load vault data into background:', error);
+        console.error('❌ POPUP DEBUG: Failed to load vault data into background:', error);
+        console.error('❌ POPUP DEBUG: Error details:', error.message, error.stack);
       }
       
       // SECURITY: Do NOT persist plaintext vault data in extension storage. Keep in-memory only.
