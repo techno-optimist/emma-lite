@@ -157,38 +157,18 @@ class WebVaultStatus {
       const currentActive = sessionActive || localActive;
       const currentName = sessionName || localName;
       
-      // NUCLEAR OPTION: If localStorage says vault is active, FORCE everything to unlocked state
-      if (localActive) {
-        console.log('🚨 NUCLEAR OPTION: localStorage indicates vault active - FORCING all systems to unlocked');
+      // SIMPLIFIED: If vault is active, set status accordingly
+      if (currentActive) {
+        console.log('✅ VAULT: Vault is active - setting unlocked status');
         
-        // Force sessionStorage
-        sessionStorage.setItem('emmaVaultActive', 'true');
-        sessionStorage.setItem('emmaVaultName', localName || 'Extension Vault');
-        
-        // Force EmmaWebVault state
-        if (window.emmaWebVault) {
-          window.emmaWebVault.isOpen = true;
-          window.emmaWebVault.extensionAvailable = true;
-          console.log('🚨 NUCLEAR: Forced EmmaWebVault.isOpen = true');
-          
-          // CRITICAL: Also try to restore vault data if missing
-          if (!window.emmaWebVault.vaultData) {
-            console.log('🚨 NUCLEAR: Vault data missing - attempting to restore from IndexedDB or request from extension');
-            this.attemptDataRestoration();
-          }
-        }
-        
-        // Force WebVaultStatus
         this.status = {
           isUnlocked: true,
           hasVault: true,
-          name: localName || 'Extension Vault'
+          name: currentName || 'My Vault'
         };
         
-        // Force global status
         window.currentVaultStatus = this.status;
-        
-        console.log('🚨 NUCLEAR: All vault systems forced to UNLOCKED based on localStorage');
+        console.log('✅ VAULT: Status set to unlocked');
       }
       
       // Check if status is out of sync

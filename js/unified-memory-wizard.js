@@ -1797,36 +1797,17 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       console.log('💾 VAULT DEBUG: emmaWebVault exists:', !!window.emmaWebVault);
       console.log('💾 VAULT DEBUG: webVaultStatus exists:', !!window.webVaultStatus);
       console.log('💾 VAULT DEBUG: sessionStorage emmaVaultActive:', sessionStorage.getItem('emmaVaultActive'));
-      console.log('💾 VAULT DEBUG: localStorage sessionExpiry:', localStorage.getItem('emmaVaultSessionExpiry'));
-      
       if (window.webVaultStatus) {
-          // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
-        const isSessionValid = true; // Always valid - user controlled locking
-        
-        console.log('💾 VAULT DEBUG: Session expiry check DISABLED - user controlled locking');
-        console.log('💾 VAULT DEBUG: Session always valid until user locks vault');
-        console.log('💾 VAULT DEBUG: webVaultStatus.status:', window.webVaultStatus.getStatus());
-        console.log('💾 VAULT DEBUG: isUnlocked() result:', window.webVaultStatus.isUnlocked());
+        console.log('✅ VAULT: Checking vault status');
       }
       
-      // CRITICAL: Force vault open if session is active but vault thinks it's closed
+      // SIMPLIFIED: Check if vault is available
       if (window.emmaWebVault && sessionStorage.getItem('emmaVaultActive') === 'true') {
-        // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
-        const isSessionValid = true; // Always valid - user controlled locking
+        console.log('✅ VAULT: Session indicates vault is active');
         
-        if (isSessionValid && !window.emmaWebVault.isOpen) {
-          console.log('🔧 FORCE OPENING: Session is valid but vault thinks it\'s closed - forcing open');
+        if (!window.emmaWebVault.isOpen) {
+          console.log('✅ VAULT: Opening vault based on active session');
           window.emmaWebVault.isOpen = true;
-          
-          // Try to load minimal vault data if missing
-          if (!window.emmaWebVault.vaultData) {
-            window.emmaWebVault.vaultData = {
-              content: { memories: {}, people: {}, media: {} },
-              stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
-              metadata: { name: sessionStorage.getItem('emmaVaultName') || 'Web Vault' }
-            };
-            console.log('🔧 FORCE OPENING: Created minimal vault data structure');
-          }
         }
       }
       

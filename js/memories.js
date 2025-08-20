@@ -3258,65 +3258,14 @@ document.addEventListener('DOMContentLoaded', () => {
     createBtn.style.border = '2px solid blue'; // Blue debug border
   }
   
-  // NUCLEAR OPTION: Force ALL buttons to be emergency clickable
-  document.querySelectorAll('button, .btn, .btn-primary, .btn-secondary').forEach(btn => {
-    btn.style.pointerEvents = 'auto';
-    btn.style.position = 'relative';
-    btn.style.zIndex = '9999999';
-    btn.style.background = 'rgba(255, 0, 0, 0.2)'; // Emergency red background
-  });
-  
-  // EMERGENCY: Add click debugger to ALL elements
-  document.addEventListener('click', (e) => {
-    console.log('🚨 EMERGENCY CLICK DEBUG:', {
-      target: e.target,
-      tagName: e.target.tagName,
-      id: e.target.id,
-      className: e.target.className,
-      pointerEvents: getComputedStyle(e.target).pointerEvents,
-      zIndex: getComputedStyle(e.target).zIndex
-    });
-  }, true);
-  
-  // FORCE page elements above orb with MutationObserver
-  const observer = new MutationObserver(() => {
-    document.querySelectorAll('button, .btn, input, select').forEach(el => {
-      el.style.zIndex = '9999999';
-      el.style.pointerEvents = 'auto';
-      el.style.position = 'relative';
-    });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-  
-  // SIMPLIFIED: Just ensure buttons work properly
-  setTimeout(() => {
-    // Force all page buttons to work with proper z-index
-    document.querySelectorAll('#back-btn, #create-memory-btn, .btn, button').forEach(btn => {
-      btn.style.pointerEvents = 'auto';
-      btn.style.zIndex = '9999999';
-      btn.style.position = 'relative';
-      console.log('🔥 BUTTON: Ensured clickable:', btn.id || btn.className);
-    });
-  }, 500);
-
-  // Bind Create New Capsule buttons
-  console.log('🔥🔥🔥 BUTTON DEBUG: Looking for create-memory-btn element...');
+  // Clean button initialization
   const createBtn = document.getElementById('create-memory-btn');
-  console.log('🔥🔥🔥 BUTTON DEBUG: Found createBtn:', createBtn);
   if (createBtn) {
-    console.log('🔥🔥🔥 BUTTON DEBUG: Attaching event listener to createBtn...');
-    createBtn.addEventListener('click', (e) => {
-      console.log('🔥 CREATE BUTTON DEBUG: Button clicked!', e);
-      console.log('🔥 CREATE BUTTON DEBUG: Event target:', e.target);
-      console.log('🔥 CREATE BUTTON DEBUG: Event current target:', e.currentTarget);
-      console.log('🔥 CREATE BUTTON DEBUG: Event prevented?', e.defaultPrevented);
-      try {
-        openCreateWizardModal();
-        console.log('🔥 CREATE BUTTON DEBUG: openCreateWizardModal() called successfully');
-      } catch (error) {
-        console.error('🔥 CREATE BUTTON DEBUG: Error in openCreateWizardModal():', error);
-      }
+    createBtn.addEventListener('click', () => {
+      console.log('✅ MEMORIES: Create button clicked');
+      openCreateWizardModal();
     });
+    console.log('✅ MEMORIES: Create button initialized');
   }
   const emptyCreateBtn = document.getElementById('empty-create-btn');
   if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', () => openCreateWizardModal());
