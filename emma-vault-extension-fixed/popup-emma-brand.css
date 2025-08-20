@@ -51,7 +51,7 @@ body {
 
 /* Top spacing for better visual balance */
 .popup-header-spacer {
-  height: 16px;
+  height: 32px;
   width: 100%;
 }
 
@@ -63,6 +63,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  padding-top: 8px;
 }
 
 /* Add subtle background pattern like Emma web app */
