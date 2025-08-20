@@ -21,18 +21,41 @@ async function detectImagesOnPage() {
   if (isGooglePhotos) {
     console.log('🖼️ Using Google Photos optimized detection...');
     
-    // Use Emma's proven Google Photos selectors
-    const googlePhotosSelector = `
-      img[src*="googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]):not([style*="width: 32"]):not([style*="width: 40"]):not([style*="width: 48"]),
-      img[src*="photos.google.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
-      img[src*="lh3.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
-      img[src*="lh4.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
-      img[src*="lh5.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
-      img[src*="lh6.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"])
-    `.replace(/\s+/g, ' ').trim();
+    // First, let's see what we're working with
+    const allImages = document.querySelectorAll('img');
+    console.log(`🖼️ GP DEBUG: Total img elements on page: ${allImages.length}`);
     
-    imgElements = document.querySelectorAll(googlePhotosSelector);
-    console.log(`🖼️ Google Photos: Found ${imgElements.length} filtered images`);
+    // Log sample URLs to understand the pattern
+    const sampleUrls = Array.from(allImages).slice(0, 10).map(img => ({
+      src: img.src?.substring(0, 100),
+      width: img.width || img.clientWidth,
+      height: img.height || img.clientHeight,
+      naturalWidth: img.naturalWidth,
+      naturalHeight: img.naturalHeight
+    }));
+    console.log('🖼️ GP DEBUG: Sample image data:', sampleUrls);
+    
+    // Try a simpler approach first - just filter by size and domain
+    const googleImages = Array.from(allImages).filter(img => {
+      const src = img.src || '';
+      const width = img.naturalWidth || img.width || img.clientWidth || 0;
+      const height = img.naturalHeight || img.height || img.clientHeight || 0;
+      
+      // Must be from Google domains
+      const isGoogleDomain = src.includes('googleusercontent.com') || 
+                            src.includes('photos.google.com') || 
+                            src.includes('ggpht.com');
+      
+      // Must be reasonably sized
+      const isReasonableSize = width >= 150 && height >= 150;
+      
+      console.log(`🖼️ GP DEBUG: ${src.substring(0, 50)} - Domain: ${isGoogleDomain}, Size: ${width}×${height}, Reasonable: ${isReasonableSize}`);
+      
+      return isGoogleDomain && isReasonableSize;
+    });
+    
+    imgElements = googleImages;
+    console.log(`🖼️ Google Photos: Found ${imgElements.length} images after simple filtering`);
     
   } else {
     // Standard detection for other sites
