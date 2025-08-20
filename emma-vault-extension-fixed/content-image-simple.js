@@ -95,6 +95,7 @@ async function detectImagesOnPage() {
   }
   
   // Skip CSS background detection for Google Photos (too many false positives)
+  const isGooglePhotos = window.location.hostname.includes('photos.google.com');
   if (!isGooglePhotos) {
     // Also check for CSS background images on key elements
     const elementsWithBackgrounds = document.querySelectorAll('div, section, article, header');
