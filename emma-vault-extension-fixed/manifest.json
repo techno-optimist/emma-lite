@@ -37,7 +37,7 @@
     },
     {
       "matches": ["<all_urls>"],
-      "js": ["content-universal-image.js"],
+      "js": ["content-image-simple.js"],
       "run_at": "document_idle",
       "all_frames": false
     }
@@ -64,7 +64,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["icons/*", "emma-image-detector.js"],
+      "resources": ["icons/*"],
       "matches": ["<all_urls>"]
     }
   ]
