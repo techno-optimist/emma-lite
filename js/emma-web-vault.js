@@ -427,7 +427,7 @@ class EmmaWebVault {
         
         // Set up response listener
         const handleResponse = (event) => {
-          if (event.data.type === 'EMMA_RESPONSE' && event.data.messageId === messageId) {
+          if (event.data?.channel === 'emma-vault-bridge' && event.data.type === 'EMMA_RESPONSE' && event.data.messageId === messageId) {
             window.removeEventListener('message', handleResponse);
             if (event.data.success) {
               console.log('🗑️ EXTENSION DELETE: Memory deleted successfully');
@@ -443,6 +443,7 @@ class EmmaWebVault {
         
         // Send delete request to extension
         window.postMessage({
+          channel: 'emma-vault-bridge',
           type: 'EMMA_DELETE_MEMORY',
           messageId: messageId,
           memoryId: memoryId
