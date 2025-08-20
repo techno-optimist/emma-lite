@@ -251,14 +251,18 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Filesystem adapter mirrors OPFS journaling and verification; good parity. Ensure Directory choice is correct (Documents) and configurable. Share/Export to be implemented with Share plugin.
 - Validate base64 conversion perf for large files; consider chunked writes in Phase 1.2.
 
+### CTO Oversight Notes (Phase 1) — Chaos & Backup Controls
+- Chaos harness (OPFS) simulates abrupt reloads; good for desktop/PWA verification. For mobile, replicate via instrumented kill in Capacitor QA.
+- Backup control stub will require native plugin implementation; UI copy already in PRD. Ensure defaults match PRD (included by default) and toggling sets OS flags on iOS.
+
 ### Project Status Board — Mobile v1 (Sequenced)
-- [x] T0 Adapter interface and codebase routing (interface + selector committed)
-- [x] T1 PWA_OPFS_Adapter complete with tests (MVP adapter + test page)
-- [x] T2 Crypto Worker/WASM + perf harness (Gate A) — implemented; validate on devices before closing Gate A
+- [x] T0 Adapter interface and codebase routing
+- [x] T1 PWA_OPFS_Adapter complete with tests
+- [x] T2 Crypto Worker/WASM + perf harness (Gate A) — implemented; device validation pending
 - [x] T3 Capacitor scaffold + asset resolver — scaffold created; selector detects Capacitor
 - [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — implemented
-- [ ] T5 Chaos/low-space harness; pass criteria
-- [ ] T6 Backup exclusion UI + native flags + education (Gate C)
+- [ ] T5 Chaos/low-space harness; pass criteria — desktop/PWA harness added; device scripts pending
+- [ ] T6 Backup exclusion UI + native flags + education — control stub added; UI wiring pending
 - [ ] T7 Biometrics + privileged gating
 - [ ] T8 Vault Health self-check + repair UX
 - [ ] T9 PWA iOS banners + export cadence
