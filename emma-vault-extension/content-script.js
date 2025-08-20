@@ -125,6 +125,14 @@ function handleEmmaMessage(message) {
       sendVaultStatus();
       break;
       
+    case 'REQUEST_PEOPLE_DATA':
+      sendPeopleData();
+      break;
+      
+    case 'REQUEST_MEMORIES_DATA':
+      sendMemoriesData();
+      break;
+      
     case 'ENABLE_SYNC':
       enableSync();
       break;
@@ -353,6 +361,38 @@ async function sendVaultStatus() {
       vaultName: response?.vaultFileName || null,
       extensionVersion: chrome.runtime.getManifest().version
     }
+  });
+}
+
+/**
+ * Send people data to web app
+ */
+async function sendPeopleData() {
+  console.log('👥 Sending people data from extension storage...');
+  
+  // Get people data from extension storage
+  const response = await chrome.runtime.sendMessage({ action: 'GET_PEOPLE_DATA' });
+  
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'PEOPLE_DATA',
+    data: response?.people || []
+  });
+}
+
+/**
+ * Send memories data to web app
+ */
+async function sendMemoriesData() {
+  console.log('📝 Sending memories data from extension storage...');
+  
+  // Get memories data from extension storage
+  const response = await chrome.runtime.sendMessage({ action: 'GET_MEMORIES_DATA' });
+  
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'MEMORIES_DATA',
+    data: response?.memories || []
   });
 }
 

@@ -107,6 +107,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ vaultReady: false, error: error.message }));
       return true;
       
+    case 'GET_PEOPLE_DATA':
+      getPeopleData()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ people: [], error: error.message }));
+      return true;
+      
+    case 'GET_MEMORIES_DATA':
+      getMemoriesData()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ memories: [], error: error.message }));
+      return true;
+      
     default:
       sendResponse({ success: false, error: 'Unknown action' });
   }
@@ -591,6 +603,34 @@ async function checkVaultStatus() {
   } catch (error) {
     console.error('❌ Failed to check vault status:', error);
     return { vaultReady: false, error: error.message };
+  }
+}
+
+/**
+ * Get people data from storage
+ */
+async function getPeopleData() {
+  try {
+    const { vaultData } = await chrome.storage.local.get(['vaultData']);
+    const people = vaultData?.content?.people || {};
+    return { people: Object.values(people) };
+  } catch (error) {
+    console.error('❌ Failed to get people data:', error);
+    return { people: [], error: error.message };
+  }
+}
+
+/**
+ * Get memories data from storage
+ */
+async function getMemoriesData() {
+  try {
+    const { vaultData } = await chrome.storage.local.get(['vaultData']);
+    const memories = vaultData?.content?.memories || {};
+    return { memories: Object.values(memories) };
+  } catch (error) {
+    console.error('❌ Failed to get memories data:', error);
+    return { memories: [], error: error.message };
   }
 }
 

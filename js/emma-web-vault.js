@@ -371,23 +371,45 @@ class EmmaWebVault {
    * List memories (IDENTICAL API to desktop version!)
    */
   async listMemories(limit = 50, offset = 0) {
-    if (!this.isOpen) return [];
-    
-    try {
-      const memories = Object.values(this.vaultData.content.memories);
+    // Extension mode: Request memories from extension storage
+    if (this.extensionAvailable) {
+      console.log('🔗 Extension mode: Requesting memories from extension...');
       
-      return memories
-        .sort((a, b) => new Date(b.created) - new Date(a.created))
-        .slice(offset, offset + limit)
-        .map(memory => ({
-          ...memory,
-          thumbnail: memory.thumbnail || this.getDefaultThumbnail(memory)
-        }));
+      // Request memories data from extension
+      return new Promise((resolve) => {
+        const messageHandler = (event) => {
+          if (event.data?.channel === 'emma-vault-bridge' && event.data?.type === 'MEMORIES_DATA') {
+            console.log('📝 Received memories data from extension:', event.data.data);
+            window.removeEventListener('message', messageHandler);
+            
+            const memories = event.data.data || [];
+            // Apply sorting and pagination
+            const sortedMemories = memories
+              .sort((a, b) => new Date(b.created) - new Date(a.created))
+              .slice(offset, offset + limit);
+            
+            resolve(sortedMemories);
+          }
+        };
         
-    } catch (error) {
-      console.error('❌ Failed to list memories:', error);
-      return [];
+        window.addEventListener('message', messageHandler);
+        
+        // Request memories data from extension
+        window.postMessage({
+          channel: 'emma-vault-bridge',
+          type: 'REQUEST_MEMORIES_DATA'
+        }, window.location.origin);
+        
+        // Timeout fallback
+        setTimeout(() => {
+          window.removeEventListener('message', messageHandler);
+          resolve([]);
+        }, 2000);
+      });
     }
+    
+    // Fallback for non-extension mode
+    return [];
   }
 
   /**
@@ -567,14 +589,38 @@ class EmmaWebVault {
    * List people (IDENTICAL API to desktop version!)
    */
   async listPeople() {
-    if (!this.isOpen) return [];
-    
-    try {
-      return Object.values(this.vaultData.content.people);
-    } catch (error) {
-      console.error('❌ Failed to list people:', error);
-      return [];
+    // Extension mode: Request people from extension storage
+    if (this.extensionAvailable) {
+      console.log('🔗 Extension mode: Requesting people from extension...');
+      
+      // Request people data from extension
+      return new Promise((resolve) => {
+        const messageHandler = (event) => {
+          if (event.data?.channel === 'emma-vault-bridge' && event.data?.type === 'PEOPLE_DATA') {
+            console.log('👥 Received people data from extension:', event.data.data);
+            window.removeEventListener('message', messageHandler);
+            resolve(event.data.data || []);
+          }
+        };
+        
+        window.addEventListener('message', messageHandler);
+        
+        // Request people data from extension
+        window.postMessage({
+          channel: 'emma-vault-bridge',
+          type: 'REQUEST_PEOPLE_DATA'
+        }, window.location.origin);
+        
+        // Timeout fallback
+        setTimeout(() => {
+          window.removeEventListener('message', messageHandler);
+          resolve([]);
+        }, 2000);
+      });
     }
+    
+    // Fallback for non-extension mode
+    return [];
   }
 
   /**

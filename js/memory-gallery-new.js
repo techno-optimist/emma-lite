@@ -87,11 +87,11 @@ async function loadMemories() {
         }
       }
       
-      if (window.emmaWebVault.isOpen) {
-        console.log('💝 GALLERY: Loading from .emma web vault...');
+      if (window.emmaWebVault.extensionAvailable) {
+        console.log('💝 GALLERY: Loading from extension vault...');
         try {
           vaultMemories = await window.emmaWebVault.listMemories(1000, 0);
-          console.log('💝 GALLERY: .emma vault result:', vaultMemories);
+          console.log('💝 GALLERY: Extension vault result:', vaultMemories);
           
           // DEBUG: Log each memory to identify the issue
           vaultMemories.forEach((mem, idx) => {
