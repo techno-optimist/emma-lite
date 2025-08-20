@@ -2420,11 +2420,8 @@ class EmmaVaultExtension {
       if (response && response.success) {
         console.log('🖼️ Memory capsule created successfully:', response.memoryId);
         this.showSuccessMessage(`Memory capsule created with ${processedAttachments.length} images!`);
-        
-        // Go back to vault view after short delay
-        setTimeout(() => {
-          this.backToVault();
-        }, 2000);
+        // Show created preview card
+        this.renderCreatedPreview(memoryCapsule, processedAttachments);
       } else {
         throw new Error(response?.error || 'Failed to create memory capsule');
       }
@@ -2548,6 +2545,43 @@ class EmmaVaultExtension {
       // Final fallback placeholder
       imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0MCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1zaXplPSIxMiI+4p2MPC90ZXh0Pgo8L3N2Zz4K';
     }
+  }
+
+  /**
+   * Render created capsule preview card inline
+   */
+  renderCreatedPreview(memoryCapsule, attachments) {
+    // Hide grids/states
+    this.elements.imageGrid.innerHTML = '';
+    this.elements.imageLoadingState.classList.add('hidden');
+    this.elements.imageEmptyState.classList.add('hidden');
+    this.elements.imageErrorState.classList.add('hidden');
+
+    // Populate preview
+    const preview = document.getElementById('createdPreview');
+    const thumbs = document.getElementById('createdThumbs');
+    const title = document.getElementById('createdTitle');
+    const meta = document.getElementById('createdMeta');
+    const viewBtn = document.getElementById('viewInWebAppPreviewBtn');
+    const captureMoreBtn = document.getElementById('captureMoreBtn');
+
+    thumbs.innerHTML = '';
+    const maxThumbs = Math.min(4, attachments.length);
+    for (let i = 0; i < maxThumbs; i++) {
+      const img = document.createElement('img');
+      const a = attachments[i];
+      // For thumb, prefer data if present else url
+      img.src = a.data || a.url;
+      thumbs.appendChild(img);
+    }
+    title.textContent = memoryCapsule.title || 'New Memory';
+    meta.textContent = `${attachments.length} images • ${new Date().toLocaleString()}`;
+
+    preview.classList.remove('hidden');
+
+    // Actions
+    viewBtn.onclick = () => this.openWebApp();
+    captureMoreBtn.onclick = () => this.startImageCapture();
   }
   
   /**
