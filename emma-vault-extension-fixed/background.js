@@ -10,8 +10,9 @@ const vaultConnections = new Map();
 // File System Access API handle storage
 let fileHandle = null;
 let lastSyncTime = null;
-// Volatile in-memory vault state (never persisted in chrome.storage.local)
+// Hybrid vault state: encrypted persistence + in-memory cache
 let currentVaultData = null;
+let vaultPassphrase = null; // Temporarily store passphrase for auto-recovery
 
 /**
  * Initialize extension on install
@@ -152,6 +153,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       unlockVaultWithPassphrase(request.passphrase)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    case 'STORE_PASSPHRASE':
+      vaultPassphrase = request.passphrase;
+      console.log('🔑 BACKGROUND: Passphrase stored for auto-recovery');
+      sendResponse({ success: true });
       return true;
       
     case 'GET_PEOPLE_DATA':
@@ -397,7 +404,7 @@ async function setFileHandle(handle) {
 }
 
 /**
- * Accept vault content from trusted UI (popup/content script) into memory only
+ * Accept vault content from trusted UI (popup/content script) into memory + encrypted persistence
  */
 async function loadVaultData(vaultData) {
   console.log('🚨 LOAD DEBUG: Validating vault data:', Object.keys(vaultData || {}));
@@ -418,7 +425,103 @@ async function loadVaultData(vaultData) {
   
   console.log('🚨 LOAD DEBUG: Vault data validation passed, setting currentVaultData');
   currentVaultData = vaultData;
+  
+  // INNOVATION: Store encrypted backup in IndexedDB for auto-recovery
+  if (vaultPassphrase) {
+    try {
+      await storeEncryptedVaultBackup(vaultData, vaultPassphrase);
+      console.log('✅ PERSISTENCE: Encrypted vault backup stored for auto-recovery');
+    } catch (error) {
+      console.warn('⚠️ PERSISTENCE: Failed to store encrypted backup:', error);
+    }
+  }
+  
   console.log('🚨 LOAD DEBUG: currentVaultData now has memory count:', Object.keys(currentVaultData?.content?.memories || {}).length);
+}
+
+/**
+ * INNOVATION: Store encrypted vault backup in IndexedDB for auto-recovery
+ */
+async function storeEncryptedVaultBackup(vaultData, passphrase) {
+  try {
+    // Encrypt vault data with passphrase
+    const jsonData = JSON.stringify(vaultData);
+    const data = new TextEncoder().encode(jsonData);
+    
+    // Generate salt and IV
+    const salt = crypto.getRandomValues(new Uint8Array(32));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    
+    // Derive key
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 250000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt']
+    );
+    
+    // Encrypt
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      data
+    );
+    
+    // Store in IndexedDB
+    const dbRequest = indexedDB.open('EmmaVaultPersistence', 1);
+    
+    return new Promise((resolve, reject) => {
+      dbRequest.onerror = () => reject(dbRequest.error);
+      
+      dbRequest.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('encryptedVaults')) {
+          db.createObjectStore('encryptedVaults');
+        }
+      };
+      
+      dbRequest.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(['encryptedVaults'], 'readwrite');
+        const store = transaction.objectStore('encryptedVaults');
+        
+        const backupData = {
+          salt: Array.from(salt),
+          iv: Array.from(iv),
+          encrypted: Array.from(new Uint8Array(encrypted)),
+          timestamp: Date.now(),
+          vaultName: vaultData.name || 'Unknown'
+        };
+        
+        store.put(backupData, 'current');
+        
+        transaction.oncomplete = () => {
+          console.log('✅ PERSISTENCE: Encrypted vault backup stored');
+          resolve();
+        };
+        
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+    
+  } catch (error) {
+    console.error('❌ PERSISTENCE: Failed to store encrypted backup:', error);
+    throw error;
+  }
 }
 
 /**
@@ -951,6 +1054,20 @@ async function checkVaultStatus() {
   try {
     const { vaultReady, vaultFileName } = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
     
+    // INNOVATION: Auto-recovery when data is lost but vault should be ready
+    if (vaultReady && !currentVaultData && vaultPassphrase) {
+      console.log('🔄 AUTO-RECOVERY: Attempting to restore vault from encrypted backup');
+      try {
+        const recovered = await recoverVaultFromBackup(vaultPassphrase);
+        if (recovered) {
+          currentVaultData = recovered;
+          console.log('✅ AUTO-RECOVERY: Vault data restored successfully');
+        }
+      } catch (error) {
+        console.warn('⚠️ AUTO-RECOVERY: Failed to restore vault:', error);
+      }
+    }
+    
     // CRITICAL FIX: If vaultReady is true but currentVaultData is null, vault is actually locked
     const actuallyReady = vaultReady && currentVaultData && currentVaultData.content;
     
@@ -1018,6 +1135,17 @@ async function unlockVaultWithPassphrase(passphrase) {
     
     // Store decrypted data in memory
     currentVaultData = vaultData;
+    
+    // INNOVATION: Store passphrase for auto-recovery (in memory only)
+    vaultPassphrase = passphrase;
+    
+    // Store encrypted backup for persistence
+    try {
+      await storeEncryptedVaultBackup(vaultData, passphrase);
+      console.log('✅ PERSISTENCE: Encrypted backup stored for auto-recovery');
+    } catch (error) {
+      console.warn('⚠️ PERSISTENCE: Failed to store backup:', error);
+    }
     
     console.log('🔓 BACKGROUND: Vault unlocked successfully:', {
       memoryCount: Object.keys(vaultData.content.memories || {}).length,
@@ -1103,6 +1231,100 @@ async function decryptVaultData(encryptedData, passphrase) {
   } catch (error) {
     console.error('🔓 BACKGROUND: Decryption failed:', error);
     throw new Error('Failed to decrypt vault: ' + error.message);
+  }
+}
+
+/**
+ * INNOVATION: Recover vault from encrypted IndexedDB backup
+ */
+async function recoverVaultFromBackup(passphrase) {
+  try {
+    console.log('🔄 RECOVERY: Attempting to recover vault from encrypted backup');
+    
+    const dbRequest = indexedDB.open('EmmaVaultPersistence', 1);
+    
+    return new Promise((resolve, reject) => {
+      dbRequest.onerror = () => reject(dbRequest.error);
+      
+      dbRequest.onsuccess = async (event) => {
+        try {
+          const db = event.target.result;
+          const transaction = db.transaction(['encryptedVaults'], 'readonly');
+          const store = transaction.objectStore('encryptedVaults');
+          const request = store.get('current');
+          
+          request.onsuccess = async () => {
+            try {
+              const backupData = request.result;
+              if (!backupData) {
+                console.log('🔄 RECOVERY: No encrypted backup found');
+                resolve(null);
+                return;
+              }
+              
+              console.log('🔄 RECOVERY: Found encrypted backup, attempting decrypt');
+              
+              // Restore arrays
+              const salt = new Uint8Array(backupData.salt);
+              const iv = new Uint8Array(backupData.iv);
+              const encrypted = new Uint8Array(backupData.encrypted);
+              
+              // Derive key
+              const keyMaterial = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(passphrase),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+              );
+              
+              const key = await crypto.subtle.deriveKey(
+                {
+                  name: 'PBKDF2',
+                  salt: salt,
+                  iterations: 250000,
+                  hash: 'SHA-256'
+                },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+              );
+              
+              // Decrypt
+              const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: iv },
+                key,
+                encrypted
+              );
+              
+              const jsonString = new TextDecoder().decode(decrypted);
+              const vaultData = JSON.parse(jsonString);
+              
+              console.log('✅ RECOVERY: Vault data recovered from encrypted backup');
+              resolve(vaultData);
+              
+            } catch (decryptError) {
+              console.error('❌ RECOVERY: Failed to decrypt backup:', decryptError);
+              resolve(null);
+            }
+          };
+          
+          request.onerror = () => {
+            console.error('❌ RECOVERY: Failed to read backup');
+            resolve(null);
+          };
+          
+        } catch (error) {
+          console.error('❌ RECOVERY: Database operation failed:', error);
+          resolve(null);
+        }
+      };
+    });
+    
+  } catch (error) {
+    console.error('❌ RECOVERY: Recovery attempt failed:', error);
+    return null;
   }
 }
 

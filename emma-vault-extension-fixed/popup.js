@@ -593,6 +593,12 @@ class EmmaVaultExtension {
             data: vaultData
           });
           
+          // INNOVATION: Store passphrase for auto-recovery
+          await chrome.runtime.sendMessage({
+            action: 'STORE_PASSPHRASE',
+            passphrase: passphrase
+          });
+          
           // Update local state
           this.vaultData = vaultData;
           this.currentVault = {
