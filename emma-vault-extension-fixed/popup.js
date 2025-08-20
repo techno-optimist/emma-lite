@@ -615,6 +615,15 @@ class EmmaVaultExtension {
         this.elements.memoryCount.textContent = status.memoryCount || 0;
         this.elements.peopleCount.textContent = status.peopleCount || 0;
         console.log('📊 POPUP: Updated stats from background - memories:', status.memoryCount, 'people:', status.peopleCount);
+        
+        // CRITICAL: If data was lost, force unlock
+        if (status.dataLost) {
+          console.log('🚨 POPUP: Vault data lost in background - forcing unlock');
+          await chrome.storage.local.set({ vaultReady: false });
+          this.isVaultOpen = false;
+          this.vaultData = null;
+          this.updateUI(); // This will trigger the unlock overlay
+        }
       }
     } catch (error) {
       console.error('❌ POPUP: Failed to get stats from background:', error);

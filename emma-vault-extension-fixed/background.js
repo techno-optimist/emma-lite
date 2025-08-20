@@ -951,11 +951,21 @@ async function checkVaultStatus() {
   try {
     const { vaultReady, vaultFileName } = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
     
+    // CRITICAL FIX: If vaultReady is true but currentVaultData is null, vault is actually locked
+    const actuallyReady = vaultReady && currentVaultData && currentVaultData.content;
+    
+    if (vaultReady && !currentVaultData) {
+      console.log('🚨 BACKGROUND: Vault marked ready but data lost - marking as locked');
+      // Reset vault ready status since data is lost
+      await chrome.storage.local.set({ vaultReady: false });
+    }
+    
     return {
-      vaultReady: vaultReady || false,
+      vaultReady: actuallyReady,
       vaultFileName: vaultFileName || null,
       memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
-      peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0
+      peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0,
+      dataLost: vaultReady && !currentVaultData // Flag indicating data was lost
     };
   } catch (error) {
     console.error('❌ Failed to check vault status:', error);
