@@ -981,7 +981,9 @@ async function unlockVaultWithPassphrase(passphrase) {
     console.log('🔓 BACKGROUND: Attempting to unlock vault with passphrase');
     
     if (!fileHandle) {
-      throw new Error('No vault file available. Please reopen the vault file.');
+      console.log('🔓 BACKGROUND: File handle lost - attempting recovery');
+      // Try to get file handle from popup if available
+      throw new Error('File handle lost due to service worker restart. Please click "Open Existing Vault" to reselect your vault file.');
     }
     
     // Read the encrypted vault file
@@ -1002,7 +1004,7 @@ async function unlockVaultWithPassphrase(passphrase) {
       // Encrypted vault - decrypt with passphrase
       console.log('🔓 BACKGROUND: Decrypting vault with passphrase...');
       
-      const decryptedData = await decryptData(data, passphrase);
+      const decryptedData = await decryptVaultData(data, passphrase);
       const jsonString = new TextDecoder().decode(decryptedData);
       vaultData = JSON.parse(jsonString);
       
@@ -1033,6 +1035,74 @@ async function unlockVaultWithPassphrase(passphrase) {
       success: false,
       error: error.message
     };
+  }
+}
+
+/**
+ * Decrypt vault data using Web Crypto API
+ */
+async function decryptVaultData(encryptedData, passphrase) {
+  try {
+    console.log('🔓 BACKGROUND: Starting vault decryption...');
+    
+    // Parse .emma file format: EMMA + version + salt + iv + encrypted data
+    const data = new Uint8Array(encryptedData);
+    
+    // Check magic bytes
+    const magic = new TextDecoder().decode(data.slice(0, 4));
+    if (magic !== 'EMMA') {
+      throw new Error('Invalid .emma file format');
+    }
+    
+    // Extract components
+    const version = data.slice(4, 6);
+    const salt = data.slice(6, 38); // 32 bytes
+    const iv = data.slice(38, 50); // 12 bytes
+    const encrypted = data.slice(50);
+    
+    console.log('🔓 BACKGROUND: Extracted vault components:', {
+      magic,
+      version: Array.from(version),
+      saltLength: salt.length,
+      ivLength: iv.length,
+      encryptedLength: encrypted.length
+    });
+    
+    // Derive key from passphrase using PBKDF2
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveBits', 'deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 250000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    );
+    
+    // Decrypt the data
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      encrypted
+    );
+    
+    console.log('🔓 BACKGROUND: Vault decrypted successfully');
+    return decrypted;
+    
+  } catch (error) {
+    console.error('🔓 BACKGROUND: Decryption failed:', error);
+    throw new Error('Failed to decrypt vault: ' + error.message);
   }
 }
 
