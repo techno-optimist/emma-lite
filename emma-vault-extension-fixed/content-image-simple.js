@@ -6,106 +6,67 @@
 
 console.log('🖼️ Emma Simple Image Detection Content Script loaded on:', window.location.href);
 
+// ULTRA DEBUG: Add to window for testing
+window.emmaImageDebug = {
+  scriptLoaded: true,
+  loadTime: new Date().toISOString(),
+  url: window.location.href
+};
+
+console.log('🖼️ ULTRA DEBUG: Script definitely loaded, added window.emmaImageDebug');
+
 /**
- * Simple image detection function with Google Photos optimization
+ * Simple image detection function - ULTRA SIMPLE for debugging
  */
 async function detectImagesOnPage() {
-  console.log('🖼️ Starting image detection on:', window.location.hostname);
+  console.log('🖼️ ULTRA SIMPLE: Starting image detection on:', window.location.hostname);
   
   const images = [];
   const seenUrls = new Set();
-  const isGooglePhotos = window.location.hostname.includes('photos.google.com');
   
-  let imgElements;
+  // Get ALL images first
+  const allImages = document.querySelectorAll('img');
+  console.log(`🖼️ ULTRA SIMPLE: Found ${allImages.length} total img elements`);
   
-  if (isGooglePhotos) {
-    console.log('🖼️ Using Google Photos optimized detection...');
-    
-    // First, let's see what we're working with
-    const allImages = document.querySelectorAll('img');
-    console.log(`🖼️ GP DEBUG: Total img elements on page: ${allImages.length}`);
-    
-    // Log sample URLs to understand the pattern
-    const sampleUrls = Array.from(allImages).slice(0, 10).map(img => ({
-      src: img.src?.substring(0, 100),
-      width: img.width || img.clientWidth,
-      height: img.height || img.clientHeight,
+  // Log first 5 images for debugging
+  for (let i = 0; i < Math.min(5, allImages.length); i++) {
+    const img = allImages[i];
+    console.log(`🖼️ DEBUG Image ${i}:`, {
+      src: img.src?.substring(0, 80),
+      width: img.width,
+      height: img.height,
       naturalWidth: img.naturalWidth,
-      naturalHeight: img.naturalHeight
-    }));
-    console.log('🖼️ GP DEBUG: Sample image data:', sampleUrls);
-    
-    // Try a simpler approach first - just filter by size and domain
-    const googleImages = Array.from(allImages).filter(img => {
-      const src = img.src || '';
+      naturalHeight: img.naturalHeight,
+      clientWidth: img.clientWidth,
+      clientHeight: img.clientHeight
+    });
+  }
+  
+  // Very permissive filtering for now - just basic requirements
+  for (const img of allImages) {
+    try {
+      const src = img.src;
+      if (!src || seenUrls.has(src)) {
+        console.log('🖼️ SKIP: No src or duplicate');
+        continue;
+      }
+      
+      // Skip obvious data URLs and empty sources
+      if (src.startsWith('data:') || src === window.location.href) {
+        console.log('🖼️ SKIP: Data URL or same as page');
+        continue;
+      }
+      
+      // Very basic size check - just exclude 1x1 tracking pixels
       const width = img.naturalWidth || img.width || img.clientWidth || 0;
       const height = img.naturalHeight || img.height || img.clientHeight || 0;
       
-      // Must be from Google domains
-      const isGoogleDomain = src.includes('googleusercontent.com') || 
-                            src.includes('photos.google.com') || 
-                            src.includes('ggpht.com');
-      
-      // Must be reasonably sized
-      const isReasonableSize = width >= 150 && height >= 150;
-      
-      console.log(`🖼️ GP DEBUG: ${src.substring(0, 50)} - Domain: ${isGoogleDomain}, Size: ${width}×${height}, Reasonable: ${isReasonableSize}`);
-      
-      return isGoogleDomain && isReasonableSize;
-    });
-    
-    imgElements = googleImages;
-    console.log(`🖼️ Google Photos: Found ${imgElements.length} images after simple filtering`);
-    
-  } else {
-    // Standard detection for other sites
-    imgElements = document.querySelectorAll('img');
-    console.log(`🖼️ Standard detection: Found ${imgElements.length} img elements`);
-  }
-  
-  for (const img of imgElements) {
-    try {
-      let src = img.src || img.dataset.src;
-      if (!src || seenUrls.has(src)) continue;
-      
-      // Get dimensions
-      const rect = img.getBoundingClientRect();
-      const width = img.naturalWidth || rect.width || img.width || 0;
-      const height = img.naturalHeight || rect.height || img.height || 0;
-      
-      // Apply size filtering based on site
-      if (isGooglePhotos) {
-        // For Google Photos, be more permissive but still filter out tiny UI elements
-        if (width < 100 || height < 100) {
-          console.log(`🖼️ GP: Skipping small image: ${width}×${height}`);
-          continue;
-        }
-      } else {
-        // For other sites, standard filtering
-        if (width < 50 || height < 50) continue;
+      if (width <= 1 || height <= 1) {
+        console.log(`🖼️ SKIP: Tracking pixel ${width}×${height}`);
+        continue;
       }
       
-      // Skip data URLs for now (can be very large)
-      if (src.startsWith('data:')) continue;
-      
-      // Additional Google Photos filtering
-      if (isGooglePhotos) {
-        // Skip obvious UI elements
-        if (src.includes('avatar') || src.includes('profile') || 
-            src.includes('icon') || src.includes('logo') ||
-            src.includes('=s32') || src.includes('=s40') || src.includes('=s48')) {
-          console.log(`🖼️ GP: Skipping UI element: ${src.substring(0, 80)}`);
-          continue;
-        }
-        
-        // Upgrade thumbnail URLs to higher quality
-        if (src.includes('googleusercontent.com') && src.includes('=s')) {
-          const upgradedSrc = src.replace(/=s\d+/g, '=s2048'); // High quality
-          console.log(`🖼️ GP: Upgrading image quality: ${src.substring(0, 60)} → ${upgradedSrc.substring(0, 60)}`);
-          src = upgradedSrc;
-        }
-      }
-      
+      // For now, include everything else to see what we get
       seenUrls.add(src);
       
       const imageData = {
@@ -116,7 +77,7 @@ async function detectImagesOnPage() {
         width: width,
         height: height,
         filename: extractFilename(src),
-        source: isGooglePhotos ? 'google-photos' : 'standard',
+        source: 'ultra-simple',
         pageContext: {
           url: window.location.href,
           title: document.title,
@@ -126,7 +87,7 @@ async function detectImagesOnPage() {
       };
       
       images.push(imageData);
-      console.log(`🖼️ Added image: ${imageData.filename} (${width}×${height})`);
+      console.log(`🖼️ ADDED: ${imageData.filename} (${width}×${height}) from ${src.substring(0, 60)}`);
       
     } catch (error) {
       console.warn('🖼️ Error processing image:', error);
