@@ -37,8 +37,26 @@ function initializeGallery() {
   // Set up event listeners
   setupEventListeners();
   
-  // Load memories
-  loadMemories();
+  // Wait for extension communication to complete before loading memories
+  if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+    console.log('💝 GALLERY: Extension already detected - loading memories');
+    loadMemories();
+  } else {
+    console.log('💝 GALLERY: Waiting for extension detection...');
+    // Listen for extension ready event
+    window.addEventListener('extension-vault-ready', () => {
+      console.log('💝 GALLERY: Extension vault ready - now loading memories');
+      loadMemories();
+    });
+    
+    // Also try loading after a delay in case extension is detected
+    setTimeout(() => {
+      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        console.log('💝 GALLERY: Extension detected after delay - loading memories');
+        loadMemories();
+      }
+    }, 2000);
+  }
 
   // Clean, professional gallery initialization
 }
