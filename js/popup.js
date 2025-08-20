@@ -381,15 +381,25 @@ function attachEventListeners() {
         const st = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
         if (!st || !st.success) return;
         if (st.isUnlocked) {
-          const ok = confirm('Lock your vault now? You will need your passphrase to unlock.');
-          if (!ok) return;
-          const r = window.emma?.vault ? await window.emma.vault.lock() : await chrome.runtime.sendMessage({ action: 'vault.lock' });
-          if (r && r.success) {
-            showNotification('Vault locked', 'success');
-            await updateStats();
-            await refreshVaultIcon();
-          } else {
-            showNotification('Failed to lock vault', 'error');
+          // CRITICAL: Ask for passphrase to encrypt vault before locking
+          try {
+            const passphrase = await showSimplePasswordPrompt('🔐 Enter passphrase to encrypt and lock vault');
+            if (!passphrase) return;
+            
+            const r = window.emma?.vault ? 
+              await window.emma.vault.lock({ passphrase }) : 
+              await chrome.runtime.sendMessage({ action: 'vault.lock', passphrase });
+              
+            if (r && r.success) {
+              showNotification('✅ Vault locked and encrypted successfully', 'success');
+              await updateStats();
+              await refreshVaultIcon();
+            } else {
+              showNotification('❌ Failed to lock vault', 'error');
+            }
+          } catch (error) {
+            console.error('❌ POPUP: Lock failed:', error);
+            showNotification('❌ Failed to lock vault: ' + error.message, 'error');
           }
         } else {
           // Use the existing password modal UX

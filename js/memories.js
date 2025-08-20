@@ -1463,7 +1463,19 @@ async function injectHeaderLockStatus() {
         const renewBtn = document.getElementById('emma-renew-now');
         if (renewBtn) renewBtn.onclick = async () => { try { await window.emma.vault.renew(); } catch {} };
         const lockBtn = document.getElementById('emma-lock-now');
-        if (lockBtn) lockBtn.onclick = async () => { try { await window.emma.vault.lock(); } catch {} };
+        if (lockBtn) lockBtn.onclick = async () => { 
+          try { 
+            // CRITICAL: Ask for passphrase to encrypt vault before locking
+            const passphrase = await showSimplePasswordPrompt('🔐 Enter passphrase to encrypt and lock vault');
+            if (!passphrase) return;
+            
+            await window.emma.vault.lock({ passphrase });
+            console.log('✅ VAULT: Locked and encrypted successfully');
+          } catch (error) {
+            console.error('❌ VAULT: Lock failed:', error);
+            alert('Failed to lock vault: ' + error.message);
+          }
+        };
       } else {
         // Locked state - show clickable unlock button
         node.innerHTML = `<button id="emma-unlock-now" class="btn-primary" style="background:#dc2626;border:1px solid #dc2626;color:white">🔐 Locked - Click to Unlock</button>`;

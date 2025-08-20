@@ -2748,15 +2748,19 @@
 
       async lockVault() {
         try {
+          // CRITICAL: Ask for passphrase to encrypt vault before locking
+          const passphrase = prompt('🔐 Enter your passphrase to encrypt and lock the vault:');
+          if (!passphrase) return;
+          
           if (window.emmaAPI && window.emmaAPI.vault) {
-            const result = await window.emmaAPI.vault.lock();
+            const result = await window.emmaAPI.vault.lock({ passphrase });
             
             if (result && result.success) {
               window.currentVaultStatus = { isUnlocked: false };
               await this.loadDashboardData();
               this.updateVaultNodeStatus(); // Update the floating vault node
               this.openVaultModal(); // Refresh modal with new status
-              this.showToast('🔒 Vault locked successfully!', 'success');
+              this.showToast('✅ Vault locked and encrypted successfully!', 'success');
             } else {
               throw new Error(result?.error || 'Lock failed');
             }
