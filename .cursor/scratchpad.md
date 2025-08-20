@@ -238,15 +238,14 @@ Timeline is phase-based with decision gates. Each task includes success criteria
   - Unlock perf budgets; capture → save → reopen; kill mid-write and verify recovery.
   - Low storage preflight; PWA eviction warning cadence; accessibility checks.
 
-### CTO Oversight Notes (Phase 0) — Crypto Integration Update
-- Worker-based PBKDF2 integrated into keyring unlock with profile persistence. Good fallback to SubtleCrypto.
-- Next: add WASM Argon2id into the same worker with param probing and selection policy per Appendix A.
-- Verify worker URL resolution under bundlers and Capacitor; consider `new URL(..., import.meta.url)` polyfill strategy where needed.
+### CTO Oversight Notes (Phase 0) — Argon2id Path
+- Worker now supports optional Argon2id via argon2-browser when available; selection policy remains PBKDF2-250k default until device profiling is integrated.
+- For production, load WASM locally (not CDN) and gate by Appendix A policy. Ensure no network requirement.
 
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing (interface + selector committed)
 - [x] T1 PWA_OPFS_Adapter complete with tests (MVP adapter + test page)
-- [ ] T2 Crypto Worker/WASM + perf harness (Gate A) — near complete (worker + client + unlock integration)
+- [x] T2 Crypto Worker/WASM + perf harness (Gate A) — implemented; validate on devices before closing Gate A
 - [ ] T3 Capacitor scaffold + asset resolver
 - [ ] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B)
 - [ ] T5 Chaos/low-space harness; pass criteria

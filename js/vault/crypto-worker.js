@@ -81,6 +81,35 @@ self.onmessage = async (e) => {
       const { ms, key } = await profilePBKDF2(passphrase, toBytes(salt), iterations);
       return self.postMessage({ id, ok: true, result: { ms, key } }, [key.buffer]);
     }
+    if (op === 'argon2id' || op === 'profileArgon2id') {
+      // Optional Argon2id support via global `argon2` (if loaded via importScripts)
+      if (typeof self.argon2 === 'undefined' || !self.argon2) {
+        if (op === 'profileArgon2id') {
+          return self.postMessage({ id, ok: true, result: { supported: false, ms: null } });
+        }
+        throw new Error('Argon2id unsupported in this environment');
+      }
+      const { passphrase, salt, params } = payload;
+      const { memoryKB = 65536, iterations = 2, parallelism = 2, hashLen = 32 } = params || {};
+      const saltBytes = toBytes(salt);
+      const t0 = performance.now();
+      const res = await self.argon2.hash({
+        pass: passphrase,
+        salt: saltBytes,
+        time: iterations,
+        mem: memoryKB,
+        parallelism,
+        hashLen,
+        type: self.argon2.ArgonType.Argon2id,
+        raw: true
+      });
+      const t1 = performance.now();
+      if (op === 'profileArgon2id') {
+        return self.postMessage({ id, ok: true, result: { supported: true, ms: (t1 - t0) } });
+      }
+      // res.hash is Uint8Array
+      return self.postMessage({ id, ok: true, result: { key: new Uint8Array(res.hash), ms: (t1 - t0) } }, [res.hash.buffer]);
+    }
     throw new Error('Unknown op: ' + op);
   } catch (err) {
     const message = (err && err.message) ? err.message : String(err);

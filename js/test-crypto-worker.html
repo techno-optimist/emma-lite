@@ -13,6 +13,7 @@
     <h1>Emma Crypto Worker Test</h1>
     <div>
       <button id="profile">Profile PBKDF2</button>
+      <button id="profile-argon">Profile Argon2id (if available)</button>
       <button id="roundtrip">Encrypt/Decrypt Roundtrip</button>
     </div>
     <pre id="log"></pre>
@@ -30,6 +31,19 @@
             const res = await client.profilePBKDF2('test-passphrase', salt, 250000);
             log('PBKDF2 250k ms: ' + res.ms.toFixed(1));
           } catch (e) { log('profile error: ' + e.message); }
+        };
+        document.getElementById('profile-argon').onclick = async () => {
+          try {
+            // Attempt load argon2 WASM from CDN or local if present
+            if (!self.argon2) {
+              try { await import('https://cdn.jsdelivr.net/npm/argon2-browser@1.18.0/dist/argon2-bundled.min.js'); } catch {}
+            }
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const start = performance.now();
+            const res = await client._call('profileArgon2id', { passphrase: 'test-passphrase', salt, params: { memoryKB: 65536, iterations: 2, parallelism: 2 } });
+            const ms = res?.ms ?? (performance.now() - start);
+            log('Argon2id profile ms: ' + (ms ? ms.toFixed(1) : 'n/a'));
+          } catch (e) { log('argon2 profile error: ' + e.message); }
         };
         document.getElementById('roundtrip').onclick = async () => {
           try {
