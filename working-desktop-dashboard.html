@@ -705,16 +705,91 @@
       pointer-events: all !important;
     }
 
-    /* Right side panel stack */
+    /* Hide burger menu and panels in constellation mode */
+    body.constellation-active .burger-menu-btn,
+    body.constellation-active .info-panel.right-stack {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    /* Burger Menu Button */
+    .burger-menu-btn {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .burger-menu-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(139, 92, 246, 0.4);
+      transform: scale(1.05);
+    }
+
+    .burger-icon {
+      width: 20px;
+      height: 16px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .burger-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 1px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-line:nth-child(1) { top: 0; }
+    .burger-line:nth-child(2) { top: 7px; }
+    .burger-line:nth-child(3) { top: 14px; }
+
+    /* Burger menu active state (X icon) */
+    .burger-menu-btn.active .burger-line:nth-child(1) {
+      transform: rotate(45deg);
+      top: 7px;
+    }
+
+    .burger-menu-btn.active .burger-line:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-menu-btn.active .burger-line:nth-child(3) {
+      transform: rotate(-45deg);
+      top: 7px;
+    }
+
+    /* Right side panel stack - hidden by default */
     .info-panel.right-stack {
       position: fixed;
-      right: 24px;
+      right: -360px; /* Hidden off-screen */
       width: 320px;
       min-width: 320px;
       max-width: 320px;
       height: 180px;
       min-height: 180px;
       max-height: 180px;
+      transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 999;
+    }
+
+    /* Show panels when menu is active */
+    .panels-visible .info-panel.right-stack {
+      right: 24px;
     }
 
     #daily-brief.right-stack {
@@ -1646,6 +1721,15 @@
     </div>
   </div>
 
+  <!-- Burger Menu Button -->
+  <div class="burger-menu-btn" id="burger-menu-btn">
+    <div class="burger-icon">
+      <div class="burger-line"></div>
+      <div class="burger-line"></div>
+      <div class="burger-line"></div>
+    </div>
+  </div>
+
   <!-- Right Side Panel Stack -->
   <div class="info-panel right-stack" id="daily-brief">
     <div class="panel-header">
@@ -1849,6 +1933,11 @@
           aiInsights: document.getElementById('ai-insights'),
           quickActions: document.getElementById('quick-actions')
         };
+
+        // Burger menu functionality
+        this.burgerMenuBtn = document.getElementById('burger-menu-btn');
+        this.panelsVisible = false;
+        this.setupBurgerMenu();
         
         this.isMenuOpen = false;
         this.stats = { memories: 0, people: 0, today: 0 };
@@ -2968,15 +3057,37 @@
       }
 
       showContextualPanels() {
-        const hour = new Date().getHours();
+        // Panels are now hidden by default and shown via burger menu
+        // No longer auto-showing panels to reduce visual distraction
+        console.log('📋 Panels are now controlled by burger menu - clean initial load');
+      }
+
+      setupBurgerMenu() {
+        if (!this.burgerMenuBtn) {
+          console.warn('🍔 Burger menu button not found');
+          return;
+        }
+
+        this.burgerMenuBtn.addEventListener('click', () => {
+          this.togglePanels();
+        });
+
+        console.log('🍔 Burger menu setup complete');
+      }
+
+      togglePanels() {
+        this.panelsVisible = !this.panelsVisible;
         
-        // Show all panels for demo
-        setTimeout(() => {
-          // Show all available panels
-          if (this.panels.dailyBrief) this.panels.dailyBrief.classList.add('active');
-          if (this.panels.aiInsights) this.panels.aiInsights.classList.add('active');
-          if (this.panels.quickActions) this.panels.quickActions.classList.add('active');
-        }, 1000);
+        // Toggle body class for CSS animations
+        if (this.panelsVisible) {
+          document.body.classList.add('panels-visible');
+          this.burgerMenuBtn.classList.add('active');
+        } else {
+          document.body.classList.remove('panels-visible');
+          this.burgerMenuBtn.classList.remove('active');
+        }
+        
+        console.log('🍔 Panels toggled:', this.panelsVisible ? 'visible' : 'hidden');
       }
 
       startAnimations() {
