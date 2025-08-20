@@ -351,7 +351,8 @@ class EmmaVaultExtension {
       const content = await file.text();
       const rawVaultData = JSON.parse(content);
       
-      // Check if vault is encrypted
+      // Check if vault is encrypted and decrypt if needed
+      let vaultData;
       if (rawVaultData.encryption && rawVaultData.encryption.enabled) {
         console.log('🔐 Vault is encrypted - requesting passphrase...');
         
@@ -361,13 +362,15 @@ class EmmaVaultExtension {
           throw new Error('Passphrase required to unlock encrypted vault');
         }
         
-        // TODO: Add actual decryption here
-        // For now, assume the vault structure is correct
-        console.log('🔓 Passphrase provided - vault unlocked');
+        // Decrypt the vault using the proven web vault logic
+        console.log('🔓 Decrypting vault with passphrase...');
+        vaultData = await this.decryptVaultFile(file, passphrase);
+        console.log('✅ Vault decrypted successfully!');
+      } else {
+        // Unencrypted vault
+        vaultData = rawVaultData;
+        console.log('📂 Vault is unencrypted - using raw data');
       }
-      
-      // Use the vault data (decrypted or unencrypted)
-      const vaultData = rawVaultData;
       
       // Validate vault structure
       if (!this.validateVaultData(vaultData)) {
@@ -1019,6 +1022,117 @@ class EmmaVaultExtension {
   calculateVaultSize() {
     if (!this.vaultData) return 0;
     return JSON.stringify(this.vaultData).length;
+  }
+  
+  /**
+   * Decrypt .emma vault file (copied from web vault)
+   */
+  async decryptVaultFile(file, passphrase) {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+      
+      // Check magic bytes
+      const magic = new TextDecoder().decode(data.slice(0, 4));
+      if (magic !== 'EMMA') {
+        throw new Error('Invalid .emma file format');
+      }
+      
+      // Extract components
+      const version = data.slice(4, 6);
+      const salt = data.slice(6, 38); // 32 bytes salt
+      const encryptedData = data.slice(38);
+      
+      console.log('📁 Extension: Decrypting vault file...');
+      console.log('🔍 DECRYPT DEBUG: File size:', data.length);
+      console.log('🔍 DECRYPT DEBUG: Magic bytes:', magic);
+      console.log('🔍 DECRYPT DEBUG: Salt length:', salt.length);
+      console.log('🔍 DECRYPT DEBUG: Encrypted data length:', encryptedData.length);
+      
+      // Decrypt data
+      const decryptedData = await this.decryptData(encryptedData.buffer, salt, passphrase);
+      
+      // Parse JSON
+      const decoder = new TextDecoder();
+      const jsonString = decoder.decode(decryptedData);
+      
+      console.log('🔓 Extension: Decrypted JSON length:', jsonString.length);
+      console.log('🔓 Extension: JSON preview (first 200 chars):', jsonString.substring(0, 200));
+      
+      const vaultData = JSON.parse(jsonString);
+      
+      console.log('🔓 Extension: Parsed vault data - checking contents:');
+      console.log('- Memory count in file:', Object.keys(vaultData.content?.memories || {}).length);
+      console.log('- People count in file:', Object.keys(vaultData.content?.people || {}).length);
+      console.log('- Media count in file:', Object.keys(vaultData.content?.media || {}).length);
+      
+      return vaultData;
+      
+    } catch (error) {
+      console.error('❌ Extension: Failed to decrypt vault file:', error);
+      throw new Error('Failed to decrypt vault. Please check your passphrase.');
+    }
+  }
+  
+  /**
+   * Decrypt data using Web Crypto API (copied from web vault)
+   */
+  async decryptData(encryptedData, salt, passphrase) {
+    try {
+      console.log('🔍 Extension: Starting data decryption...');
+      
+      // Extract IV and data
+      const data = new Uint8Array(encryptedData);
+      const iv = data.slice(0, 12);
+      const encrypted = data.slice(12);
+      
+      // Derive key from passphrase
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveBits', 'deriveKey']
+      );
+      
+      // Handle salt format
+      let saltBuffer;
+      if (typeof salt === 'string') {
+        saltBuffer = new TextEncoder().encode(salt);
+      } else {
+        saltBuffer = new Uint8Array(salt);
+      }
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: saltBuffer,
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      
+      // Decrypt the data
+      const decrypted = await crypto.subtle.decrypt(
+        {
+          name: 'AES-GCM',
+          iv: iv
+        },
+        key,
+        encrypted
+      );
+      
+      console.log('✅ Extension: Data decrypted successfully');
+      return decrypted;
+      
+    } catch (error) {
+      console.error('❌ Extension: Decryption failed:', error);
+      throw new Error('Decryption failed - incorrect passphrase or corrupted data');
+    }
   }
   
   formatBytes(bytes) {
