@@ -611,7 +611,7 @@ function openMemoryDetail(memory) {
   const tabButtons = Array.from(modal.querySelectorAll('.tab-btn'));
   
   // Tab switching functionality
-  function switchTab(tab) {
+  async function switchTab(tab) {
     activeTab = tab;
     tabButtons.forEach(btn => {
       const isActive = btn.dataset.tab === tab;
@@ -619,7 +619,7 @@ function openMemoryDetail(memory) {
       btn.style.color = isActive ? 'white !important' : 'rgba(255, 255, 255, 0.6) !important';
       btn.style.borderBottomColor = isActive ? '#f093fb !important' : 'transparent !important';
     });
-    renderTab();
+    await renderTab();
   }
   
   // Add tab click handlers
@@ -628,7 +628,7 @@ function openMemoryDetail(memory) {
   });
   
   // Render tab content
-  function renderTab() {
+  async function renderTab() {
     if (activeTab === 'overview') {
       bodyHost.innerHTML = renderOverview(memory);
       // Initialize slideshow for overview tab
@@ -645,7 +645,16 @@ function openMemoryDetail(memory) {
       bodyHost.innerHTML = renderMedia(memory);
     } else if (activeTab === 'people') {
       stopSlideshow();
-      bodyHost.innerHTML = renderPeople(memory);
+      // Show loading while fetching people
+      bodyHost.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
+          <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+          <div>Loading people from vault...</div>
+        </div>
+      `;
+      // Load people asynchronously
+      const peopleContent = await renderPeople(memory);
+      bodyHost.innerHTML = peopleContent;
     } else if (activeTab === 'related') {
       stopSlideshow();
       bodyHost.innerHTML = renderRelated(memory);
@@ -1331,73 +1340,158 @@ function renderMedia(memory) {
   `;
 }
 
-function renderPeople(memory) {
-  // For demo, show placeholder with sample people
-  const samplePeople = [
-    { id: 1, name: 'Mom', relationship: 'Mother', permission: 'Full Access' },
-    { id: 2, name: 'Dad', relationship: 'Father', permission: 'View Only' },
-    { id: 3, name: 'Sarah', relationship: 'Sister', permission: 'Full Access' }
-  ];
+async function renderPeople(memory) {
+  console.log('👥 GALLERY: Rendering people for memory:', memory.id);
   
-  return `
-    <div class="people-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h3 style="color: white; margin: 0;">People in this Memory</h3>
-        <button onclick="showNotification('👥 Add people feature coming soon!', 'info')" style="
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-        ">+ Add People</button>
-      </div>
-      
-      <div class="people-grid" style="display: grid; gap: 16px;">
-        ${samplePeople.map(person => `
-          <div class="person-card" style="
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            transition: all 0.2s ease;
+  try {
+    // Load actual people from vault
+    let vaultPeople = [];
+    if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+      console.log('👥 GALLERY: Loading people from extension vault...');
+      vaultPeople = await window.emmaWebVault.listPeople();
+      console.log('👥 GALLERY: Found vault people:', vaultPeople.length);
+    }
+    
+    // Get people connected to this memory (from memory.metadata.people or similar)
+    const connectedPeopleIds = memory.metadata?.people || memory.people || [];
+    const connectedPeople = vaultPeople.filter(person => connectedPeopleIds.includes(person.id));
+    
+    console.log('👥 GALLERY: Connected people for this memory:', connectedPeople.length);
+    
+    return `
+      <div class="people-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h3 style="color: white; margin: 0;">People in this Memory</h3>
+          <button onclick="showAddPeopleToMemory('${memory.id}')" style="
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
             cursor: pointer;
-          " onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-            <div style="
-              width: 48px;
-              height: 48px;
-              border-radius: 50%;
-              background: var(--emma-gradient-1);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-weight: 600;
-              font-size: 18px;
-            ">${person.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</div>
-            
-            <div style="flex: 1;">
-              <div style="color: white; font-weight: 600; margin-bottom: 4px;">${escapeHtml(person.name)}</div>
-              <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px;">${escapeHtml(person.relationship)}</div>
-            </div>
-            
-            <div style="
-              background: rgba(118, 75, 162, 0.2);
-              border: 1px solid rgba(118, 75, 162, 0.3);
-              padding: 4px 12px;
-              border-radius: 12px;
-              font-size: 12px;
-              color: #f093fb;
-            ">${escapeHtml(person.permission)}</div>
+            font-size: 14px;
+          ">+ Add People</button>
+        </div>
+        
+        ${connectedPeople.length > 0 ? `
+          <div class="people-grid" style="display: grid; gap: 16px;">
+            ${connectedPeople.map(person => `
+              <div class="person-card" style="
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                transition: all 0.2s ease;
+                cursor: pointer;
+              " onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'" onclick="openPersonFromMemory('${person.id}')">
+                <div style="
+                  width: 48px;
+                  height: 48px;
+                  border-radius: 50%;
+                  background: ${person.avatarUrl ? `url('${person.avatarUrl}')` : 'var(--emma-gradient-1)'};
+                  background-size: cover;
+                  background-position: center;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-weight: 600;
+                  font-size: 18px;
+                  overflow: hidden;
+                ">
+                  ${!person.avatarUrl ? person.name.charAt(0) : ''}
+                </div>
+                <div style="flex: 1;">
+                  <div style="color: white; font-weight: 600; margin-bottom: 4px;">${escapeHtml(person.name)}</div>
+                  <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px;">${escapeHtml(person.relation || 'friend')}</div>
+                </div>
+                <div style="
+                  background: rgba(118, 75, 162, 0.2);
+                  color: #f093fb;
+                  padding: 4px 12px;
+                  border-radius: 16px;
+                  font-size: 12px;
+                  font-weight: 500;
+                ">
+                  Connected
+                </div>
+              </div>
+            `).join('')}
           </div>
-        `).join('')}
+        ` : `
+          <div style="
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+          ">
+            <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+            <div style="font-size: 16px; margin-bottom: 8px;">No people connected to this memory yet</div>
+            <div style="font-size: 14px; opacity: 0.8;">Add people to share this precious moment</div>
+          </div>
+        `}
+        
+        ${vaultPeople.length > 0 ? `
+          <div style="margin-top: 24px;">
+            <h4 style="color: rgba(255, 255, 255, 0.8); margin-bottom: 16px;">Available People</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+              ${vaultPeople.filter(person => !connectedPeopleIds.includes(person.id)).map(person => `
+                <div class="available-person" style="
+                  background: rgba(255, 255, 255, 0.03);
+                  border: 1px solid rgba(255, 255, 255, 0.08);
+                  border-radius: 8px;
+                  padding: 12px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                " onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'" onclick="connectPersonToMemory('${memory.id}', '${person.id}')">
+                  <div style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    background: ${person.avatarUrl ? `url('${person.avatarUrl}')` : 'var(--emma-gradient-2)'};
+                    background-size: cover;
+                    background-position: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 14px;
+                    overflow: hidden;
+                  ">
+                    ${!person.avatarUrl ? person.name.charAt(0) : ''}
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="color: white; font-size: 14px; font-weight: 500;">${escapeHtml(person.name)}</div>
+                    <div style="color: rgba(255, 255, 255, 0.5); font-size: 12px;">${escapeHtml(person.relation || 'friend')}</div>
+                  </div>
+                  <div style="color: rgba(255, 255, 255, 0.4); font-size: 12px;">+ Connect</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
       </div>
-    </div>
-  `;
+    `;
+  } catch (error) {
+    console.error('👥 GALLERY: Error loading people for memory:', error);
+    return `
+      <div class="people-content">
+        <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
+          <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+          <div>Error loading people</div>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function renderRelated(memory) {
@@ -1437,6 +1531,23 @@ function addTag() {
       bodyHost.innerHTML = renderOverview(window.currentMemory);
     }
   }
+}
+
+// Helper functions for people management in memory details
+function showAddPeopleToMemory(memoryId) {
+  console.log('👥 Add people to memory:', memoryId);
+  showNotification('👥 Add people feature coming soon!', 'info');
+}
+
+function openPersonFromMemory(personId) {
+  console.log('👥 Opening person from memory:', personId);
+  // Navigate to people page and show person detail
+  window.location.href = `pages/people-emma.html?person=${personId}`;
+}
+
+function connectPersonToMemory(memoryId, personId) {
+  console.log('🔗 Connecting person to memory:', personId, '→', memoryId);
+  showNotification('🔗 Person connection feature coming soon!', 'info');
 }
 
 function removeTag(tag) {
