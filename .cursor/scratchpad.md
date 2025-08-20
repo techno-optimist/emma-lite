@@ -1,5 +1,159 @@
 # Project: Emma Dementia Companion - Specialized Memory Support System
 
+## SHERLOCK Code Audit (Planner + Executor) — January 2025
+
+### Scope & Success Criteria (Planner)
+- Scope: Browser extension (`emma-vault-extension/*`), web app pages under `pages/*`, shared JS under `js/*`, vault crypto under `js/vault/*`.
+- Success criteria:
+  - Identify all high-risk security/privacy issues (data-at-rest, message origin, DOM XSS, permissions).
+  - Enumerate correctness bugs likely to break flows (vault open/save, decryption paths, service worker lifecycle).
+  - Provide concrete, minimal-risk remediations with owner files/sections and acceptance tests.
+
+### Key Findings (Executor)
+
+1) CRITICAL: Unencrypted vault data persisted in extension storage
+- Risk: Full `vaultData` is stored in `chrome.storage.local` (unencrypted, disk-persistent). Violates privacy and zero-knowledge goals; any local user/process can read.
+- Evidence:
+```438:444:emma-vault-extension/popup.js
+      await chrome.storage.local.set({
+        vaultData: vaultData,
+        vaultFileName: fileHandle.name,
+        vaultReady: true,
+        lastSaved: new Date().toISOString()
+      });
+```
+```924:929:emma-vault-extension/popup.js
+      await chrome.storage.local.set({
+        vaultData: vaultData,
+        vaultFileName: fileHandle.name,
+        vaultReady: true,
+        lastSaved: new Date().toISOString()
+      });
+```
+- Also read in background for direct writes:
+```421:428:emma-vault-extension/background.js
+    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
+    if (!vaultReady || !vaultData) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
+    }
+```
+- Remediation (P0):
+  - Do not persist full vault content to `chrome.storage.local`.
+  - Keep `vaultData` only in-memory while popup is open, and write-through to the selected file handle.
+  - If persistence needed across SW suspend, encrypt with passphrase-derived key before storage (PBKDF2 ≥ 250k iters, AES-GCM 256-bit) and store only ciphertext + metadata.
+  - Acceptance: Restart browser → no plaintext vault content present in extension storage; operations require re-open or decryption.
+
+2) HIGH: Broad `matches`/host permissions and file URL scope
+- Risk: Content script runs on wide origins (including `file:///*emma*`); expands attack surface.
+- Evidence:
+```27:38:emma-vault-extension/manifest.json
+      "matches": [
+        "https://emma-hjjc.onrender.com/*",
+        "https://*.render.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "file:///*emma*"
+      ],
+      "run_at": "document_start"
+```
+- Remediation (P1): Restrict to exact production origins; remove wildcard `*.render.com` and `file://` unless absolutely required behind explicit user opt-in.
+
+3) HIGH: DOM XSS via unsafe innerHTML with dynamic data
+- Risk: Multiple views set `innerHTML` with variables (e.g., error.message, memory thumbnails, avatar URLs). If any field is attacker-controlled, leads to XSS in app contexts.
+- Evidence samples:
+```85:100:pages/reset-vault.html
+statusEl.innerHTML = `\n            <strong>❌ Failed to get status:</strong> ${response?.error || 'Unknown error'}`;
+```
+```494:496:pages/dementia-companion-vault-demo.html
+viewer.innerHTML = '<p style="color: #F44336;">Failed to load memories</p>'; // similar blocks render error text via innerHTML elsewhere
+```
+```441:447:working-desktop-dashboard.html
+document.body.insertAdjacentHTML('beforeend', modalHTML);
+```
+```451:454:pages/dashboard-new.html
+memoryDialog.innerHTML = `\n          <div class="memory-dialog" style="
+```
+- Remediation (P0/P1): Replace with `textContent` for plain text; for structured UI, build nodes with `createElement` and set attributes; sanitize any HTML if rendering is required (DOMPurify) and constrain to a safe allowlist. Escape error strings.
+
+4) MED: `postMessage` targetOrigin set to "*" in settings/options flows
+- Risk: Messages could be received by any listening frame if embedded; limit surface.
+- Evidence:
+```885:889:js/options.js
+window.postMessage({ \n  type: 'DEMENTIA_SETTINGS_CHANGED',
+}, '*');
+```
+```1817:1819:js/options.js
+window.postMessage({ type: 'ORB_SETTINGS_CHANGED', settings }, '*');
+```
+- Remediation (P1): Use `window.location.origin` or explicit origin string.
+
+5) MED: Service Worker lifecycle vs fileHandle volatility
+- Risk: MV3 background SWs suspend; `fileHandle` kept only in-memory → writes fail after idle. UX degradation, potential data loss assumptions.
+- Evidence:
+```301:314:emma-vault-extension/background.js
+async function disableSync() { fileHandle = null; ... }
+```
+- Remediation (P2): Keep an offscreen document while a vault is open (acts as long-lived context), or require re-selection explicitly on resume with clear UI; persist minimal metadata; never assume handle survives.
+
+6) MED: Inconsistent KDF parameters; decryption path defaults to PBKDF2 100k
+- Risk: We use PBKDF2 100k in extension decryption vs 250k in keyring. Consistency and strength matter.
+- Evidence:
+```1248:1254:emma-vault-extension/popup.js
+iterations: 100000,
+```
+```48:52:js/vault/keyring.js
+iterations: 250000,
+```
+- Remediation (P2): Align at ≥ 250k PBKDF2-SHA256 (or Argon2id if available) across all vault operations.
+
+7) LOW: Heuristic Emma page detection in content script
+- Risk: `isEmmaWebApp()` checks title/path substrings; mitigated by origin check but still noisy.
+- Evidence:
+```46:56:emma-vault-extension/content-script.js
+window.location.pathname.includes('emma') || document.title.toLowerCase().includes('emma')
+```
+- Remediation (P3): Rely solely on origin allowlist for activation; drop heuristic.
+
+8) LOW: ID generation using Math.random
+- Risk: Non-cryptographic IDs; acceptable for display, not for security.
+- Evidence:
+```1079:1081:emma-vault-extension/popup.js
+return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+```
+- Remediation (P4): Use `crypto.getRandomValues` if IDs need unpredictability beyond UI.
+
+9) CORRECTNESS: JSON vault decryption path unimplemented
+- Risk: For JSON vaults with encrypted fields, `decryptJSONVaultContent` returns raw; user sees encrypted gibberish; writes could corrupt.
+- Evidence:
+```1093:1116:emma-vault-extension/popup.js
+// TODO: Implement field-level decryption ... return rawVaultData;
+```
+- Remediation (P1): Implement field-level decrypt for known encrypted blobs or block opening with a clear message until supported.
+
+10) CORRECTNESS: toBase64Payload accepts non-data strings without validation
+- Risk: Non-base64 content passed as attachment `data` could corrupt vault or inflate size.
+- Evidence:
+```142:151:emma-vault-extension/background.js
+return commaIndex !== -1 ? data.substring(commaIndex + 1) : data; // no validation
+```
+- Remediation (P3): Validate/normalize to base64; reject invalid inputs.
+
+### Remediation Plan — Project Status Board
+- [ ] P0: Remove plaintext vault persistence from `chrome.storage.local`; keep vault only in-memory or encrypted at rest (popup/background).
+- [ ] P0: Replace unsafe `innerHTML`/`insertAdjacentHTML` instances rendering dynamic data with safe node creation or sanitizer; escape error strings.
+- [ ] P1: Restrict `manifest.json` matches/host_permissions to exact production origins; drop `file://` pattern by default.
+- [ ] P1: Implement JSON field-level decryption or block unsupported files with UX.
+- [ ] P1: Replace `postMessage('*')` with explicit `window.location.origin` in `js/options.js` and any other callers.
+- [ ] P2: Align PBKDF2 iterations with ≥ 250k everywhere; document in vault spec.
+- [ ] P2: Address MV3 SW lifecycle: offscreen doc during active vault or explicit re-selection flow.
+- [ ] P3: Tighten content script activation (drop heuristic page checks) and validate message `event.source === window`.
+- [ ] P3: Base64 validation for media payloads before persisting.
+- [ ] P4: Consider crypto-strong IDs for any security-relevant identifiers.
+
+### Executor’s Notes / Acceptance Checks
+- After fixes, verify: (a) no plaintext vault content in `chrome.storage.local`, (b) attempts to inject HTML via memory titles/avatars render escaped, (c) extension only activates on approved origins, (d) decrypting both binary and JSON vaults succeeds or fails with explicit message, (e) PBKDF2 iteration telemetry shows consistent values across paths.
+
+
 ## Background and Motivation
 
 ### **🚨 URGENT BETA PREPARATION - MEMORY GALLERY CLEANUP** 
