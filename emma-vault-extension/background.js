@@ -521,6 +521,9 @@ async function handleSavePersonToVault(personData) {
     });
     
     console.log('✅ Person saved to vault storage successfully');
+    console.log('👥 DEBUG: Updated vault data people count:', Object.keys(currentData.content.people).length);
+    console.log('👥 DEBUG: People in storage:', Object.keys(currentData.content.people));
+    
     return { success: true, id: personId };
     
   } catch (error) {
@@ -611,9 +614,16 @@ async function checkVaultStatus() {
  */
 async function getPeopleData() {
   try {
+    console.log('👥 DEBUG: Getting people data from storage...');
     const { vaultData } = await chrome.storage.local.get(['vaultData']);
+    console.log('👥 DEBUG: Retrieved vault data:', vaultData);
+    console.log('👥 DEBUG: People object:', vaultData?.content?.people);
+    
     const people = vaultData?.content?.people || {};
-    return { people: Object.values(people) };
+    const peopleArray = Object.values(people);
+    console.log('👥 DEBUG: People array:', peopleArray);
+    
+    return { people: peopleArray };
   } catch (error) {
     console.error('❌ Failed to get people data:', error);
     return { people: [], error: error.message };

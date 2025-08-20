@@ -178,6 +178,12 @@ function handleEmmaMessage(message) {
       // This is a response from background to web app, just pass through
       break;
       
+    case 'PEOPLE_DATA':
+    case 'MEMORIES_DATA':
+      console.log('📊 Data response - forwarding to web app:', message.type);
+      // These are responses from extension to web app, just pass through
+      break;
+      
     default:
       console.warn('Unknown message type:', message.type);
   }
