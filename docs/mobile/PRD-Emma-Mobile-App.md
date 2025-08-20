@@ -95,14 +95,17 @@ Primary Use Cases:
 ### Non-Functional Requirements
 - Performance
   - App launch < 2s on modern devices; orb open < 300ms; transcription latency < 100ms.
-  - Large vault ops: write throughput tolerant to 1–2 GB media total; progress feedback.
+  - Unlock/KDF: median unlock < 1500ms on iPhone 12 / Pixel 6; p95 < 3000ms.
+  - Crypto execution off main thread (Web Workers); WASM Argon2id path preferred; PBKDF2 250k iterations for compatibility where Argon2id unavailable.
+  - Large vault ops: write throughput tolerant to 1–2 GB media total; progress feedback; chunked streaming to avoid memory spikes.
 - Reliability
-  - Crash-safe writes with journaling/temp file + atomic rename.
-  - Power-loss and low-storage handling; user feedback for recovery.
+  - Crash-safe writes with journaling: write to temp with manifest + checksums, then atomic rename to `.emma`.
+  - Power-loss and low-storage handling; preflight free-space checks; resumable operations with recovery on next launch.
+  - PWA eviction awareness (especially iOS): data persistence risks mitigated by proactive export prompts and warnings.
 - Security & Privacy
   - No analytics by default; no network calls required.
   - AES-GCM encryption; passphrase-derived keys; salts stored in metadata.
-  - Optional biometric wrapping of session key; no raw keys persisted.
+  - Optional biometric wrapping of session key; no raw keys persisted. Passphrase path always retained for recovery; passphrase required for export, key rotation, or disabling biometrics.
 - Accessibility
   - WCAG 2.1 AA: larger touch targets; reduced-motion option; screen reader labels.
   - Dementia-friendly UX: validation language; calm timing; no correction.
@@ -113,7 +116,7 @@ Primary Use Cases:
   - ExtensionFileSystemAdapter (existing)
   - PWA_OPFS_Adapter (new)
   - CapacitorFilesystemAdapter (new)
-- Crypto: Reuse `js/vault/*` Web Crypto; support Argon2id KDF where available; fall back to PBKDF2 for compatibility.
+- Crypto: Reuse `js/vault/*` Web Crypto; KDF and encrypt/decrypt run in Web Workers; prefer WASM Argon2id where available; fall back to PBKDF2 (250k iterations) for compatibility.
 - Media: Capacitor Camera/Filesystem plugins; temp → vault write pipeline; streaming to avoid large-memory spikes.
 - Unlock: Passphrase → derived key; optional Keychain/Keystore wrap of in-memory session key for quick unlock.
 
@@ -134,6 +137,7 @@ Primary Use Cases:
 - iOS
   - Files app integration via share/export; sandboxed default location.
   - OPFS limitations in PWA; native Capacitor path preferred for reliability.
+  - iCloud backup semantics: app sandbox may be included in device backups; provide user setting to exclude vault from backups (NSURLIsExcludedFromBackupKey).
   - Face ID/Touch ID via Local Authentication plugin.
 - Android
   - Storage Access Framework (SAF) for export/import; media intents for camera/gallery.
@@ -142,13 +146,16 @@ Primary Use Cases:
 ### Security & Compliance
 - Local-only by default; no network; no accounts.
 - Biometric unlock optional and non-destructive (fallback to passphrase always available).
-- Clear privacy disclosures; optional crash-only logs stripped of PII.
+- Clear privacy disclosures; optional crash-only logs stripped of PII; no third-party analytics SDKs.
 - Threat model: device theft (biometric/passphrase), file exfiltration (export warnings), malformed import (validation), interrupted writes (journaling).
+ - Export compliance: standard platform crypto; complete App Store export questionnaire; document local-only positioning.
 
 ### Backup & Recovery
-- Manual export recommended schedule (monthly): in-app nudges (local-only).
+- OS backup semantics: By default, vault stored in app sandbox may be included in device backups. Provide explicit setting "Exclude vault from OS backups" (default: Included for resilience) with clear education about implications.
+- Manual export recommended schedule (monthly): in-app nudges (local-only). On iOS PWA, increase cadence due to eviction risk.
 - Import flow validates checksum and structure; graceful error messages and non-destructive failure modes.
 - Optional printed recovery guidance (non-technical instructions) for families.
+- Vault Health self-check: on-demand and periodic verification of checksums/manifests; guided repair if mismatch found.
 
 ### Metrics & Success Criteria (Privacy-Safe)
 - Local counters (no upload): successful vault round-trips, average capture duration, export completions.
@@ -157,46 +164,58 @@ Primary Use Cases:
   - 90-second average capture session duration.
   - < 0.5% crash rate during large writes in test matrix.
   - 90% task completion in usability tests (caregiver, older adult).
+  - Chaos testing: 100 trial mid-write kills → 100% recoverable or safe-fail with zero silent corruption.
 
 ### Risks & Mitigations
 - iOS WebKit crypto quirks → verify SubtleCrypto; ship minimal native fallback only if necessary.
 - Large media I/O performance → chunked writes; stream processing; progress UI.
 - App store privacy review → no analytics; no 3rd-party SDKs; clear offline positioning.
 - PWA limitations on iOS → position PWA as fallback; recommend native app.
+ - OS backups may conflict with "local-only" expectations → explicit setting and education; default to included backups unless user opts out.
 
 ### Dependencies
 - Capacitor core + Filesystem, Camera, Share, Biometric/Local Auth plugins.
 - Existing Emma JS code: `pages/*`, `js/*`, `js/vault/*`.
 
 ### Release Plan
-- Phase 0: Adapter interface + PWA_OPFS_Adapter; internal QA.
-- Phase 1: Capacitor shell + CapacitorFilesystemAdapter; device QA on iOS/Android.
-- Phase 2: Biometrics (optional), media capture, journaling, polish.
+- Phase 0: Adapter interface + PWA_OPFS_Adapter; internal QA. Gate A (KDF latency) must pass before Phase 1.
+- Phase 1: Capacitor shell + CapacitorFilesystemAdapter; device QA on iOS/Android. Gate B (journaling chaos) and Gate C (backup semantics UX) must pass.
+- Phase 2: Biometrics (optional), media capture, journaling, polish. Gate D (store readiness checklist) must pass before Beta.
 - Beta: TestFlight and Play Console (closed testing) with family testers.
 - GA: App Store + Play Store with clear privacy disclosures; no analytics.
+
+### Decision Gates & Launch Criteria
+- Gate A — Feasibility: SubtleCrypto + Worker/WASM KDF meets latency budget on target devices (median < 1500ms; p95 < 3000ms). If not, implement native crypto fallback; if still failing, reassess platform.
+- Gate B — Data Safety: Journaling + atomic rename passes power-loss/disk-full chaos tests with zero silent corruption.
+- Gate C — Privacy Promise: OS backup semantics and user education are unambiguous; backup exclusion toggle implemented; defaults documented.
+- Gate D — Store Readiness: App review checklist passes dry-run; continuous listening constrained to foreground; privacy manifests complete.
 
 ### Testing Plan
 - Unit: adapter methods, crypto flows, serialization/deserialization.
 - Integration: create/open/write/read cycles; media attachments; import/export.
-- E2E: device matrix (iOS 16/17, Android 12–14) including low battery, low storage, interrupted writes.
+- E2E: device matrix (iOS 16/17, Android 12–14) including low battery, low storage, interrupted writes; chaos tests (mid-write kill/restart).
 - Accessibility: screen reader, large text, reduced motion, color contrast.
 - Dementia Companion: validation-first responses, 2–3s delay behavior, non-corrective language.
+ - PWA eviction reality: iOS PWA persistence tests; verify export prompts cadence.
 
 ### Accessibility & Clinical Considerations
 - Validation-only responses in dementia mode; no corrections.
 - Subtle pacing (2–3s delay) to reduce anxiety; calm visuals.
 - Large, clear controls; error language that reassures.
 
-### Open Questions
-- Sidecar media vs. embedded blobs trade-offs for very large vaults.
-- Argon2id availability/perf across devices vs PBKDF2 compatibility path.
-- Optional crash-only logs—how to expose strictly opt-in diagnostics to users.
+### Defaults & Policies (Resolved)
+- Storage model: Single `.emma` file for v1; evaluate sidecar performance mode post‑GA if needed.
+- Backups: Included in OS backups by default (resilience); explicit user toggle to exclude with clear education.
+- KDF: Argon2id (WASM) preferred with mobile‑tuned params; PBKDF2 (250k) fallback for compatibility.
+- Biometrics: Optional quick unlock; passphrase required for export, key rotation, and disabling biometrics.
+- Diagnostics: Crash‑only logs strictly opt‑in; default off; never include PII.
 
 ### Acceptance Criteria (v1)
 - Users can: create/open vault, capture a voice memory, attach a photo, save, close app, reopen, and see content persisted securely.
 - Export/import works across iOS/Android and between devices of the same platform.
 - Biometric quick unlock works when enabled; passphrase unlock always available.
 - No plaintext at rest; no network required; app passes store review.
+ - Decision Gates A–D passed; chaos tests meet criteria; backup semantics documented in‑app.
 
 ### Appendix
 - File format: `.emma` container (unchanged from extension/web vault).
