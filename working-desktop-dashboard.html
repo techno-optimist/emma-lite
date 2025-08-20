@@ -3146,9 +3146,19 @@
         if (this.panelsVisible) {
           document.body.classList.add('panels-visible');
           this.burgerMenuBtn.classList.add('active');
+          
+          // Also add active class to each panel for visibility
+          if (this.panels.dailyBrief) this.panels.dailyBrief.classList.add('active');
+          if (this.panels.aiInsights) this.panels.aiInsights.classList.add('active');
+          if (this.panels.quickActions) this.panels.quickActions.classList.add('active');
         } else {
           document.body.classList.remove('panels-visible');
           this.burgerMenuBtn.classList.remove('active');
+          
+          // Remove active class from panels
+          if (this.panels.dailyBrief) this.panels.dailyBrief.classList.remove('active');
+          if (this.panels.aiInsights) this.panels.aiInsights.classList.remove('active');
+          if (this.panels.quickActions) this.panels.quickActions.classList.remove('active');
         }
         
         console.log('🍔 Panels toggled:', this.panelsVisible ? 'visible' : 'hidden');
