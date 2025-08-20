@@ -210,6 +210,84 @@ Primary Use Cases:
 - Biometrics: Optional quick unlock; passphrase required for export, key rotation, and disabling biometrics.
 - Diagnostics: Crash‑only logs strictly opt‑in; default off; never include PII.
 
+### UX Copy Library (In‑App Messaging)
+
+1) Backup Exclusion Toggle
+- Setting title: "Exclude vault from device backups"
+- Setting subtitle (default OFF): "Recommended OFF. Including your vault in device backups helps protect against loss."
+- Setting subtitle (when ON): "Excluded from backups. Export your vault regularly to avoid data loss."
+- Info tooltip (short): "Backups improve safety but may store encrypted data in iCloud/Device backups. Exclude for stricter privacy."
+- Learn more modal:
+  - Title: "About device backups"
+  - Body: "When enabled, your `.emma` vault is included in your device's encrypted backups (iCloud/Device). This improves recovery if your phone is lost or replaced. If you prefer stricter privacy, you can exclude the vault from backups and use manual exports."
+  - CTA primary: "Keep Included (Recommended)"
+  - CTA secondary: "Exclude from Backups"
+- Confirmation (when turning ON/exclude):
+  - Title: "Exclude from backups?"
+  - Body: "If excluded, your vault will not be recoverable from device backups. We recommend exporting a copy monthly."
+  - CTA primary: "Exclude"
+  - CTA secondary: "Cancel"
+- Success toast: "Vault backup setting updated."
+
+2) PWA Fallback Warnings (iOS emphasis)
+- First‑run banner (PWA only):
+  - Title: "Limited reliability in web app"
+  - Body: "On iOS, installed web apps can be removed by the system when storage is low. Export backups regularly or install the Emma Mobile app for best reliability."
+  - CTA primary: "Open Export"
+  - CTA secondary: "Install Native App"
+- Pre‑capture nudge (large operation, PWA only):
+  - Body: "You’re about to add large media. For the most reliable experience, use the Emma Mobile app or export a backup first."
+  - CTA primary: "Continue"
+  - CTA secondary: "Export First"
+- Periodic reminder (every 30 days, PWA only):
+  - Body: "Time to back up your vault. Export a copy to Files or install the Emma Mobile app for improved reliability."
+  - CTA: "Export"
+
+3) Low Storage & Preflight Checks
+- Low storage warning:
+  - Title: "Low storage"
+  - Body: "Your device is low on space. Saving large memories may fail. Free up space or export your vault before continuing."
+  - CTA primary: "Continue"
+  - CTA secondary: "Export Vault"
+- Out‑of‑space error:
+  - Title: "Not enough space"
+  - Body: "Emma couldn’t save your changes because the device is out of space. Try freeing storage or exporting your vault to external storage."
+  - CTA: "OK"
+
+4) Crash/Interrupt Recovery (Journaling)
+- On launch detection:
+  - Title: "Recovered your vault"
+  - Body: "Emma found an unfinished save and restored your vault safely. You can review recent changes."
+  - CTA: "Continue"
+- Partial recovery (non‑destructive):
+  - Title: "Recovery needed"
+  - Body: "We found incomplete changes. Emma preserved your original vault and moved the partial save to a recovery file."
+  - CTA primary: "View Details"
+  - CTA secondary: "Dismiss"
+
+5) Export/Import Flow
+- Export success: "Export complete. Keep this file safe."
+- Export reminder (monthly): "It’s been a while since your last backup. Export your vault to keep it safe."
+- Import validation error: "This file doesn’t look like a valid .emma vault. Please try another file."
+- Import large file warning: "This is a large vault. Keep the app open and connected to power during import."
+
+6) Biometrics
+- Enable prompt:
+  - Title: "Enable quick unlock"
+  - Body: "Use Face ID/Touch ID (or fingerprint) to unlock faster. Your passphrase is still required for some actions (like export)."
+  - CTA primary: "Enable"
+  - CTA secondary: "Not now"
+- Disable confirmation:
+  - Title: "Disable quick unlock?"
+  - Body: "You’ll need your passphrase each time."
+  - CTA primary: "Disable"
+  - CTA secondary: "Cancel"
+
+7) Vault Health Self‑Check
+- Healthy: "Vault check complete. Everything looks good."
+- Repaired: "Vault repaired after an interrupted save. No data loss detected."
+- Attention: "We found issues with recent changes. Emma preserved your original vault and created a recovery file."
+
 ### Acceptance Criteria (v1)
 - Users can: create/open vault, capture a voice memory, attach a photo, save, close app, reopen, and see content persisted securely.
 - Export/import works across iOS/Android and between devices of the same platform.
