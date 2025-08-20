@@ -141,3 +141,118 @@ Vision recap: The phone stores a `.emma` file locally. The app unlocks it and pr
 ### Planner Verdict (Do Not Build Yet)
 
 Do not proceed to implementation until Gates A–D are satisfied and PRD deltas are applied. The adapter boundary, journaling, crypto performance, backup semantics, and UX education are the most important risks to retire up‑front. Once resolved, the current plan yields a minimal‑change, high‑confidence path to shipping the full Emma web app experience on mobile while honoring our local‑first promise.
+
+---
+
+## 📅 Planner Execution Sequencing — Mobile v1
+
+Timeline is phase-based with decision gates. Each task includes success criteria and test coverage. Do not begin a later phase until the current phase’s exit criteria and gate checks pass.
+
+### Phase 0 — Foundations and Feasibility (Gate A)
+- Objectives:
+  - Define `VaultStorageAdapter` interface and route all vault I/O through it across code paths.
+  - Implement `PWA_OPFS_Adapter` and a minimal stub of `CapacitorFilesystemAdapter` (read/write fake impl for unit tests).
+  - Move KDF/crypto into Web Workers; integrate WASM Argon2id; keep PBKDF2 250k fallback.
+- Success criteria:
+  - All vault operations in web/extension paths compile and run using the adapter (no direct file I/O elsewhere).
+  - Bench on iPhone 12 and Pixel 6: unlock median < 1500ms, p95 < 3000ms with Worker/WASM.
+- Tests (TDD):
+  - Unit: adapter API contract; error propagation; serialization round-trips.
+  - Perf: KDF latency harness (automated) across parameter sets; fail build if budgets exceeded.
+  - Lint/Static: forbid direct file I/O imports via rule.
+- Exit: Gate A passes.
+
+### Phase 1 — Mobile Shell & Reliable Storage (Gate B, Gate C)
+- Objectives:
+  - Scaffold Capacitor app; bundle assets; implement real `CapacitorFilesystemAdapter` read/write/export/import/listRecent.
+  - Add journaling + atomic rename; free-space preflight; resumable writes on next launch.
+  - Implement backup exclusion toggle (iOS/Android) and setting UI + education.
+- Success criteria:
+  - Create → add memory+media → save → close → reopen works on device builds (iOS/Android).
+  - Chaos tests: 100 mid-write kills → 100% recoverable or safe-fail; zero silent corruption.
+  - Backup toggling correctly sets NSURLIsExcludedFromBackupKey (iOS) and equivalent on Android, reflected in system inspectors.
+- Tests (TDD):
+  - Unit: journal manifest integrity; atomic rename semantics; low-space preflight.
+  - Integration: import/export flows with cancel/resume; large file write streams.
+  - Chaos: scripted kill/restart harness during writes.
+- Exit: Gate B (data safety) and Gate C (privacy promise/UX clarity) pass.
+
+### Phase 2 — Experiences, Biometrics, and Health (Gate D)
+- Objectives:
+  - Wire Emma orb, Assistant, Voice Capture, Memories, Settings in mobile shell.
+  - Implement biometric quick unlock (wrap session key); enforce passphrase for export, key rotation, disable biometrics.
+  - Add Vault Health self-check and repair UX; PWA warning banners and export cadence prompts.
+- Success criteria:
+  - Unlock via biometrics works; passphrase flows remain available and required where mandated.
+  - Vault Health can detect interrupted saves and repair; clear messaging per PRD copy.
+  - PWA banners show correctly on iOS PWA; cadence reminders trigger.
+- Tests (TDD):
+  - Unit: key wrap/unwrap logic; gate conditions for privileged actions.
+  - Integration: health-check detects injected corruption; repair restores baseline.
+  - UX e2e: copy presence and correct CTA routes for banners/modals.
+- Exit: Gate D (store readiness dry-run) passes (privacy manifest, encryption export Q, foreground-only continuous listening).
+
+### Phase 3 — Beta Hardening and Release Prep
+- Objectives:
+  - Device matrix testing (iOS 16/17, Android 12–14); low battery/storage; accessibility audit.
+  - Final polish; crash-only diagnostics (opt-in, no PII) if enabled.
+  - Prepare TestFlight/Play Console artifacts and store metadata.
+- Success criteria:
+  - < 0.5% crash rate in test matrix; 95%+ successful writes across scenarios.
+  - Accessibility issues triaged/resolved to AA.
+  - Store metadata aligns with privacy-first positioning (no analytics, local-only).
+
+### Dependency Map
+- Phase 0 is prerequisite for all; Phase 1 depends on adapter and crypto perf; Phase 2 depends on journaling and settings infra; Phase 3 depends on all prior phases.
+
+### Work Breakdown (Granular Tasks)
+- T0: Define `VaultStorageAdapter` and replace direct I/O imports; add build rule to forbid direct I/O usage.
+- T1: Implement `PWA_OPFS_Adapter` (open/read/write/export/import/listRecent) with size/atomicity guards.
+- T2: Worker-ize crypto paths; integrate WASM Argon2id; param tuning harness; PBKDF2 fallback.
+- T3: Scaffold Capacitor app; asset bundling resolver; environment detection and adapter selection.
+- T4: Implement `CapacitorFilesystemAdapter` with journaling + atomic rename + preflight checks.
+- T5: Chaos and low-space test harnesses; automate kill/restart scenarios.
+- T6: Settings UI for backup exclusion toggle; native flags (iOS/Android) + education modal.
+- T7: Biometrics wrap/unwrap; privileged action gating (export/rotation/disable); failure/lockout fallbacks.
+- T8: Vault Health self-check + repair; results modal; logging (local-only, opt-in diagnostics control).
+- T9: PWA iOS warnings + export cadence; banners and CTAs.
+- T10: Accessibility pass; AA issues; large touch targets and reduced-motion compliance.
+- T11: Store readiness checklist and privacy/export questionnaires.
+
+### Success Criteria Checklist (Per Phase)
+- Phase 0: Adapter in place; KDF perf budgets met.
+- Phase 1: Device E2E round-trip; chaos safe; backups toggle verified.
+- Phase 2: Biometrics + privileged gating; Vault Health repair; PWA banners live.
+- Phase 3: Crash rate, success rate, accessibility AA, store assets ready.
+
+### TDD Test Inventory (Initial)
+- Unit
+  - Adapter API contract; error mapping; serialization determinism.
+  - Journal: manifest build/verify; atomic rename; rollback on failure.
+  - Crypto: Argon2id params; PBKDF2 iteration conformity; Worker lifecycle.
+- Integration
+  - Import/export progress/cancel/resume; large media attachments; recent vaults list.
+  - Backup toggle effects; biometric quick unlock with passphrase fallback.
+  - Vault Health detect/repair paths.
+- E2E (Device)
+  - Unlock perf budgets; capture → save → reopen; kill mid-write and verify recovery.
+  - Low storage preflight; PWA eviction warning cadence; accessibility checks.
+
+### Project Status Board — Mobile v1 (Sequenced)
+- [ ] T0 Adapter interface and codebase routing
+- [ ] T1 PWA_OPFS_Adapter complete with tests
+- [ ] T2 Crypto Worker/WASM + perf harness (Gate A)
+- [ ] T3 Capacitor scaffold + asset resolver
+- [ ] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B)
+- [ ] T5 Chaos/low-space harness; pass criteria
+- [ ] T6 Backup exclusion UI + native flags + education (Gate C)
+- [ ] T7 Biometrics + privileged gating
+- [ ] T8 Vault Health self-check + repair UX
+- [ ] T9 PWA iOS banners + export cadence
+- [ ] T10 Accessibility AA pass
+- [ ] T11 Store readiness (Gate D)
+
+### Notes for Executor
+- Keep edits surgical; do not alter vault format.
+- Feature-flag new adapters; enable per environment detection.
+- Prefer progressive enhancement; always maintain passphrase path and local-only operation.
