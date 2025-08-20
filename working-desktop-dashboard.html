@@ -4319,23 +4319,26 @@
       async openPersonSummaryModal(person) {
         console.log('👤 Opening person summary modal for:', person.name);
         
-        // Find memories connected to this person
-        const allMemories = [];
-        Object.keys(this.constellationMemories).forEach(theme => {
-          this.constellationMemories[theme].forEach(memory => {
-            allMemories.push({ ...memory, theme });
-          });
+        // Get all memories from vault to find real connections
+        let allMemories = [];
+        try {
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            allMemories = await window.emmaWebVault.listMemories(1000);
+            console.log('👤 SUMMARY: Loaded memories for connection check:', allMemories.length);
+          }
+        } catch (error) {
+          console.error('👤 SUMMARY: Error loading memories:', error);
+        }
+        
+        // Find memories that have this person in their metadata.people array
+        const connectedMemories = allMemories.filter(memory => {
+          const peopleInMemory = memory.metadata?.people || [];
+          const isConnected = peopleInMemory.includes(person.id);
+          console.log(`👤 SUMMARY: Memory "${memory.metadata?.title || memory.id}" connected to ${person.name}:`, isConnected);
+          return isConnected;
         });
         
-        // Find memories that mention this person or are tagged with them
-        const connectedMemories = allMemories.filter(memory => {
-          const content = (memory.content || '').toLowerCase();
-          const title = (memory.title || '').toLowerCase();
-          const personName = person.name.toLowerCase();
-          
-          // Check if person's name is mentioned in content or title
-          return content.includes(personName) || title.includes(personName);
-        });
+        console.log('👤 SUMMARY: Found connected memories:', connectedMemories.length);
         
         // Create modal HTML
         const modalHTML = `
@@ -4358,17 +4361,25 @@
                 <h3 class="summary-section-title">Connected Memories</h3>
                 <div class="connected-memories">
                   ${connectedMemories.length > 0 ? 
-                    connectedMemories.map(memory => `
-                      <div class="connected-memory-item" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')">
-                        <div class="memory-preview">
-                          ${memory.thumbnail ? `<img src="${memory.thumbnail}" alt="Memory">` : '💝'}
+                    connectedMemories.map(memory => {
+                      // Get thumbnail from attachments or fallback
+                      const thumbnail = memory.thumbnail || 
+                                       (memory.attachments && memory.attachments.length > 0 && memory.attachments[0].url ? memory.attachments[0].url : null);
+                      const memoryTitle = memory.metadata?.title || memory.title || memory.subject || 'Untitled Memory';
+                      const memoryDate = memory.created || memory.date || memory.timestamp;
+                      
+                      return `
+                        <div class="connected-memory-item" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')">
+                          <div class="memory-preview">
+                            ${thumbnail ? `<img src="${thumbnail}" alt="Memory">` : '💝'}
+                          </div>
+                          <div class="memory-info">
+                            <div class="memory-title">${memoryTitle}</div>
+                            <div class="memory-date">${memoryDate ? new Date(memoryDate).toLocaleDateString() : 'Unknown date'}</div>
+                          </div>
                         </div>
-                        <div class="memory-info">
-                          <div class="memory-title">${memory.title || 'Untitled Memory'}</div>
-                          <div class="memory-date">${new Date(memory.date || memory.timestamp).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-                    `).join('') :
+                      `;
+                    }).join('') :
                     '<div class="no-memories">No connected memories yet</div>'
                   }
                 </div>
@@ -4395,8 +4406,10 @@
         window.memoryConstellation = this;
         
         // Load avatar if available - CRITICAL for showing person's image
-        if (person.avatarId) {
+        if (person.avatarUrl) {
           this.loadAvatarForSummary(person);
+        } else {
+          console.log('👤 SUMMARY: No avatarUrl for person:', person.name);
         }
         
         // Show modal with animation
@@ -4407,14 +4420,14 @@
       
       async loadAvatarForSummary(person) {
         try {
-          console.log('📷 SUMMARY: Loading avatar for person:', person.name, 'Avatar ID:', person.avatarId);
+          console.log('📷 SUMMARY: Loading avatar for person:', person.name, 'avatarUrl:', !!person.avatarUrl);
           
-          const avatarResult = await window.emmaAPI.vault.attachment.get(person.avatarId);
-          if (avatarResult && avatarResult.success && avatarResult.dataUrl) {
+          // FIXED: Use avatarUrl directly (same as constellation nodes and people page)
+          if (person.avatarUrl) {
             const avatarElement = document.getElementById('person-summary-avatar');
             if (avatarElement) {
-              console.log('📷 SUMMARY: Successfully loaded avatar, updating display');
-              avatarElement.innerHTML = `<img src="${avatarResult.dataUrl}" alt="${person.name}" style="
+              console.log('📷 SUMMARY: Using avatarUrl for display');
+              avatarElement.innerHTML = `<img src="${person.avatarUrl}" alt="${person.name}" style="
                 width: 100%; 
                 height: 100%; 
                 object-fit: cover; 
@@ -4423,11 +4436,12 @@
                 top: 0;
                 left: 0;
               ">`;
+              console.log('📷 SUMMARY: Successfully loaded avatar for:', person.name);
             } else {
               console.error('📷 SUMMARY: Avatar element not found in DOM');
             }
           } else {
-            console.warn('📷 SUMMARY: No avatar data returned for:', person.name);
+            console.warn('📷 SUMMARY: No avatarUrl available for:', person.name);
           }
         } catch (error) {
           console.error('📷 SUMMARY: Error loading avatar for:', person.name, error);
@@ -4447,9 +4461,28 @@
         window.location.href = `dashboard-new.html?createMemory=true&person=${personId}`;
       }
       
-      openMemoryFromPerson(memoryId) {
+      async openMemoryFromPerson(memoryId) {
+        console.log('💝 Opening memory from person summary:', memoryId);
         this.closePersonSummaryModal();
-        this.openMemoryDialog(this.constellationMemories.find(m => m.id === memoryId));
+        
+        // Find the memory in our loaded memories
+        try {
+          let allMemories = [];
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            allMemories = await window.emmaWebVault.listMemories(1000);
+          }
+          
+          const memory = allMemories.find(m => m.id === memoryId);
+          if (memory) {
+            this.openMemoryDialog(memory);
+          } else {
+            console.error('💝 Memory not found:', memoryId);
+            this.showToast('❌ Memory not found', 'error');
+          }
+        } catch (error) {
+          console.error('💝 Error opening memory from person:', error);
+          this.showToast('❌ Error opening memory', 'error');
+        }
       }
 
       // Get relation-specific colors for people nodes
