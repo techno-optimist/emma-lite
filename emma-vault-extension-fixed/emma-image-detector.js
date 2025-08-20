@@ -572,4 +572,7 @@ class EmmaImageDetector {
 }
 
 // Export for use in content script
-window.EmmaImageDetector = EmmaImageDetector;
+if (typeof window !== 'undefined') {
+  window.EmmaImageDetector = EmmaImageDetector;
+  console.log('🖼️ EmmaImageDetector class exported to window');
+}

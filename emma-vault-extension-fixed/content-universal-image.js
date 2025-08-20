@@ -17,15 +17,32 @@ async function initializeImageDetector() {
     // Load the image detector module if not already loaded
     if (!window.EmmaImageDetector) {
       try {
+        console.log('🖼️ EmmaImageDetector not found, loading module...');
         // Dynamically load the image detector
         await loadImageDetectorModule();
+        
+        // Check if it loaded properly
+        if (!window.EmmaImageDetector) {
+          throw new Error('EmmaImageDetector class not found after loading module');
+        }
+        
+        console.log('🖼️ EmmaImageDetector type:', typeof window.EmmaImageDetector);
+        console.log('🖼️ EmmaImageDetector constructor:', window.EmmaImageDetector.constructor);
+        
       } catch (error) {
         console.error('🖼️ Failed to load image detector module:', error);
         return null;
       }
     }
     
-    emmaImageDetector = new window.EmmaImageDetector();
+    try {
+      console.log('🖼️ Creating new EmmaImageDetector instance...');
+      emmaImageDetector = new window.EmmaImageDetector();
+      console.log('🖼️ EmmaImageDetector instance created successfully');
+    } catch (error) {
+      console.error('🖼️ Failed to create EmmaImageDetector instance:', error);
+      return null;
+    }
   }
   
   return emmaImageDetector;
@@ -37,9 +54,18 @@ async function initializeImageDetector() {
 function loadImageDetectorModule() {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('emma-image-detector.js');
-    script.onload = resolve;
-    script.onerror = reject;
+    const scriptUrl = chrome.runtime.getURL('emma-image-detector.js');
+    console.log('🖼️ Loading image detector from:', scriptUrl);
+    
+    script.src = scriptUrl;
+    script.onload = () => {
+      console.log('🖼️ Image detector script loaded successfully');
+      resolve();
+    };
+    script.onerror = (error) => {
+      console.error('🖼️ Failed to load image detector script:', error);
+      reject(error);
+    };
     document.head.appendChild(script);
   });
 }
