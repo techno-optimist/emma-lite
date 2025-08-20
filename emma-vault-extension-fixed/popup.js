@@ -188,14 +188,30 @@ class EmmaVaultExtension {
       console.log('🔍 POPUP: Checking vault lock status:', {
         vaultFileName: storage.vaultFileName,
         vaultReady: storage.vaultReady,
-        isVaultOpen: this.isVaultOpen
+        isVaultOpen: this.isVaultOpen,
+        hasVaultData: !!this.vaultData,
+        memoryCount: this.vaultData?.content?.memories ? Object.keys(this.vaultData.content.memories).length : 0
       });
       
-      // CORRECT LOGIC: Only show unlock overlay when vault file is loaded but locked
-      if (storage.vaultFileName && storage.vaultReady === false) {
-        console.log('🔒 POPUP: Vault file loaded but LOCKED - showing unlock overlay');
-        this.showVaultUnlockOverlay(storage.vaultFileName);
-        return;
+      // CORRECT LOGIC: Show unlock overlay when vault file exists but data is inaccessible
+      if (storage.vaultFileName) {
+        // Check if we have actual vault data or just empty/encrypted data
+        const hasRealData = this.vaultData && 
+                           this.vaultData.content && 
+                           (Object.keys(this.vaultData.content.memories || {}).length > 0 || 
+                            Object.keys(this.vaultData.content.people || {}).length > 0);
+        
+        // If vault file exists but no accessible data, show unlock overlay
+        if (!hasRealData) {
+          console.log('🔒 POPUP: Vault file exists but no accessible data - showing unlock overlay');
+          console.log('🔒 POPUP: Vault data check:', {
+            hasVaultData: !!this.vaultData,
+            memoryCount: this.vaultData?.content?.memories ? Object.keys(this.vaultData.content.memories).length : 0,
+            peopleCount: this.vaultData?.content?.people ? Object.keys(this.vaultData.content.people).length : 0
+          });
+          this.showVaultUnlockOverlay(storage.vaultFileName);
+          return;
+        }
       }
       
       // CRITICAL: Hide unlock overlay in all other cases
