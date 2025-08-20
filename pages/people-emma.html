@@ -1662,23 +1662,16 @@
       const createdDate = new Date(person.createdAt).toLocaleDateString();
       document.getElementById('person-created-date').textContent = createdDate;
       
-      // Load avatar for detail view
+      // Load avatar for detail view - SAME LOGIC AS PERSON CARDS
       const detailAvatar = document.getElementById('person-detail-avatar');
       detailAvatar.className = `person-detail-avatar ${person.relation || 'other'}`;
       
-      if (person.avatarId) {
-        try {
-          const avatarResult = await window.emmaAPI.vault.attachment.get(person.avatarId);
-          if (avatarResult && avatarResult.success && avatarResult.dataUrl) {
-            detailAvatar.innerHTML = `<img src="${avatarResult.dataUrl}" alt="${person.name} avatar">`;
-          } else {
-            detailAvatar.innerHTML = `<div class="avatar-placeholder"><div class="avatar-icon">${person.name.charAt(0).toUpperCase()}</div></div>`;
-          }
-        } catch (error) {
-          console.error('Failed to load avatar for detail view:', error);
-          detailAvatar.innerHTML = `<div class="avatar-placeholder"><div class="avatar-icon">${person.name.charAt(0).toUpperCase()}</div></div>`;
-        }
+      // Use the same logic as createPersonCard - prefer avatarUrl from extension
+      if (person.avatarUrl) {
+        console.log('📷 DETAIL: Using avatarUrl for person:', person.name);
+        detailAvatar.innerHTML = `<img src="${person.avatarUrl}" alt="${person.name} avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
       } else {
+        console.log('📷 DETAIL: No avatarUrl found for person:', person.name);
         detailAvatar.innerHTML = `<div class="avatar-placeholder"><div class="avatar-icon">${person.name.charAt(0).toUpperCase()}</div></div>`;
       }
       
