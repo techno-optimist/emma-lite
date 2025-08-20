@@ -103,7 +103,7 @@ class WebVaultStatus {
   
   // Periodic sync to ensure vault status stays consistent
   setupPeriodicSync() {
-    // Check vault status every 2 seconds to catch any inconsistencies
+    // CRITICAL FIX: More frequent checks to catch service worker restarts
     setInterval(() => {
       const sessionActive = sessionStorage.getItem('emmaVaultActive') === 'true';
       const sessionName = sessionStorage.getItem('emmaVaultName');
@@ -115,16 +115,23 @@ class WebVaultStatus {
       const currentActive = sessionActive || localActive;
       const currentName = sessionName || localName;
       
-      // Restore sessionStorage if missing but localStorage has vault
+      // CRITICAL FIX: Always restore sessionStorage from localStorage if localStorage has vault
       if (localActive && !sessionActive) {
-        console.log('🔧 WebVaultStatus: Auto-restoring sessionStorage from localStorage');
+        console.log('🔧 WebVaultStatus: Auto-restoring sessionStorage from localStorage (likely service worker restart)');
         sessionStorage.setItem('emmaVaultActive', 'true');
         sessionStorage.setItem('emmaVaultName', localName || 'Extension Vault');
+        
+        // Also restore EmmaWebVault state if it exists
+        if (window.emmaWebVault && !window.emmaWebVault.isOpen) {
+          console.log('🔧 WebVaultStatus: Also restoring EmmaWebVault.isOpen state');
+          window.emmaWebVault.isOpen = true;
+          window.emmaWebVault.extensionAvailable = true;
+        }
       }
       
       // Check if status is out of sync
       if (currentActive && !this.status.isUnlocked) {
-        console.log('🔧 WebVaultStatus: Detected vault should be unlocked - fixing status');
+        console.log('🔧 WebVaultStatus: Detected vault should be unlocked - fixing status (likely service worker restart)');
         this.status = {
           isUnlocked: true,
           hasVault: true,
@@ -142,7 +149,7 @@ class WebVaultStatus {
         window.currentVaultStatus = this.status;
         this.notifyStatusChange();
       }
-    }, 2000);
+    }, 1000); // More frequent checks (every 1 second) to catch service worker restarts faster
   }
 
   isUnlocked() {
