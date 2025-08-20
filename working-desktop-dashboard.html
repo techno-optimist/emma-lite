@@ -2210,6 +2210,17 @@
             this.mouseY = e.touches[0].clientY;
           }
         }, { passive: true });
+        
+        // Handle window resize for responsive repositioning
+        window.addEventListener('resize', () => {
+          // Debounce resize events
+          clearTimeout(this.resizeTimeout);
+          this.resizeTimeout = setTimeout(() => {
+            if (this.isMenuOpen || this.isConstellationMode) {
+              this.repositionNodesOnResize();
+            }
+          }, 250);
+        });
       }
       
       // Extract proximity effects to separate method for reuse
@@ -2298,18 +2309,6 @@
         
         console.log('🔄 Nodes repositioned for', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop', 'layout');
       }
-
-        
-        // Handle window resize for responsive repositioning
-        window.addEventListener('resize', () => {
-          // Debounce resize events
-          clearTimeout(this.resizeTimeout);
-          this.resizeTimeout = setTimeout(() => {
-            if (this.isMenuOpen || this.isConstellationMode) {
-              this.repositionNodesOnResize();
-            }
-          }, 250);
-        });
         
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
