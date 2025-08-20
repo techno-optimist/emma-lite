@@ -1028,7 +1028,11 @@ class EmmaWebVault {
       sessionStorage.removeItem('emmaVaultActive');
       sessionStorage.removeItem('emmaVaultPassphrase');
       sessionStorage.removeItem('emmaVaultOriginalFileName');
-      // No session expiry to remove - sessions persist until manual lock
+      
+      // CRITICAL FIX: Also clear localStorage backup
+      localStorage.removeItem('emmaVaultActive');
+      localStorage.removeItem('emmaVaultName');
+      console.log('🔒 LOCKDOWN: Cleared both sessionStorage AND localStorage vault state');
       
       console.log('✅ DIRECT-SAVE: Vault locked successfully');
       return { success: true };
@@ -1819,6 +1823,11 @@ class EmmaWebVault {
           // Update web app status to show vault is ready
           sessionStorage.setItem('emmaVaultActive', 'true');
           sessionStorage.setItem('emmaVaultName', message.data.vaultName || 'Extension Vault');
+          
+          // CRITICAL FIX: Also use localStorage as backup (survives tab close/reopen)
+          localStorage.setItem('emmaVaultActive', 'true');
+          localStorage.setItem('emmaVaultName', message.data.vaultName || 'Extension Vault');
+          console.log('🔧 BACKUP: Also set localStorage for vault persistence across tab restarts');
           
           // Notify dashboard that vault is ready
           window.dispatchEvent(new CustomEvent('extension-vault-ready', {

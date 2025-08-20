@@ -17,15 +17,10 @@ export class Keyring {
     }
     
     // Check session unlock
-    if (this.sessionUnlocked && this.sessionExpiresAt) {
-      if (Date.now() < this.sessionExpiresAt) {
-        return true;
-      } else {
-        // Session expired, clear session unlock
-        this.sessionUnlocked = false;
-        this.sessionExpiresAt = null;
-        console.log('🔐 Keyring: Session expired, vault locked');
-      }
+    // CRITICAL FIX: Remove session expiry check - sessions persist until manual lock
+    if (this.sessionUnlocked) {
+      console.log('🔐 Keyring: Session unlock active (no expiry - user controlled)');
+      return true;
     }
     
     return false;
@@ -36,7 +31,7 @@ export class Keyring {
     this.unlockedAt = 0;
     // Clear session unlock
     this.sessionUnlocked = false;
-    this.sessionExpiresAt = null;
+    // No expiry tracking needed - user controlled locking
   }
 
   async ensureSettings() {

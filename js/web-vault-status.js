@@ -13,9 +13,24 @@ class WebVaultStatus {
   }
 
   initialize() {
-    // Check if vault is active from session storage
-    const vaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
-    const vaultName = sessionStorage.getItem('emmaVaultName');
+    // CRITICAL FIX: Check both sessionStorage AND localStorage for vault status
+    // localStorage survives tab close/reopen, sessionStorage doesn't
+    const sessionVaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+    const sessionVaultName = sessionStorage.getItem('emmaVaultName');
+    
+    const localVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+    const localVaultName = localStorage.getItem('emmaVaultName');
+    
+    // Use sessionStorage first, fallback to localStorage
+    const vaultActive = sessionVaultActive || localVaultActive;
+    const vaultName = sessionVaultName || localVaultName;
+    
+    // If localStorage has vault but sessionStorage doesn't, restore sessionStorage
+    if (localVaultActive && !sessionVaultActive) {
+      console.log('🔧 WebVaultStatus: Restoring sessionStorage from localStorage backup');
+      sessionStorage.setItem('emmaVaultActive', 'true');
+      sessionStorage.setItem('emmaVaultName', localVaultName || 'Extension Vault');
+    }
     
     if (vaultActive && vaultName) {
       // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
@@ -90,8 +105,22 @@ class WebVaultStatus {
   setupPeriodicSync() {
     // Check vault status every 2 seconds to catch any inconsistencies
     setInterval(() => {
-      const currentActive = sessionStorage.getItem('emmaVaultActive') === 'true';
-      const currentName = sessionStorage.getItem('emmaVaultName');
+      const sessionActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+      const sessionName = sessionStorage.getItem('emmaVaultName');
+      
+      const localActive = localStorage.getItem('emmaVaultActive') === 'true';
+      const localName = localStorage.getItem('emmaVaultName');
+      
+      // Use either storage as source of truth
+      const currentActive = sessionActive || localActive;
+      const currentName = sessionName || localName;
+      
+      // Restore sessionStorage if missing but localStorage has vault
+      if (localActive && !sessionActive) {
+        console.log('🔧 WebVaultStatus: Auto-restoring sessionStorage from localStorage');
+        sessionStorage.setItem('emmaVaultActive', 'true');
+        sessionStorage.setItem('emmaVaultName', localName || 'Extension Vault');
+      }
       
       // Check if status is out of sync
       if (currentActive && !this.status.isUnlocked) {
