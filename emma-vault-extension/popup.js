@@ -440,6 +440,17 @@ class EmmaVaultExtension {
       this.vaultData = vaultData;
       this.isVaultOpen = true;
       
+      // CRITICAL FIX: Send vault data to background script for in-memory storage
+      try {
+        await chrome.runtime.sendMessage({ 
+          action: 'VAULT_LOAD', 
+          data: vaultData 
+        });
+        console.log('✅ Vault data loaded into background script memory');
+      } catch (error) {
+        console.error('❌ Failed to load vault data into background:', error);
+      }
+      
       // SECURITY: Do NOT persist plaintext vault data in extension storage. Keep in-memory only.
       // Mark readiness via minimal metadata; actual content remains in this popup's memory.
       await chrome.storage.local.set({
@@ -558,6 +569,17 @@ class EmmaVaultExtension {
       
       this.vaultData = vaultData;
       this.isVaultOpen = true;
+      
+      // CRITICAL FIX: Send vault data to background script for in-memory storage
+      try {
+        await chrome.runtime.sendMessage({ 
+          action: 'VAULT_LOAD', 
+          data: vaultData 
+        });
+        console.log('✅ Vault data loaded into background script memory (fallback mode)');
+      } catch (error) {
+        console.error('❌ Failed to load vault data into background:', error);
+      }
       
       // Add to recent vaults
       this.addToRecentVaults({
@@ -929,6 +951,17 @@ class EmmaVaultExtension {
 
       this.vaultData = vaultData;
       this.isVaultOpen = true;
+      
+      // CRITICAL FIX: Send vault data to background script for in-memory storage
+      try {
+        await chrome.runtime.sendMessage({ 
+          action: 'VAULT_LOAD', 
+          data: vaultData 
+        });
+        console.log('✅ Vault data loaded into background script memory (create vault)');
+      } catch (error) {
+        console.error('❌ Failed to load vault data into background:', error);
+      }
       
       // SECURITY: Do NOT persist plaintext vault data in extension storage.
       await chrome.storage.local.set({
