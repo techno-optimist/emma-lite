@@ -4610,12 +4610,42 @@
         // Create memory dialog modal
         const memoryDialog = document.createElement('div');
         memoryDialog.className = 'memory-dialog-overlay';
-        const formattedDate = memory.date ? new Date(memory.date).toLocaleDateString('en-US', { 
+        
+        // FIXED: Better date handling for extension data
+        const memoryDate = memory.created || memory.date || memory.timestamp;
+        const formattedDate = memoryDate ? new Date(memoryDate).toLocaleDateString('en-US', { 
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
         }) : 'Unknown date';
         
-        const thumbnail = memory.thumbnail || this.generateMemoryThumbnail(memory.category || memory.theme || 'special');
-        const mediaItems = memory.mediaItems || [];
+        // FIXED: Better title extraction
+        const memoryTitle = memory.metadata?.title || memory.title || memory.subject || memory.summary || 'Untitled Memory';
+        
+        // FIXED: Better content extraction
+        const memoryContent = memory.content || memory.description || memory.details || 'This precious memory is stored in your vault...';
+        
+        // FIXED: Handle attachments from extension
+        const mediaItems = memory.attachments || memory.mediaItems || [];
+        
+        // FIXED: Better thumbnail handling
+        const thumbnail = memory.thumbnail || 
+                          (mediaItems.length > 0 && mediaItems[0].url ? mediaItems[0].url : null) ||
+                          this.generateMemoryThumbnail(memory.category || memory.theme || 'special');
+        
+        // Style the overlay
+        memoryDialog.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        `;
         
         memoryDialog.innerHTML = `
           <div class="memory-dialog" style="
@@ -4629,6 +4659,8 @@
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 0;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
           ">
             <div class="memory-dialog-header" style="
               padding: 24px 32px 16px 32px;
@@ -4637,7 +4669,7 @@
               justify-content: space-between;
               align-items: center;
             ">
-              <h2 style="color: white; margin: 0; font-size: 24px;">${this.sanitizeTitle(memory.title)}</h2>
+              <h2 style="color: white; margin: 0; font-size: 24px;">${this.sanitizeTitle(memoryTitle)}</h2>
               <button onclick="dashboard.closeMemoryDialog()" style="
                 background: none;
                 border: none;
@@ -4666,9 +4698,15 @@
                   justify-content: center;
                   font-size: 24px;
                   border: 2px solid rgba(134, 88, 255, 0.3);
-                ">${thumbnail}</div>
+                  overflow: hidden;
+                  ${thumbnail && thumbnail.startsWith('data:') ? `
+                    background-image: url('${thumbnail}');
+                    background-size: cover;
+                    background-position: center;
+                  ` : ''}
+                ">${thumbnail && !thumbnail.startsWith('data:') ? thumbnail : ''}</div>
                 <div>
-                  <h3 style="color: white; margin: 0 0 8px 0; font-size: 20px;">${this.sanitizeTitle(memory.title)}</h3>
+                  <h3 style="color: white; margin: 0 0 8px 0; font-size: 20px;">${this.sanitizeTitle(memoryTitle)}</h3>
                   <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px;">
                     <span>${formattedDate}</span>
                     ${memory.category ? ` • <span style="
@@ -4692,26 +4730,29 @@
                 border-radius: 12px;
                 border-left: 4px solid rgba(134, 88, 255, 0.5);
               ">
-                ${memory.content || memory.description || 'This is a precious memory from your vault...'}
+                ${memoryContent}
               </div>
               
-              ${memory.tags && memory.tags.length > 0 ? `
-                <div class="memory-tags" style="margin-bottom: 24px;">
-                  <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-bottom: 8px;">Tags:</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    ${memory.tags.map(tag => `
-                      <span style="
-                        background: rgba(134, 88, 255, 0.2);
-                        color: rgba(255, 255, 255, 0.9);
-                        padding: 4px 12px;
-                        border-radius: 16px;
-                        font-size: 12px;
-                        border: 1px solid rgba(134, 88, 255, 0.3);
-                      ">#${tag}</span>
-                    `).join('')}
+              ${(() => {
+                const tags = memory.metadata?.tags || memory.tags || [];
+                return tags && tags.length > 0 ? `
+                  <div class="memory-tags" style="margin-bottom: 24px;">
+                    <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-bottom: 8px;">Tags:</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      ${tags.map(tag => `
+                        <span style="
+                          background: rgba(134, 88, 255, 0.2);
+                          color: rgba(255, 255, 255, 0.9);
+                          padding: 4px 12px;
+                          border-radius: 16px;
+                          font-size: 12px;
+                          border: 1px solid rgba(134, 88, 255, 0.3);
+                        ">#${tag}</span>
+                      `).join('')}
+                    </div>
                   </div>
-                </div>
-              ` : ''}
+                ` : '';
+              })()}
               
               ${mediaItems.length > 0 ? `
                 <div class="memory-media" style="margin-bottom: 24px;">
@@ -4842,6 +4883,10 @@
         // Animate in
         requestAnimationFrame(() => {
           memoryDialog.style.opacity = '1';
+          const dialogEl = memoryDialog.querySelector('.memory-dialog');
+          if (dialogEl) {
+            dialogEl.style.transform = 'scale(1)';
+          }
         });
         
         // Close on outside click
