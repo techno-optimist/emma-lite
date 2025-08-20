@@ -125,6 +125,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
+ * Normalize incoming media data to base64-only string
+ */
+function toBase64Payload(data) {
+  if (!data) return '';
+  // If already a data URL, strip the header and keep only base64 payload
+  if (typeof data === 'string' && data.startsWith('data:')) {
+    const commaIndex = data.indexOf(',');
+    return commaIndex !== -1 ? data.substring(commaIndex + 1) : data;
+  }
+  // Otherwise, assume it's already base64 payload
+  return data;
+}
+
+/**
  * Handle vault update from Emma Web App
  */
 async function handleVaultUpdate(vaultData, tabId) {
@@ -416,7 +430,8 @@ async function handleSaveMemoryToVault(memoryData) {
         name: attachment.name,
         type: attachment.type,
         size: attachment.size || 0,
-        data: attachment.data // Base64 data
+        // Always store base64 payload only (strip data URL prefix if present)
+        data: toBase64Payload(attachment.data)
       };
       
       // Add to vault media
@@ -558,7 +573,8 @@ async function handleSaveMediaToVault(mediaData) {
       name: mediaData.name,
       type: mediaData.type,
       size: mediaData.size || 0,
-      data: mediaData.data // Base64 data
+      // Always store base64 payload only (strip data URL prefix if present)
+      data: toBase64Payload(mediaData.data)
     };
     
     // Add to vault
@@ -630,7 +646,10 @@ async function getPeopleData() {
       if (!avatarUrl && person.avatarId && media[person.avatarId]) {
         const mediaItem = media[person.avatarId];
         if (mediaItem && mediaItem.data) {
-          avatarUrl = `data:${mediaItem.type};base64,${mediaItem.data}`;
+          // If stored data is already a data URL, use as-is; otherwise construct one
+          avatarUrl = mediaItem.data.startsWith('data:')
+            ? mediaItem.data
+            : `data:${mediaItem.type};base64,${mediaItem.data}`;
           console.log(`👥 AVATAR: Reconstructed avatar URL for ${person.name}`);
         }
       }
@@ -667,8 +686,12 @@ async function getMemoriesData() {
           // Create data URL from stored base64 data
           return {
             ...attachment,
-            url: `data:${mediaItem.type};base64,${mediaItem.data}`,
-            dataUrl: `data:${mediaItem.type};base64,${mediaItem.data}`,
+            url: mediaItem.data.startsWith('data:')
+              ? mediaItem.data
+              : `data:${mediaItem.type};base64,${mediaItem.data}`,
+            dataUrl: mediaItem.data.startsWith('data:')
+              ? mediaItem.data
+              : `data:${mediaItem.type};base64,${mediaItem.data}`,
             isPersisted: true,
             vaultId: attachment.id
           };

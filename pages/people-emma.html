@@ -1258,8 +1258,18 @@
       // Start with letter, then try to load avatar
       avatar.textContent = person.name.charAt(0).toUpperCase();
       
-      // If person has an avatar ID, fetch it from vault
-      if (person.avatarId) {
+      // Prefer direct avatarUrl provided by extension (already reconstructed)
+      if (person.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = person.avatarUrl;
+        img.alt = `${person.name} avatar`;
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+        img.onload = () => {
+          avatar.innerHTML = '';
+          avatar.appendChild(img);
+        };
+      // If person has an avatar ID, fetch it from legacy API as fallback
+      } else if (person.avatarId) {
         try {
           console.log('📷 AVATAR: Loading avatar for person:', person.name, 'ID:', person.avatarId);
           
