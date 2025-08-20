@@ -2552,9 +2552,14 @@
             }
           }
           
-          // Update node positions with organic movement
+          // Update node positions with organic movement (only for visible nodes)
           const time = Date.now() * 0.001;
           this.nodes.forEach((node, i) => {
+            // CRITICAL FIX: Only animate visible nodes
+            const nodeElement = node.element || document.getElementById(node.id);
+            if (!nodeElement || nodeElement.style.display === 'none') {
+              return; // Skip animation for hidden nodes
+            }
             // Gentle organic floating movement (petri dish feel)
             const floatX = Math.sin(time * 0.3 + i) * 12;
             const floatY = Math.cos(time * 0.2 + i * 0.5) * 8;
@@ -2594,6 +2599,11 @@
             if (this.isConstellationMode) {
               this.nodes.forEach((otherNode, j) => {
                 if (i !== j) {
+                  // CRITICAL FIX: Only calculate repulsion with visible nodes
+                  const otherElement = otherNode.element || document.getElementById(otherNode.id);
+                  if (!otherElement || otherElement.style.display === 'none') {
+                    return; // Skip repulsion with hidden nodes
+                  }
                   const nodeDx = node.x - otherNode.x;
                   const nodeDy = node.y - otherNode.y;
                   const nodeDist = Math.sqrt(nodeDx * nodeDx + nodeDy * nodeDy);
@@ -2623,9 +2633,21 @@
             node.element.style.top = node.y - 45 + 'px';
           });
           
-          // Draw connections with gradients
+          // Draw connections with gradients (only between visible nodes)
           this.nodes.forEach(node => {
+            // CRITICAL FIX: Check if source node is visible before drawing connections
+            const sourceElement = node.element || document.getElementById(node.id);
+            if (!sourceElement || sourceElement.style.display === 'none') {
+              return; // Skip connections from hidden nodes
+            }
+            
             node.connections.forEach(target => {
+              // CRITICAL FIX: Check if target node is visible before drawing connection
+              const targetElement = target.element || document.getElementById(target.id);
+              if (!targetElement || targetElement.style.display === 'none') {
+                return; // Skip connections to hidden nodes
+              }
+              
               // Check if line would pass through Emma orb area - if so, skip drawing
               const centerX = window.innerWidth / 2;
               const centerY = window.innerHeight / 2;
@@ -5181,27 +5203,10 @@
           }
         });
         
-        // Update neural network connections
-        this.updateNeuralConnections();
+        // Neural connections now update automatically in animation loop based on node visibility
       }
       
-      // Update neural network connections based on visible nodes
-      updateNeuralConnections() {
-        // Force redraw of neural network with current visible nodes
-        if (this.neuralCtx && this.isConstellationMode) {
-          // Clear and redraw connections
-          this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
-          
-          // Get visible nodes
-          const visibleNodes = this.nodes.filter(node => {
-            const element = document.getElementById(node.id);
-            return element && element.style.display !== 'none';
-          });
-          
-          // Redraw connections between visible nodes
-          this.drawNeuralConnections(visibleNodes);
-        }
-      }
+      // Neural connections now handled automatically in main animation loop
       
       // Update constellation counts in the menu
       updateConstellationCounts() {
