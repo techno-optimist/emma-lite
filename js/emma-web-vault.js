@@ -856,6 +856,19 @@ class EmmaWebVault {
   getStats() {
     if (!this.isOpen) return null;
     
+    // CRITICAL FIX: Handle case where vault is open but data not loaded yet
+    if (!this.vaultData || !this.vaultData.stats) {
+      console.log('⚠️ STATS: Vault is open but data not loaded - returning empty stats');
+      return {
+        memoryCount: 0,
+        peopleCount: 0,
+        mediaCount: 0,
+        isOpen: true,
+        name: 'Loading...',
+        created: null
+      };
+    }
+    
     return {
       ...this.vaultData.stats,
       isOpen: true,

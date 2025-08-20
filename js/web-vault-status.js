@@ -170,6 +170,12 @@ class WebVaultStatus {
           window.emmaWebVault.isOpen = true;
           window.emmaWebVault.extensionAvailable = true;
           console.log('🚨 NUCLEAR: Forced EmmaWebVault.isOpen = true');
+          
+          // CRITICAL: Also try to restore vault data if missing
+          if (!window.emmaWebVault.vaultData) {
+            console.log('🚨 NUCLEAR: Vault data missing - attempting to restore from IndexedDB or request from extension');
+            this.attemptDataRestoration();
+          }
         }
         
         // Force WebVaultStatus
@@ -206,6 +212,60 @@ class WebVaultStatus {
         this.notifyStatusChange();
       }
     }, 1000); // More frequent checks (every 1 second) to catch service worker restarts faster
+  }
+  
+  // Attempt to restore vault data when status is unlocked but data is missing
+  attemptDataRestoration() {
+    // Try multiple restoration methods
+    
+    // Method 1: Restore from IndexedDB
+    if (window.emmaWebVault && window.emmaWebVault.restoreVaultState) {
+      console.log('🔧 DATA RESTORE: Attempting IndexedDB restoration...');
+      window.emmaWebVault.restoreVaultState().then(result => {
+        if (result && result.vaultData) {
+          console.log('✅ DATA RESTORE: Successfully restored vault data from IndexedDB');
+        } else {
+          console.log('⚠️ DATA RESTORE: IndexedDB restoration failed, trying extension request...');
+          this.requestDataFromExtension();
+        }
+      }).catch(error => {
+        console.error('❌ DATA RESTORE: IndexedDB restoration error:', error);
+        this.requestDataFromExtension();
+      });
+    } else {
+      this.requestDataFromExtension();
+    }
+  }
+  
+  // Request vault data from extension
+  requestDataFromExtension() {
+    console.log('🔧 DATA RESTORE: Requesting vault data from extension...');
+    
+    // Send message to extension to get current vault data
+    window.postMessage({
+      channel: 'emma-vault-bridge',
+      type: 'REQUEST_VAULT_DATA'
+    }, window.location.origin);
+    
+    // Set up timeout fallback
+    setTimeout(() => {
+      if (window.emmaWebVault && !window.emmaWebVault.vaultData) {
+        console.log('⚠️ DATA RESTORE: Extension data request timeout - creating minimal data');
+        this.createMinimalVaultData();
+      }
+    }, 3000);
+  }
+  
+  // Create minimal vault data structure as last resort
+  createMinimalVaultData() {
+    if (window.emmaWebVault) {
+      window.emmaWebVault.vaultData = {
+        content: { memories: {}, people: {}, media: {} },
+        stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
+        metadata: { name: localStorage.getItem('emmaVaultName') || 'Extension Vault' }
+      };
+      console.log('🔧 DATA RESTORE: Created minimal vault data structure');
+    }
   }
 
   isUnlocked() {
