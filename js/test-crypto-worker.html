@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Emma Crypto Worker Test</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
+      button { padding: 10px 14px; margin-right: 8px; }
+      pre { background: #111; color: #eee; padding: 12px; border-radius: 6px; max-width: 900px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Emma Crypto Worker Test</h1>
+    <div>
+      <button id="profile">Profile PBKDF2</button>
+      <button id="roundtrip">Encrypt/Decrypt Roundtrip</button>
+    </div>
+    <pre id="log"></pre>
+
+    <script src="./vault/crypto-worker-client.js"></script>
+    <script>
+      const logEl = document.getElementById('log');
+      function log(msg) { logEl.textContent += msg + '\n'; }
+      const client = new EmmaCryptoWorkerClient('./vault/crypto-worker.js');
+      const enc = new TextEncoder();
+      (function(){
+        document.getElementById('profile').onclick = async () => {
+          try {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const res = await client.profilePBKDF2('test-passphrase', salt, 250000);
+            log('PBKDF2 250k ms: ' + res.ms.toFixed(1));
+          } catch (e) { log('profile error: ' + e.message); }
+        };
+        document.getElementById('roundtrip').onclick = async () => {
+          try {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const { key } = await client.pbkdf2('test-passphrase', salt, 250000);
+            const pt = enc.encode('hello emma');
+            const { iv, ciphertext } = await client.encrypt(key, pt);
+            const { plaintext } = await client.decrypt(key, iv, ciphertext);
+            log('roundtrip ok: ' + new TextDecoder().decode(plaintext));
+          } catch (e) { log('roundtrip error: ' + e.message); }
+        };
+      })();
+    </script>
+  </body>
+  </html>
+
