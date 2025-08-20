@@ -2120,6 +2120,9 @@ class EmmaVaultExtension {
         throw new Error('No active tab found');
       }
       
+      // Persist active tab id for follow-up downloads
+      this.activeTabId = tab.id;
+
       // Update subtitle with page info
       this.elements.captureSubtitle.textContent = `Scanning ${tab.title || tab.url}...`;
       
@@ -2442,8 +2445,44 @@ class EmmaVaultExtension {
     try {
       console.log(`🖼️ Downloading image: ${imageUrl.substring(0, 100)}...`);
       
-      // Fetch the image
-      const response = await fetch(imageUrl);
+      // Prefer chrome.scripting execution to bypass cross-origin limits via the page context
+      if (this.activeTabId && chrome.scripting) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: this.activeTabId },
+            func: async (url) => {
+              try {
+                const res = await fetch(url, { credentials: 'include', mode: 'cors' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const mime = blob.type || 'image/jpeg';
+                const dataUrl = await new Promise((resolve, reject) => {
+                  const r = new FileReader();
+                  r.onload = () => resolve(r.result);
+                  r.onerror = reject;
+                  r.readAsDataURL(blob);
+                });
+                return { dataUrl, mimeType: mime, size: blob.size };
+              } catch (e) {
+                return { error: e?.message || 'page-fetch-failed' };
+              }
+            },
+            args: [imageUrl]
+          });
+          const value = results && results[0] && results[0].result;
+          if (value && !value.error) {
+            return { dataUrl: value.dataUrl, mimeType: value.mimeType, size: value.size };
+          }
+          if (value && value.error) {
+            console.warn('🖼️ Page-context fetch failed, falling back to extension fetch:', value.error);
+          }
+        } catch (scriptErr) {
+          console.warn('🖼️ Page-context fetch error, falling back:', scriptErr?.message || scriptErr);
+        }
+      }
+
+      // Fallback: Fetch from extension context (may hit CORS)
+      const response = await fetch(imageUrl, { credentials: 'include', mode: 'cors' });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
