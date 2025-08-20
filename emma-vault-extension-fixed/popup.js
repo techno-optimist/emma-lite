@@ -2335,26 +2335,63 @@ class EmmaVaultExtension {
     
     console.log(`🖼️ Creating memory capsule from ${this.selectedImages.size} selected images...`);
     
+    // Update UI to show processing
+    this.elements.captureSubtitle.textContent = 'Downloading and processing images...';
+    this.elements.createMemoryCapsuleBtn.disabled = true;
+    this.elements.createMemoryCapsuleBtn.textContent = 'Processing...';
+    
     try {
-      // Prepare selected images data
-      const selectedImagesData = Array.from(this.selectedImages).map(index => {
+      // Download and process selected images
+      const processedAttachments = [];
+      let successCount = 0;
+      
+      for (const index of this.selectedImages) {
         const image = this.detectedImages[index];
-        return {
-          url: image.url,
-          alt: image.alt,
-          title: image.title,
-          filename: image.filename,
-          width: image.width,
-          height: image.height,
-          context: image.context,
-          metadata: image.metadata
-        };
-      });
+        
+        try {
+          console.log(`🖼️ Processing image ${successCount + 1}/${this.selectedImages.size}: ${image.filename}`);
+          
+          // Update progress in UI
+          this.elements.captureSubtitle.textContent = `Downloading image ${successCount + 1} of ${this.selectedImages.size}...`;
+          
+          // Download the image and convert to base64
+          const imageData = await this.downloadImageAsBase64(image.url);
+          
+          if (imageData) {
+            processedAttachments.push({
+              type: imageData.mimeType,
+              name: image.filename || `image_${successCount + 1}.jpg`,
+              data: imageData.dataUrl,
+              size: imageData.size,
+              metadata: {
+                alt: image.alt,
+                title: image.title,
+                dimensions: image.width && image.height ? `${image.width}×${image.height}` : null,
+                sourceUrl: image.url,
+                context: image.context,
+                originalMetadata: image.metadata
+              }
+            });
+            successCount++;
+            
+            console.log(`🖼️ ✅ Successfully processed ${image.filename} (${(imageData.size / 1024).toFixed(1)}KB)`);
+          }
+        } catch (imageError) {
+          console.warn(`🖼️ ❌ Failed to download image ${image.filename}:`, imageError);
+          // Continue with other images
+        }
+      }
+      
+      if (processedAttachments.length === 0) {
+        throw new Error('No images could be downloaded successfully');
+      }
+      
+      console.log(`🖼️ Successfully processed ${processedAttachments.length} images`);
       
       // Create memory capsule data
       const memoryCapsule = {
         title: `Images from ${this.currentPageInfo.hostname}`,
-        content: `Captured ${this.selectedImages.size} images from ${this.currentPageInfo.title || this.currentPageInfo.url}`,
+        content: `Captured ${processedAttachments.length} images from ${this.currentPageInfo.title || this.currentPageInfo.url}`,
         type: 'image-collection',
         source: 'emma-image-capture',
         metadata: {
@@ -2362,21 +2399,13 @@ class EmmaVaultExtension {
           sourceTitle: this.currentPageInfo.title,
           sourceHostname: this.currentPageInfo.hostname,
           capturedAt: new Date().toISOString(),
-          imageCount: this.selectedImages.size
+          imageCount: processedAttachments.length,
+          originalSelectionCount: this.selectedImages.size
         },
-        attachments: selectedImagesData.map(image => ({
-          type: 'image',
-          url: image.url,
-          name: image.filename || 'image',
-          metadata: {
-            alt: image.alt,
-            title: image.title,
-            dimensions: image.width && image.height ? `${image.width}×${image.height}` : null,
-            context: image.context,
-            originalMetadata: image.metadata
-          }
-        }))
+        attachments: processedAttachments
       };
+      
+      console.log('🖼️ Sending memory capsule to vault:', memoryCapsule);
       
       // Send to background script for processing
       const response = await chrome.runtime.sendMessage({
@@ -2386,7 +2415,7 @@ class EmmaVaultExtension {
       
       if (response && response.success) {
         console.log('🖼️ Memory capsule created successfully:', response.memoryId);
-        this.showSuccessMessage(`Memory capsule created with ${this.selectedImages.size} images!`);
+        this.showSuccessMessage(`Memory capsule created with ${processedAttachments.length} images!`);
         
         // Go back to vault view after short delay
         setTimeout(() => {
@@ -2399,6 +2428,47 @@ class EmmaVaultExtension {
     } catch (error) {
       console.error('🖼️ Failed to create memory capsule:', error);
       this.showErrorMessage(`Failed to create memory capsule: ${error.message}`);
+    } finally {
+      // Reset UI
+      this.elements.createMemoryCapsuleBtn.disabled = false;
+      this.elements.createMemoryCapsuleBtn.innerHTML = '<span class="btn-icon">💾</span><span class="btn-text">Create Memory Capsule</span>';
+    }
+  }
+  
+  /**
+   * Download an image and convert to base64 data URL
+   */
+  async downloadImageAsBase64(imageUrl) {
+    try {
+      console.log(`🖼️ Downloading image: ${imageUrl.substring(0, 100)}...`);
+      
+      // Fetch the image
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      // Get the blob
+      const blob = await response.blob();
+      const mimeType = blob.type || 'image/jpeg';
+      
+      // Convert to base64
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            dataUrl: reader.result,
+            mimeType: mimeType,
+            size: blob.size
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      
+    } catch (error) {
+      console.error('🖼️ Failed to download image:', error);
+      throw error;
     }
   }
   
