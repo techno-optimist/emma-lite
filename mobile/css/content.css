@@ -1,0 +1,349 @@
+/* Emma Lite - Content Script Styles */
+
+/* Emma Brand Colors */
+:root {
+  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  --emma-purple: #764ba2;
+  --emma-pink: #f093fb;
+  --emma-dark: #1a1033;
+  --emma-glass: rgba(26, 16, 51, 0.9);
+  --emma-border: rgba(255, 255, 255, 0.1);
+  --emma-text: #ffffff;
+  --emma-text-secondary: rgba(255, 255, 255, 0.7);
+}
+
+/* Emma Capture Button (Floating) */
+.emma-capture-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: var(--emma-gradient-1);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(118, 75, 162, 0.4);
+  transition: all 0.3s ease;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.emma-capture-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(0);
+  border-radius: 50%;
+  transition: transform 0.6s ease;
+}
+
+.emma-capture-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(118, 75, 162, 0.5);
+}
+
+.emma-capture-button:hover::before {
+  transform: scale(1);
+}
+
+.emma-capture-button:active {
+  transform: translateY(-2px);
+}
+
+/* Emma Badge (Shows capture count) */
+.emma-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #f093fb;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(240, 147, 251, 0.4);
+}
+
+/* Emma Notification */
+.emma-notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  max-width: 360px;
+  background: var(--emma-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 16px;
+  padding: 20px;
+  color: var(--emma-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 12px 48px rgba(26, 16, 51, 0.6);
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 10000;
+}
+
+.emma-notification::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: var(--emma-gradient-1);
+  border-radius: 16px;
+  opacity: 0.5;
+  z-index: -1;
+  filter: blur(20px);
+}
+
+.emma-notification-show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.emma-notification-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.emma-notification-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--emma-gradient-1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.emma-notification-title {
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.emma-notification-message {
+  color: var(--emma-text-secondary);
+  margin-bottom: 16px;
+}
+
+.emma-notification-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.emma-notification-button {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--emma-border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: var(--emma-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.emma-notification-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.emma-notification-button-primary {
+  background: var(--emma-gradient-1);
+  border: none;
+  color: white;
+}
+
+.emma-notification-button-primary:hover {
+  box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4);
+}
+
+/* Emma Inline UI (Settings, Status) */
+.emma-inline-ui {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  width: 280px;
+  background: var(--emma-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--emma-border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 12px 48px rgba(26, 16, 51, 0.6);
+  transform: translateX(320px);
+  opacity: 0;
+  transition: all 0.4s ease;
+  z-index: 9998;
+}
+
+.emma-inline-ui-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.emma-inline-ui-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.emma-inline-ui-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--emma-text);
+}
+
+.emma-inline-ui-close {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--emma-text-secondary);
+  transition: all 0.3s ease;
+}
+
+.emma-inline-ui-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--emma-text);
+}
+
+/* Emma Stats Display */
+.emma-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.emma-stat {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--emma-border);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.emma-stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  background: var(--emma-gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+}
+
+.emma-stat-label {
+  font-size: 11px;
+  color: var(--emma-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Emma Progress Bar */
+.emma-progress {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.emma-progress-bar {
+  height: 100%;
+  background: var(--emma-gradient-1);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+/* Emma Loading Animation */
+.emma-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--emma-border);
+  border-top-color: var(--emma-purple);
+  border-radius: 50%;
+  animation: emma-spin 1s linear infinite;
+}
+
+@keyframes emma-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Emma Tooltip */
+.emma-tooltip {
+  position: absolute;
+  background: var(--emma-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--emma-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--emma-text);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.3s ease;
+  z-index: 10001;
+}
+
+.emma-tooltip-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Animations */
+@keyframes emma-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(118, 75, 162, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(118, 75, 162, 0);
+  }
+}
+
+.emma-pulse {
+  animation: emma-pulse 2s infinite;
+}
+
+/* Dark mode adjustments for light-themed sites */
+@media (prefers-color-scheme: light) {
+  .emma-notification,
+  .emma-inline-ui {
+    box-shadow: 0 12px 48px rgba(26, 16, 51, 0.8);
+  }
+}

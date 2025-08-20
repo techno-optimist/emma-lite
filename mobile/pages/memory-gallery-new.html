@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Memory Gallery - Emma</title>
+  <style>
+    /* Emma Brand Variables */
+    :root {
+      --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+      --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
+      --emma-purple: #764ba2;
+      --emma-pink: #f093fb;
+      --emma-dark: #1a1033;
+      --emma-card-bg: rgba(255, 255, 255, 0.05);
+      --emma-border: rgba(255, 255, 255, 0.1);
+      --emma-text: #ffffff;
+      --emma-text-secondary: rgba(255, 255, 255, 0.7);
+      --emma-text-tertiary: rgba(255, 255, 255, 0.5);
+      --emma-success: #4ade80;
+      --emma-error: #f87171;
+      --emma-warning: #fbbf24;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--emma-bg-gradient);
+      color: var(--emma-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.3) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 60%, rgba(118, 75, 162, 0.2) 0%, transparent 50%);
+      animation: float 20s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(-20px, -20px) rotate(180deg); }
+    }
+
+    /* Header */
+    .gallery-header {
+      text-align: center;
+      padding: 48px 20px 32px;
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 24px;
+      margin: 20px auto 40px;
+      max-width: 1200px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gallery-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--emma-gradient-1);
+    }
+
+    .header-title {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .header-subtitle {
+      font-size: 18px;
+      color: var(--emma-text-secondary);
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      margin-bottom: 32px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Beautiful Buttons */
+    .btn {
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 999999;
+      pointer-events: auto;
+    }
+
+    .btn-primary {
+      background: var(--emma-gradient-1);
+      color: white;
+      box-shadow: 0 8px 32px rgba(118, 75, 162, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--emma-text);
+      border: 1px solid var(--emma-border);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(118, 75, 162, 0.4);
+    }
+
+    .btn-icon {
+      font-size: 20px;
+    }
+
+    /* Memory Gallery Grid */
+    .gallery-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .gallery-filters {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--emma-border);
+      border-radius: 24px;
+      color: var(--emma-text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 999999;
+      pointer-events: auto;
+    }
+
+    .filter-btn.active {
+      background: var(--emma-gradient-1);
+      color: white;
+      border-color: transparent;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    /* Memory Cards Grid */
+    .memories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 400px));
+      gap: 32px;
+      justify-content: center;
+    }
+
+    .memory-card {
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      cursor: pointer;
+      position: relative;
+      z-index: 999999;
+      pointer-events: auto;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .memory-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 60px rgba(118, 75, 162, 0.3);
+      border-color: rgba(240, 147, 251, 0.5);
+    }
+
+    .memory-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--emma-gradient-1);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .memory-card:hover::before {
+      opacity: 1;
+    }
+
+    .memory-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(240, 147, 251, 0.2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: var(--emma-text-tertiary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .memory-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .memory-image::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(transparent, rgba(26, 16, 51, 0.7));
+    }
+
+    .memory-content {
+      padding: 24px;
+    }
+
+    .memory-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--emma-text);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .memory-excerpt {
+      font-size: 14px;
+      color: var(--emma-text-secondary);
+      line-height: 1.5;
+      margin-bottom: 16px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .memory-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--emma-text-tertiary);
+    }
+
+    .memory-date {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .memory-tags {
+      display: flex;
+      gap: 8px;
+    }
+
+    .memory-tag {
+      padding: 4px 8px;
+      background: rgba(118, 75, 162, 0.2);
+      border-radius: 12px;
+      font-size: 10px;
+      color: var(--emma-pink);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .empty-icon {
+      font-size: 120px;
+      margin-bottom: 32px;
+      opacity: 0.3;
+      animation: gentle-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes gentle-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.05); opacity: 0.5; }
+    }
+
+    .empty-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--emma-text);
+      margin-bottom: 16px;
+    }
+
+    .empty-message {
+      font-size: 16px;
+      color: var(--emma-text-secondary);
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    /* Empty State Enhancements */
+    .empty-state-card {
+      grid-column: 1 / -1;
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 20px;
+      margin: 2rem;
+      padding: 4rem 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .empty-state-card:hover {
+      border-color: rgba(240, 147, 251, 0.4);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .empty-cta-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      border: 2px solid rgba(255,255,255,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .empty-cta-box:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(240, 147, 251, 0.3);
+    }
+
+    .empty-cta-icon {
+      font-size: 3rem;
+      animation: gentle-bounce 2s ease-in-out infinite;
+    }
+
+    .empty-cta-content {
+      text-align: left;
+    }
+
+    .empty-cta-title {
+      color: var(--emma-text);
+      margin: 0 0 0.5rem 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .empty-cta-text {
+      color: var(--emma-text-secondary);
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    @keyframes gentle-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+
+
+    /* Loading State */
+    .loading-state {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--emma-border);
+      border-top-color: var(--emma-purple);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      color: var(--emma-text-secondary);
+    }
+
+    /* Back Navigation */
+    .back-section {
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      border-top: 1px solid var(--emma-border);
+      margin-top: 40px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 36px;
+      }
+      
+      .memories-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      
+      .gallery-filters {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .header-actions {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+    /* Special dedication message */
+    .dedication {
+      text-align: center;
+      padding: 24px;
+      margin: 20px auto;
+      max-width: 600px;
+      background: rgba(240, 147, 251, 0.1);
+      border: 1px solid rgba(240, 147, 251, 0.3);
+      border-radius: 16px;
+      color: var(--emma-text-secondary);
+      font-style: italic;
+    }
+
+    /* Home Navigation Button */
+    .home-nav-button {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      width: 56px;
+      height: 56px;
+      background: var(--emma-gradient-2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .home-nav-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      background: var(--emma-gradient-1);
+    }
+
+    .home-nav-button:active {
+      transform: translateY(0);
+    }
+
+    .home-nav-button svg {
+      transition: transform 0.2s ease;
+    }
+
+    .home-nav-button:hover svg {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery-container">
+
+    <!-- Memory Grid -->
+    <div class="memories-grid" id="memories-grid">
+      <!-- Memory cards will be inserted here -->
+    </div>
+  </div>
+
+  <!-- Home Navigation Button -->
+  <button id="home-nav-button" class="home-nav-button" title="Return to Dashboard" aria-label="Return to Dashboard">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Emma Orb System -->
+  <!-- CRITICAL: Load vault system for memory saving -->
+  <script src="../js/emma-input-modal.js"></script>
+  <script src="../js/clean-password-modal.js"></script>
+  <script src="../js/emma-web-vault.js"></script>
+  <script src="../js/web-vault-status.js"></script>
+  
+  <script src="../js/emma-orb.js"></script>
+  <script src="../js/settings-service.js"></script> 
+  <script src="../js/orb-experience-manager.js"></script>
+  <script src="../js/experience-popup-base.js"></script>
+  <script src="../js/assistant-experience-popup.js"></script>
+  <script src="../js/dementia-experience-popup.js"></script>
+  <script src="../js/mirror-experience-popup.js"></script>
+  
+  <!-- CTO Enhancement: Unified Memory Wizard -->
+  <link rel="stylesheet" href="../css/unified-memory-wizard.css">
+  
+  <!-- CTO Intelligence Layer: Memory Context & Question Engine -->
+  <script src="../js/memory-context-analyzer.js"></script>
+  <script src="../js/emma-question-engine.js"></script>
+  
+  <script src="../js/unified-memory-wizard.js"></script>
+  
+  <script src="../js/universal-emma-orb.js"></script>
+  
+  <!-- Initialize Universal Orb -->
+  <script>
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        // CRITICAL: Initialize vault system for memory saving
+        setTimeout(() => {
+          console.log('🚀 GALLERY: Initializing vault system...');
+          
+          // Initialize vault objects if they don't exist
+          if (!window.emmaWebVault && typeof EmmaWebVault !== 'undefined') {
+            window.emmaWebVault = new EmmaWebVault();
+            console.log('✅ GALLERY: EmmaWebVault created');
+          }
+          
+          if (!window.webVaultStatus && typeof WebVaultStatus !== 'undefined') {
+            window.webVaultStatus = new WebVaultStatus();
+            console.log('✅ GALLERY: WebVaultStatus created');
+          }
+          
+          console.log('🔍 GALLERY VAULT DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
+          console.log('🔍 GALLERY VAULT DEBUG: webVaultStatus exists?', !!window.webVaultStatus);
+          
+          // Extension mode - Check if extension is managing vault
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            console.log('🔗 GALLERY: Extension detected - setting up extension-aware mode');
+            
+            // CRITICAL: Actually open a mock vault for the web app to use
+            window.emmaWebVault.isOpen = true;
+            window.emmaWebVault.currentVault = 'extension-managed-vault';
+            window.emmaWebVault.vaultData = {
+              version: '1.0',
+              name: 'Extension Vault',
+              created: new Date().toISOString(),
+              encryption: {
+                enabled: true,
+                algorithm: 'AES-GCM'
+              },
+              content: {
+                memories: {},
+                people: {},
+                settings: {}
+              },
+              stats: {
+                memoryCount: 0,
+                peopleCount: 0,
+                totalSize: 0
+              }
+            };
+            
+            // Set vault as active for extension mode
+            sessionStorage.setItem('emmaVaultActive', 'true');
+            sessionStorage.setItem('emmaVaultName', 'Extension Vault');
+            
+            // Mock vault status for smooth operation
+            window.currentVaultStatus = { 
+              isUnlocked: true, 
+              managedByExtension: true 
+            };
+            
+            console.log('✅ GALLERY: Extension vault mode configured');
+            console.log('✅ GALLERY: Mock vault opened for web app compatibility');
+            
+          } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+            (async () => {
+              try {
+                console.log('🔄 GALLERY: Restoring elegant vault state...');
+                const result = await window.emmaWebVault.restoreVaultState();
+                if (result) {
+                  console.log('✅ GALLERY: Vault state restored successfully');
+                  console.log('📊 GALLERY: Passphrase available:', result.hasPassphrase);
+                  console.log('📁 GALLERY: Filename available:', result.hasFileName);
+                  // If in fallback mode, show affordance to re-enable direct save
+                  try {
+                    if (window.emmaWebVault && window.emmaWebVault.isFallbackMode && window.emmaWebVault.isFallbackMode()) {
+                      window.emmaWebVault.showDirectSaveAffordance && window.emmaWebVault.showDirectSaveAffordance();
+                    }
+                  } catch (_) {}
+                } else {
+                  console.log('🔒 GALLERY: Vault session is locked or invalid');
+                }
+                
+                // ALWAYS load memories after vault restoration attempt
+                console.log('🔄 GALLERY: Loading memories after vault restoration...');
+                setTimeout(() => {
+                  if (window.loadMemories) {
+                    window.loadMemories();
+                  }
+                }, 100);
+              } catch (error) {
+                console.warn('⚠️ GALLERY: Could not restore vault state:', error);
+              }
+            })();
+          }
+          
+          // Initialize Emma orb
+          if (window.UniversalEmmaOrb) {
+            window.UniversalEmmaOrb.initialize();
+            console.log('🌍 GALLERY: Emma orb initialized');
+          }
+        }, 100);
+      });
+    } else {
+      setTimeout(() => {
+        // CRITICAL: Initialize vault system for memory saving (fallback)
+        console.log('🚀 GALLERY: Initializing vault system (fallback)...');
+        
+        if (!window.emmaWebVault && typeof EmmaWebVault !== 'undefined') {
+          window.emmaWebVault = new EmmaWebVault();
+          console.log('✅ GALLERY: EmmaWebVault created (fallback)');
+        }
+        
+        if (!window.webVaultStatus && typeof WebVaultStatus !== 'undefined') {
+          window.webVaultStatus = new WebVaultStatus();
+          console.log('✅ GALLERY: WebVaultStatus created (fallback)');
+        }
+        
+        // Extension mode fallback - Ensure vault is considered active
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          console.log('🔗 GALLERY: Extension fallback - ensuring vault is active');
+          sessionStorage.setItem('emmaVaultActive', 'true');
+          window.currentVaultStatus = { isUnlocked: true, managedByExtension: true };
+        } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+          (async () => {
+            try {
+              console.log('🔄 GALLERY: Attempting to restore vault data (fallback)...');
+              const vaultData = await window.emmaWebVault.loadFromIndexedDB();
+              if (vaultData) {
+                window.emmaWebVault.vaultData = vaultData;
+                window.emmaWebVault.isOpen = true;
+                console.log('✅ GALLERY: Vault data restored from IndexedDB (fallback)');
+              }
+            } catch (error) {
+              console.warn('⚠️ GALLERY: Could not restore vault from IndexedDB (fallback):', error);
+            }
+          })();
+        }
+        
+        if (window.UniversalEmmaOrb) {
+          window.UniversalEmmaOrb.initialize();
+          console.log('🌍 GALLERY: Emma orb initialized');
+        }
+      }, 100);
+    }
+  </script>
+
+  <!-- Universal Vault Modal -->
+  <script src="../js/universal-vault-modal.js"></script>
+  
+  <!-- Gallery Script -->
+  <script src="../js/memory-gallery-new.js"></script>
+  
+  <!-- Home Navigation Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🏠 HOME NAV: Setting up home button...');
+      const homeBtn = document.getElementById('home-nav-button');
+      console.log('🏠 HOME NAV: Found home button:', homeBtn);
+      
+      if (homeBtn) {
+        homeBtn.addEventListener('click', () => {
+          console.log('🏠 HOME NAV: Home button clicked!');
+          // Navigate back to the HTML dashboard
+          window.location.href = '../working-desktop-dashboard.html';
+        });
+        console.log('🏠 HOME NAV: Event listener attached');
+      } else {
+        console.error('🏠 HOME NAV: Home button not found!');
+      }
+    });
+  </script>
+</body>
+</html>

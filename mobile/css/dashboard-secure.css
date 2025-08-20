@@ -1,0 +1,426 @@
+/* app/css/dashboard-secure.css - Extracted styles for CSP compliance */
+
+/* Emma Brand Variables */
+:root {
+  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  --emma-aurora: linear-gradient(135deg, #667eea20 0%, #764ba240 25%, #f093fb20 50%, #4dabf720 75%, #667eea20 100%);
+  --emma-bg-gradient: linear-gradient(135deg, #0a0a0f 0%, #1a1033 50%, #0f0c29 100%);
+  --emma-purple: #764ba2;
+  --emma-pink: #f093fb;
+  --emma-blue: #667eea;
+  --emma-dark: #0a0a0f;
+  --emma-card-bg: rgba(255, 255, 255, 0.03);
+  --emma-glass: rgba(255, 255, 255, 0.05);
+  --emma-border: rgba(255, 255, 255, 0.1);
+  --emma-text: #ffffff;
+  --emma-text-secondary: rgba(255, 255, 255, 0.8);
+  --emma-text-tertiary: rgba(255, 255, 255, 0.6);
+  --emma-success: #4ade80;
+  --emma-error: #f87171;
+  --emma-warning: #fbbf24;
+  --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--emma-bg-gradient);
+  color: var(--emma-text);
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Aurora Background Effect */
+.aurora-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.aurora {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: var(--emma-aurora);
+  animation: aurora 20s ease-in-out infinite;
+  filter: blur(60px);
+}
+
+@keyframes aurora {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  33% { transform: translate(-30%, -60%) rotate(120deg) scale(1.1); }
+  66% { transform: translate(-70%, -40%) rotate(240deg) scale(0.9); }
+}
+
+/* Main Container */
+.dashboard {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* Central Command Orb Container */
+.command-center {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Emma Orb */
+.emma-orb-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.emma-orb-container:hover {
+  transform: scale(1.05);
+}
+
+.emma-orb-webgl {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.emma-orb-webgl canvas {
+  border-radius: 50%;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1); }
+  50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(134, 88, 255, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.2); }
+}
+
+/* Neural Network Menu */
+.neural-network {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.neural-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Constellation Canvas */
+.constellation-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Welcome Text */
+.welcome-text {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 3;
+}
+
+.welcome-title {
+  font-size: 48px;
+  font-weight: 200;
+  background: var(--emma-gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.welcome-subtitle {
+  font-size: 16px;
+  color: var(--emma-text-secondary);
+  font-weight: 300;
+}
+
+/* Radial Menu Styles */
+.radial-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.radial-menu.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.radial-item {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  background: var(--emma-glass);
+  border: 1px solid var(--emma-border);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(20px);
+  transform: scale(0);
+  opacity: 0;
+}
+
+.radial-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1) !important;
+  box-shadow: 0 0 40px rgba(134, 88, 255, 0.6);
+}
+
+.radial-item-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.radial-item-label {
+  font-size: 11px;
+  color: var(--emma-text-secondary);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Menu Active State */
+body.menu-active .welcome-text,
+body.menu-active .constellation-canvas {
+  opacity: 0.2;
+  transition: opacity 0.3s ease;
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--emma-glass);
+  color: var(--emma-text);
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--emma-border);
+  backdrop-filter: blur(20px);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast.success {
+  border-color: var(--emma-success);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.toast.error {
+  border-color: var(--emma-error);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.toast.warning {
+  border-color: var(--emma-warning);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+/* Loading Overlay */
+.loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--emma-bg-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.loading.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Vault Modal Styles */
+.vault-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.vault-modal.show {
+  opacity: 1;
+}
+
+.vault-modal-content {
+  background: var(--emma-glass);
+  border: 1px solid var(--emma-border);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  backdrop-filter: blur(20px);
+  position: relative;
+}
+
+.vault-modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+  background: var(--emma-gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vault-status {
+  padding: 16px;
+  background: var(--emma-card-bg);
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Form Styles */
+.unlock-section {
+  display: none;
+  margin-top: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--emma-text-secondary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--emma-border);
+  border-radius: 8px;
+  color: var(--emma-text);
+  font-size: 16px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--emma-purple);
+  box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.2);
+}
+
+/* Button Styles */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--emma-glass);
+  color: var(--emma-text);
+  border: 1px solid var(--emma-border);
+}
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--emma-gradient-1);
+  border: none;
+  color: white;
+}
+
+.btn-secondary {
+  background: var(--emma-card-bg);
+  border: 1px solid var(--emma-border);
+}
+
+.btn-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--emma-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-close:hover {
+  color: var(--emma-text);
+}

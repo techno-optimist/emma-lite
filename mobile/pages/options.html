@@ -1,0 +1,42 @@
+           <!-- Backup Actions -->
+           <div class="backup-actions-grid">
+            <div class="backup-action-card">
+              <div class="action-icon">🛡️</div>
+              <div class="action-content">
+                <h4>Device Backups</h4>
+                <p>Include your vault in device backups for safety. Exclude for stricter privacy (export manually).</p>
+                <div class="setting-item" style="border-bottom:none;padding:0;">
+                  <div class="setting-label">
+                    <strong>Exclude from device backups</strong>
+                    <small>Recommended OFF. Including helps protect against loss.</small>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" id="backup-exclusion-toggle">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="backup-action-card export-card">
+              <div class="action-icon">📤</div>
+              <div class="action-content">
+                <h4>Export Vault</h4>
+                <p>Create an encrypted backup of your entire memory vault including all memories and attachments</p>
+                <button type="button" id="export-vault" class="btn btn-primary">
+                  <span class="btn-icon">📤</span> Export Vault
+                </button>
+              </div>
+            </div>
+
+            <div class="backup-action-card import-card">
+              <div class="action-icon">📥</div>
+              <div class="action-content">
+                <h4>Import Vault</h4>
+                <p>Restore a vault from an encrypted backup file with a new passphrase</p>
+                <input type="file" id="import-vault-file" accept=".json" style="display: none;">
+                <button type="button" id="import-vault" class="btn btn-secondary">
+                  <span class="btn-icon">📁</span> Choose Backup File
+                </button>
+              </div>
+            </div>
+          </div>

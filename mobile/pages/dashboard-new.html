@@ -1,0 +1,4973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma - Your Intelligent Memory Companion</title>
+  <style>
+    /* Emma Brand Variables */
+    :root {
+      --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+      --emma-aurora: linear-gradient(135deg, #667eea20 0%, #764ba240 25%, #f093fb20 50%, #4dabf720 75%, #667eea20 100%);
+      --emma-bg-gradient: linear-gradient(135deg, #0a0a0f 0%, #1a1033 50%, #0f0c29 100%);
+      --emma-purple: #764ba2;
+      --emma-pink: #f093fb;
+      --emma-blue: #667eea;
+      --emma-dark: #0a0a0f;
+      --emma-card-bg: rgba(255, 255, 255, 0.03);
+      --emma-glass: rgba(255, 255, 255, 0.05);
+      --emma-border: rgba(255, 255, 255, 0.1);
+      --emma-text: #ffffff;
+      --emma-text-secondary: rgba(255, 255, 255, 0.8);
+      --emma-text-tertiary: rgba(255, 255, 255, 0.6);
+      --emma-success: #4ade80;
+      --emma-error: #f87171;
+      --emma-warning: #fbbf24;
+      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--emma-bg-gradient);
+      color: var(--emma-text);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Aurora Background Effect */
+    .aurora-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.3;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .aurora {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: var(--emma-aurora);
+      animation: aurora 20s ease-in-out infinite;
+      filter: blur(60px);
+    }
+
+    @keyframes aurora {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+      33% { transform: translate(-30%, -60%) rotate(120deg) scale(1.1); }
+      66% { transform: translate(-70%, -40%) rotate(240deg) scale(0.9); }
+    }
+
+    /* Main Container */
+    .dashboard {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+
+    /* Central Command Orb Container */
+    .command-center {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Emma Orb */
+    .emma-orb-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .emma-orb-container:hover {
+      transform: scale(1.05);
+    }
+
+    .emma-orb-webgl {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .emma-orb-webgl canvas {
+      border-radius: 50%;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    @keyframes orb-pulse {
+      0%, 100% { transform: scale(1); box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1); }
+      50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(134, 88, 255, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.2); }
+    }
+
+    /* Orb status removed - clean WebGL orb only */
+
+    .orb-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+    }
+
+    /* Orb text removed - clean WebGL orb only */
+
+    /* Neural Network Menu */
+    .neural-network {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    .neural-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .radial-menu {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .radial-menu.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .radial-item {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      background: var(--emma-glass);
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(134, 88, 255, 0.3);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: scale(0);
+      box-shadow: 0 0 30px rgba(134, 88, 255, 0.2);
+      animation: float 6s ease-in-out infinite;
+      z-index: 10;
+    }
+
+    .radial-menu.active .radial-item {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      33% { transform: translateY(-10px) scale(1.02); }
+      66% { transform: translateY(5px) scale(0.98); }
+    }
+
+    /* Memory Constellation Styles - Star-like nodes */
+    .memory-node {
+      font-size: 12px;
+      color: white;
+      backdrop-filter: blur(15px);
+      box-shadow: 
+        0 0 30px rgba(134, 88, 255, 0.4),
+        0 0 60px rgba(134, 88, 255, 0.2),
+        inset 0 0 20px rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+    }
+
+    /* Star-like glow effect */
+    .memory-node::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, rgba(134, 88, 255, 0.3), rgba(240, 147, 251, 0.3));
+      z-index: -1;
+      opacity: 0.7;
+      animation: star-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes star-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .memory-node .memory-thumbnail {
+      font-size: 28px;
+      margin-bottom: 2px;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+      text-shadow: 0 0 10px rgba(134, 88, 255, 0.8);
+    }
+
+    .memory-node .memory-label {
+      font-size: 11px;
+      opacity: 0;
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(17, 17, 27, 0.95);
+      padding: 6px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 1001;
+      border: 1px solid rgba(134, 88, 255, 0.3);
+      backdrop-filter: blur(10px);
+      font-weight: 500;
+    }
+
+    .memory-node:hover .memory-label {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-5px);
+    }
+
+    /* Theme-based colors */
+    .memory-node[data-theme="family"] {
+      box-shadow: 
+        0 0 30px rgba(255, 105, 135, 0.4),
+        0 0 60px rgba(255, 105, 135, 0.2);
+    }
+
+    .memory-node[data-theme="travel"] {
+      box-shadow: 
+        0 0 30px rgba(52, 211, 153, 0.4),
+        0 0 60px rgba(52, 211, 153, 0.2);
+    }
+
+    .memory-node[data-theme="recent"] {
+      box-shadow: 
+        0 0 30px rgba(96, 165, 250, 0.4),
+        0 0 60px rgba(96, 165, 250, 0.2);
+    }
+
+    .memory-node[data-theme="special"] {
+      box-shadow: 
+        0 0 30px rgba(251, 191, 36, 0.4),
+        0 0 60px rgba(251, 191, 36, 0.2);
+    }
+
+    .constellation-controls {
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .constellation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .constellation-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .constellation-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .constellation-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .constellation-themes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .theme-filter {
+      background: rgba(134, 88, 255, 0.2);
+      border: 1px solid rgba(134, 88, 255, 0.4);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .theme-filter.active {
+      background: rgba(134, 88, 255, 0.4);
+      border-color: rgba(134, 88, 255, 0.6);
+    }
+
+    .theme-filter.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .theme-filter:hover:not(.disabled) {
+      background: rgba(134, 88, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    /* Memory Dialog Styles */
+    .memory-dialog {
+      background: rgba(17, 17, 27, 0.95);
+      border: 1px solid rgba(134, 88, 255, 0.3);
+      border-radius: 16px;
+      padding: 0;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .memory-dialog-overlay[style*="opacity: 1"] .memory-dialog {
+      transform: scale(1);
+    }
+
+    .memory-dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 32px;
+      border-bottom: 1px solid rgba(134, 88, 255, 0.2);
+      background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
+    }
+
+    .memory-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 0 10px rgba(134, 88, 255, 0.5);
+    }
+
+    .memory-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .memory-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .memory-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      padding: 32px;
+    }
+
+    .memory-slideshow {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .slideshow-container {
+      aspect-ratio: 16/9;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(134, 88, 255, 0.1);
+      border: 1px solid rgba(134, 88, 255, 0.2);
+    }
+
+    .memory-slide {
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .memory-slide.active {
+      display: flex;
+    }
+
+    .media-placeholder {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .media-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    .slideshow-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .slide-btn {
+      background: rgba(134, 88, 255, 0.2);
+      border: 1px solid rgba(134, 88, 255, 0.4);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .slide-btn:hover {
+      background: rgba(134, 88, 255, 0.4);
+      transform: scale(1.05);
+    }
+
+    .slide-indicator {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .memory-details {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .memory-summary h3 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .memory-summary p {
+      margin: 0;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .memory-metadata {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .metadata-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(134, 88, 255, 0.1);
+    }
+
+    .metadata-item .label {
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .metadata-item .value {
+      font-weight: 600;
+      color: white;
+    }
+
+    .value.theme-family { color: rgba(255, 105, 135, 1); }
+    .value.theme-travel { color: rgba(52, 211, 153, 1); }
+    .value.theme-recent { color: rgba(96, 165, 250, 1); }
+    .value.theme-special { color: rgba(251, 191, 36, 1); }
+
+    .memory-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 24px 32px;
+      border-top: 1px solid rgba(134, 88, 255, 0.2);
+      background: rgba(134, 88, 255, 0.05);
+    }
+
+    .action-btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+
+    .action-btn.secondary {
+      background: rgba(134, 88, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(134, 88, 255, 0.4);
+    }
+
+    .action-btn.secondary:hover {
+      background: rgba(134, 88, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, rgba(134, 88, 255, 1), rgba(240, 147, 251, 0.8));
+      color: white;
+      border: none;
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(134, 88, 255, 0.4);
+    }
+
+    .radial-item:nth-child(1) { animation-delay: 0s; }
+    .radial-item:nth-child(2) { animation-delay: 0.5s; }
+    .radial-item:nth-child(3) { animation-delay: 1s; }
+    .radial-item:nth-child(4) { animation-delay: 1.5s; }
+    .radial-item:nth-child(5) { animation-delay: 2s; }
+    .radial-item:nth-child(6) { animation-delay: 2.5s; }
+    .radial-item:nth-child(7) { animation-delay: 3s; }
+    .radial-item:nth-child(8) { animation-delay: 3.5s; }
+
+    .radial-item:hover {
+      background: rgba(134, 88, 255, 0.3);
+      border-color: var(--emma-purple);
+      transform: scale(1.15);
+      box-shadow: 0 0 40px rgba(134, 88, 255, 0.6);
+      animation-play-state: paused;
+    }
+
+    .radial-item.pulsing {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { 
+        box-shadow: 0 0 30px rgba(134, 88, 255, 0.2);
+        transform: scale(1);
+      }
+      50% { 
+        box-shadow: 0 0 50px rgba(134, 88, 255, 0.5);
+        transform: scale(1.05);
+      }
+    }
+
+    .radial-item-icon {
+      font-size: 32px;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+    }
+
+    .radial-item-label {
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .node-connection {
+      stroke: rgba(134, 88, 255, 0.3);
+      stroke-width: 2;
+      fill: none;
+      stroke-dasharray: 5, 5;
+      animation: dash 20s linear infinite;
+    }
+
+    @keyframes dash {
+      to { stroke-dashoffset: -100; }
+    }
+
+    /* Info Panels */
+    .info-panel {
+      position: fixed;
+      background: var(--emma-glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 20px;
+      padding: 24px;
+      min-width: 280px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.4s ease;
+      z-index: 10;
+    }
+
+    .info-panel.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Fade panels and header text when neural menu is active */
+    body.menu-active .info-panel {
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    
+    body.menu-active .welcome-text {
+      opacity: 0 !important;
+      transform: translateY(-20px) scale(0.9);
+      filter: blur(3px);
+      pointer-events: none;
+      visibility: hidden;
+    }
+    
+    body.menu-active .voice-indicator {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px) scale(0.9);
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    
+    body.menu-active .constellation-canvas {
+      opacity: 0;
+      filter: blur(3px);
+      pointer-events: none;
+    }
+
+    /* Constellation Mode - Hide ALL UI except constellation */
+    body.constellation-active .info-panel,
+    body.constellation-active .welcome-text,
+    body.constellation-active .voice-indicator,
+    body.constellation-active .constellation-canvas,
+    body.constellation-active .quick-stats {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      transition: all 0.5s ease;
+    }
+
+    /* Keep only constellation controls and radial menu visible */
+    body.constellation-active .constellation-controls,
+    body.constellation-active .radial-menu {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: all !important;
+    }
+
+    /* Right side panel stack */
+    .info-panel.right-stack {
+      position: fixed;
+      right: 24px;
+      width: 320px;
+      min-width: 320px;
+      max-width: 320px;
+      height: 180px;
+      min-height: 180px;
+      max-height: 180px;
+    }
+
+    #daily-brief.right-stack {
+      top: 24px;
+    }
+
+    #ai-insights.right-stack {
+      top: calc(24px + 180px + 16px);
+    }
+
+    #quick-actions.right-stack {
+      top: calc(24px + 180px + 16px + 180px + 16px);
+    }
+
+    /* Legacy positioning for any remaining panels */
+    .info-panel.top-left {
+      top: 24px;
+      left: 24px;
+    }
+
+    .info-panel.top-right {
+      top: 24px;
+      right: 24px;
+    }
+
+    .info-panel.bottom-left {
+      bottom: 24px;
+      left: 24px;
+    }
+
+    .info-panel.bottom-right {
+      bottom: 24px;
+      right: 24px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Adjust content for right stack panels */
+    .info-panel.right-stack .panel-content {
+      overflow: hidden;
+      height: calc(100% - 70px); /* Account for header height */
+    }
+
+    .info-panel.right-stack .panel-content p {
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .panel-icon {
+      font-size: 24px;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .panel-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--emma-text-secondary);
+    }
+
+    /* Memory Constellation Background */
+    .constellation-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* Voice Activation Indicator */
+    .voice-indicator {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--emma-glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 30px;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .voice-indicator.active {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .voice-waves {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .voice-wave {
+      width: 3px;
+      height: 20px;
+      background: var(--emma-purple);
+      border-radius: 3px;
+      animation: wave 1s ease-in-out infinite;
+    }
+
+    .voice-wave:nth-child(2) { animation-delay: 0.1s; height: 30px; }
+    .voice-wave:nth-child(3) { animation-delay: 0.2s; height: 25px; }
+    .voice-wave:nth-child(4) { animation-delay: 0.3s; height: 35px; }
+    .voice-wave:nth-child(5) { animation-delay: 0.4s; height: 20px; }
+
+    @keyframes wave {
+      0%, 100% { transform: scaleY(0.5); opacity: 0.5; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    /* Quick Stats */
+    .quick-stats {
+      position: absolute;
+      bottom: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 32px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .command-center:hover .quick-stats {
+      opacity: 1;
+    }
+
+    .stat-item {
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .stat-item:hover {
+      transform: translateY(-4px);
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      background: var(--emma-gradient-1);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--emma-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    /* Notification Toast */
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: var(--emma-glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 12px;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transform: translateX(400px);
+      transition: all 0.4s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .toast.success { border-color: var(--emma-success); }
+    .toast.error { border-color: var(--emma-error); }
+    .toast.info { border-color: var(--emma-blue); }
+
+    /* Loading State */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .loading-content {
+      text-align: center;
+    }
+
+    .loading-orb {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      position: relative;
+      /* Emma's orb will be rendered here via WebGL */
+    }
+
+    /* Fallback for when WebGL orb isn't available */
+    .loading-orb-fallback {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
+      border-radius: 50%;
+      animation: loading-pulse 1.5s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(138, 94, 250, 0.4);
+    }
+
+    @keyframes loading-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* Welcome Text */
+    .welcome-text {
+      position: fixed;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      opacity: 0;
+      animation: fade-in 1s ease-out 0.5s forwards;
+    }
+
+    .welcome-title {
+      font-size: 48px;
+      font-weight: 200;
+      margin-bottom: 8px;
+      background: var(--emma-gradient-1);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .welcome-subtitle {
+      font-size: 18px;
+      color: var(--emma-text-secondary);
+      font-weight: 400;
+    }
+
+    @keyframes fade-in {
+      to { opacity: 1; }
+    }
+
+    /* Vault Modal Styles */
+    .vault-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .vault-modal.show {
+      opacity: 1;
+    }
+
+    .vault-modal-content {
+      background: linear-gradient(135deg, rgba(26, 16, 51, 0.98), rgba(45, 27, 105, 0.98));
+      border: 1px solid rgba(134, 88, 255, 0.3);
+      border-radius: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .vault-modal.show .vault-modal-content {
+      transform: scale(1);
+    }
+
+    .vault-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 32px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
+    }
+
+    .vault-header-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .vault-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #8658ff, #f093fb);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .vault-title h2 {
+      margin: 0 0 4px 0;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--emma-text);
+    }
+
+    .vault-title p {
+      margin: 0;
+      color: var(--emma-text-secondary);
+      font-size: 16px;
+    }
+
+    .vault-close {
+      width: 48px;
+      height: 48px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--emma-text);
+      border-radius: 12px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .vault-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .vault-modal-body {
+      padding: 32px;
+    }
+
+    .vault-status-section {
+      margin-bottom: 32px;
+    }
+
+    .vault-status-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .vault-status-card.unlocked {
+      border-color: rgba(74, 222, 128, 0.3);
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    .vault-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .vault-btn.primary {
+      background: linear-gradient(135deg, #8658ff, #f093fb);
+      color: white;
+    }
+
+    .vault-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(134, 88, 255, 0.4);
+    }
+
+    .vault-btn.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--emma-text);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .vault-btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .vault-btn.small {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+    .vault-unlock-section {
+      margin-bottom: 32px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .unlock-form label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--emma-text);
+      font-weight: 600;
+    }
+
+    .unlock-form input {
+      width: 100%;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      color: var(--emma-text);
+      font-size: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    .unlock-form input:focus {
+      outline: none;
+      border-color: var(--emma-purple);
+      box-shadow: 0 0 0 3px rgba(134, 88, 255, 0.2);
+    }
+
+    .unlock-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* Create Vault Section */
+    .vault-create-section {
+      margin-bottom: 32px;
+      padding: 24px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .create-vault-card {
+      text-align: center;
+    }
+
+    .create-vault-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .create-vault-content h3 {
+      color: var(--emma-text);
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
+    .create-vault-content p {
+      color: var(--emma-text-secondary);
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    .vault-qr-section h3 {
+      margin: 0 0 8px 0;
+      color: var(--emma-text);
+      font-size: 20px;
+    }
+
+    .vault-qr-section p {
+      margin: 0 0 20px 0;
+      color: var(--emma-text-secondary);
+    }
+
+    .qr-option-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .qr-option-card:hover {
+      border-color: rgba(134, 88, 255, 0.3);
+      background: rgba(134, 88, 255, 0.1);
+    }
+
+    .qr-option-icon {
+      font-size: 32px;
+      min-width: 32px;
+    }
+
+    .qr-option-content {
+      flex: 1;
+    }
+
+    .qr-option-content h4 {
+      margin: 0 0 4px 0;
+      color: var(--emma-text);
+      font-size: 16px;
+    }
+
+    .qr-option-content p {
+      margin: 0;
+      color: var(--emma-text-secondary);
+      font-size: 14px;
+    }
+
+    .vault-actions-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 24px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .radial-menu {
+        width: 320px;
+        height: 320px;
+      }
+      
+      .radial-item {
+        width: 60px;
+        height: 60px;
+      }
+      
+      .radial-item-icon {
+        font-size: 24px;
+      }
+      
+      .info-panel,
+      .info-panel.right-stack {
+        position: fixed;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: 50vh !important;
+        border-radius: 20px 20px 0 0;
+        overflow-y: auto;
+      }
+
+      /* Stack panels vertically on mobile */
+      #daily-brief.right-stack { transform: translateY(0); }
+      #ai-insights.right-stack { transform: translateY(0); }
+      #quick-actions.right-stack { transform: translateY(0); }
+    }
+
+    /* Import Voice Capture Premium Styles */
+    
+    /* Person Summary Modal Styles */
+    .person-summary-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .person-summary-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .person-summary-modal {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 32px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.3s ease;
+      position: relative;
+    }
+
+    .person-summary-modal .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 18px;
+      font-weight: 300;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .person-summary-modal .modal-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: scale(1.1);
+    }
+
+    .person-summary-modal-overlay.active .person-summary-modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .person-summary-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .person-summary-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 32px;
+      overflow: hidden;
+    }
+
+    .person-summary-info {
+      flex: 1;
+    }
+
+    .person-summary-name {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: white;
+      margin: 0 0 8px 0;
+    }
+
+    .person-summary-relation {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0 0 4px 0;
+      text-transform: capitalize;
+    }
+
+    .person-summary-contact {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin: 0;
+    }
+
+    .summary-section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-section-title::before {
+      content: '';
+      width: 3px;
+      height: 20px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      border-radius: 2px;
+    }
+
+    .connected-memories {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .connected-memory-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .connected-memory-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .memory-preview {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-size: 20px;
+    }
+
+    .memory-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .memory-info {
+      flex: 1;
+    }
+
+    .memory-title {
+      font-size: 1rem;
+      font-weight: 500;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .memory-date {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .no-memories {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255, 255, 255, 0.5);
+      font-style: italic;
+    }
+
+    .person-summary-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .person-summary-actions .btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .person-summary-actions .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      color: white;
+    }
+
+    .person-summary-actions .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .person-summary-actions .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .person-summary-actions .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Aurora Background -->
+  <div class="aurora-bg">
+    <div class="aurora"></div>
+  </div>
+
+  <!-- Memory Constellation Canvas -->
+  <canvas id="constellation" class="constellation-canvas"></canvas>
+
+  <!-- Welcome Text -->
+  <div class="welcome-text">
+    <h1 class="welcome-title">emma</h1>
+    <p class="welcome-subtitle">Your Intelligent Memory Companion</p>
+  </div>
+
+  <!-- Neural Network Background -->
+  <div class="neural-network">
+    <canvas id="neural-canvas" class="neural-canvas"></canvas>
+  </div>
+
+  <!-- Main Dashboard -->
+  <div class="dashboard">
+    <div class="command-center">
+      <!-- Central Emma Orb (WebGL) -->
+      <div class="emma-orb-container" id="emma-orb">
+        <div class="emma-orb-webgl" id="webgl-orb-container">
+          <!-- WebGL Emma Orb will be inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Radial Menu (Now floating neural nodes) -->
+  <div class="radial-menu" id="radial-menu">
+        <div class="radial-item" data-action="capture">
+          <div class="radial-item-icon">🎤</div>
+          <div class="radial-item-label">Capture</div>
+        </div>
+        <div class="radial-item" data-action="vault" id="vault-node">
+          <div class="radial-item-icon">🔒</div>
+          <div class="radial-item-label">Vault</div>
+        </div>
+        <div class="radial-item" data-action="memories">
+          <div class="radial-item-icon">💝</div>
+          <div class="radial-item-label">Memories</div>
+        </div>
+        <div class="radial-item" data-action="people">
+          <div class="radial-item-icon">👥</div>
+          <div class="radial-item-label">People</div>
+        </div>
+        <div class="radial-item" data-action="search">
+          <div class="radial-item-icon">🔍</div>
+          <div class="radial-item-label">Search</div>
+        </div>
+        <div class="radial-item" data-action="share">
+          <div class="radial-item-icon">📱</div>
+          <div class="radial-item-label">Share</div>
+        </div>
+        <div class="radial-item" data-action="chat">
+          <div class="radial-item-icon">💬</div>
+          <div class="radial-item-label">Chat</div>
+        </div>
+        <div class="radial-item" data-action="settings">
+          <div class="radial-item-icon">⚙️</div>
+          <div class="radial-item-label">Settings</div>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="quick-stats">
+        <div class="stat-item" data-stat="memories">
+          <div class="stat-value" id="stat-memories">0</div>
+          <div class="stat-label">Memories</div>
+        </div>
+        <div class="stat-item" data-stat="people">
+          <div class="stat-value" id="stat-people">0</div>
+          <div class="stat-label">People</div>
+        </div>
+        
+        <!-- Revolutionary Migration Button -->
+        <div class="stat-item revolution-upgrade" onclick="openMigrationPage()" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2)); border: 2px solid rgba(139, 92, 246, 0.4); cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;">
+          <div class="stat-value" style="font-size: 1.2rem; color: #8b5cf6;">🌟</div>
+          <div class="stat-label" style="color: #ec4899; font-weight: 600; font-size: 0.8rem;">Upgrade to .emma</div>
+          <div style="position: absolute; top: 4px; right: 4px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 8px; font-weight: 600;">NEW</div>
+        </div>
+        <div class="stat-item" data-stat="today">
+          <div class="stat-value" id="stat-today">0</div>
+          <div class="stat-label">Today</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side Panel Stack -->
+  <div class="info-panel right-stack" id="daily-brief">
+    <div class="panel-header">
+      <div class="panel-icon">📅</div>
+      <div class="panel-title">Daily Brief</div>
+    </div>
+    <div class="panel-content">
+      <p>Good morning! You have 3 memories from this day last year.</p>
+      <p style="margin-top: 12px; font-size: 13px; opacity: 0.8;">
+        • Meeting with Sarah about the project<br>
+        • Family dinner at Marina Bay<br>
+        • Completed the meditation course
+      </p>
+    </div>
+  </div>
+
+  <div class="info-panel right-stack" id="ai-insights">
+    <div class="panel-header">
+      <div class="panel-icon">💡</div>
+      <div class="panel-title">AI Insights</div>
+    </div>
+    <div class="panel-content">
+      <p>I noticed you've been capturing more creative moments lately. Your photography memories have increased by 40% this month!</p>
+    </div>
+  </div>
+
+  <div class="info-panel right-stack" id="quick-actions">
+    <div class="panel-header">
+      <div class="panel-icon">⚡</div>
+      <div class="panel-title">Quick Actions</div>
+    </div>
+    <div class="panel-content">
+      <p>Press <kbd>Space</kbd> to activate voice capture<br>
+      Press <kbd>Cmd+K</kbd> to search memories<br>
+      Say "Hey Emma" to start</p>
+    </div>
+  </div>
+
+  <!-- Voice Indicator -->
+  <div class="voice-indicator" id="voice-indicator">
+    <div class="voice-waves">
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+      <div class="voice-wave"></div>
+    </div>
+    <span>Listening...</span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading">
+    <div class="loading-content">
+      <div class="loading-orb"></div>
+      <p style="color: var(--emma-text-secondary);">Loading Emma...</p>
+    </div>
+  </div>
+
+  <!-- Vault Management Modal -->
+  <div id="vault-modal" class="vault-modal" style="display: none;">
+    <div class="vault-modal-content">
+      <div class="vault-modal-header">
+        <div class="vault-header-content">
+          <div class="vault-icon">🔐</div>
+          <div class="vault-title">
+            <h2>Emma Memory Vault</h2>
+            <p id="vault-subtitle">Secure access to your encrypted memories</p>
+          </div>
+        </div>
+        <button class="vault-close" id="close-vault-modal">×</button>
+      </div>
+      
+      <div class="vault-modal-body">
+        <!-- Vault Status Section -->
+        <div class="vault-status-section">
+          <div class="vault-status-card" id="vault-status-card">
+            <div class="status-icon" id="status-icon">🔒</div>
+            <div class="status-info">
+              <h3 id="status-title">Vault Locked</h3>
+              <p id="status-description">Enter your vault code to access your memories</p>
+            </div>
+            <div class="status-action">
+              <button id="vault-action-btn" class="vault-btn primary">Unlock Vault</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Unlock Form Section -->
+        <div class="vault-unlock-section" id="unlock-section" style="display: none;">
+          <div class="unlock-form">
+            <label for="vault-password">Vault Code</label>
+            <input type="password" id="vault-password" placeholder="Enter your vault code" autocomplete="current-password">
+            <div class="unlock-actions">
+              <button id="unlock-btn" class="vault-btn primary">🔓 Unlock</button>
+              <button id="cancel-unlock-btn" class="vault-btn secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Create New Vault Section -->
+        <div class="vault-create-section" id="create-vault-section" style="display: none;">
+          <div class="create-vault-card">
+            <div class="create-vault-icon">🆕</div>
+            <div class="create-vault-content">
+              <h3>No Vault Found</h3>
+              <p>Create your first Emma memory vault to get started</p>
+              <button id="create-vault-btn" class="vault-btn primary">
+                🔐 Create New Vault
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- QR Sharing Section -->
+        <div class="vault-qr-section" id="qr-section">
+          <h3>📱 Quick Share</h3>
+          <p>Generate QR codes to securely share your vault or memories</p>
+          
+          <div class="qr-options">
+            <div class="qr-option-card" id="generate-vault-qr-dashboard">
+              <div class="qr-option-icon">🔐</div>
+              <div class="qr-option-content">
+                <h4>Share Vault</h4>
+                <p>Time-limited access to your vault</p>
+              </div>
+              <div class="qr-option-action">
+                <button class="vault-btn secondary small">Generate QR</button>
+              </div>
+            </div>
+            
+            <div class="qr-option-card" id="open-qr-scanner-dashboard">
+              <div class="qr-option-icon">📷</div>
+              <div class="qr-option-content">
+                <h4>Scan QR Code</h4>
+                <p>Access shared memories</p>
+              </div>
+              <div class="qr-option-action">
+                <button class="vault-btn secondary small">Open Scanner</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="vault-actions-section">
+          <div class="quick-actions-grid">
+            <button class="quick-action" onclick="window.location.href='memory-gallery-new.html'">
+              <span>💝</span>
+              <span>Memories</span>
+            </button>
+            <button class="quick-action" onclick="window.location.href='options.html'">
+              <span>⚙️</span>
+              <span>Settings</span>
+            </button>
+            <button class="quick-action" onclick="window.location.href='people-emma.html'">
+              <span>👥</span>
+              <span>People</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Emma Orb WebGL Implementation -->
+  <script src="../js/emma-orb.js"></script>
+  
+  <!-- Voice Capture Experience -->
+  <link rel="stylesheet" href="../css/voice-capture-minimal.css">
+  <script src="../js/experience-popup-base.js"></script>
+  <script src="../js/voice-capture-experience.js"></script>
+
+  <!-- Emma Chat Experience -->
+  <link rel="stylesheet" href="../css/emma-chat.css">
+  <script src="../js/emma-chat-experience.js"></script>
+
+  <!-- Emma Share Experience - Self-Contained QR Generation -->
+  <link rel="stylesheet" href="../css/emma-share.css">
+  <script src="../js/emma-qr-generator.js"></script>
+  <script src="../js/qr-service.js"></script>
+  <script src="../js/emma-share-experience.js"></script>
+  
+  <!-- Emma Assistant Experience - CRITICAL: Needed for + node wizard -->
+  <script src="../js/assistant-experience-popup.js"></script>
+
+  <!-- Universal Vault Modal -->
+  <script src="../js/universal-vault-modal.js"></script>
+
+  <script>
+    // Dashboard Controller
+    class EmmaDashboard {
+      constructor() {
+        this.orb = document.getElementById('emma-orb');
+        this.radialMenu = document.getElementById('radial-menu');
+        this.voiceIndicator = document.getElementById('voice-indicator');
+        this.loading = document.getElementById('loading');
+        
+        console.log('🔧 Constructor - radialMenu:', this.radialMenu);
+        console.log('🔧 Constructor - radial items:', this.radialMenu ? this.radialMenu.querySelectorAll('.radial-item').length : 'NULL');
+        this.panels = {
+          dailyBrief: document.getElementById('daily-brief'),
+          aiInsights: document.getElementById('ai-insights'),
+          quickActions: document.getElementById('quick-actions')
+        };
+        
+        this.isMenuOpen = false;
+        this.stats = { memories: 0, people: 0, today: 0 };
+        this.particles = [];
+        this.nodes = [];
+        this.neuralCanvas = document.getElementById('neural-canvas');
+        this.neuralCtx = this.neuralCanvas.getContext('2d');
+        
+        // Neural memory network properties
+        this.isConstellationMode = false;
+        this.constellationMemories = [];
+        this.centralNeuron = null;
+        
+        // Initialize WebGL Emma Orb
+        this.initEmmaOrb();
+        
+        this.init();
+      }
+
+      async init() {
+        // Show loading
+        this.loading.classList.add('active');
+        
+        // Initialize Emma's orb in loading screen
+        this.initLoadingOrb();
+        
+        // Initialize constellation background
+        this.initConstellation();
+        
+
+        
+        // Setup event listeners
+        this.setupEventListeners();
+        
+        // Load initial data
+        await this.loadDashboardData();
+        
+        // Animate panels based on time of day
+        this.showContextualPanels();
+        
+        // Hide loading
+        setTimeout(() => {
+          this.loading.classList.remove('active');
+        }, 1500);
+        
+        // Start background animations
+        this.startAnimations();
+      }
+
+      initConstellation() {
+        const canvas = document.getElementById('constellation');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        const resize = () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Create memory particles
+        const particleCount = 50;
+        for (let i = 0; i < particleCount; i++) {
+          this.particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            radius: Math.random() * 2 + 1,
+            opacity: Math.random() * 0.5 + 0.2
+          });
+        }
+        
+        // Animation loop
+        const animate = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // Update and draw particles
+          this.particles.forEach((p, i) => {
+            // Update position
+            p.x += p.vx;
+            p.y += p.vy;
+            
+            // Wrap around edges
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+            
+            // Draw particle
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(134, 88, 255, ${p.opacity})`;
+            ctx.fill();
+            
+            // Draw connections
+            this.particles.forEach((p2, j) => {
+              if (i !== j) {
+                const dx = p.x - p2.x;
+                const dy = p.y - p2.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 100) {
+                  ctx.beginPath();
+                  ctx.moveTo(p.x, p.y);
+                  ctx.lineTo(p2.x, p2.y);
+                  ctx.strokeStyle = `rgba(134, 88, 255, ${(1 - dist / 100) * 0.2})`;
+                  ctx.stroke();
+                }
+              }
+            });
+          });
+          
+          requestAnimationFrame(animate);
+        };
+        animate();
+      }
+
+      setupEventListeners() {
+        // Orb click - exit constellation or toggle menu
+        this.orb.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.isConstellationMode) {
+            // Simple: Exit constellation mode back to main dashboard
+            this.exitMemoryConstellation();
+          } else {
+            this.toggleRadialMenu();
+          }
+        });
+        
+        // Radial menu items
+        this.radialMenu.querySelectorAll('.radial-item').forEach(item => {
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = item.dataset.action;
+            this.handleRadialAction(action);
+          });
+        });
+        
+        // Track mouse position for neural effects
+        this.mouseX = 0;
+        this.mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+          this.mouseX = e.clientX;
+          this.mouseY = e.clientY;
+          
+          // Add proximity effects to nodes (both menu and constellation modes)
+          if ((this.isMenuOpen || this.isConstellationMode) && this.nodes.length > 0) {
+            this.nodes.forEach(node => {
+              const dist = Math.sqrt(
+                Math.pow(this.mouseX - node.x, 2) + 
+                Math.pow(this.mouseY - node.y, 2)
+              );
+              
+              if (dist < 150) {
+                // Gentle repel nodes from mouse (petri dish organisms)
+                const force = (150 - dist) / 150;
+                const angle = Math.atan2(node.y - this.mouseY, node.x - this.mouseX);
+                node.vx += Math.cos(angle) * force * 0.5; // Much gentler repulsion
+                node.vy += Math.sin(angle) * force * 0.5;
+                
+                // Add glow effect (stronger for memory nodes)
+                const glowStrength = this.isConstellationMode ? 60 : 40;
+                const baseOpacity = this.isConstellationMode ? 0.8 : 0.6;
+                node.element.style.boxShadow = `0 0 ${glowStrength + force * 30}px rgba(134, 88, 255, ${baseOpacity + force * 0.4})`;
+              } else {
+                const defaultGlow = this.isConstellationMode ? '0 0 40px rgba(134, 88, 255, 0.4)' : '0 0 30px rgba(134, 88, 255, 0.2)';
+                node.element.style.boxShadow = defaultGlow;
+              }
+            });
+          }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+            e.preventDefault();
+            this.startVoiceCapture();
+          } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            this.handleRadialAction('search');
+          } else if (e.key === 'Escape' && this.isMenuOpen) {
+            this.toggleRadialMenu();
+          }
+        });
+        
+        // Click outside to close menu
+        document.addEventListener('click', (e) => {
+          if (this.isMenuOpen && !this.orb.contains(e.target) && !this.radialMenu.contains(e.target)) {
+            console.log('🚨 Document click closing menu - target:', e.target);
+            this.toggleRadialMenu();
+          }
+        });
+        
+        // Hover effects for orb
+        this.orb.addEventListener('mouseenter', () => {
+          document.querySelectorAll('.quick-stats').forEach(el => {
+            el.style.opacity = '1';
+          });
+        });
+      }
+
+      initNeuralNetwork() {
+        // Initialize neural nodes
+        console.log('🔧 radialMenu element:', this.radialMenu);
+        console.log('🔧 radialMenu innerHTML preview:', this.radialMenu ? this.radialMenu.innerHTML.substring(0, 200) : 'NULL');
+        
+        const items = this.radialMenu.querySelectorAll('.radial-item');
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const radius = 250;
+        
+        console.log('🔧 initNeuralNetwork: found', items.length, 'items, center:', centerX, centerY);
+        
+        // Debug: Check if items exist but are hidden
+        if (items.length === 0) {
+          console.log('🚨 No .radial-item elements found! Checking for all children:');
+          const allChildren = this.radialMenu.querySelectorAll('*');
+          console.log('🔧 Total children in radialMenu:', allChildren.length);
+          allChildren.forEach((child, i) => {
+            console.log(`🔧 Child ${i}:`, child.className, child.tagName);
+          });
+        }
+        
+        items.forEach((item, i) => {
+          const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+          
+          // CRITICAL: Actually position the DOM element
+          item.style.left = (x - 45) + 'px'; // Center the 90px item
+          item.style.top = (y - 45) + 'px';
+          console.log('🔧 Positioned item', i, 'at', x, y, 'DOM:', (x-45), (y-45));
+          
+          this.nodes.push({
+            element: item,
+            x: x,
+            y: y,
+            vx: 0,
+            vy: 0,
+            baseX: x,
+            baseY: y,
+            angle: angle,
+            connections: []
+          });
+        });
+        
+        // Create connections between nodes
+        this.nodes.forEach((node, i) => {
+          // Connect to adjacent nodes
+          const next = this.nodes[(i + 1) % this.nodes.length];
+          const prev = this.nodes[(i - 1 + this.nodes.length) % this.nodes.length];
+          node.connections.push(next, prev);
+          
+          // Connect to opposite node for cross-connections
+          const opposite = this.nodes[(i + Math.floor(this.nodes.length / 2)) % this.nodes.length];
+          if (opposite !== node) {
+            node.connections.push(opposite);
+          }
+        });
+        
+        // Add central orb as a node
+        this.centralNode = {
+          x: centerX,
+          y: centerY,
+          element: this.orb
+        };
+        
+        // Connect all nodes to center
+        this.nodes.forEach(node => {
+          node.connections.push(this.centralNode);
+        });
+      }
+
+      // Removed initRadialNeuralNetwork - no longer needed since we exit constellation instead of showing menu overlay
+
+      toggleRadialMenu() {
+        this.isMenuOpen = !this.isMenuOpen;
+        console.log('🎯 Toggle menu:', this.isMenuOpen, 'constellation mode:', this.isConstellationMode);
+        
+        if (this.isMenuOpen) {
+          this.radialMenu.classList.add('active');
+          document.body.classList.add('menu-active'); // Fade ALL UI elements
+          console.log('✅ Added menu-active class to body');
+          this.updateVaultNodeStatus(); // Update vault node based on status
+          
+          // Initialize neural network (constellation mode now exits instead of showing menu)
+          console.log('🔧 Initializing neural network for menu');
+          this.initNeuralNetwork();
+          
+          console.log('🔧 Starting neural network animation');
+          this.animateNeuralNetwork();
+          
+          // Stagger animations for menu items
+          console.log('🔧 toggleRadialMenu - about to query for .radial-item elements');
+          console.log('🔧 toggleRadialMenu - radialMenu element:', this.radialMenu);
+          const menuItems = this.radialMenu.querySelectorAll('.radial-item');
+          console.log('🔧 Found', menuItems.length, 'menu items to animate');
+          
+          menuItems.forEach((item, i) => {
+            setTimeout(() => {
+              console.log('🔧 Animating menu item', i, item);
+              // Use !important to override CSS animation
+              item.style.setProperty('transform', 'scale(1)', 'important');
+              item.style.setProperty('opacity', '1', 'important');
+              // Temporarily disable float animation during menu
+              item.style.animationPlayState = 'paused';
+            }, i * 50);
+          });
+        } else {
+          this.radialMenu.classList.remove('active');
+          document.body.classList.remove('menu-active'); // Restore ALL UI elements
+          console.log('✅ Removed menu-active class from body');
+          this.radialMenu.querySelectorAll('.radial-item').forEach(item => {
+            item.style.setProperty('transform', 'scale(0)', 'important');
+            item.style.setProperty('opacity', '0', 'important');
+            // Re-enable float animation when menu closes
+            item.style.animationPlayState = 'running';
+          });
+          
+          // Clear neural animation
+          if (this.neuralAnimationId) {
+            cancelAnimationFrame(this.neuralAnimationId);
+            this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+          }
+          
+          // Reset nodes array (constellation mode exits instead of showing menu overlay)
+          this.nodes = [];
+        }
+      }
+      
+      initLoadingOrb() {
+        try {
+          const loadingOrbContainer = document.querySelector('.loading-orb');
+          if (!loadingOrbContainer) {
+            console.warn('🌟 Loading orb container not found');
+            return;
+          }
+          
+          if (window.EmmaOrb) {
+            // Create WebGL Emma Orb for loading screen
+            this.loadingOrb = new window.EmmaOrb(loadingOrbContainer, {
+              hue: 270, // Emma's signature purple-pink
+              hoverIntensity: 0.5,
+              rotateOnHover: false,
+              forceHoverState: true // Always show active state during loading
+            });
+            console.log('🌟 Loading Emma Orb initialized successfully');
+          } else {
+            console.warn('🌟 EmmaOrb class not available for loading, using fallback');
+            // Fallback to gradient orb if WebGL not available
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'loading-orb-fallback';
+            loadingOrbContainer.appendChild(fallbackDiv);
+          }
+        } catch (error) {
+          console.error('🚨 Error initializing Loading Emma Orb:', error);
+          // Fallback on error
+          const loadingOrbContainer = document.querySelector('.loading-orb');
+          if (loadingOrbContainer) {
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'loading-orb-fallback';
+            loadingOrbContainer.appendChild(fallbackDiv);
+          }
+        }
+      }
+      
+      initEmmaOrb() {
+        try {
+          const orbContainer = document.getElementById('webgl-orb-container');
+          if (!orbContainer) {
+            console.warn('🌟 WebGL orb container not found');
+            return;
+          }
+          
+          if (window.EmmaOrb) {
+            // Create WebGL Emma Orb with Emma's signature purple-pink hue
+            this.webglOrb = new window.EmmaOrb(orbContainer, {
+              hue: 270, // Purple-pink Emma colors
+              hoverIntensity: 0.35,
+              rotateOnHover: true,
+              forceHoverState: false
+            });
+            console.log('🌟 WebGL Emma Orb initialized successfully');
+          } else {
+            console.warn('🌟 EmmaOrb class not available, using fallback');
+            // Fallback to simple gradient if EmmaOrb class not loaded
+            orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5)';
+            orbContainer.style.borderRadius = '50%';
+            orbContainer.style.width = '100%';
+            orbContainer.style.height = '100%';
+          }
+        } catch (error) {
+          console.error('🚨 Error initializing Emma Orb:', error);
+          // Ensure fallback is applied
+          const orbContainer = document.getElementById('webgl-orb-container');
+          if (orbContainer) {
+            orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5)';
+            orbContainer.style.borderRadius = '50%';
+            orbContainer.style.width = '100%';
+            orbContainer.style.height = '100%';
+          }
+        }
+      }
+      
+      updateVaultNodeStatus() {
+        try {
+          const vaultNode = document.getElementById('vault-node');
+          if (!vaultNode) {
+            console.warn('⚠️ Vault node not found, skipping status update');
+            return;
+          }
+          
+          const vaultIcon = vaultNode.querySelector('.radial-item-icon');
+          if (!vaultIcon) {
+            console.warn('⚠️ Vault icon not found, skipping status update');
+            return;
+          }
+          
+          if (window.currentVaultStatus && window.currentVaultStatus.isUnlocked) {
+            vaultIcon.textContent = '🔓';
+            vaultNode.style.background = 'rgba(74, 222, 128, 0.1)'; // Green tint when unlocked
+            vaultNode.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+          } else {
+            vaultIcon.textContent = '🔒';
+            vaultNode.style.background = 'var(--emma-glass)'; // Default when locked
+            vaultNode.style.borderColor = 'rgba(134, 88, 255, 0.3)';
+          }
+        } catch (error) {
+          console.warn('⚠️ Error updating vault node status:', error);
+        }
+      }
+      
+      // Check if a line intersects with Emma orb circle
+      lineIntersectsCircle(x1, y1, x2, y2, cx, cy, radius) {
+        // Vector from point1 to point2
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        
+        // Vector from point1 to circle center
+        const fx = x1 - cx;
+        const fy = y1 - cy;
+        
+        // Quadratic equation coefficients
+        const a = dx * dx + dy * dy;
+        const b = 2 * (fx * dx + fy * dy);
+        const c = (fx * fx + fy * fy) - radius * radius;
+        
+        const discriminant = b * b - 4 * a * c;
+        
+        // No intersection if discriminant is negative
+        if (discriminant < 0) return false;
+        
+        // Check if intersection points are within the line segment
+        const sqrt_discriminant = Math.sqrt(discriminant);
+        const t1 = (-b - sqrt_discriminant) / (2 * a);
+        const t2 = (-b + sqrt_discriminant) / (2 * a);
+        
+        // If either intersection point is within [0,1], line intersects circle
+        return (t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1) || (t1 < 0 && t2 > 1);
+      }
+
+      animateNeuralNetwork() {
+        // Resize canvas
+        this.neuralCanvas.width = window.innerWidth;
+        this.neuralCanvas.height = window.innerHeight;
+        
+        const animate = () => {
+          if (!this.isMenuOpen && !this.isConstellationMode) return;
+          
+          // Clear canvas
+          this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+          
+          // Draw subtle grid background when menu is open or in constellation mode
+          if (this.isMenuOpen || this.isConstellationMode) {
+            this.neuralCtx.strokeStyle = 'rgba(134, 88, 255, 0.03)';
+            this.neuralCtx.lineWidth = 1;
+            const gridSize = 50;
+            
+            // Draw vertical lines
+            for (let x = 0; x < this.neuralCanvas.width; x += gridSize) {
+              this.neuralCtx.beginPath();
+              this.neuralCtx.moveTo(x, 0);
+              this.neuralCtx.lineTo(x, this.neuralCanvas.height);
+              this.neuralCtx.stroke();
+            }
+            
+            // Draw horizontal lines
+            for (let y = 0; y < this.neuralCanvas.height; y += gridSize) {
+              this.neuralCtx.beginPath();
+              this.neuralCtx.moveTo(0, y);
+              this.neuralCtx.lineTo(this.neuralCanvas.width, y);
+              this.neuralCtx.stroke();
+            }
+          }
+          
+          // Update node positions with organic movement
+          const time = Date.now() * 0.001;
+          this.nodes.forEach((node, i) => {
+            // Gentle organic floating movement (petri dish feel)
+            const floatX = Math.sin(time * 0.3 + i) * 12;
+            const floatY = Math.cos(time * 0.2 + i * 0.5) * 8;
+            
+            // Gentle elastic force back to base position (petri dish feel)
+            const dx = (node.baseX + floatX) - node.x;
+            const dy = (node.baseY + floatY) - node.y;
+            
+            node.vx += dx * 0.005; // Much gentler elastic force
+            node.vy += dy * 0.005;
+            
+            // Apply more damping for organic feel
+            node.vx *= 0.98;
+            node.vy *= 0.98;
+            
+            // Add repulsion from Emma orb (prevent overlap)
+            if (this.centralNode && this.isConstellationMode) {
+              const orbDx = node.x - this.centralNode.x;
+              const orbDy = node.y - this.centralNode.y;
+              const orbDist = Math.sqrt(orbDx * orbDx + orbDy * orbDy);
+              
+              // Repulsion zone around Emma orb
+              const repulsionRadius = 150;
+              if (orbDist < repulsionRadius && orbDist > 0) {
+                const repulsionForce = (repulsionRadius - orbDist) / repulsionRadius;
+                const forceStrength = repulsionForce * 0.3; // Gentle but firm repulsion
+                
+                const normalizedDx = orbDx / orbDist;
+                const normalizedDy = orbDy / orbDist;
+                
+                node.vx += normalizedDx * forceStrength;
+                node.vy += normalizedDy * forceStrength;
+              }
+            }
+            
+            // Add gentle repulsion between memory nodes (prevent overlap)
+            if (this.isConstellationMode) {
+              this.nodes.forEach((otherNode, j) => {
+                if (i !== j) {
+                  const nodeDx = node.x - otherNode.x;
+                  const nodeDy = node.y - otherNode.y;
+                  const nodeDist = Math.sqrt(nodeDx * nodeDx + nodeDy * nodeDy);
+                  
+                  // Minimum distance between nodes
+                  const minNodeDistance = 110;
+                  if (nodeDist < minNodeDistance && nodeDist > 0) {
+                    const repulsionForce = (minNodeDistance - nodeDist) / minNodeDistance;
+                    const forceStrength = repulsionForce * 0.1; // Very gentle node repulsion
+                    
+                    const normalizedDx = nodeDx / nodeDist;
+                    const normalizedDy = nodeDy / nodeDist;
+                    
+                    node.vx += normalizedDx * forceStrength;
+                    node.vy += normalizedDy * forceStrength;
+                  }
+                }
+              });
+            }
+            
+            // Update position
+            node.x += node.vx;
+            node.y += node.vy;
+            
+            // Update DOM element position
+            node.element.style.left = node.x - 45 + 'px';
+            node.element.style.top = node.y - 45 + 'px';
+          });
+          
+          // Draw connections with gradients
+          this.nodes.forEach(node => {
+            node.connections.forEach(target => {
+              // Check if line would pass through Emma orb area - if so, skip drawing
+              const centerX = window.innerWidth / 2;
+              const centerY = window.innerHeight / 2;
+              const orbRadius = 110; // Clean boundary around orb
+              
+              if (this.lineIntersectsCircle(node.x, node.y, target.x, target.y, centerX, centerY, orbRadius)) {
+                return; // Skip drawing this connection - it would cross the orb
+              }
+              
+              // Calculate distance for opacity
+              const dist = Math.sqrt(
+                Math.pow(node.x - target.x, 2) + 
+                Math.pow(node.y - target.y, 2)
+              );
+              
+              // Different opacity for main menu vs memory constellation
+              const isMemoryMode = this.isConstellationMode && !this.isMenuOpen;
+              const gradient = this.neuralCtx.createLinearGradient(
+                node.x, node.y, target.x, target.y
+              );
+              
+              if (isMemoryMode) {
+                // Visible connections for memory constellation
+                gradient.addColorStop(0, 'rgba(134, 88, 255, 0.2)');
+                gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.15)');
+                gradient.addColorStop(1, 'rgba(134, 88, 255, 0.2)');
+                this.neuralCtx.lineWidth = 1.2 + Math.sin(time + dist * 0.01) * 0.2;
+              } else {
+                // Subtle connections for main menu (original loved style)
+                gradient.addColorStop(0, 'rgba(134, 88, 255, 0.03)');
+                gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.02)');
+                gradient.addColorStop(1, 'rgba(134, 88, 255, 0.03)');
+                this.neuralCtx.lineWidth = 0.5 + Math.sin(time + dist * 0.01) * 0.1;
+              }
+              
+              this.neuralCtx.strokeStyle = gradient;
+              
+              this.neuralCtx.beginPath();
+              this.neuralCtx.moveTo(node.x, node.y);
+              
+              // Gentle organic curved connections
+              const midX = (node.x + target.x) / 2;
+              const midY = (node.y + target.y) / 2;
+              const curve1 = Math.sin(time * 0.4 + node.x * 0.005) * 15;
+              const curve2 = Math.cos(time * 0.3 + node.y * 0.005) * 10;
+              
+              this.neuralCtx.bezierCurveTo(
+                node.x + curve1,
+                node.y + curve2,
+                target.x - curve2,
+                target.y - curve1,
+                target.x,
+                target.y
+              );
+              
+              this.neuralCtx.stroke();
+            });
+          });
+          
+          // Remove energy pulses - too aggressive
+          
+          this.neuralAnimationId = requestAnimationFrame(animate);
+        };
+        
+        animate();
+      }
+
+      async handleRadialAction(action) {
+        console.log('🎯 Dashboard action:', action);
+        
+        switch(action) {
+          case 'capture':
+            this.startVoiceCapture();
+            break;
+          case 'vault':
+            this.openVaultModal();
+            break;
+          case 'memories':
+            await this.enterMemoryConstellation();
+            break;
+          case 'people':
+            window.location.href = 'people-emma.html';
+            break;
+          case 'search':
+            this.showToast('🔍 Search coming soon!', 'info');
+            break;
+          case 'share':
+            this.showQRShare();
+            break;
+          case 'chat':
+            this.startEmmaChatExperience();
+            break;
+          case 'settings':
+            window.location.href = 'options.html';
+            break;
+        }
+        
+        // Close menu after action
+        if (this.isMenuOpen) {
+          this.toggleRadialMenu();
+        }
+      }
+
+      async startVoiceCapture() {
+        console.log('🎤 Starting enhanced voice capture experience');
+        
+        // Calculate elegant position relative to Emma orb
+        const orbRect = this.orb.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Position the panel optimally
+        let left = orbRect.right + 24;
+        let top = Math.max(40, orbRect.top - 80);
+        
+        // Ensure it fits in viewport
+        const panelWidth = 480;
+        const panelHeight = 700;
+        
+        if (left + panelWidth > viewportWidth - 40) {
+          left = orbRect.left - panelWidth - 24;
+        }
+        
+        if (top + panelHeight > viewportHeight - 40) {
+          top = viewportHeight - panelHeight - 40;
+        }
+        
+        const position = {
+          left: Math.max(40, left),
+          top: Math.max(40, top),
+          width: panelWidth,
+          height: panelHeight
+        };
+        
+        // Create and show voice capture experience
+        this.voiceCaptureExperience = new VoiceCaptureExperience(position, {
+          voiceEnabled: true,
+          autoStart: false // Let user initiate
+        });
+        
+        try {
+          await this.voiceCaptureExperience.show();
+          console.log('🎤 Voice Memory Studio opened successfully');
+        } catch (error) {
+          console.error('🎤 Failed to open voice capture:', error);
+          this.showToast('Failed to open Voice Memory Studio. Please try again.', 'error');
+        }
+      }
+
+      async startEmmaChatExperience() {
+        console.log('💬 Starting Emma Chat Experience');
+        
+        // Calculate elegant position relative to Emma orb
+        const orbRect = this.orb.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Position the chat panel optimally - slightly larger than voice capture
+        let left = orbRect.right + 24;
+        let top = Math.max(40, orbRect.top - 100);
+        
+        // Chat panel dimensions
+        const panelWidth = 600; // Wider for comfortable chat
+        const panelHeight = 700;
+        
+        // Ensure it fits in viewport
+        if (left + panelWidth > viewportWidth - 40) {
+          left = orbRect.left - panelWidth - 24;
+        }
+        
+        if (top + panelHeight > viewportHeight - 40) {
+          top = viewportHeight - panelHeight - 40;
+        }
+        
+        const position = {
+          left: Math.max(40, left),
+          top: Math.max(40, top),
+          width: panelWidth,
+          height: panelHeight
+        };
+        
+        // Create and show Emma chat experience
+        this.emmaChatExperience = new EmmaChatExperience(position, {
+          contextAware: true,
+          memoryIntegration: true
+        });
+        
+        try {
+          await this.emmaChatExperience.show();
+          console.log('💬 Emma Chat opened successfully');
+        } catch (error) {
+          console.error('💬 Failed to open Emma Chat:', error);
+          this.showToast('Failed to open Chat with Emma. Please try again.', 'error');
+        }
+      }
+
+      openVaultModal() {
+        const modal = document.getElementById('vault-modal');
+        const statusIcon = document.getElementById('status-icon');
+        const statusTitle = document.getElementById('status-title');
+        const statusDescription = document.getElementById('status-description');
+        const actionBtn = document.getElementById('vault-action-btn');
+        const statusCard = document.getElementById('vault-status-card');
+        const unlockSection = document.getElementById('unlock-section');
+        const createVaultSection = document.getElementById('create-vault-section');
+
+        // Check if vault exists first
+        const vaultExists = window.currentVaultStatus && window.currentVaultStatus.vaultId;
+        
+        if (!vaultExists) {
+          // No vault found - show create vault option
+          statusIcon.textContent = '❌';
+          statusTitle.textContent = 'No Vault Found';
+          statusDescription.textContent = 'Create your first Emma memory vault to get started';
+          actionBtn.style.display = 'none'; // Hide unlock button
+          unlockSection.style.display = 'none';
+          createVaultSection.style.display = 'block';
+        } else if (window.currentVaultStatus && window.currentVaultStatus.isUnlocked) {
+          statusIcon.textContent = '🔓';
+          statusTitle.textContent = 'Vault Unlocked';
+          statusDescription.textContent = 'Your memories are accessible and secure';
+          actionBtn.textContent = '🔒 Lock Vault';
+          actionBtn.onclick = () => this.lockVault();
+          actionBtn.style.display = 'block';
+          statusCard.classList.add('unlocked');
+          unlockSection.style.display = 'none';
+          createVaultSection.style.display = 'none';
+        } else {
+          statusIcon.textContent = '🔒';
+          statusTitle.textContent = 'Vault Locked';
+          statusDescription.textContent = 'Enter your vault code to access your memories';
+          actionBtn.textContent = 'Unlock Vault';
+          actionBtn.onclick = () => this.showUnlockForm();
+          actionBtn.style.display = 'block';
+          statusCard.classList.remove('unlocked');
+          unlockSection.style.display = 'none';
+          createVaultSection.style.display = 'none';
+        }
+
+        modal.style.display = 'flex';
+        setTimeout(() => {
+          modal.classList.add('show');
+        }, 10);
+        
+        // Store reference for global access
+        window.openVaultModal = () => this.openVaultModal();
+      }
+      
+      closeVaultModal() {
+        const modal = document.getElementById('vault-modal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 300);
+      }
+
+      showUnlockForm() {
+        // Use beautiful universal vault modal instead of inline form
+        universalVaultModal.show({
+          title: "Unlock Vault",
+          message: "Enter your vault passphrase to access your secure memories",
+          onSuccess: (result) => {
+            // Update vault status
+            window.currentVaultStatus = { isUnlocked: true };
+            this.loadDashboardData();
+            this.updateVaultNodeStatus();
+            this.openVaultModal(); // Refresh modal with new status
+            this.showToast('✅ Vault unlocked successfully!', 'success');
+          },
+          onCancel: () => {
+            console.log('🔐 User cancelled vault unlock');
+          }
+        });
+      }
+
+      hideUnlockForm() {
+        const unlockSection = document.getElementById('unlock-section');
+        const passwordInput = document.getElementById('vault-password');
+        unlockSection.style.display = 'none';
+        passwordInput.value = '';
+      }
+
+      async unlockVault() {
+        const passwordInput = document.getElementById('vault-password');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const password = passwordInput.value.trim();
+
+        if (!password) {
+          passwordInput.focus();
+          return;
+        }
+
+        try {
+          unlockBtn.disabled = true;
+          unlockBtn.textContent = '🔓 Unlocking...';
+
+          if (window.emmaAPI && window.emmaAPI.vault) {
+            const result = await window.emmaAPI.vault.unlock({ passphrase: password });
+            
+            if (result && result.success) {
+              // Success - update status and close form
+              window.currentVaultStatus = { isUnlocked: true };
+              await this.loadDashboardData();
+              this.updateVaultNodeStatus(); // Update the floating vault node
+              this.hideUnlockForm();
+              this.openVaultModal(); // Refresh modal with new status
+              this.showToast('✅ Vault unlocked successfully!', 'success');
+            } else {
+              throw new Error(result?.error || 'Unlock failed');
+            }
+          } else {
+            // No API available
+            throw new Error('Vault API not available');
+          }
+        } catch (error) {
+          console.error('🏠 Dashboard: Unlock error:', error);
+          this.showToast('❌ Failed to unlock vault: ' + error.message, 'error');
+        } finally {
+          unlockBtn.disabled = false;
+          unlockBtn.textContent = '🔓 Unlock';
+        }
+      }
+
+      async lockVault() {
+        try {
+          if (window.emmaAPI && window.emmaAPI.vault) {
+            const result = await window.emmaAPI.vault.lock();
+            
+            if (result && result.success) {
+              window.currentVaultStatus = { isUnlocked: false };
+              await this.loadDashboardData();
+              this.updateVaultNodeStatus(); // Update the floating vault node
+              this.openVaultModal(); // Refresh modal with new status
+              this.showToast('🔒 Vault locked successfully!', 'success');
+            } else {
+              throw new Error(result?.error || 'Lock failed');
+            }
+          } else {
+            // Demo mode
+            console.warn('🏠 Dashboard: No Emma API - demo lock');
+            window.currentVaultStatus = { isUnlocked: false };
+            await this.loadDashboardData();
+            this.updateVaultNodeStatus(); // Update the floating vault node
+            this.openVaultModal();
+            this.showToast('🎭 Demo vault locked!', 'info');
+          }
+        } catch (error) {
+          console.error('🏠 Dashboard: Lock error:', error);
+          this.showToast('❌ Failed to lock vault: ' + error.message, 'error');
+        }
+      }
+
+      async showQRShare() {
+        console.log('🔗 Starting Emma Share Experience');
+        
+        // Check if classes are available
+        if (typeof EmmaShareExperience === 'undefined') {
+          console.error('🔗 EmmaShareExperience class not found');
+          this.showToast('Share feature unavailable. Please refresh the page.', 'error');
+          return;
+        }
+        
+        if (typeof QRService === 'undefined') {
+          console.warn('🔗 QRService class not found - will use fallback');
+        }
+        
+        // Calculate elegant position relative to Emma orb
+        const orbRect = this.orb.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        console.log('🔗 Orb rect:', orbRect);
+        console.log('🔗 Viewport:', viewportWidth, 'x', viewportHeight);
+        
+        // Position the share panel optimally
+        let left = orbRect.right + 24;
+        let top = Math.max(40, orbRect.top - 120);
+        
+        // Share panel dimensions
+        const panelWidth = 650; // Wider for share content
+        const panelHeight = 720;
+        
+        // Ensure it fits in viewport
+        if (left + panelWidth > viewportWidth - 40) {
+          left = orbRect.left - panelWidth - 24;
+        }
+        
+        if (top + panelHeight > viewportHeight - 40) {
+          top = viewportHeight - panelHeight - 40;
+        }
+        
+        const position = {
+          left: Math.max(40, left),
+          top: Math.max(40, top),
+          width: panelWidth,
+          height: panelHeight
+        };
+        
+        console.log('🔗 Share panel position:', position);
+        
+        try {
+          // Create and show Emma share experience
+          this.emmaShareExperience = new EmmaShareExperience(position, {
+            contextAware: true,
+            vaultIntegration: true
+          });
+          
+          console.log('🔗 Share experience created:', this.emmaShareExperience);
+          
+          // Set global reference for share actions
+          window.shareExperience = this.emmaShareExperience;
+          
+          await this.emmaShareExperience.show();
+          console.log('🔗 Emma Share opened successfully');
+        } catch (error) {
+          console.error('🔗 Failed to open Emma Share:', error);
+          this.showToast('Failed to open Share interface: ' + error.message, 'error');
+        }
+      }
+
+      async loadDashboardData() {
+        try {
+          // Load vault status (store but don't show on central orb)
+          if (window.emmaAPI && window.emmaAPI.vault) {
+            try {
+              const status = await window.emmaAPI.vault.status();
+              window.currentVaultStatus = status || { isUnlocked: false };
+            } catch (e) {
+              console.warn('⚠️ Vault status unavailable:', e.message);
+              window.currentVaultStatus = { isUnlocked: false };
+            }
+            
+            // Keep central orb neutral - Emma branding only (text removed)
+            
+            // Load stats safely
+            try {
+              const stats = await window.emmaAPI.vault.stats();
+              this.updateStats({
+                memories: (stats && stats.totalMemories) || 42,
+                people: (stats && stats.totalPeople) || 12,
+                today: (stats && stats.todayMemories) || 3
+              });
+            } catch (e) {
+              console.warn('⚠️ Vault stats unavailable:', e.message);
+              this.updateStats({ memories: 42, people: 12, today: 3 });
+            }
+          } else {
+            // Demo data when API not available
+            console.log('🎭 Using demo data - Emma API not available');
+            window.currentVaultStatus = { isUnlocked: false };
+            this.updateStats({ memories: 42, people: 12, today: 3 });
+          }
+        } catch (error) {
+          console.error('🚨 Dashboard data load error:', error);
+          // Fallback to demo data
+          window.currentVaultStatus = { isUnlocked: false };
+          this.updateStats({ memories: 42, people: 12, today: 3 });
+        }
+      }
+
+      updateStats(newStats) {
+        Object.assign(this.stats, newStats);
+        
+        // Animate number changes
+        Object.keys(newStats).forEach(key => {
+          const element = document.getElementById(`stat-${key}`);
+          if (element) {
+            const start = parseInt(element.textContent) || 0;
+            const end = this.stats[key];
+            const duration = 1000;
+            const startTime = Date.now();
+            
+            const animate = () => {
+              const elapsed = Date.now() - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              const current = Math.floor(start + (end - start) * progress);
+              element.textContent = current;
+              
+              if (progress < 1) {
+                requestAnimationFrame(animate);
+              }
+            };
+            animate();
+          }
+        });
+      }
+
+      showContextualPanels() {
+        const hour = new Date().getHours();
+        
+        // Show all panels for demo
+        setTimeout(() => {
+          // Show all available panels
+          if (this.panels.dailyBrief) this.panels.dailyBrief.classList.add('active');
+          if (this.panels.aiInsights) this.panels.aiInsights.classList.add('active');
+          if (this.panels.quickActions) this.panels.quickActions.classList.add('active');
+        }, 1000);
+      }
+
+      startAnimations() {
+        // Subtle pulse animation for WebGL orb
+        setInterval(() => {
+          if (window.currentVaultStatus && !window.currentVaultStatus.isUnlocked) {
+            const orbContainer = this.orb.querySelector('.emma-orb-webgl');
+            if (orbContainer) {
+              orbContainer.style.animation = 'orb-pulse 2s ease-in-out';
+            }
+          }
+        }, 5000);
+      }
+
+
+
+      // Enter memory constellation mode
+      async enterMemoryConstellation() {
+        console.log('🧠 Entering memory neural network mode');
+        
+        // CRITICAL: Clear any existing memory nodes first (prevents duplicates)
+        this.clearAllMemoryNodesFromDOM();
+        
+        this.isConstellationMode = true;
+        
+        // Add constellation-active class to hide all UI
+        document.body.classList.add('constellation-active');
+        
+        // Shrink central orb
+        this.shrinkCentralOrb();
+        
+        // Load memory data
+        await this.loadMemoriesForConstellation();
+        
+        // Fade out current nodes
+        await this.fadeOutMenuNodes();
+        
+        // Create memory constellation (await for real memories)
+        await this.createMemoryConstellation();
+        
+        // Show constellation UI
+        this.showConstellationUI();
+      }
+
+      // Shrink central Emma orb when memories are visible
+      shrinkCentralOrb() {
+        const orbContainer = this.orb.querySelector('.emma-orb-webgl');
+        if (orbContainer) {
+          orbContainer.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+          orbContainer.style.transform = 'scale(0.7)';
+        }
+        
+        // Also shrink the entire orb container
+        this.orb.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        this.orb.style.transform = 'scale(0.7)';
+        
+        // Add hover effects for memory mode
+        this.addOrbHoverEffects();
+      }
+
+      // Add hover effects to orb in memory mode
+      addOrbHoverEffects() {
+        if (this.orbHoverAdded) return;
+        this.orbHoverAdded = true;
+        
+        const orbContainer = this.orb.querySelector('.emma-orb-webgl');
+        
+        this.orb.addEventListener('mouseenter', () => {
+          if (this.isConstellationMode) {
+            this.orb.style.transform = 'scale(0.9)';
+            if (orbContainer) {
+              orbContainer.style.transform = 'scale(0.9)';
+            }
+          }
+        });
+        
+        this.orb.addEventListener('mouseleave', () => {
+          if (this.isConstellationMode) {
+            this.orb.style.transform = 'scale(0.7)';
+            if (orbContainer) {
+              orbContainer.style.transform = 'scale(0.7)';
+            }
+          }
+        });
+      }
+
+      // Restore central Emma orb size
+      restoreCentralOrb() {
+        const orbContainer = this.orb.querySelector('.emma-orb-webgl');
+        if (orbContainer) {
+          orbContainer.style.transform = 'scale(1)';
+        }
+        this.orb.style.transform = 'scale(1)';
+      }
+
+      // Load memories for constellation
+      async loadMemoriesForConstellation() {
+        try {
+          // Get memories from API 
+          let memories = await this.getMemories();
+          console.log('💝 Raw memories from vault:', memories);
+          console.log('💝 CONSTELLATION DEBUG: Memory count:', memories.length);
+          if (memories.length > 0) {
+            console.log('💝 CONSTELLATION DEBUG: First memory:', memories[0]);
+            console.log('💝 CONSTELLATION DEBUG: Memory titles:', memories.map(m => m.title));
+          }
+          
+          // Add debugging info about available APIs
+          console.log('💝 Available Emma APIs:', {
+            emmaAPI: !!window.emmaAPI,
+            memories: !!window.emmaAPI?.memories,
+            memoriesGetAll: !!window.emmaAPI?.memories?.getAll,
+            memoriesSave: !!window.emmaAPI?.memories?.save,
+            storage: !!window.emmaAPI?.storage
+          });
+          
+          this.constellationMemories = this.organizeMemoriesByTheme(memories);
+          console.log('💝 Organized memories for constellation:', this.constellationMemories);
+          
+          // Count total memories
+          const totalMemories = Object.values(this.constellationMemories).reduce((sum, theme) => sum + theme.length, 0);
+          console.log(`💝 Total memories loaded: ${totalMemories}`);
+          
+          // If no memories, suggest user create some
+          if (totalMemories === 0) {
+            console.log('💡 No memories found in vault. User should create memories using the gallery or voice wizard.');
+          }
+          
+        } catch (error) {
+          console.log('❌ Error loading memories:', error);
+          this.constellationMemories = {family: [], travel: [], recent: [], special: []};
+        }
+      }
+
+      // Get memories from vault (same API as gallery)
+      async getMemories() {
+        try {
+          console.log('💝 CONSTELLATION: Checking emmaAPI availability:', {
+            emmaAPI: !!window.emmaAPI,
+            memories: !!window.emmaAPI?.memories,
+            getAll: !!window.emmaAPI?.memories?.getAll
+          });
+          
+          if (window.emmaAPI && window.emmaAPI.memories && window.emmaAPI.memories.getAll) {
+            console.log('💝 CONSTELLATION: Using memories.getAll() API (same as gallery)');
+            const result = await window.emmaAPI.memories.getAll({ limit: 1000, offset: 0 });
+            console.log('💝 CONSTELLATION: Raw API result:', result);
+            console.log('💝 CONSTELLATION: Vault result:', result);
+            console.log('💝 CONSTELLATION: Result type:', typeof result);
+            console.log('💝 CONSTELLATION: Is array?', Array.isArray(result));
+            console.log('💝 CONSTELLATION: Has success?', result?.success);
+            console.log('💝 CONSTELLATION: Has memories?', result?.memories);
+            
+            let vaultMemories = [];
+            if (result && result.success && Array.isArray(result.memories)) {
+              vaultMemories = result.memories;
+            } else if (result && Array.isArray(result)) {
+              vaultMemories = result;
+            }
+            
+            // Transform vault memories to expected format
+            const transformedMemories = vaultMemories.map((memory, index) => {
+              // Use thumbnail from main process (previewThumb) or extract from mediaItems
+              let thumbnail = memory.thumbnail; // First try the thumbnail from main process
+              
+              if (!thumbnail && memory.mediaItems && memory.mediaItems.length > 0) {
+                const firstImage = memory.mediaItems.find(item => item.dataUrl || item.url);
+                if (firstImage) {
+                  thumbnail = firstImage.dataUrl || firstImage.url;
+                }
+              }
+              
+              console.log(`💝 CONSTELLATION: Memory ${memory.id} thumbnail:`, thumbnail ? 'HAS IMAGE' : 'NO IMAGE');
+              if (thumbnail) {
+                console.log(`💝 CONSTELLATION: Thumbnail data for ${memory.id}:`, thumbnail.substring(0, 50) + '...');
+              }
+              
+              return {
+              id: memory.id || `vault_${index}`,
+              title: memory.title || `Memory ${index + 1}`,
+              content: memory.content || 'A precious memory...',
+              category: memory.category || memory.type || this.detectCategoryFromContent(memory),
+              date: memory.date || memory.timestamp || new Date().toISOString(),
+              tags: memory.tags || [],
+                mediaItems: memory.mediaItems || [],
+                thumbnail: thumbnail // Add the actual image thumbnail
+              };
+            });
+            
+            console.log(`💝 DASHBOARD: Transformed ${transformedMemories.length} memories from vault`);
+            return transformedMemories;
+          }
+        } catch (error) {
+          console.error('💝 CONSTELLATION: Error loading memories from vault:', error);
+        }
+        return [];
+      }
+
+      // Helper to detect category from memory content
+      detectCategoryFromContent(memory) {
+        const content = ((memory.title || '') + ' ' + (memory.content || '')).toLowerCase();
+        if (content.includes('family') || content.includes('mom') || content.includes('dad')) return 'family';
+        if (content.includes('travel') || content.includes('trip') || content.includes('vacation')) return 'travel';
+        if (memory.timestamp && new Date() - new Date(memory.timestamp) < 30 * 24 * 60 * 60 * 1000) return 'recent';
+        return 'special';
+      }
+
+      // Generate organic neural network positions (NOT circular)
+      generateNeuralNetworkPositions(nodeCount, centerX, centerY, width, height, minDistance) {
+        const positions = [];
+        const maxAttempts = 100;
+        
+        // First position: Create Memory node in top-center area
+        positions.push({
+          x: centerX + (Math.random() - 0.5) * 100,
+          y: centerY - height * 0.25 + (Math.random() - 0.5) * 80
+        });
+        
+        // Generate remaining positions with organic scatter
+        for (let i = 1; i < nodeCount; i++) {
+          let placed = false;
+          let attempts = 0;
+          
+          while (!placed && attempts < maxAttempts) {
+            // Use clustered random distribution (not uniform)
+            const clusterX = centerX + (Math.random() - 0.5) * width;
+            const clusterY = centerY + (Math.random() - 0.5) * height;
+            
+            // Add some organic bias toward clusters
+            const biasStrength = Math.random() * 0.3;
+            const biasAngle = Math.random() * Math.PI * 2;
+            const x = clusterX + Math.cos(biasAngle) * biasStrength * 150;
+            const y = clusterY + Math.sin(biasAngle) * biasStrength * 150;
+            
+            // Check minimum distance from all existing nodes AND center orb
+            let validPosition = true;
+            
+            // Check distance from center Emma orb (exclusion zone)
+            const distFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+            if (distFromCenter < 150) { // 150px exclusion zone around Emma orb
+              validPosition = false;
+            }
+            
+            // Check distance from other nodes
+            if (validPosition) {
+              for (const pos of positions) {
+                const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+                if (dist < minDistance) {
+                  validPosition = false;
+                  break;
+                }
+              }
+            }
+            
+            // Keep nodes within bounds
+            if (validPosition && 
+                x > centerX - width/2 + 50 && x < centerX + width/2 - 50 &&
+                y > centerY - height/2 + 50 && y < centerY + height/2 - 50) {
+              positions.push({ x, y });
+              placed = true;
+            }
+            
+            attempts++;
+          }
+          
+          // Fallback if can't place after max attempts
+          if (!placed) {
+            const angle = (i / nodeCount) * Math.PI * 2;
+            const fallbackRadius = 200 + Math.random() * 100;
+            positions.push({
+              x: centerX + Math.cos(angle) * fallbackRadius,
+              y: centerY + Math.sin(angle) * fallbackRadius
+            });
+          }
+        }
+        
+        console.log(`🧠 Generated ${positions.length} organic neural positions`);
+        return positions;
+      }
+
+
+
+
+
+      // Generate memory thumbnail based on theme
+      generateMemoryThumbnail(theme) {
+        const themeEmojis = {
+          family: ['👨‍👩‍👧‍👦', '🏠', '❤️', '🍽️', '🎂'],
+          travel: ['✈️', '🗺️', '📸', '🏖️', '🏔️'],
+          recent: ['📱', '☕', '🌅', '🎵', '📚'],
+          special: ['🎉', '💝', '🌟', '🎈', '🎊']
+        };
+        const emojis = themeEmojis[theme] || ['💫'];
+        return emojis[Math.floor(Math.random() * emojis.length)];
+      }
+
+      // Organize memories by theme for constellations
+      organizeMemoriesByTheme(memories) {
+        const organized = {
+          family: [],
+          travel: [], 
+          recent: [],
+          special: []
+        };
+        
+        memories.forEach(memory => {
+          const theme = memory.theme || this.detectMemoryTheme(memory);
+          if (organized[theme]) {
+            organized[theme].push(memory);
+          } else {
+            organized.special.push(memory);
+          }
+        });
+        
+        return organized;
+      }
+
+      // Detect memory theme from content
+      detectMemoryTheme(memory) {
+        // Use category first, then fallback to content analysis
+        if (memory.category) {
+          return memory.category;
+        }
+        
+        const content = (memory.title + ' ' + (memory.content || memory.description || '')).toLowerCase();
+        if (content.includes('family') || content.includes('mom') || content.includes('dad')) return 'family';
+        if (content.includes('travel') || content.includes('trip') || content.includes('vacation')) return 'travel'; 
+        if (memory.date && new Date() - new Date(memory.date) < 30 * 24 * 60 * 60 * 1000) return 'recent';
+        return 'special';
+      }
+
+      // Fade out menu nodes
+      async fadeOutMenuNodes() {
+        return new Promise(resolve => {
+          this.radialMenu.querySelectorAll('.radial-item').forEach((item, i) => {
+            setTimeout(() => {
+              item.style.transition = 'all 0.5s ease';
+              item.style.opacity = '0';
+              item.style.transform = 'scale(0)';
+            }, i * 50);
+          });
+          
+          setTimeout(resolve, 500);
+        });
+      }
+
+      // Create memory constellation using EXACT working neural network system
+      async createMemoryConstellation() {
+        console.log('🧠 Creating memory constellation using working neural network');
+        
+        // CRITICAL: Remove any existing memory nodes from DOM first
+        this.clearAllMemoryNodesFromDOM();
+        
+        // Clear existing nodes array
+        this.nodes = [];
+        
+        // Don't reload memories - use already loaded ones from enterMemoryConstellation()
+        
+        // Get memories for constellation 
+        const allMemories = [];
+        Object.keys(this.constellationMemories).forEach(theme => {
+          this.constellationMemories[theme].forEach(memory => {
+            allMemories.push({ ...memory, theme });
+          });
+        });
+        
+        // Load people from vault for constellation
+        const allPeople = await this.loadPeopleForConstellation();
+        
+        if (allMemories.length === 0 && allPeople.length === 0) {
+          console.warn('💝 No memories or people found in vault - constellation will show only the Create Memory node');
+        }
+        
+        console.log(`💝 Using ${allMemories.length} REAL memories and ${allPeople.length} people from vault for constellation`);
+        
+        // Create memory and people nodes using EXACT same pattern as main menu
+        this.initMemoryNeuralNetwork(allMemories, allPeople);
+        
+        // Set up for constellation mode without triggering menu
+        this.isMenuOpen = false; // CRITICAL: Constellation mode starts with menu closed
+        this.radialMenu.classList.remove('active'); // Ensure menu is hidden
+        document.body.classList.remove('menu-active');
+        
+        // Start the neural animation (EXACT same as main menu)
+        this.animateNeuralNetwork();
+        
+        console.log('🧠 Memory constellation activated with neural animations');
+      }
+
+      // Load people from vault for constellation
+      async loadPeopleForConstellation() {
+        try {
+          console.log('👥 CONSTELLATION: Loading people from vault...');
+          
+          if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.list) {
+            const result = await window.emmaAPI.people.list();
+            console.log('👥 CONSTELLATION: People result:', result);
+            
+            if (result && result.success && Array.isArray(result.items)) {
+              console.log(`👥 CONSTELLATION: Loaded ${result.items.length} people from vault`);
+              return result.items;
+            }
+          }
+          
+          console.log('👥 CONSTELLATION: No people found in vault');
+          return [];
+          
+        } catch (error) {
+          console.error('👥 CONSTELLATION: Error loading people:', error);
+          return [];
+        }
+      }
+
+      // Initialize memory neural network using EXACT same pattern as working main menu
+      initMemoryNeuralNetwork(memories, people = []) {
+        console.log('🧠 Initializing memory neural network with working pattern');
+        
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        // Neural network layout parameters
+        const networkWidth = Math.min(window.innerWidth * 0.7, 800);
+        const networkHeight = Math.min(window.innerHeight * 0.7, 600);
+        const minDistance = 120; // Minimum distance between nodes
+        
+        // Take up to 12 memories and up to 8 people for balanced constellation
+        const selectedMemories = memories.slice(0, 12);
+        const selectedPeople = people.slice(0, 8);
+        const totalNodes = selectedMemories.length + selectedPeople.length + 1; // +1 for create node
+        
+        console.log(`👥 CONSTELLATION: Creating ${selectedMemories.length} memory nodes + ${selectedPeople.length} people nodes + 1 create node = ${totalNodes} total`);
+        
+        // Generate organic neural network positions
+        const positions = this.generateNeuralNetworkPositions(totalNodes, centerX, centerY, networkWidth, networkHeight, minDistance);
+        
+        // Always add "Create New Memory" node at the first position (top-center area)
+        const createPos = positions[0];
+        const createMemoryElement = this.createCreateMemoryNodeElement(createPos.x, createPos.y);
+        this.nodes.push({
+          element: createMemoryElement,
+          x: createPos.x,
+          y: createPos.y,
+          vx: 0,
+          vy: 0,
+          baseX: createPos.x,
+          baseY: createPos.y,
+          connections: [],
+          isCreateNode: true
+        });
+        
+        // Create memory nodes in organic neural pattern
+        selectedMemories.forEach((memory, i) => {
+          const pos = positions[i + 1]; // Skip position 0 (create node)
+          
+          // Create memory node element 
+          const memoryElement = this.createMemoryNodeElement(memory, pos.x, pos.y);
+          
+          this.nodes.push({
+            element: memoryElement,
+            x: pos.x,
+            y: pos.y,
+            vx: 0,
+            vy: 0,
+            baseX: pos.x,
+            baseY: pos.y,
+            connections: [],
+            memory: memory,
+            type: 'memory'
+          });
+        });
+        
+        // Create people nodes in remaining positions
+        selectedPeople.forEach((person, i) => {
+          const posIndex = selectedMemories.length + i + 1; // Skip create node and memory nodes
+          const pos = positions[posIndex];
+          
+          if (pos) { // Make sure we have a position
+            // Create person node element
+            const personElement = this.createPersonNodeElement(person, pos.x, pos.y);
+            
+            this.nodes.push({
+              element: personElement,
+              x: pos.x,
+              y: pos.y,
+              vx: 0,
+              vy: 0,
+              baseX: pos.x,
+              baseY: pos.y,
+              connections: [],
+              person: person,
+              type: 'person'
+            });
+          }
+        });
+        
+        // Create intelligent connections between memories and people
+        this.createMemoryPeopleConnections(selectedMemories, selectedPeople);
+        
+        // Create organic neural network connections (NOT spoked wheel)
+        this.nodes.forEach((node, i) => {
+          // Connect to 2-4 nearby nodes within a certain distance (organic clustering)
+          this.nodes.forEach((otherNode, j) => {
+            if (i !== j) {
+              const dist = Math.sqrt(
+                Math.pow(node.x - otherNode.x, 2) + 
+                Math.pow(node.y - otherNode.y, 2)
+              );
+              
+              // Connect to nodes within a reasonable distance (creates natural clusters)
+              if (dist < 250 && node.connections.length < 4) {
+                node.connections.push(otherNode);
+              }
+            }
+          });
+          
+          // Ensure each node has at least 2 connections (prevent isolated nodes)
+          if (node.connections.length < 2) {
+            // Find the 2 closest nodes
+            const distances = this.nodes
+              .map((otherNode, j) => ({ node: otherNode, index: j, dist: j === i ? Infinity : Math.sqrt(Math.pow(node.x - otherNode.x, 2) + Math.pow(node.y - otherNode.y, 2)) }))
+              .sort((a, b) => a.dist - b.dist)
+              .slice(0, 2);
+            
+            distances.forEach(({ node: closestNode }) => {
+              if (!node.connections.includes(closestNode)) {
+                node.connections.push(closestNode);
+              }
+            });
+          }
+        });
+        
+        // Add central orb as a special node (but only some memory nodes connect to it)
+        this.centralNode = {
+          x: centerX,
+          y: centerY,
+          element: this.orb
+        };
+        
+        // Only 3-4 random memory nodes connect to center (not all - avoids spoked wheel)
+        const centralConnections = Math.min(4, Math.floor(this.nodes.length / 3));
+        const shuffledNodes = [...this.nodes].sort(() => Math.random() - 0.5);
+        shuffledNodes.slice(0, centralConnections).forEach(node => {
+          node.connections.push(this.centralNode);
+        });
+        
+        console.log(`🧠 Created ${this.nodes.length} memory nodes with organic neural network pattern`);
+      }
+
+      // Create memory node element that opens memory capsule dialog
+      createMemoryNodeElement(memory, x, y) {
+        const memoryElement = document.createElement('div');
+        memoryElement.className = 'memory-node';
+        
+        // Add theme data attribute for styling
+        memoryElement.setAttribute('data-theme', memory.theme);
+        
+        // CLEAN CIRCULAR NODE - No text labels, pure image capsule
+        memoryElement.style.cssText = `
+          position: fixed;
+          left: ${x}px;
+          top: ${y}px;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          border: 3px solid rgba(139, 92, 246, 0.6);
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 0;
+          transform: scale(0);
+          box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+          z-index: 1000;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        
+        // APPLY BACKGROUND AFTER BASE STYLING: Memory capsule as single node with image background
+        if (memory.thumbnail) {
+          // Use image as background of the entire node - NO separate elements
+          memoryElement.style.backgroundImage = `url('${memory.thumbnail}')`;
+          memoryElement.style.backgroundSize = 'cover';
+          memoryElement.style.backgroundPosition = 'center';
+          console.log(`💝 CONSTELLATION: Clean memory capsule with image background for ${memory.title}`);
+        } else {
+          // Fallback to gradient with emoji
+          memoryElement.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+          const emojiDiv = document.createElement('div');
+          emojiDiv.style.cssText = 'font-size: 24px; color: white;';
+          emojiDiv.textContent = '💝';
+          memoryElement.appendChild(emojiDiv);
+          console.log(`💝 CONSTELLATION: Clean memory capsule with emoji for ${memory.title}`);
+        }
+        
+        // Add click handler to open memory capsule dialog
+        memoryElement.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openMemoryCapsuleDialog(memory);
+        });
+        
+        // Add hover effects
+        memoryElement.addEventListener('mouseenter', () => {
+          memoryElement.style.transform = 'scale(1.1)';
+          memoryElement.style.boxShadow = '0 0 40px rgba(139, 92, 246, 0.6), 0 0 80px rgba(139, 92, 246, 0.4)';
+        });
+        
+        memoryElement.addEventListener('mouseleave', () => {
+          memoryElement.style.transform = 'scale(1)';
+          memoryElement.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.4)';
+        });
+        
+        document.body.appendChild(memoryElement);
+        
+        // Animate in with random delay for organic feel
+        const delay = Math.random() * 500 + 100;
+        setTimeout(() => {
+          memoryElement.style.transform = 'scale(1)';
+          memoryElement.style.opacity = '1';
+        }, delay);
+        
+        return memoryElement;
+      }
+
+      // Create the "Create New Memory" node element
+      createCreateMemoryNodeElement(x, y) {
+        const createElement = document.createElement('div');
+        createElement.className = 'memory-node create-memory-node';
+        // Safely create child elements
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'memory-thumbnail';
+        thumbnail.textContent = '➕';
+        
+        const label = document.createElement('div');
+        label.className = 'memory-label';
+        label.textContent = 'New Memory';
+        
+        createElement.appendChild(thumbnail);
+        createElement.appendChild(label);
+        
+        // Style like radial menu items but with create memory styling
+        createElement.style.cssText = `
+          position: fixed;
+          left: ${x - 45}px;
+          top: ${y - 45}px;
+          width: 90px;
+          height: 90px;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.2));
+          backdrop-filter: blur(20px);
+          border: 2px solid rgba(16, 185, 129, 0.4);
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          opacity: 0;
+          transform: scale(0);
+          box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+          animation: float 6s ease-in-out infinite;
+          z-index: 10;
+          color: white;
+          font-size: 12px;
+        `;
+        
+        // Add hover effect
+        createElement.addEventListener('mouseenter', () => {
+          createElement.style.transform = 'scale(1.1)';
+          createElement.style.boxShadow = '0 0 40px rgba(16, 185, 129, 0.5)';
+        });
+        
+        createElement.addEventListener('mouseleave', () => {
+          createElement.style.transform = 'scale(1)';
+          createElement.style.boxShadow = '0 0 30px rgba(16, 185, 129, 0.3)';
+        });
+        
+        // Add click handler to navigate to memory gallery for creation
+        createElement.addEventListener('click', (e) => {
+          e.stopPropagation();
+          console.log('🧠 + Node clicked - navigating to memory gallery');
+          // Simple solution: Just go to the memory gallery where users can create memories
+          window.location.href = 'memory-gallery-new.html';
+        });
+        
+        document.body.appendChild(createElement);
+        
+        // Animate in
+        setTimeout(() => {
+          createElement.style.transform = 'scale(1)';
+          createElement.style.opacity = '1';
+        }, 100);
+        
+        return createElement;
+      }
+
+      // Open Emma memory creation wizard (proper capture wizard)
+      openEmmaMemoryWizard() {
+        console.log('🧠 Opening Emma memory creation wizard');
+        
+        // CRITICAL FIX: Debug and ensure AssistantExperience is available
+        console.log('🧠 DEBUG: window.AssistantExperience =', window.AssistantExperience);
+        console.log('🧠 DEBUG: typeof window.AssistantExperience =', typeof window.AssistantExperience);
+        console.log('🧠 DEBUG: Available window objects:', Object.keys(window).filter(k => k.includes('Assistant') || k.includes('Experience')));
+        
+        try {
+          // Wait a moment for scripts to load, then check again
+          setTimeout(() => {
+            console.log('🧠 DELAYED CHECK: window.AssistantExperience =', window.AssistantExperience);
+            
+            if (window.AssistantExperience) {
+              console.log('🧠 Opening full AssistantExperience popup for memory creation');
+              // Create and show the full assistant experience popup
+              const assistantInstance = new window.AssistantExperience(
+                { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+                { showCloseButton: true }
+              );
+              // Show the full popup - this will open with the voice wizard tab active
+              assistantInstance.show();
+              // Store reference for global access
+              window.assistantInstance = assistantInstance;
+            } else {
+              console.error('🧠 AssistantExperience STILL not available after delay!');
+              console.log('🧠 Available classes:', Object.keys(window).filter(k => k.endsWith('Experience')));
+              this.showToast('❌ Emma Assistant not loaded', 'error');
+            }
+          }, 100);
+          
+        } catch (error) {
+          console.error('Failed to open Emma memory wizard:', error);
+          this.showToast('❌ Failed to open memory wizard', 'error');
+        }
+      }
+
+      // Fallback voice memory wizard
+      openVoiceMemoryWizard() {
+        console.log('🧠 Opening voice memory wizard (fallback)');
+        
+        // Create a voice memory wizard modal similar to AssistantExperience
+        const modalHTML = `
+          <div class="voice-wizard-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+          ">
+            <div class="voice-wizard-content" style="
+              background: linear-gradient(135deg, rgba(138, 43, 226, 0.95), rgba(75, 0, 130, 0.95));
+              border-radius: 20px;
+              padding: 40px;
+              width: 90%;
+              max-width: 600px;
+              box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              backdrop-filter: blur(20px);
+              color: white;
+              text-align: center;
+            ">
+              <div class="emma-section">
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-bottom: 8px;">EMMA ASKS</div>
+                <h1 style="margin: 0 0 24px 0; font-size: 28px; font-weight: 700;">
+                  What's your favorite memory with Mom? Take your time, I'm listening.
+                </h1>
+                <div class="suggestions" style="margin-bottom: 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                  <button class="suggestion-chip" style="
+                    padding: 8px 16px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 20px;
+                    color: white;
+                    font-size: 14px;
+                    cursor: pointer;
+                  ">Holiday traditions</button>
+                  <button class="suggestion-chip" style="
+                    padding: 8px 16px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 20px;
+                    color: white;
+                    font-size: 14px;
+                    cursor: pointer;
+                  ">Her wisdom</button>
+                  <button class="suggestion-chip" style="
+                    padding: 8px 16px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 20px;
+                    color: white;
+                    font-size: 14px;
+                    cursor: pointer;
+                  ">Family meals</button>
+                </div>
+              </div>
+
+              <div class="voice-capture" style="margin-bottom: 32px;">
+                <div class="voice-button-container" style="margin-bottom: 16px;">
+                  <button class="voice-button" style="
+                    width: 80px;
+                    height: 80px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.2);
+                    border: 2px solid rgba(255, 255, 255, 0.3);
+                    color: white;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto;
+                  ">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                      <line x1="12" x2="12" y1="19" y2="22"/>
+                      <line x1="8" x2="16" y1="22" y2="22"/>
+                    </svg>
+                  </button>
+                </div>
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 14px;">Tap to start recording</div>
+              </div>
+
+              <div class="transcription" style="margin-bottom: 32px;">
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-bottom: 8px;">YOUR STORY</div>
+                <div style="
+                  background: rgba(255, 255, 255, 0.1);
+                  border-radius: 12px;
+                  padding: 20px;
+                  min-height: 80px;
+                  font-style: italic;
+                  color: rgba(255, 255, 255, 0.6);
+                ">Your words will appear here as you speak...</div>
+              </div>
+
+              <div style="margin-bottom: 24px;">
+                <div style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-bottom: 8px;">1 of 5 questions</div>
+                <div style="
+                  width: 100%;
+                  height: 4px;
+                  background: rgba(255, 255, 255, 0.2);
+                  border-radius: 2px;
+                  overflow: hidden;
+                ">
+                  <div style="
+                    width: 20%;
+                    height: 100%;
+                    background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.8));
+                    border-radius: 2px;
+                  "></div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; justify-content: center;">
+                <button class="skip-btn" style="
+                  padding: 14px 28px;
+                  border: 2px solid rgba(255, 255, 255, 0.3);
+                  background: rgba(255, 255, 255, 0.1);
+                  color: white;
+                  border-radius: 10px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  font-weight: 500;
+                ">Skip</button>
+                <button class="continue-btn" style="
+                  padding: 14px 28px;
+                  border: none;
+                  background: rgba(255, 255, 255, 0.9);
+                  color: #6b46c1;
+                  border-radius: 10px;
+                  cursor: pointer;
+                  font-size: 14px;
+                  font-weight: 600;
+                ">Continue →</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Create and show modal
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        const modal = modalElement.firstElementChild;
+        document.body.appendChild(modal);
+        
+        // Add event listeners
+        const skipBtn = modal.querySelector('.skip-btn');
+        const continueBtn = modal.querySelector('.continue-btn');
+        
+        skipBtn.addEventListener('click', () => modal.remove());
+        continueBtn.addEventListener('click', () => {
+          // For now, just show a message and close
+          this.showToast('🎤 Voice wizard coming soon!', 'info');
+          modal.remove();
+        });
+        
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            modal.remove();
+          }
+        });
+      }
+
+      // Open memory capsule dialog (reuses existing memory dialog system)
+      openMemoryCapsuleDialog(memory) {
+        console.log('🧠 Opening memory capsule dialog:', memory);
+        this.openMemoryDialog(memory);
+      }
+
+      // Create neural branches from central Emma neuron
+      createNeuralBranches(memories) {
+        console.log(`🧠 Creating ${memories.length} neural branches from central Emma`);
+        
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        // First layer - primary neurons directly connected to Emma
+        const primaryCount = Math.min(8, memories.length); // Max 8 primary branches
+        const primaryAngleStep = (Math.PI * 2) / primaryCount;
+        const primaryRadius = 200;
+        
+        // Create primary neurons
+        const primaryNeurons = [];
+        for (let i = 0; i < primaryCount; i++) {
+          const angle = i * primaryAngleStep - Math.PI / 2;
+          const x = centerX + Math.cos(angle) * primaryRadius;
+          const y = centerY + Math.sin(angle) * primaryRadius;
+          
+          if (memories[i]) {
+            const neuron = this.createMemoryNode(memories[i], x, y, memories[i].theme);
+            neuron.isPrimary = true;
+            neuron.connections.push(this.centralNeuron);
+            this.centralNeuron.connections.push(neuron);
+            primaryNeurons.push(neuron);
+            this.nodes.push(neuron);
+          }
+        }
+        
+        // Create secondary and tertiary neurons branching from primaries
+        let memoryIndex = primaryCount;
+        primaryNeurons.forEach((primaryNeuron, primaryIndex) => {
+          // Calculate how many secondary neurons this primary should have
+          const remainingMemories = memories.length - memoryIndex;
+          const remainingPrimaries = primaryCount - primaryIndex;
+          const secondaryCount = Math.ceil(remainingMemories / remainingPrimaries);
+          
+          // Create secondary neurons
+          for (let j = 0; j < secondaryCount && memoryIndex < memories.length; j++) {
+            const memory = memories[memoryIndex++];
+            
+            // Position secondary neurons in an arc around the primary
+            const secondaryAngle = primaryIndex * primaryAngleStep + 
+              (j - secondaryCount/2) * (Math.PI / 6) / secondaryCount;
+            const secondaryRadius = 120 + Math.random() * 60;
+            
+            const x = primaryNeuron.x + Math.cos(secondaryAngle) * secondaryRadius;
+            const y = primaryNeuron.y + Math.sin(secondaryAngle) * secondaryRadius;
+            
+            // Ensure within bounds
+            const padding = 100;
+            const finalX = Math.max(padding, Math.min(window.innerWidth - padding, x));
+            const finalY = Math.max(padding, Math.min(window.innerHeight - padding, y));
+            
+            const secondaryNeuron = this.createMemoryNode(memory, finalX, finalY, memory.theme);
+            secondaryNeuron.isSecondary = true;
+            secondaryNeuron.connections.push(primaryNeuron);
+            primaryNeuron.connections.push(secondaryNeuron);
+            this.nodes.push(secondaryNeuron);
+          }
+        });
+        
+        console.log(`🧠 Created neural network: 1 central + ${primaryNeurons.length} primary + ${this.nodes.length - primaryNeurons.length} secondary neurons`);
+      }
+
+      // Create individual memory node
+      createMemoryNode(memory, x, y, theme) {
+        console.log(`🌟 Creating memory node element for "${memory.title}" at (${x}, ${y})`);
+        
+        const memoryElement = document.createElement('div');
+        memoryElement.className = 'memory-node';
+        memoryElement.innerHTML = `
+          <div class="memory-thumbnail">${memory.thumbnail}</div>
+          <div class="memory-label">${memory.title}</div>
+        `;
+        
+        // Add theme data attribute for styling
+        memoryElement.setAttribute('data-theme', theme);
+        
+        // Style the memory node
+        memoryElement.style.cssText = `
+          position: fixed;
+          left: ${x}px;
+          top: ${y}px;
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(134, 88, 255, 0.2));
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: scale(0);
+          opacity: 0;
+          z-index: 1000;
+          color: white;
+        `;
+        
+        // Add click handler for elegant memory dialog
+        memoryElement.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openMemoryDialog(memory);
+        });
+        
+        // Add hover effects with theme-based glow
+        memoryElement.addEventListener('mouseenter', () => {
+          const themeColors = {
+            family: 'rgba(255, 105, 135, 0.8)',
+            travel: 'rgba(52, 211, 153, 0.8)',
+            recent: 'rgba(96, 165, 250, 0.8)',
+            special: 'rgba(251, 191, 36, 0.8)'
+          };
+          
+          memoryElement.style.transform = 'scale(1.3)';
+          memoryElement.style.boxShadow = `0 0 60px ${themeColors[theme] || 'rgba(134, 88, 255, 0.8)'}, 0 0 100px ${themeColors[theme] || 'rgba(134, 88, 255, 0.4)'}`;
+          memoryElement.style.zIndex = '1100';
+        });
+        
+        memoryElement.addEventListener('mouseleave', () => {
+          memoryElement.style.transform = 'scale(1)';
+          memoryElement.style.boxShadow = '';
+          memoryElement.style.zIndex = '1000';
+        });
+        
+        // Append to a container that's below the canvas
+        const container = document.querySelector('.dashboard') || document.body;
+        container.appendChild(memoryElement);
+        console.log(`🌟 Memory node appended to container:`, memoryElement);
+        
+        // Animate in with staggered timing
+        const delay = Math.random() * 500 + 200; // 200-700ms delay
+        setTimeout(() => {
+          console.log(`🌟 Animating in memory node: ${memory.title}`);
+          memoryElement.style.transform = 'scale(1)';
+          memoryElement.style.opacity = '1';
+        }, delay);
+        
+        return {
+          element: memoryElement,
+          x: x,
+          y: y,
+          baseX: x,
+          baseY: y,
+          vx: 0,
+          vy: 0,
+          memory: memory,
+          theme: theme,
+          connections: []
+        };
+      }
+
+      // Create person node element for constellation
+      createPersonNodeElement(person, x, y) {
+        const personElement = document.createElement('div');
+        personElement.className = 'person-node';
+        
+        // Create person avatar with first letter of name
+        const avatar = person.name.charAt(0).toUpperCase();
+        const relationColor = this.getRelationColor(person.relation);
+        
+        // Create ONLY the avatar circle - NO TEXT LABELS
+        personElement.style.cssText = `
+          position: fixed;
+          left: ${x}px;
+          top: ${y}px;
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          background: ${relationColor.gradient};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: 700;
+          font-size: 24px;
+          border: 3px solid ${relationColor.border};
+          box-shadow: 0 8px 32px ${relationColor.glow};
+          overflow: hidden;
+          cursor: pointer;
+          transform: scale(0);
+          opacity: 0;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 1000;
+        `;
+        
+        // Start with letter, then try to load avatar image
+        personElement.textContent = avatar;
+        
+        // Try to load actual avatar image if person has one
+        if (person.avatarId) {
+          this.loadPersonAvatar(person, personElement, avatar);
+        }
+        
+        // Add click handler to open person summary modal
+        personElement.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openPersonSummaryModal(person);
+        });
+        
+        // Add hover effects with relation-based glow
+        personElement.addEventListener('mouseenter', () => {
+          personElement.style.transform = 'scale(1.2)';
+          personElement.style.boxShadow = `0 0 40px ${relationColor.glow}, 0 0 80px ${relationColor.glow}`;
+          personElement.style.zIndex = '1100';
+        });
+        
+        personElement.addEventListener('mouseleave', () => {
+          personElement.style.transform = 'scale(1)';
+          personElement.style.boxShadow = '';
+          personElement.style.zIndex = '1000';
+        });
+        
+        // Append to container
+        const container = document.querySelector('.dashboard') || document.body;
+        container.appendChild(personElement);
+        console.log(`👥 Person node appended: ${person.name}`);
+        
+        // Animate in with staggered timing
+        const delay = Math.random() * 500 + 300; // 300-800ms delay
+        setTimeout(() => {
+          console.log(`👥 Animating in person node: ${person.name}`);
+          personElement.style.transform = 'scale(1)';
+          personElement.style.opacity = '1';
+        }, delay);
+        
+        return personElement;
+      }
+
+      // Load actual avatar image for person node
+      async loadPersonAvatar(person, personElement, fallbackLetter) {
+        try {
+          console.log('📷 CONSTELLATION: Loading avatar for person:', person.name, 'ID:', person.avatarId);
+          
+          const avatarResult = await window.emmaAPI.vault.attachment.get(person.avatarId);
+          
+          if (avatarResult && avatarResult.success && avatarResult.dataUrl) {
+            // Create image element
+            const img = document.createElement('img');
+            img.src = avatarResult.dataUrl;
+            img.alt = `${person.name} avatar`;
+            img.style.cssText = `
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              border-radius: 50%;
+            `;
+            
+            img.onload = () => {
+              // Replace letter with image once loaded
+              personElement.innerHTML = '';
+              personElement.appendChild(img);
+              console.log('📷 CONSTELLATION: Successfully loaded avatar for:', person.name);
+            };
+            
+            img.onerror = () => {
+              console.error('📷 CONSTELLATION: Failed to display avatar for:', person.name);
+              // Keep the letter fallback
+            };
+          } else {
+            console.warn('📷 CONSTELLATION: No avatar data for:', person.name);
+          }
+        } catch (error) {
+          console.error('📷 CONSTELLATION: Error loading avatar for:', person.name, error);
+          // Keep the letter fallback
+        }
+      }
+
+      // Open revolutionary migration page
+      openMigrationPage() {
+        console.log('🌟 Opening revolutionary migration page');
+        window.location.href = 'vault-migration.html';
+      }
+
+      // Open person summary modal with connected memories
+      async openPersonSummaryModal(person) {
+        console.log('👤 Opening person summary modal for:', person.name);
+        
+        // Find memories connected to this person
+        const allMemories = [];
+        Object.keys(this.constellationMemories).forEach(theme => {
+          this.constellationMemories[theme].forEach(memory => {
+            allMemories.push({ ...memory, theme });
+          });
+        });
+        
+        // Find memories that mention this person or are tagged with them
+        const connectedMemories = allMemories.filter(memory => {
+          const content = (memory.content || '').toLowerCase();
+          const title = (memory.title || '').toLowerCase();
+          const personName = person.name.toLowerCase();
+          
+          // Check if person's name is mentioned in content or title
+          return content.includes(personName) || title.includes(personName);
+        });
+        
+        // Create modal HTML
+        const modalHTML = `
+          <div class="person-summary-modal-overlay" id="person-summary-overlay" onclick="window.memoryConstellation.closePersonSummaryModal()">
+            <div class="person-summary-modal" onclick="event.stopPropagation()">
+              <button class="modal-close" onclick="window.memoryConstellation.closePersonSummaryModal()">×</button>
+              
+              <div class="person-summary-header">
+                <div class="person-summary-avatar" id="person-summary-avatar">
+                  ${person.name.charAt(0).toUpperCase()}
+                </div>
+                <div class="person-summary-info">
+                  <h2 class="person-summary-name">${person.name}</h2>
+                  <p class="person-summary-relation">${person.relation || 'other'}</p>
+                  <p class="person-summary-contact">${person.contact || 'No contact info'}</p>
+                </div>
+              </div>
+              
+              <div class="person-summary-content">
+                <h3 class="summary-section-title">Connected Memories</h3>
+                <div class="connected-memories">
+                  ${connectedMemories.length > 0 ? 
+                    connectedMemories.map(memory => `
+                      <div class="connected-memory-item" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')">
+                        <div class="memory-preview">
+                          ${memory.thumbnail ? `<img src="${memory.thumbnail}" alt="Memory">` : '💝'}
+                        </div>
+                        <div class="memory-info">
+                          <div class="memory-title">${memory.title || 'Untitled Memory'}</div>
+                          <div class="memory-date">${new Date(memory.date || memory.timestamp).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                    `).join('') :
+                    '<div class="no-memories">No connected memories yet</div>'
+                  }
+                </div>
+                
+                <div class="person-summary-actions">
+                  <button class="btn btn-primary" onclick="window.memoryConstellation.createMemoryWithPersonFromConstellation('${person.id}')">
+                    <span>✨</span>
+                    Create Memory Together
+                  </button>
+                  <button class="btn btn-secondary" onclick="window.location.href='people-emma.html'">
+                    <span>👥</span>
+                    Manage People
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Make constellation functions globally accessible for modal
+        window.memoryConstellation = this;
+        
+        // Load avatar if available - CRITICAL for showing person's image
+        if (person.avatarId) {
+          this.loadAvatarForSummary(person);
+        }
+        
+        // Show modal with animation
+        setTimeout(() => {
+          document.getElementById('person-summary-overlay').classList.add('active');
+        }, 10);
+      }
+      
+      async loadAvatarForSummary(person) {
+        try {
+          console.log('📷 SUMMARY: Loading avatar for person:', person.name, 'Avatar ID:', person.avatarId);
+          
+          const avatarResult = await window.emmaAPI.vault.attachment.get(person.avatarId);
+          if (avatarResult && avatarResult.success && avatarResult.dataUrl) {
+            const avatarElement = document.getElementById('person-summary-avatar');
+            if (avatarElement) {
+              console.log('📷 SUMMARY: Successfully loaded avatar, updating display');
+              // Safely create img element with proper attribute setting
+              const img = document.createElement('img');
+              img.src = avatarResult.dataUrl;
+              img.alt = person.name; // Safe - browser automatically escapes alt text
+              img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%; position: absolute; top: 0; left: 0;';
+              avatarElement.innerHTML = ''; // Clear existing content
+              avatarElement.appendChild(img);
+            } else {
+              console.error('📷 SUMMARY: Avatar element not found in DOM');
+            }
+          } else {
+            console.warn('📷 SUMMARY: No avatar data returned for:', person.name);
+          }
+        } catch (error) {
+          console.error('📷 SUMMARY: Error loading avatar for:', person.name, error);
+        }
+      }
+      
+      closePersonSummaryModal() {
+        const overlay = document.getElementById('person-summary-overlay');
+        if (overlay) {
+          overlay.classList.remove('active');
+          setTimeout(() => overlay.remove(), 300);
+        }
+      }
+      
+      createMemoryWithPersonFromConstellation(personId) {
+        this.closePersonSummaryModal();
+        window.location.href = `dashboard-new.html?createMemory=true&person=${personId}`;
+      }
+      
+      openMemoryFromPerson(memoryId) {
+        this.closePersonSummaryModal();
+        this.openMemoryDialog(this.constellationMemories.find(m => m.id === memoryId));
+      }
+
+      // Get relation-specific colors for people nodes
+      getRelationColor(relation) {
+        const colors = {
+          family: {
+            gradient: 'linear-gradient(135deg, #ef4444, #f87171)',
+            border: 'rgba(239, 68, 68, 0.6)',
+            glow: 'rgba(239, 68, 68, 0.8)'
+          },
+          friend: {
+            gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
+            border: 'rgba(59, 130, 246, 0.6)',
+            glow: 'rgba(59, 130, 246, 0.8)'
+          },
+          colleague: {
+            gradient: 'linear-gradient(135deg, #10b981, #34d399)',
+            border: 'rgba(16, 185, 129, 0.6)',
+            glow: 'rgba(16, 185, 129, 0.8)'
+          },
+          romantic: {
+            gradient: 'linear-gradient(135deg, #ec4899, #f472b6)',
+            border: 'rgba(236, 72, 153, 0.6)',
+            glow: 'rgba(236, 72, 153, 0.8)'
+          }
+        };
+        
+        return colors[relation] || colors.friend; // Default to friend colors
+      }
+
+      // Open person dialog (placeholder)
+      openPersonDialog(person) {
+        console.log('👥 Opening person dialog:', person);
+        this.showToast(`👥 ${person.name} (${person.relation})`, 'info');
+      }
+
+      // Create intelligent connections between memory nodes and people nodes
+      createMemoryPeopleConnections(memories, people) {
+        console.log('🔗 Creating intelligent memory-people connections...');
+        
+        const memoryNodes = this.nodes.filter(node => node.type === 'memory');
+        const peopleNodes = this.nodes.filter(node => node.type === 'person');
+        
+        console.log(`🔗 Found ${memoryNodes.length} memory nodes and ${peopleNodes.length} people nodes`);
+        
+        // For each memory, connect to people who were involved
+        memoryNodes.forEach(memoryNode => {
+          const memory = memoryNode.memory;
+          
+          // Check if memory has people data (from wizard selections or manual input)
+          if (memory.selectedPeople && Array.isArray(memory.selectedPeople)) {
+            // Connect to people selected in wizard
+            memory.selectedPeople.forEach(personId => {
+              const personNode = peopleNodes.find(pNode => pNode.person.id === personId);
+              if (personNode && !memoryNode.connections.includes(personNode)) {
+                memoryNode.connections.push(personNode);
+                personNode.connections.push(memoryNode);
+                console.log(`🔗 Connected memory "${memory.title}" to person "${personNode.person.name}"`);
+              }
+            });
+          }
+          
+          // Also check if people are mentioned in memory content/responses
+          const memoryText = (memory.content || '').toLowerCase() + ' ' + 
+                            (memory.responses || []).join(' ').toLowerCase();
+          
+          peopleNodes.forEach(personNode => {
+            const personName = personNode.person.name.toLowerCase();
+            
+            // If person's name is mentioned in the memory text, create connection
+            if (memoryText.includes(personName) && !memoryNode.connections.includes(personNode)) {
+              memoryNode.connections.push(personNode);
+              personNode.connections.push(memoryNode);
+              console.log(`🔗 Auto-connected memory "${memory.title}" to person "${personNode.person.name}" (name mentioned)`);
+            }
+          });
+        });
+        
+        // Create some random connections for people who aren't connected to anything
+        peopleNodes.forEach(personNode => {
+          if (personNode.connections.length === 0) {
+            // Connect to the closest memory node
+            let closestMemory = null;
+            let closestDistance = Infinity;
+            
+            memoryNodes.forEach(memoryNode => {
+              const dx = personNode.x - memoryNode.x;
+              const dy = personNode.y - memoryNode.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              
+              if (distance < closestDistance && memoryNode.connections.length < 3) {
+                closestDistance = distance;
+                closestMemory = memoryNode;
+              }
+            });
+            
+            if (closestMemory) {
+              personNode.connections.push(closestMemory);
+              closestMemory.connections.push(personNode);
+              console.log(`🔗 Connected isolated person "${personNode.person.name}" to closest memory "${closestMemory.memory.title}"`);
+            }
+          }
+        });
+        
+        console.log('🔗 Memory-people connections created successfully');
+      }
+
+
+
+
+
+
+
+      // Update neural network node positions with overlap prevention
+      updateConstellationNodes() {
+        const time = Date.now() * 0.001;
+        
+        // Update all memory nodes
+        this.nodes.forEach((node, i) => {
+          // Reset forces
+          let forceX = 0;
+          let forceY = 0;
+          
+          // Repulsion from other nodes to prevent overlap
+          this.nodes.forEach((otherNode, j) => {
+            if (i !== j) {
+              const dx = node.x - otherNode.x;
+              const dy = node.y - otherNode.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              
+              const minDistance = node.isPrimary || otherNode.isPrimary ? 150 : 120;
+              if (distance < minDistance) {
+                const force = (minDistance - distance) / distance * 0.3;
+                forceX += dx * force;
+                forceY += dy * force;
+              }
+            }
+          });
+          
+          // Also repel from central neuron
+          if (this.centralNeuron) {
+            const dx = node.x - this.centralNeuron.x;
+            const dy = node.y - this.centralNeuron.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 150) {
+              const force = (150 - distance) / distance * 0.4;
+              forceX += dx * force;
+              forceY += dy * force;
+            }
+          }
+          
+          // Gentle attraction to base position
+          const baseAttraction = node.isPrimary ? 0.03 : 0.02;
+          forceX += (node.baseX - node.x) * baseAttraction;
+          forceY += (node.baseY - node.y) * baseAttraction;
+          
+          // Subtle floating motion - less for primary nodes
+          const floatAmplitude = node.isPrimary ? 1.5 : 2.5;
+          const floatX = Math.sin(time * 0.15 + i * 0.7) * floatAmplitude;
+          const floatY = Math.cos(time * 0.12 + i * 0.5) * floatAmplitude;
+          
+          // Apply forces
+          node.vx = (node.vx + forceX) * 0.92; // Damping
+          node.vy = (node.vy + forceY) * 0.92;
+          
+          // Update position
+          node.x += node.vx + floatX * 0.4;
+          node.y += node.vy + floatY * 0.4;
+          
+          // Keep within bounds
+          const padding = 80;
+          node.x = Math.max(padding, Math.min(window.innerWidth - padding, node.x));
+          node.y = Math.max(padding, Math.min(window.innerHeight - padding, node.y));
+          
+          // Update DOM position
+          if (node.element) {
+            node.element.style.left = node.x + 'px';
+            node.element.style.top = node.y + 'px';
+          }
+        });
+        
+        // The central neuron (Emma orb) stays fixed at center
+        if (this.centralNeuron) {
+          this.centralNeuron.x = window.innerWidth / 2;
+          this.centralNeuron.y = window.innerHeight / 2;
+        }
+      }
+
+      // Show constellation UI controls
+      showConstellationUI() {
+        // Add constellation controls
+        const constellationControls = document.createElement('div');
+        constellationControls.className = 'constellation-controls';
+        constellationControls.innerHTML = `
+          <div class="constellation-header">
+            <h3>🌟 Memory Constellations</h3>
+            <button class="constellation-close" onclick="dashboard.exitMemoryConstellation()">✕</button>
+          </div>
+          <div class="constellation-themes">
+            ${Object.keys(this.constellationMemories).map(theme => 
+              `<button class="theme-filter ${this.constellationMemories[theme].length > 0 ? 'active' : 'disabled'}" 
+                       data-theme="${theme}" onclick="dashboard.filterByTheme('${theme}')">
+                ${theme.charAt(0).toUpperCase() + theme.slice(1)} (${this.constellationMemories[theme].length})
+              </button>`
+            ).join('')}
+          </div>
+        `;
+        
+        constellationControls.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 20px;
+          background: rgba(17, 17, 27, 0.9);
+          border: 1px solid rgba(134, 88, 255, 0.3);
+          border-radius: 12px;
+          padding: 20px;
+          z-index: 2000;
+          backdrop-filter: blur(10px);
+        `;
+        
+        document.body.appendChild(constellationControls);
+        this.constellationUI = constellationControls;
+      }
+
+      // Removed fadeOutMemoryNodes and fadeInMemoryNodes - no longer needed since constellation mode exits to main dashboard
+
+      // Completely clear all memory nodes from DOM (prevents duplicates)
+      clearAllMemoryNodesFromDOM() {
+        console.log('🧹 Clearing ALL memory nodes from DOM to prevent duplicates');
+        
+        // Remove all memory-node, person-node, and create-memory-node elements (including orphaned ones)
+        const existingMemoryNodes = document.querySelectorAll('.memory-node, .create-memory-node, .person-node');
+        existingMemoryNodes.forEach(node => {
+          console.log('🧹 Removing existing constellation node:', node);
+          node.remove();
+        });
+        
+        // Clear ONLY memory nodes from the nodes array (preserve radial menu items)
+        if (this.nodes) {
+          this.nodes.forEach(node => {
+            if (node.element && node.element.parentNode) {
+              // Only remove if it's a constellation node, NOT a radial menu item
+              if (node.element.classList.contains('memory-node') || 
+                  node.element.classList.contains('create-memory-node') ||
+                  node.element.classList.contains('person-node')) {
+                console.log('🧹 Removing constellation node from nodes array:', node.element);
+                node.element.remove();
+              } else {
+                console.log('🧹 Preserving non-constellation node in nodes array:', node.element.className);
+              }
+            }
+          });
+          // Filter out only the constellation nodes, keep radial items
+          this.nodes = this.nodes.filter(node => 
+            !node.element.classList.contains('memory-node') && 
+            !node.element.classList.contains('create-memory-node') &&
+            !node.element.classList.contains('person-node')
+          );
+        }
+        
+        // Reset central node
+        this.centralNode = null;
+        
+        console.log('🧹 DOM cleanup complete - ready for fresh memory nodes');
+      }
+
+      // Exit constellation mode
+      exitMemoryConstellation() {
+        console.log('🧠 Exiting memory neural network mode');
+        this.isConstellationMode = false;
+        
+        // Stop neural animation (EXACT same as main menu)
+        this.isMenuOpen = false;
+        if (this.neuralAnimationId) {
+          cancelAnimationFrame(this.neuralAnimationId);
+          this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+        }
+        
+        // Remove constellation-active class to restore UI
+        document.body.classList.remove('constellation-active');
+        document.body.classList.remove('menu-active');
+        this.radialMenu.classList.remove('active');
+        
+        // Restore central orb size
+        this.restoreCentralOrb();
+        
+        // Remove constellation UI
+        if (this.constellationUI) {
+          this.constellationUI.remove();
+          this.constellationUI = null;
+        }
+        
+        // CRITICAL: Use thorough DOM cleanup to prevent duplicates
+        this.clearAllMemoryNodesFromDOM();
+        
+        // Clear animation
+        if (this.neuralAnimationId) {
+          cancelAnimationFrame(this.neuralAnimationId);
+          this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+        }
+        
+        // Reset nodes
+        this.nodes = [];
+        
+        // Hide radial menu
+        this.radialMenu.classList.remove('active');
+        this.isMenuOpen = false;
+        
+        // Reset radial menu items to default state
+        const radialItems = this.radialMenu.querySelectorAll('.radial-item');
+        console.log('🔧 exitMemoryConstellation: Found', radialItems.length, 'radial items to reset');
+        
+        radialItems.forEach((item, i) => {
+          console.log('🔧 Resetting radial item', i, item);
+          item.style.opacity = '0';
+          item.style.transform = 'scale(0)';
+          // CRITICAL: Reset positioning to default
+          item.style.left = '';
+          item.style.top = '';
+          item.style.animationPlayState = 'running';
+        });
+      }
+
+      // Sanitize title to remove base64 or corrupted data
+      sanitizeTitle(title) {
+        if (!title || typeof title !== 'string') return 'Untitled Memory';
+        
+        // Check if it looks like base64 or corrupted data
+        if (title.length > 50 || /^[A-Za-z0-9+\/=]{20,}$/.test(title)) {
+          return 'Memory Capsule';
+        }
+        
+        // Remove any non-printable characters and limit length
+        const cleaned = title.replace(/[^\x20-\x7E]/g, '').trim();
+        return cleaned.length > 0 ? cleaned.substring(0, 50) : 'Untitled Memory';
+      }
+
+      // Open elegant memory dialog with media slideshow
+      openMemoryDialog(memory) {
+        console.log('🧠 Opening elegant memory dialog:', memory);
+        
+        // Create memory dialog modal
+        const memoryDialog = document.createElement('div');
+        memoryDialog.className = 'memory-dialog-overlay';
+        const formattedDate = memory.date ? new Date(memory.date).toLocaleDateString('en-US', { 
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        }) : 'Unknown date';
+        
+        const thumbnail = memory.thumbnail || this.generateMemoryThumbnail(memory.category || memory.theme || 'special');
+        const mediaItems = memory.mediaItems || [];
+        
+        memoryDialog.innerHTML = `
+          <div class="memory-dialog" style="
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(30, 30, 40, 0.98));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(134, 88, 255, 0.3);
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 0;
+          ">
+            <div class="memory-dialog-header" style="
+              padding: 24px 32px 16px 32px;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            ">
+              <h2 style="color: white; margin: 0; font-size: 24px;">${this.sanitizeTitle(memory.title)}</h2>
+              <button onclick="dashboard.closeMemoryDialog()" style="
+                background: none;
+                border: none;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 24px;
+                cursor: pointer;
+                padding: 4px;
+                transition: color 0.2s ease;
+              " onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255, 255, 255, 0.7)'">✕</button>
+            </div>
+            
+            <div class="memory-content" style="padding: 24px 32px;">
+              <div class="memory-header" style="
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                margin-bottom: 24px;
+              ">
+                <div class="memory-icon" style="
+                  width: 60px;
+                  height: 60px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, rgba(134, 88, 255, 0.2), rgba(240, 147, 251, 0.2));
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 24px;
+                  border: 2px solid rgba(134, 88, 255, 0.3);
+                ">${thumbnail}</div>
+                <div>
+                  <h3 style="color: white; margin: 0 0 8px 0; font-size: 20px;">${this.sanitizeTitle(memory.title)}</h3>
+                  <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+                    <span>${formattedDate}</span>
+                    ${memory.category ? ` • <span style="
+                      background: rgba(134, 88, 255, 0.2);
+                      padding: 4px 8px;
+                      border-radius: 12px;
+                      font-size: 12px;
+                      text-transform: capitalize;
+                    ">${memory.category}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="memory-description" style="
+                color: rgba(255, 255, 255, 0.9);
+                line-height: 1.6;
+                margin-bottom: 24px;
+                font-size: 16px;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 4px solid rgba(134, 88, 255, 0.5);
+              ">
+                ${memory.content || memory.description || 'This is a precious memory from your vault...'}
+              </div>
+              
+              ${memory.tags && memory.tags.length > 0 ? `
+                <div class="memory-tags" style="margin-bottom: 24px;">
+                  <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-bottom: 8px;">Tags:</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    ${memory.tags.map(tag => `
+                      <span style="
+                        background: rgba(134, 88, 255, 0.2);
+                        color: rgba(255, 255, 255, 0.9);
+                        padding: 4px 12px;
+                        border-radius: 16px;
+                        font-size: 12px;
+                        border: 1px solid rgba(134, 88, 255, 0.3);
+                      ">#${tag}</span>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+              
+              ${mediaItems.length > 0 ? `
+                <div class="memory-media" style="margin-bottom: 24px;">
+                  <div style="color: rgba(255, 255, 255, 0.6); font-size: 14px; margin-bottom: 12px;">
+                    📎 Media (${mediaItems.length} ${mediaItems.length === 1 ? 'item' : 'items'})
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px;">
+                    ${mediaItems.map(item => {
+                      // Use the thumbnail from the main process if available
+                      const hasImage = memory.thumbnail || item.dataUrl || item.url;
+                      const imageUrl = memory.thumbnail || item.dataUrl || item.url;
+                      const isImage = (item.type || '').startsWith('image') || hasImage;
+                      
+                      return `
+                      <div style="
+                          background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+                          border: 1px solid rgba(255, 255, 255, 0.15);
+                          border-radius: 12px;
+                          padding: 0;
+                        text-align: center;
+                          font-size: 13px;
+                          color: rgba(255, 255, 255, 0.9);
+                        cursor: pointer;
+                          transition: all 0.3s ease;
+                          overflow: hidden;
+                          backdrop-filter: blur(10px);
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 32px rgba(134, 88, 255, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                          ${hasImage ? `
+                            <div style="
+                              width: 100%; 
+                              height: 100px; 
+                              background-image: url('${imageUrl}'); 
+                              background-size: cover; 
+                              background-position: center;
+                              border-radius: 12px 12px 0 0;
+                              position: relative;
+                            ">
+                              <div style="
+                                position: absolute;
+                                bottom: 0;
+                                left: 0;
+                                right: 0;
+                                background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+                                padding: 8px 12px 4px 12px;
+                                color: white;
+                                font-size: 11px;
+                                font-weight: 500;
+                              ">${item.name || 'Image'}</div>
+                      </div>
+                          ` : `
+                            <div style="
+                              height: 100px;
+                              display: flex;
+                              flex-direction: column;
+                              align-items: center;
+                              justify-content: center;
+                              background: rgba(134, 88, 255, 0.1);
+                            ">
+                              <div style="font-size: 32px; margin-bottom: 8px;">${isImage ? '🖼️' : '📄'}</div>
+                              <div style="font-size: 11px; opacity: 0.8; padding: 0 8px;">${item.name || 'Media File'}</div>
+                            </div>
+                          `}
+                          ${!hasImage ? `
+                            <div style="padding: 8px 12px;">
+                              <div style="font-size: 11px; opacity: 0.6;">${((item.size || 0) / 1024 / 1024).toFixed(1)} MB</div>
+                            </div>
+                          ` : ''}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <div class="memory-actions" style="
+              padding: 16px 32px 24px 32px;
+              border-top: 1px solid rgba(255, 255, 255, 0.1);
+              display: flex;
+              gap: 12px;
+              justify-content: flex-end;
+            ">
+              <button onclick="dashboard.shareMemory('${memory.id}')" style="
+                padding: 12px 24px;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+              " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">📤 Share</button>
+              <button onclick="window.location.href='memory-gallery-new.html#${memory.id}'" style="
+                padding: 12px 24px;
+                border: none;
+                background: linear-gradient(135deg, #8658ff, #f093fb);
+                color: white;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+              " onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">✏️ Edit in Gallery</button>
+            </div>
+          </div>
+        `;
+        
+        // Style the dialog
+        memoryDialog.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(10px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        `;
+        
+        document.body.appendChild(memoryDialog);
+        this.currentMemoryDialog = memoryDialog;
+        
+        // Animate in
+        requestAnimationFrame(() => {
+          memoryDialog.style.opacity = '1';
+        });
+        
+        // Close on outside click
+        memoryDialog.addEventListener('click', (e) => {
+          if (e.target === memoryDialog) {
+            this.closeMemoryDialog();
+          }
+        });
+      }
+
+      // Close memory dialog
+      closeMemoryDialog() {
+        if (this.currentMemoryDialog) {
+          this.currentMemoryDialog.style.opacity = '0';
+          setTimeout(() => {
+            if (this.currentMemoryDialog) {
+              this.currentMemoryDialog.remove();
+              this.currentMemoryDialog = null;
+            }
+          }, 300);
+        }
+      }
+
+      // Memory dialog slideshow controls
+      prevSlide() {
+        console.log('🧠 Previous slide');
+        // Demo functionality - would implement real slideshow
+      }
+
+      nextSlide() {
+        console.log('🧠 Next slide');
+        // Demo functionality - would implement real slideshow
+      }
+
+      shareMemory(memoryId) {
+        console.log('🧠 Sharing memory:', memoryId);
+        this.showToast('📤 Memory shared!', 'success');
+      }
+
+      editMemory(memoryId) {
+        console.log('🧠 Editing memory:', memoryId);
+        this.showToast('✏️ Opening memory editor...', 'info');
+      }
+
+      // Filter constellation by theme
+      filterByTheme(theme) {
+        console.log('🌟 Filtering by theme:', theme);
+        
+        this.nodes.forEach(node => {
+          if (node.theme === theme) {
+            node.element.style.opacity = '1';
+            node.element.style.transform = 'scale(1)';
+          } else {
+            node.element.style.opacity = '0.3';
+            node.element.style.transform = 'scale(0.8)';
+          }
+        });
+      }
+
+      showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const span = document.createElement('span');
+        span.textContent = message;
+        toast.appendChild(span);
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 400);
+        }, 3000);
+      }
+    }
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      window.emmaDashboard = new EmmaDashboard();
+      console.log('✨ Emma Dashboard 2.0 initialized');
+      
+      // Setup vault modal event listeners
+      const dashboard = window.emmaDashboard;
+      
+      // Close button
+      document.getElementById('close-vault-modal').addEventListener('click', () => {
+        dashboard.closeVaultModal();
+      });
+      
+      // Click outside to close
+      document.getElementById('vault-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'vault-modal') {
+          dashboard.closeVaultModal();
+        }
+      });
+      
+      // Unlock form handlers
+      document.getElementById('unlock-btn').addEventListener('click', () => {
+        dashboard.unlockVault();
+      });
+      
+      document.getElementById('cancel-unlock-btn').addEventListener('click', () => {
+        dashboard.hideUnlockForm();
+      });
+      
+      // Create vault button handler
+      document.getElementById('create-vault-btn').addEventListener('click', async () => {
+        console.log('🔐 Navigating to vault creation page...');
+        try {
+          if (window.emmaAPI && window.emmaAPI.vault) {
+            const st = await window.emmaAPI.vault.status();
+            if (st && st.initialized) {
+              console.log('🔐 Vault already exists, opening unlock form');
+              dashboard.showUnlockForm();
+              return;
+            }
+          }
+        } catch {}
+        // Load welcome page for vault setup
+        window.location.assign('welcome.html');
+      });
+      
+      // Password input enter key
+      document.getElementById('vault-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          dashboard.unlockVault();
+        }
+      });
+      
+      // QR Code handlers
+      document.getElementById('generate-vault-qr-dashboard').addEventListener('click', () => {
+        dashboard.showToast('📱 Vault QR generation coming soon!', 'info');
+      });
+      
+      document.getElementById('open-qr-scanner-dashboard').addEventListener('click', () => {
+        dashboard.showToast('📷 QR scanner coming soon!', 'info');
+      });
+      
+      // Escape key to close vault modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const modal = document.getElementById('vault-modal');
+          if (modal.classList.contains('show')) {
+            dashboard.closeVaultModal();
+          }
+        }
+      });
+      
+      // Store current vault status globally
+      window.currentVaultStatus = { isUnlocked: false };
+    });
+  </script>
+</body>
+</html>

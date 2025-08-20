@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Emma Chaos Harness</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
+      button { padding: 10px 14px; margin-right: 8px; }
+      pre { background: #111; color: #eee; padding: 12px; border-radius: 6px; max-width: 900px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Emma Chaos Harness (OPFS)</h1>
+    <div>
+      <button id="run">Run 10 write cycles with random aborts</button>
+    </div>
+    <pre id="log"></pre>
+
+    <script src="./vault/storage-adapter.js"></script>
+    <script src="./vault/journal.js"></script>
+    <script src="./vault/opfs-adapter.js"></script>
+    <script src="./vault/adapter-selector.js"></script>
+    <script>
+      const logEl = document.getElementById('log');
+      const enc = new TextEncoder();
+      function log(m){ logEl.textContent += m + '\n'; }
+      async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+      document.getElementById('run').onclick = async () => {
+        const adapter = await window.EmmaVaultAdapterSelector.selectAdapter();
+        await adapter.openVault({ vaultName: 'chaos-test' });
+        for (let i=0;i<10;i++){
+          const msg = 'cycle ' + (i+1);
+          const rand = crypto.getRandomValues(new Uint8Array(1024*32));
+          const data = new Uint8Array(enc.encode(msg).length + rand.length);
+          data.set(enc.encode(msg), 0); data.set(rand, enc.encode(msg).length);
+          try {
+            const abort = Math.random() < 0.3;
+            const write = adapter.writeVault(data);
+            if (abort) {
+              await sleep(5);
+              // Simulate abrupt stop by reloading page
+              location.reload();
+              return;
+            } else {
+              await write;
+              log('ok ' + (i+1));
+            }
+          } catch(e) {
+            log('error ' + (i+1) + ': ' + e.message);
+          }
+        }
+        log('done');
+      };
+    </script>
+  </body>
+  </html>
+
