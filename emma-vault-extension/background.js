@@ -394,10 +394,25 @@ async function setFileHandle(handle) {
  * Accept vault content from trusted UI (popup/content script) into memory only
  */
 async function loadVaultData(vaultData) {
-  if (!vaultData || !vaultData.id || !vaultData.content) {
-    throw new Error('Invalid vault data');
+  console.log('🚨 LOAD DEBUG: Validating vault data:', Object.keys(vaultData || {}));
+  console.log('🚨 LOAD DEBUG: Has content?', !!vaultData?.content);
+  console.log('🚨 LOAD DEBUG: Has name?', !!vaultData?.name);
+  console.log('🚨 LOAD DEBUG: Content keys:', Object.keys(vaultData?.content || {}));
+  
+  // Fix validation - Emma vaults have 'name' and 'content', not necessarily 'id'
+  if (!vaultData || !vaultData.content) {
+    console.error('🚨 LOAD DEBUG: Invalid vault data - missing content');
+    throw new Error('Invalid vault data - missing content structure');
   }
+  
+  if (!vaultData.content.memories && !vaultData.content.people && !vaultData.content.media) {
+    console.error('🚨 LOAD DEBUG: Invalid vault data - content missing required sections');
+    throw new Error('Invalid vault data - content missing memories/people/media sections');
+  }
+  
+  console.log('🚨 LOAD DEBUG: Vault data validation passed, setting currentVaultData');
   currentVaultData = vaultData;
+  console.log('🚨 LOAD DEBUG: currentVaultData now has memory count:', Object.keys(currentVaultData?.content?.memories || {}).length);
 }
 
 /**
