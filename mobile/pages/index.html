@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Mobile</title>
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+    .card { background: var(--emma-card-bg, rgba(255,255,255,0.05)); border: 1px solid var(--emma-border, rgba(255,255,255,0.1)); border-radius: 16px; padding: 16px; }
+    .nav { display:flex; gap: 12px; margin: 8px 0 16px; flex-wrap: wrap; }
+    .btn { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--emma-border, rgba(255,255,255,0.15)); background: rgba(255,255,255,0.06); color: var(--emma-text, #eee); text-decoration: none; }
+    .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2 style="margin-top:0;">Emma Mobile</h2>
+      <p>Start the mobile experience or configure mobile-only settings.</p>
+      <div class="nav">
+        <a class="btn btn-primary" href="dashboard-new.html">Open Dashboard</a>
+        <a class="btn" href="options.html">Mobile Settings</a>
+      </div>
+      <small style="opacity:.7;">These pages are mobile-specific copies and safe to customize independently.</small>
+    </div>
+  </div>
+</body>
+</html>
