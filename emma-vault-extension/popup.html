@@ -64,6 +64,70 @@
         </div>
       </div>
 
+      <!-- Image Capture State -->
+      <div class="image-capture-state hidden" id="imageCaptureState">
+        
+        <!-- Header -->
+        <div class="image-capture-header">
+          <button class="back-button" id="backToVaultBtn">
+            <span class="btn-icon">←</span>
+          </button>
+          <div class="header-content">
+            <h2 class="capture-title">Capture Images</h2>
+            <p class="capture-subtitle" id="captureSubtitle">Scanning for images...</p>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="image-controls">
+          <div class="selection-summary">
+            <span id="selectedCount">0</span> of <span id="totalCount">0</span> selected
+          </div>
+          <div class="control-buttons">
+            <button class="btn-small" id="selectAllBtn">All</button>
+            <button class="btn-small" id="selectNoneBtn">None</button>
+          </div>
+        </div>
+
+        <!-- Image Grid -->
+        <div class="image-grid-container">
+          <div class="image-grid" id="imageGrid">
+            <!-- Images will be populated here -->
+          </div>
+          
+          <!-- Loading State -->
+          <div class="loading-state" id="imageLoadingState">
+            <div class="emma-orb-container">
+              <div class="emma-orb" id="loadingOrb"></div>
+            </div>
+            <p>Scanning page for images...</p>
+          </div>
+          
+          <!-- Empty State -->
+          <div class="empty-state hidden" id="imageEmptyState">
+            <div class="empty-icon">🖼️</div>
+            <h3>No Images Found</h3>
+            <p>This page doesn't contain any capturable images.</p>
+          </div>
+          
+          <!-- Error State -->
+          <div class="error-state hidden" id="imageErrorState">
+            <div class="error-icon">⚠️</div>
+            <h3>Detection Failed</h3>
+            <p id="errorMessage">Unable to scan for images on this page.</p>
+            <button class="btn-secondary" id="retryDetectionBtn">Try Again</button>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <button class="btn-primary" id="createMemoryCapsuleBtn" disabled>
+            <span class="btn-icon">💾</span>
+            <span class="btn-text">Create Memory Capsule</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Active Vault State -->
       <div class="active-vault-state hidden" id="activeVaultState">
         
@@ -105,6 +169,11 @@
           <button class="action-btn emma-orb-btn" id="addMemoryBtn">
             <div class="action-orb" id="addMemoryOrb"></div>
             <span class="action-text">Add Memory</span>
+          </button>
+          
+          <button class="action-btn" id="captureImagesBtn">
+            <span class="action-icon">🖼️</span>
+            <span class="action-text">Capture Images</span>
           </button>
           
           <button class="action-btn" id="openWebAppBtn">

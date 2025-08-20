@@ -18,6 +18,7 @@ class EmmaVaultExtension {
       // States
       welcomeState: document.getElementById('welcomeState'),
       activeVaultState: document.getElementById('activeVaultState'),
+      imageCaptureState: document.getElementById('imageCaptureState'),
       
       // Welcome state elements
       vaultDropZone: document.getElementById('vaultDropZone'),
@@ -37,9 +38,25 @@ class EmmaVaultExtension {
       
       // Action buttons
       addMemoryBtn: document.getElementById('addMemoryBtn'),
+      captureImagesBtn: document.getElementById('captureImagesBtn'),
       openWebAppBtn: document.getElementById('openWebAppBtn'),
       downloadVaultBtn: document.getElementById('downloadVaultBtn'),
       closeVaultBtn: document.getElementById('closeVaultBtn'),
+      
+      // Image capture elements
+      backToVaultBtn: document.getElementById('backToVaultBtn'),
+      captureSubtitle: document.getElementById('captureSubtitle'),
+      selectedCount: document.getElementById('selectedCount'),
+      totalCount: document.getElementById('totalCount'),
+      selectAllBtn: document.getElementById('selectAllBtn'),
+      selectNoneBtn: document.getElementById('selectNoneBtn'),
+      imageGrid: document.getElementById('imageGrid'),
+      imageLoadingState: document.getElementById('imageLoadingState'),
+      imageEmptyState: document.getElementById('imageEmptyState'),
+      imageErrorState: document.getElementById('imageErrorState'),
+      errorMessage: document.getElementById('errorMessage'),
+      retryDetectionBtn: document.getElementById('retryDetectionBtn'),
+      createMemoryCapsuleBtn: document.getElementById('createMemoryCapsuleBtn'),
       
       // Modal
       modalOverlay: document.getElementById('modalOverlay'),
@@ -48,6 +65,11 @@ class EmmaVaultExtension {
       // Version
       version: document.getElementById('version')
     };
+    
+    // Image capture state
+    this.detectedImages = [];
+    this.selectedImages = new Set();
+    this.currentPageInfo = null;
     
     console.log('💜 Emma Vault Extension initialized');
   }
@@ -150,9 +172,17 @@ class EmmaVaultExtension {
     
     // Active vault actions - Add Memory opens web app wizard
     this.elements.addMemoryBtn.addEventListener('click', () => this.openMemoryWizard());
+    this.elements.captureImagesBtn.addEventListener('click', () => this.startImageCapture());
     this.elements.openWebAppBtn.addEventListener('click', () => this.openWebApp());
     this.elements.downloadVaultBtn.addEventListener('click', () => this.downloadVault());
     this.elements.closeVaultBtn.addEventListener('click', () => this.closeVault());
+    
+    // Image capture actions
+    this.elements.backToVaultBtn.addEventListener('click', () => this.backToVault());
+    this.elements.selectAllBtn.addEventListener('click', () => this.selectAllImages());
+    this.elements.selectNoneBtn.addEventListener('click', () => this.selectNoneImages());
+    this.elements.retryDetectionBtn.addEventListener('click', () => this.retryImageDetection());
+    this.elements.createMemoryCapsuleBtn.addEventListener('click', () => this.createMemoryCapsuleFromImages());
     
     // Modal close
     this.elements.modalOverlay.addEventListener('click', (e) => {
@@ -1691,6 +1721,373 @@ class EmmaVaultExtension {
         if (e.target === overlay) handleCancel();
       });
     });
+  }
+  
+  // 🖼️ IMAGE CAPTURE FUNCTIONALITY
+  
+  /**
+   * Start image capture mode
+   */
+  async startImageCapture() {
+    console.log('🖼️ Starting image capture mode...');
+    
+    // Switch to image capture state
+    this.showImageCaptureState();
+    
+    // Show loading state
+    this.showImageLoadingState();
+    
+    try {
+      // Get active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) {
+        throw new Error('No active tab found');
+      }
+      
+      // Update subtitle with page info
+      this.elements.captureSubtitle.textContent = `Scanning ${tab.title || tab.url}...`;
+      
+      // Send detection request to content script
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'DETECT_IMAGES' });
+      
+      if (response && response.success) {
+        this.handleImageDetectionSuccess(response.images, {
+          url: tab.url,
+          title: tab.title,
+          hostname: new URL(tab.url).hostname
+        });
+      } else {
+        throw new Error(response?.error || 'Image detection failed');
+      }
+      
+    } catch (error) {
+      console.error('🖼️ Image capture failed:', error);
+      this.handleImageDetectionError(error.message);
+    }
+  }
+  
+  /**
+   * Handle successful image detection
+   */
+  handleImageDetectionSuccess(images, pageInfo) {
+    console.log(`🖼️ Received ${images.length} images from content script`);
+    
+    this.detectedImages = images;
+    this.currentPageInfo = pageInfo;
+    this.selectedImages.clear();
+    
+    // Update subtitle
+    this.elements.captureSubtitle.textContent = `Found ${images.length} images on ${pageInfo.hostname}`;
+    
+    if (images.length === 0) {
+      this.showImageEmptyState();
+    } else {
+      this.renderImageGrid();
+      this.updateSelectionSummary();
+    }
+  }
+  
+  /**
+   * Handle image detection error
+   */
+  handleImageDetectionError(errorMessage) {
+    console.error('🖼️ Image detection error:', errorMessage);
+    
+    this.elements.errorMessage.textContent = errorMessage;
+    this.showImageErrorState();
+  }
+  
+  /**
+   * Render the image grid
+   */
+  renderImageGrid() {
+    const grid = this.elements.imageGrid;
+    grid.innerHTML = '';
+    
+    // Hide loading/error/empty states
+    this.hideAllImageStates();
+    
+    this.detectedImages.forEach((image, index) => {
+      const imageItem = this.createImageItem(image, index);
+      grid.appendChild(imageItem);
+    });
+    
+    // Show the grid
+    grid.parentElement.style.display = 'block';
+  }
+  
+  /**
+   * Create an image item element
+   */
+  createImageItem(image, index) {
+    const item = document.createElement('div');
+    item.className = 'image-item';
+    item.dataset.index = index;
+    
+    // Create image element
+    const img = document.createElement('img');
+    img.src = image.url;
+    img.alt = image.alt || '';
+    img.loading = 'lazy';
+    
+    // Handle image load errors
+    img.onerror = () => {
+      img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0MCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1zaXplPSIxMiI+4p2MPC90ZXh0Pgo8L3N2Zz4K';
+    };
+    
+    // Create checkbox
+    const checkbox = document.createElement('div');
+    checkbox.className = 'image-checkbox';
+    
+    // Create overlay with image info
+    const overlay = document.createElement('div');
+    overlay.className = 'image-overlay';
+    
+    const overlayText = [];
+    if (image.filename) overlayText.push(image.filename);
+    if (image.width && image.height) overlayText.push(`${image.width}×${image.height}`);
+    if (image.alt) overlayText.push(image.alt.substring(0, 50));
+    
+    overlay.textContent = overlayText.join(' • ');
+    
+    // Assemble item
+    item.appendChild(img);
+    item.appendChild(checkbox);
+    item.appendChild(overlay);
+    
+    // Add click handler
+    item.addEventListener('click', () => this.toggleImageSelection(index));
+    
+    return item;
+  }
+  
+  /**
+   * Toggle image selection
+   */
+  toggleImageSelection(index) {
+    const item = this.elements.imageGrid.children[index];
+    if (!item) return;
+    
+    if (this.selectedImages.has(index)) {
+      this.selectedImages.delete(index);
+      item.classList.remove('selected');
+    } else {
+      this.selectedImages.add(index);
+      item.classList.add('selected');
+    }
+    
+    this.updateSelectionSummary();
+  }
+  
+  /**
+   * Select all images
+   */
+  selectAllImages() {
+    this.selectedImages.clear();
+    
+    this.detectedImages.forEach((_, index) => {
+      this.selectedImages.add(index);
+      const item = this.elements.imageGrid.children[index];
+      if (item) item.classList.add('selected');
+    });
+    
+    this.updateSelectionSummary();
+  }
+  
+  /**
+   * Deselect all images
+   */
+  selectNoneImages() {
+    this.selectedImages.clear();
+    
+    Array.from(this.elements.imageGrid.children).forEach(item => {
+      item.classList.remove('selected');
+    });
+    
+    this.updateSelectionSummary();
+  }
+  
+  /**
+   * Update selection summary
+   */
+  updateSelectionSummary() {
+    this.elements.selectedCount.textContent = this.selectedImages.size;
+    this.elements.totalCount.textContent = this.detectedImages.length;
+    
+    // Enable/disable create button
+    const hasSelection = this.selectedImages.size > 0;
+    this.elements.createMemoryCapsuleBtn.disabled = !hasSelection;
+    
+    if (hasSelection) {
+      this.elements.createMemoryCapsuleBtn.classList.remove('disabled');
+    } else {
+      this.elements.createMemoryCapsuleBtn.classList.add('disabled');
+    }
+  }
+  
+  /**
+   * Retry image detection
+   */
+  async retryImageDetection() {
+    await this.startImageCapture();
+  }
+  
+  /**
+   * Create memory capsule from selected images
+   */
+  async createMemoryCapsuleFromImages() {
+    if (this.selectedImages.size === 0) {
+      console.warn('🖼️ No images selected for memory capsule');
+      return;
+    }
+    
+    console.log(`🖼️ Creating memory capsule from ${this.selectedImages.size} selected images...`);
+    
+    try {
+      // Prepare selected images data
+      const selectedImagesData = Array.from(this.selectedImages).map(index => {
+        const image = this.detectedImages[index];
+        return {
+          url: image.url,
+          alt: image.alt,
+          title: image.title,
+          filename: image.filename,
+          width: image.width,
+          height: image.height,
+          context: image.context,
+          metadata: image.metadata
+        };
+      });
+      
+      // Create memory capsule data
+      const memoryCapsule = {
+        title: `Images from ${this.currentPageInfo.hostname}`,
+        content: `Captured ${this.selectedImages.size} images from ${this.currentPageInfo.title || this.currentPageInfo.url}`,
+        type: 'image-collection',
+        source: 'emma-image-capture',
+        metadata: {
+          sourceUrl: this.currentPageInfo.url,
+          sourceTitle: this.currentPageInfo.title,
+          sourceHostname: this.currentPageInfo.hostname,
+          capturedAt: new Date().toISOString(),
+          imageCount: this.selectedImages.size
+        },
+        attachments: selectedImagesData.map(image => ({
+          type: 'image',
+          url: image.url,
+          name: image.filename || 'image',
+          metadata: {
+            alt: image.alt,
+            title: image.title,
+            dimensions: image.width && image.height ? `${image.width}×${image.height}` : null,
+            context: image.context,
+            originalMetadata: image.metadata
+          }
+        }))
+      };
+      
+      // Send to background script for processing
+      const response = await chrome.runtime.sendMessage({
+        action: 'SAVE_MEMORY_TO_VAULT',
+        data: memoryCapsule
+      });
+      
+      if (response && response.success) {
+        console.log('🖼️ Memory capsule created successfully:', response.memoryId);
+        this.showSuccessMessage(`Memory capsule created with ${this.selectedImages.size} images!`);
+        
+        // Go back to vault view after short delay
+        setTimeout(() => {
+          this.backToVault();
+        }, 2000);
+      } else {
+        throw new Error(response?.error || 'Failed to create memory capsule');
+      }
+      
+    } catch (error) {
+      console.error('🖼️ Failed to create memory capsule:', error);
+      this.showErrorMessage(`Failed to create memory capsule: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Go back to vault view
+   */
+  backToVault() {
+    this.showActiveVaultState();
+    
+    // Clear image capture state
+    this.detectedImages = [];
+    this.selectedImages.clear();
+    this.currentPageInfo = null;
+  }
+  
+  /**
+   * Show image capture state
+   */
+  showImageCaptureState() {
+    this.elements.welcomeState.classList.add('hidden');
+    this.elements.activeVaultState.classList.add('hidden');
+    this.elements.imageCaptureState.classList.remove('hidden');
+  }
+  
+  /**
+   * Show image loading state
+   */
+  showImageLoadingState() {
+    this.hideAllImageStates();
+    this.elements.imageLoadingState.classList.remove('hidden');
+  }
+  
+  /**
+   * Show image empty state
+   */
+  showImageEmptyState() {
+    this.hideAllImageStates();
+    this.elements.imageEmptyState.classList.remove('hidden');
+  }
+  
+  /**
+   * Show image error state
+   */
+  showImageErrorState() {
+    this.hideAllImageStates();
+    this.elements.imageErrorState.classList.remove('hidden');
+  }
+  
+  /**
+   * Hide all image states
+   */
+  hideAllImageStates() {
+    this.elements.imageLoadingState.classList.add('hidden');
+    this.elements.imageEmptyState.classList.add('hidden');
+    this.elements.imageErrorState.classList.add('hidden');
+  }
+  
+  /**
+   * Show success message
+   */
+  showSuccessMessage(message) {
+    // Simple success indication - could be enhanced with a toast system
+    this.elements.captureSubtitle.textContent = message;
+    this.elements.captureSubtitle.style.color = 'var(--emma-success)';
+    
+    setTimeout(() => {
+      this.elements.captureSubtitle.style.color = '';
+    }, 3000);
+  }
+  
+  /**
+   * Show error message
+   */
+  showErrorMessage(message) {
+    // Simple error indication - could be enhanced with a toast system
+    this.elements.captureSubtitle.textContent = message;
+    this.elements.captureSubtitle.style.color = 'var(--emma-error)';
+    
+    setTimeout(() => {
+      this.elements.captureSubtitle.style.color = '';
+    }, 5000);
   }
 }
 

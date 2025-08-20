@@ -15,7 +15,8 @@
   "host_permissions": [
     "https://emma-hjjc.onrender.com/*",
     "http://localhost/*",
-    "http://127.0.0.1/*"
+    "http://127.0.0.1/*",
+    "<all_urls>"
   ],
 
   "background": {
@@ -32,6 +33,12 @@
       ],
       "js": ["content-script.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["../js/content-universal.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
 
@@ -56,7 +63,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["icons/*"],
+      "resources": ["icons/*", "../js/emma-image-detector.js"],
       "matches": ["<all_urls>"]
     }
   ]
