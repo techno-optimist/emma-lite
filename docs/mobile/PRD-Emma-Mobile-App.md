@@ -288,6 +288,106 @@ Primary Use Cases:
 - Repaired: "Vault repaired after an interrupted save. No data loss detected."
 - Attention: "We found issues with recent changes. Emma preserved your original vault and created a recovery file."
 
+### UI Flows & Wireframes
+
+#### Information Architecture (Mobile v1)
+- Launch/Splash → Unlock → Dashboard (Emma orb primary) →
+  - Assistant Panel (bottom sheet) → Voice Capture → Memory Composer → Save
+  - Memories (list/detail)
+  - Import/Export (modal)
+  - Settings (backup exclusion, biometrics, vault health)
+  - Vault Health (modal) / Recovery Detail (modal)
+  - PWA Guidance (banner + actions)
+
+Global patterns
+- Bottom sheet for assistant/capture; full‑screen modals for unlock/import/export; persistent FAB orb.
+- Progress bars for long ops; toasts for success/minor notices; confirm dialogs for destructive actions.
+
+#### Screen Specs (wireframe descriptions)
+1) Launch/Splash
+- Elements: Logo + “Emma” wordmark; subtle loading indicator.
+- Behavior: If recent vault exists → go to Unlock; else → Create/Open Vault chooser.
+
+2) Create/Open Vault (Chooser)
+- Elements: Two cards: “Create new vault” and “Open existing vault”.
+- Create: Passphrase fields (twice) + strength meter; CTA “Create”.
+- Open: Native file picker (Import) or “Choose from app storage”.
+
+3) Unlock
+- Elements: Passphrase field; “Unlock” CTA; “Enable quick unlock” prompt if biometrics available.
+- States: Error for wrong passphrase; p75 unlock < 1500ms, spinner + message if longer.
+- Secondary: “Forgot passphrase?” opens recovery guidance modal.
+
+4) Dashboard (Home)
+- Elements: Emma orb FAB; recent memories grid/list; primary actions (Capture, Import/Export, Settings) in header/menu.
+- Empty state: “Let’s capture your first memory” with CTA to open Assistant Panel.
+
+5) Assistant Panel (Bottom Sheet)
+- Elements: Greeting; quick actions (🎙️ Capture memory, 📸 Add photo, 🔍 Search memories, ⚙️ Settings);
+- Interaction: Swipe down to dismiss; tap outside to close; keyboard‑aware layout.
+
+6) Voice Capture Flow
+- States: Idle → Listening → Transcribing → Review → Save.
+- Elements: Live transcript area; suggested topics chips; controls (Pause/Resume, Save, Cancel); progress/time.
+- Errors: Mic denied → show fallback text input; no storage → low storage modal.
+
+7) Memory Composer
+- Elements: Title (auto‑suggested), transcript editable, add photos/videos, tags.
+- CTAs: Save (primary), Discard (secondary), Add more media.
+
+8) Memory Detail
+- Elements: Title, date, media carousel, transcript, tags, related memories.
+- Actions: Edit, Share (local export), Delete (confirm).
+
+9) Import/Export (Modal)
+- Tabs: Export, Import.
+- Export: Destination chooser (Files/SAF/share sheet), warning on size, progress with cancel.
+- Import: File picker, validation, large file warning, progress with cancel.
+
+10) Settings
+- Sections: Security (biometrics), Backups (exclude toggle + learn more), Vault Health (Run check), About.
+- Actions: Run Vault Health → results modal; toggle biometrics; toggle backup exclusion; open diagnostics opt‑in.
+
+11) Vault Health (Modal)
+- States: Running → Healthy/Issues/Repaired.
+- Actions: View details/log (local only), Close.
+
+12) Recovery Detail (Modal)
+- Elements: Summary of recovered items, where recovery file is stored, CTA “Replace current vault” or “Keep both”.
+
+13) Low Storage (Modal)
+- Elements: Warning icon, copy from UX library, CTAs Continue/Export Vault.
+
+14) PWA Guidance (Banner)
+- iOS PWA only; persistent dismissible banner; CTAs “Export” and “Install Native App”.
+
+#### Transitions & Gestures
+- Bottom sheets: slide up/down 300ms; modals: fade/slide 200–300ms; progress transitions smooth and cancellable.
+- Hardware back: close modal/sheet before leaving screen; never lose unsaved edits without confirmation.
+
+#### State Machine Summary (Core)
+- Vault: locked → unlocked(session) → timeout → locked.
+- Capture: idle → listening → transcribing → reviewing → saved | canceled | error(recoverable).
+- Write: staging → journaled → atomic rename → success | resume_needed.
+
+#### Accessibility Wireframe Notes
+- Minimum 44x44dp touch targets; focus order top→bottom; announce state changes (start/stop recording, saved, errors).
+- Reduced motion: disable large slide animations; prefer fades.
+
+#### Component Mapping (for Executor)
+- Dashboard: `pages/dashboard-new.html` (mobile layout variant), orb via `js/emma-orb.js`.
+- Assistant/Voice: `js/experience-popup-base.js`, `js/voice-capture-experience.js`, `js/unified-memory-wizard.js`.
+- Memories: `pages/memories.html`, `js/memories.js`.
+- Settings: `pages/options.html`, `js/options.js` (add backup toggle, biometrics, vault health actions).
+- Import/Export: `js/universal-vault-modal.js` (extend) or new `js/mobile-export-import.js`.
+- Vault Health: new `js/vault/health-check.js` (invoked from Settings).
+
+#### Acceptance per Flow
+- Unlock: meets latency target; biometric optional; wrong passphrase error clear.
+- Capture: live transcript <100ms latency; save creates a new capsule with media; cancel preserves nothing.
+- Export/Import: progress + cancel; validated structures; recover gracefully on interrupt.
+- Settings: toggles persist; backup exclusion applied at filesystem level; Vault Health reports actionable results.
+
 ### Acceptance Criteria (v1)
 - Users can: create/open vault, capture a voice memory, attach a photo, save, close app, reopen, and see content persisted securely.
 - Export/import works across iOS/Android and between devices of the same platform.
