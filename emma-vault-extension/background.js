@@ -620,10 +620,29 @@ async function getPeopleData() {
     console.log('👥 DEBUG: People object:', vaultData?.content?.people);
     
     const people = vaultData?.content?.people || {};
-    const peopleArray = Object.values(people);
-    console.log('👥 DEBUG: People array:', peopleArray);
+    const media = vaultData?.content?.media || {};
     
-    return { people: peopleArray };
+    // Reconstruct people with avatar URLs
+    const peopleWithAvatars = Object.values(people).map(person => {
+      let avatarUrl = person.avatarUrl;
+      
+      // If person has avatarId but no avatarUrl, reconstruct from media
+      if (!avatarUrl && person.avatarId && media[person.avatarId]) {
+        const mediaItem = media[person.avatarId];
+        if (mediaItem && mediaItem.data) {
+          avatarUrl = `data:${mediaItem.type};base64,${mediaItem.data}`;
+          console.log(`👥 AVATAR: Reconstructed avatar URL for ${person.name}`);
+        }
+      }
+      
+      return {
+        ...person,
+        avatarUrl
+      };
+    });
+    
+    console.log('👥 DEBUG: People array with avatars:', peopleWithAvatars.length);
+    return { people: peopleWithAvatars };
   } catch (error) {
     console.error('❌ Failed to get people data:', error);
     return { people: [], error: error.message };

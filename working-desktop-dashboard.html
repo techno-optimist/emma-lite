@@ -3122,9 +3122,26 @@
             const memories = await window.emmaWebVault.listMemories(1000); // Get all memories
             
             console.log('💝 CONSTELLATION: Found memories in extension vault:', memories.length);
-            console.log('💝 CONSTELLATION: Memory data:', memories);
             
-            return memories;
+            // FIXED: Add thumbnail from first attachment for constellation display
+            const memoriesWithThumbnails = memories.map(memory => {
+              const attachments = memory.attachments || [];
+              let thumbnail = memory.thumbnail;
+              
+              // If no thumbnail but has attachments with URLs, use first attachment
+              if (!thumbnail && attachments.length > 0 && attachments[0].url) {
+                thumbnail = attachments[0].url;
+                console.log(`💝 CONSTELLATION: Using attachment as thumbnail for "${memory.metadata?.title || memory.id}"`);
+              }
+              
+              return {
+                ...memory,
+                thumbnail
+              };
+            });
+            
+            console.log('💝 CONSTELLATION: Processed memories with thumbnails:', memoriesWithThumbnails.length);
+            return memoriesWithThumbnails;
           } else {
             console.log('💝 CONSTELLATION: Extension not available - no memories');
             return [];
@@ -4072,14 +4089,13 @@
       // Load actual avatar image for person node
       async loadPersonAvatar(person, personElement, fallbackLetter) {
         try {
-          console.log('📷 CONSTELLATION: Loading avatar for person:', person.name, 'ID:', person.avatarId);
+          console.log('📷 CONSTELLATION: Loading avatar for person:', person.name, 'avatarUrl:', !!person.avatarUrl);
           
-          const avatarResult = await window.emmaAPI.vault.attachment.get(person.avatarId);
-          
-          if (avatarResult && avatarResult.success && avatarResult.dataUrl) {
+          // FIXED: Use avatarUrl directly from extension (already reconstructed)
+          if (person.avatarUrl) {
             // Create image element
             const img = document.createElement('img');
-            img.src = avatarResult.dataUrl;
+            img.src = person.avatarUrl;
             img.alt = `${person.name} avatar`;
             img.style.cssText = `
               width: 100%;
@@ -4100,7 +4116,7 @@
               // Keep the letter fallback
             };
           } else {
-            console.warn('📷 CONSTELLATION: No avatar data for:', person.name);
+            console.warn('📷 CONSTELLATION: No avatar URL for:', person.name);
           }
         } catch (error) {
           console.error('📷 CONSTELLATION: Error loading avatar for:', person.name, error);

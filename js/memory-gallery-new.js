@@ -192,7 +192,8 @@ async function loadMemories() {
           category: memory.metadata?.category || memory.category || memory.type || 'family',
           tags: memory.metadata?.tags || memory.tags || memory.keywords || ['memory'],
           date: memory.created || memory.date || memory.created_at || memory.timestamp || new Date(),
-          image: memory.thumbnail || memory.image || memory.photo || (mediaItems.length > 0 && mediaItems[0].url ? mediaItems[0].url : null),
+          // FIXED: Use first attachment URL for gallery card preview
+          image: (mediaItems.length > 0 && mediaItems[0].url) ? mediaItems[0].url : memory.thumbnail || memory.image || memory.photo || null,
           favorite: memory.favorite || memory.starred || false,
           mediaItems: mediaItems // Preserve media items with URL fixing
         };
