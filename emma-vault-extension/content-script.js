@@ -149,6 +149,10 @@ function handleEmmaMessage(message) {
       handleSavePerson(message.data);
       break;
       
+    case 'UPDATE_PERSON':
+      handleUpdatePerson(message.data);
+      break;
+      
     case 'SAVE_MEDIA':
       handleSaveMedia(message.data);
       break;
@@ -458,6 +462,37 @@ function handleSavePerson(personData) {
       postToEmma({
         channel: EMMA_VAULT_CHANNEL,
         type: 'PERSON_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle person update from web app
+ */
+function handleUpdatePerson(personData) {
+  console.log('👥 Extension: Handling person update from web app:', personData);
+  
+  // Forward to background script for actual vault updating
+  chrome.runtime.sendMessage({
+    action: 'UPDATE_PERSON_IN_VAULT',
+    data: personData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Person updated in vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_UPDATED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to update person in vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_UPDATE_ERROR',
         data: { success: false, error: response?.error || 'Unknown error' }
       });
     }

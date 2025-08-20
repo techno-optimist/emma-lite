@@ -2059,6 +2059,44 @@ window.emmaAPI = {
         console.error('❌ Failed to list people:', error);
         return { success: false, error: error.message, items: [] };
       }
+    },
+
+    update: async (personData) => {
+      try {
+        console.log('👥 API: Updating person via extension:', personData);
+        
+        // Extension mode: Route through extension
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          console.log('🔗 Extension mode: Routing person update through extension');
+          
+          // Send person update to extension for saving to actual vault
+          const updateData = {
+            id: personData.id,
+            name: personData.name,
+            relation: personData.relation,
+            contact: personData.contact,
+            avatar: personData.avatarUrl || personData.avatar, // Use avatarUrl if available
+            avatarId: personData.avatarId,
+            updated: new Date().toISOString()
+          };
+          
+          // Notify extension to update this person
+          window.postMessage({
+            channel: 'emma-vault-bridge',
+            type: 'UPDATE_PERSON',
+            data: updateData
+          }, window.location.origin);
+          
+          // Return success immediately - extension handles actual saving
+          return { success: true, id: personData.id };
+        }
+        
+        // Fallback for non-extension mode
+        return await window.emmaWebVault.updatePerson(personData);
+      } catch (error) {
+        console.error('❌ Failed to update person:', error);
+        return { success: false, error: error.message };
+      }
     }
   },
   

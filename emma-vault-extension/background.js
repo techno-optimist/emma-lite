@@ -89,6 +89,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'UPDATE_PERSON_IN_VAULT':
+      handleUpdatePersonInVault(request.data)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'SAVE_MEDIA_TO_VAULT':
       handleSaveMediaToVault(request.data)
         .then(result => sendResponse(result))
@@ -543,6 +549,66 @@ async function handleSavePersonToVault(personData) {
     
   } catch (error) {
     console.error('❌ Failed to save person to vault:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Handle updating person in vault file
+ */
+async function handleUpdatePersonInVault(personData) {
+  try {
+    console.log('👥 Background: Updating person in vault storage');
+    
+    // Get current vault data from storage
+    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
+    if (!vaultReady || !vaultData) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
+    }
+    
+    const currentData = { ...vaultData };
+    
+    // Find existing person
+    if (!currentData.content.people) {
+      throw new Error('No people found in vault');
+    }
+    
+    const existingPerson = currentData.content.people[personData.id];
+    if (!existingPerson) {
+      throw new Error('Person not found in vault');
+    }
+    
+    // Update person data
+    const updatedPerson = {
+      ...existingPerson,
+      name: personData.name,
+      relation: personData.relation || '',
+      contact: personData.contact || '',
+      avatar: personData.avatar || existingPerson.avatar,
+      avatarId: personData.avatarId || existingPerson.avatarId,
+      updated: new Date().toISOString()
+    };
+    
+    // Save updated person back to vault
+    currentData.content.people[personData.id] = updatedPerson;
+    
+    // Update stats
+    if (!currentData.stats) {
+      currentData.stats = { memoryCount: 0, peopleCount: 0, totalSize: 0 };
+    }
+    currentData.stats.peopleCount = Object.keys(currentData.content.people).length;
+    
+    // Save updated vault data back to storage
+    await chrome.storage.local.set({
+      vaultData: currentData,
+      lastSaved: new Date().toISOString()
+    });
+    
+    console.log('✅ Person updated in vault storage successfully');
+    return { success: true, id: personData.id };
+    
+  } catch (error) {
+    console.error('❌ Failed to update person in vault:', error);
     return { success: false, error: error.message };
   }
 }
