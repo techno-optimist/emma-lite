@@ -707,10 +707,55 @@
 
     /* Hide burger menu and panels in constellation mode */
     body.constellation-active .burger-menu-btn,
-    body.constellation-active .info-panel.right-stack {
+    body.constellation-active .info-panel.right-stack,
+    body.constellation-active .utility-icons {
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
+    }
+
+    /* Bottom Left Utility Icons */
+    .utility-icons {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      display: flex;
+      gap: 16px;
+      z-index: 1000;
+    }
+
+    .utility-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 60px;
+    }
+
+    .utility-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(139, 92, 246, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    }
+
+    .utility-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .utility-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+      text-align: center;
     }
 
     /* Burger Menu Button */
@@ -1660,15 +1705,11 @@
     </div>
   </div>
 
-  <!-- Radial Menu (Now floating neural nodes) -->
+  <!-- Radial Menu (Clean 4-item layout around Emma orb) -->
   <div class="radial-menu" id="radial-menu">
         <div class="radial-item" data-action="capture">
           <div class="radial-item-icon">🎤</div>
           <div class="radial-item-label">Capture</div>
-        </div>
-        <div class="radial-item" data-action="vault" id="vault-node">
-          <div class="radial-item-icon">🔒</div>
-          <div class="radial-item-label">Vault</div>
         </div>
         <div class="radial-item" data-action="memories">
           <div class="radial-item-icon">💝</div>
@@ -1678,23 +1719,23 @@
           <div class="radial-item-icon">👥</div>
           <div class="radial-item-label">People</div>
         </div>
-        <div class="radial-item" data-action="search">
-          <div class="radial-item-icon">🔍</div>
-          <div class="radial-item-label">Search</div>
-        </div>
-        <div class="radial-item" data-action="share">
-          <div class="radial-item-icon">📱</div>
-          <div class="radial-item-label">Share</div>
-        </div>
         <div class="radial-item" data-action="chat">
           <div class="radial-item-icon">💬</div>
           <div class="radial-item-label">Chat</div>
         </div>
-        <div class="radial-item" data-action="settings">
-          <div class="radial-item-icon">⚙️</div>
-          <div class="radial-item-label">Settings</div>
-        </div>
       </div>
+
+  <!-- Bottom Left Utility Icons -->
+  <div class="utility-icons">
+    <div class="utility-item" data-action="search">
+      <div class="utility-icon">🔍</div>
+      <div class="utility-label">Search</div>
+    </div>
+    <div class="utility-item" data-action="settings">
+      <div class="utility-icon">⚙️</div>
+      <div class="utility-label">Settings</div>
+    </div>
+  </div>
 
       <!-- Quick Stats -->
       <div class="quick-stats">
@@ -1938,6 +1979,10 @@
         this.burgerMenuBtn = document.getElementById('burger-menu-btn');
         this.panelsVisible = false;
         this.setupBurgerMenu();
+
+        // Utility icons functionality
+        this.utilityIcons = document.querySelector('.utility-icons');
+        this.setupUtilityIcons();
         
         this.isMenuOpen = false;
         this.stats = { memories: 0, people: 0, today: 0 };
@@ -2607,26 +2652,14 @@
           case 'capture':
             this.startVoiceCapture();
             break;
-          case 'vault':
-            this.openVaultModal();
-            break;
           case 'memories':
             await this.enterMemoryConstellation();
             break;
           case 'people':
             window.location.href = 'pages/people-emma.html';
             break;
-          case 'search':
-            this.showToast('🔍 Search coming soon!', 'info');
-            break;
-          case 'share':
-            this.showQRShare();
-            break;
           case 'chat':
             this.startEmmaChatExperience();
-            break;
-          case 'settings':
-            window.location.href = 'pages/options.html';
             break;
         }
         
@@ -3073,6 +3106,37 @@
         });
 
         console.log('🍔 Burger menu setup complete');
+      }
+
+      setupUtilityIcons() {
+        if (!this.utilityIcons) {
+          console.warn('🔧 Utility icons not found');
+          return;
+        }
+
+        // Add click handlers to utility items
+        this.utilityIcons.querySelectorAll('.utility-item').forEach(item => {
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = item.dataset.action;
+            this.handleUtilityAction(action);
+          });
+        });
+
+        console.log('🔧 Utility icons setup complete');
+      }
+
+      handleUtilityAction(action) {
+        console.log('🔧 Utility action:', action);
+        
+        switch(action) {
+          case 'search':
+            this.showToast('🔍 Search coming soon!', 'info');
+            break;
+          case 'settings':
+            window.location.href = 'pages/options.html';
+            break;
+        }
       }
 
       togglePanels() {
