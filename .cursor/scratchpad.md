@@ -247,17 +247,16 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Ensure error paths leave original vault intact; verify cleanup of temp/manifest on success.
 - Next: device chaos tests to validate recovery behavior; consider .recovery file option if verification fails.
 
-### CTO Oversight Notes (Phase 1) — Preflight & Scaffold
-- Preflight free-space checks integrated; good thresholds (200MB min + write size). Surface low-storage UX per PRD when wiring UI.
-- Recovery file on verification failure added; good. Add retention policy (keep last 1) later.
-- Capacitor scaffold folder created; next step will be initializing Capacitor with local assets and a bridge.
+### CTO Oversight Notes (Phase 1) — Capacitor Adapter
+- Filesystem adapter mirrors OPFS journaling and verification; good parity. Ensure Directory choice is correct (Documents) and configurable. Share/Export to be implemented with Share plugin.
+- Validate base64 conversion perf for large files; consider chunked writes in Phase 1.2.
 
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing (interface + selector committed)
 - [x] T1 PWA_OPFS_Adapter complete with tests (MVP adapter + test page)
 - [x] T2 Crypto Worker/WASM + perf harness (Gate A) — implemented; validate on devices before closing Gate A
-- [ ] T3 Capacitor scaffold + asset resolver — scaffold created, init pending
-- [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — partial in OPFS; implement Capacitor adapter next
+- [x] T3 Capacitor scaffold + asset resolver — scaffold created; selector detects Capacitor
+- [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — implemented
 - [ ] T5 Chaos/low-space harness; pass criteria
 - [ ] T6 Backup exclusion UI + native flags + education (Gate C)
 - [ ] T7 Biometrics + privileged gating

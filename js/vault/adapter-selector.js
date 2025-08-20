@@ -12,7 +12,15 @@
     try { return !!(global.chrome && global.chrome.runtime && global.chrome.runtime.id); } catch { return false; }
   }
 
+  function isCapacitorNative() {
+    try {
+      const C = global.Capacitor || global.CapacitorBridge || null;
+      return !!(C && (C.isNativePlatform === true || C.platform && C.platform !== 'web'));
+    } catch { return false; }
+  }
+
   function adapterIdFromEnv() {
+    if (isCapacitorNative()) return 'capacitor';
     if (isExtensionContext()) return 'extension';
     if (isOPFSSupported()) return 'opfs';
     return 'memory';
@@ -20,6 +28,13 @@
 
   async function selectAdapter() {
     const id = adapterIdFromEnv();
+    if (id === 'capacitor') {
+      if (!global.EmmaVaultCapacitorAdapter) {
+        const { InMemoryAdapter } = global.EmmaVaultAdapters || {};
+        return new InMemoryAdapter();
+      }
+      return new global.EmmaVaultCapacitorAdapter();
+    }
     if (id === 'opfs') {
       if (!global.EmmaVaultOPFSAdapter) {
         // Lazy define placeholder to avoid crash; caller should handle feature warnings
@@ -38,7 +53,8 @@
     selectAdapter,
     adapterIdFromEnv,
     isOPFSSupported,
-    isExtensionContext
+    isExtensionContext,
+    isCapacitorNative
   };
 })(typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : globalThis));
 
