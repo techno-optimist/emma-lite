@@ -511,7 +511,40 @@ async function handleSavePersonToVault(personData) {
     // Generate person ID
     const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     
-    // Create person object
+    // Handle avatar like memory attachments - save as media
+    let avatarId = null;
+    if (personData.avatar && personData.avatar.startsWith('data:')) {
+      console.log('📷 BACKGROUND: Saving person avatar as media (same as memory attachments)...');
+      
+      // Generate media ID for avatar
+      const avatarMediaId = 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      
+      // Extract type and base64 data from data URL
+      const [header, base64Data] = personData.avatar.split(',');
+      const mimeMatch = header.match(/data:([^;]+)/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      
+      const avatarMedia = {
+        id: avatarMediaId,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        name: `${personData.name}-avatar`,
+        type: mimeType,
+        size: base64Data.length,
+        data: toBase64Payload(personData.avatar) // Use same logic as memory attachments
+      };
+      
+      // Add to vault media (same as memory attachments)
+      if (!currentData.content.media) {
+        currentData.content.media = {};
+      }
+      currentData.content.media[avatarMediaId] = avatarMedia;
+      
+      avatarId = avatarMediaId;
+      console.log('📷 BACKGROUND: Avatar saved as media with ID:', avatarMediaId);
+    }
+    
+    // Create person object (same structure as memories with attachments)
     const person = {
       id: personId,
       created: personData.created || new Date().toISOString(),
@@ -519,7 +552,7 @@ async function handleSavePersonToVault(personData) {
       name: personData.name,
       relation: personData.relation || '',
       contact: personData.contact || '',
-      avatar: personData.avatar || null
+      avatarId: avatarId // Store media ID like memory attachments
     };
     
     // Add to vault
