@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Emma Vault Extension</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #8B5CF6;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-weight: 500;
+    }
+    .status.success {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+    .status.error {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+    .status.info {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+    button {
+      background: #8B5CF6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #7C3AED;
+    }
+    #output {
+      background: #F3F4F6;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-family: monospace;
+      font-size: 14px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🧪 Emma Vault Extension Test Page</h1>
+    
+    <div id="extensionStatus" class="status info">
+      Checking for extension...
+    </div>
+    
+    <h2>Test Actions:</h2>
+    
+    <button onclick="checkExtension()">Check Extension</button>
+    <button onclick="sendTestMessage()">Send Test Message</button>
+    <button onclick="simulateVaultUpdate()">Simulate Vault Update</button>
+    <button onclick="requestSyncStatus()">Request Sync Status</button>
+    
+    <h2>Output Log:</h2>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const statusDiv = document.getElementById('extensionStatus');
+    
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.textContent = `[${timestamp}] ${message}`;
+      entry.style.color = type === 'error' ? '#991B1B' : type === 'success' ? '#065F46' : '#4B5563';
+      output.appendChild(entry);
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+    
+    // Check for extension on load
+    window.addEventListener('load', () => {
+      setTimeout(checkExtension, 500);
+    });
+    
+    // Listen for extension messages
+    window.addEventListener('message', (event) => {
+      if (event.data?.channel === 'emma-vault-bridge') {
+        log(`📨 Received extension message: ${event.data.type}`, 'success');
+        log(JSON.stringify(event.data, null, 2));
+      }
+    });
+    
+    // Listen for extension ready event
+    window.addEventListener('emma-vault-extension-ready', (event) => {
+      log('🎉 Extension ready event received!', 'success');
+      log(`Version: ${event.detail.version}`);
+      updateStatus('Extension is ready!', 'success');
+    });
+    
+    function checkExtension() {
+      log('Checking for Emma Vault Extension...');
+      
+      // Check for marker
+      const marker = document.getElementById('emma-vault-extension-marker');
+      if (marker) {
+        log('✅ Extension marker found!', 'success');
+        log(`Extension version: ${marker.dataset.version}`);
+        updateStatus('Extension detected!', 'success');
+      } else {
+        log('❌ Extension marker not found', 'error');
+        updateStatus('Extension not detected', 'error');
+      }
+      
+      // Check for window object
+      if (window.EmmaVaultExtension) {
+        log('✅ Window.EmmaVaultExtension found!', 'success');
+        log(`Available methods: ${Object.keys(window.EmmaVaultExtension).join(', ')}`);
+      } else {
+        log('❌ Window.EmmaVaultExtension not found', 'error');
+      }
+    }
+    
+    function sendTestMessage() {
+      log('Sending test message to extension...');
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'TEST_MESSAGE',
+        data: { test: true, timestamp: Date.now() }
+      }, window.location.origin);
+    }
+    
+    function simulateVaultUpdate() {
+      log('Simulating vault update...');
+      
+      const testVaultData = {
+        id: 'test-vault-123',
+        name: 'Test Vault',
+        created: new Date().toISOString(),
+        content: {
+          memories: [
+            {
+              id: 'mem-1',
+              content: 'This is a test memory',
+              created: new Date().toISOString()
+            }
+          ],
+          people: [],
+          settings: {}
+        }
+      };
+      
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'VAULT_UPDATE',
+        data: testVaultData
+      }, window.location.origin);
+      
+      log('Vault update message sent');
+    }
+    
+    function requestSyncStatus() {
+      log('Requesting sync status...');
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'REQUEST_SYNC_STATUS'
+      }, window.location.origin);
+    }
+    
+    function updateStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+    }
+    
+    // Initial check
+    log('Test page loaded - Emma Vault Extension Test Suite');
+  </script>
+</body>
+</html>

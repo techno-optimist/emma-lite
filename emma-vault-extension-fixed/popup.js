@@ -1356,19 +1356,7 @@ class EmmaVaultExtension {
         encrypted
       );
       
-      // CRITICAL SECURITY: Verify decryption actually worked by parsing JSON
-      try {
-        const testString = new TextDecoder().decode(decrypted);
-        const testParse = JSON.parse(testString);
-        if (!testParse || typeof testParse !== 'object') {
-          throw new Error('Decrypted data is not valid JSON');
-        }
-        console.log('✅ Extension: Data decrypted and validated successfully');
-      } catch (parseError) {
-        console.error('❌ Extension: Decrypted data validation failed:', parseError);
-        throw new Error('Invalid passphrase - decrypted data is corrupted');
-      }
-      
+      console.log('✅ Extension: Data decrypted successfully');
       return decrypted;
       
     } catch (error) {
