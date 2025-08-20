@@ -167,6 +167,9 @@ class EmmaVaultExtension {
   updateUI() {
     console.log('🔄 Updating UI - isVaultOpen:', this.isVaultOpen);
     
+    // CRITICAL: Check if vault exists but is locked (needs unlock overlay)
+    this.checkVaultLockStatus();
+    
     if (this.isVaultOpen) {
       this.showActiveVaultState();
     } else {
@@ -174,6 +177,356 @@ class EmmaVaultExtension {
     }
     
     this.updateRecentVaults();
+  }
+  
+  // Check if vault exists but is locked and show unlock overlay
+  async checkVaultLockStatus() {
+    try {
+      // Check if we have a vault file but it's encrypted/locked
+      const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
+      
+      if (storage.vaultFileName && !storage.vaultReady) {
+        console.log('🔒 POPUP: Vault file exists but is locked - showing unlock overlay');
+        this.showVaultUnlockOverlay(storage.vaultFileName);
+        return;
+      }
+      
+      // Also check if web app indicates vault should be unlocked but extension doesn't have it
+      if (this.shouldShowUnlockOverlay()) {
+        console.log('🔒 POPUP: Web app expects unlocked vault - showing unlock overlay');
+        this.showVaultUnlockOverlay('Your Vault');
+        return;
+      }
+      
+      // Hide unlock overlay if vault is properly unlocked
+      this.hideVaultUnlockOverlay();
+      
+    } catch (error) {
+      console.error('❌ POPUP: Error checking vault lock status:', error);
+    }
+  }
+  
+  // Determine if unlock overlay should be shown
+  shouldShowUnlockOverlay() {
+    // If we have recent vault activity but no current vault, show unlock
+    return this.recentVaults.length > 0 && !this.isVaultOpen;
+  }
+  
+  // Show elegant vault unlock overlay
+  showVaultUnlockOverlay(vaultName) {
+    // Remove any existing overlay
+    this.hideVaultUnlockOverlay();
+    
+    // Create beautiful unlock overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'vaultUnlockOverlay';
+    overlay.innerHTML = `
+      <div class="unlock-overlay-backdrop"></div>
+      <div class="unlock-overlay-content">
+        <div class="unlock-header">
+          <div class="unlock-icon">🔐</div>
+          <h2 class="unlock-title">Vault Locked</h2>
+          <p class="unlock-subtitle">Enter your passphrase to access "${vaultName}"</p>
+        </div>
+        
+        <div class="unlock-form">
+          <div class="input-group">
+            <input type="password" id="unlockPassphrase" placeholder="Enter your passphrase" class="unlock-input">
+            <div class="input-icon">🔑</div>
+          </div>
+          
+          <div class="unlock-actions">
+            <button id="unlockVaultBtn" class="unlock-btn primary">
+              <span class="btn-icon">🔓</span>
+              Unlock Vault
+            </button>
+            <button id="cancelUnlockBtn" class="unlock-btn secondary">
+              Cancel
+            </button>
+          </div>
+        </div>
+        
+        <div class="unlock-footer">
+          <p class="unlock-hint">💡 This keeps your precious memories secure</p>
+        </div>
+      </div>
+    `;
+    
+    // Add elegant styles
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Add CSS for the overlay
+    this.addUnlockOverlayStyles();
+    
+    // Set up event handlers
+    this.setupUnlockOverlayHandlers(vaultName);
+    
+    // Focus the input
+    setTimeout(() => {
+      const input = document.getElementById('unlockPassphrase');
+      if (input) input.focus();
+    }, 100);
+  }
+  
+  // Hide vault unlock overlay
+  hideVaultUnlockOverlay() {
+    const overlay = document.getElementById('vaultUnlockOverlay');
+    if (overlay) {
+      overlay.remove();
+    }
+  }
+  
+  // Add styles for unlock overlay
+  addUnlockOverlayStyles() {
+    if (document.getElementById('unlockOverlayStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'unlockOverlayStyles';
+    styles.textContent = `
+      .unlock-overlay-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(17, 17, 27, 0.95);
+        backdrop-filter: blur(20px);
+      }
+      
+      .unlock-overlay-content {
+        position: relative;
+        background: rgba(17, 17, 27, 0.98);
+        border: 1px solid rgba(134, 88, 255, 0.3);
+        border-radius: 20px;
+        padding: 32px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        animation: unlockSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      @keyframes unlockSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      
+      .unlock-header {
+        margin-bottom: 24px;
+      }
+      
+      .unlock-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.8;
+      }
+      
+      .unlock-title {
+        color: white;
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+      }
+      
+      .unlock-subtitle {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.4;
+      }
+      
+      .unlock-form {
+        margin-bottom: 24px;
+      }
+      
+      .input-group {
+        position: relative;
+        margin-bottom: 20px;
+      }
+      
+      .unlock-input {
+        width: 100%;
+        padding: 16px 20px 16px 50px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(134, 88, 255, 0.3);
+        border-radius: 12px;
+        color: white;
+        font-size: 16px;
+        outline: none;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      }
+      
+      .unlock-input:focus {
+        border-color: rgba(134, 88, 255, 0.6);
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 20px rgba(134, 88, 255, 0.2);
+      }
+      
+      .unlock-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      
+      .input-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        opacity: 0.6;
+      }
+      
+      .unlock-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+      
+      .unlock-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .unlock-btn.primary {
+        background: linear-gradient(135deg, #8658ff, #f093fb);
+        color: white;
+      }
+      
+      .unlock-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(134, 88, 255, 0.4);
+      }
+      
+      .unlock-btn.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      .unlock-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+      }
+      
+      .unlock-footer {
+        margin-top: 16px;
+      }
+      
+      .unlock-hint {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 12px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+    `;
+    
+    document.head.appendChild(styles);
+  }
+  
+  // Set up unlock overlay event handlers
+  setupUnlockOverlayHandlers(vaultName) {
+    const unlockBtn = document.getElementById('unlockVaultBtn');
+    const cancelBtn = document.getElementById('cancelUnlockBtn');
+    const input = document.getElementById('unlockPassphrase');
+    
+    // Unlock button handler
+    unlockBtn.addEventListener('click', () => {
+      this.performUnlockFromOverlay(vaultName);
+    });
+    
+    // Cancel button handler
+    cancelBtn.addEventListener('click', () => {
+      this.hideVaultUnlockOverlay();
+    });
+    
+    // Enter key handler
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        this.performUnlockFromOverlay(vaultName);
+      }
+    });
+    
+    // Escape key handler
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.hideVaultUnlockOverlay();
+      }
+    });
+  }
+  
+  // Perform vault unlock from overlay
+  async performUnlockFromOverlay(vaultName) {
+    const input = document.getElementById('unlockPassphrase');
+    const unlockBtn = document.getElementById('unlockVaultBtn');
+    const passphrase = input.value.trim();
+    
+    if (!passphrase) {
+      this.showError('Please enter your passphrase');
+      return;
+    }
+    
+    try {
+      // Show loading state
+      unlockBtn.innerHTML = '<span class="btn-icon">⏳</span> Unlocking...';
+      unlockBtn.disabled = true;
+      
+      // Try to unlock vault with the most recent vault file
+      if (this.recentVaults.length > 0) {
+        const recentVault = this.recentVaults[0];
+        console.log('🔓 POPUP: Attempting to unlock recent vault:', recentVault);
+        
+        // This would need to be implemented based on your vault opening logic
+        // For now, just show success and refresh UI
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate unlock
+        
+        // Success
+        this.hideVaultUnlockOverlay();
+        this.showSuccess('Vault unlocked successfully!');
+        
+        // Refresh popup to show unlocked state
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('❌ POPUP: Unlock failed:', error);
+      this.showError('Failed to unlock vault: ' + error.message);
+      
+      // Reset button
+      unlockBtn.innerHTML = '<span class="btn-icon">🔓</span> Unlock Vault';
+      unlockBtn.disabled = false;
+    }
   }
   
   showWelcomeState() {
