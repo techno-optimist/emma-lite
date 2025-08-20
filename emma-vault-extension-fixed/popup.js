@@ -2227,7 +2227,8 @@ class EmmaVaultExtension {
     
     // Handle image load errors
     img.onerror = () => {
-      img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0MCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1zaXplPSIxMiI+4p2MPC90ZXh0Pgo8L3N2Zz4K';
+      // Fallback: try to fetch in page context and set data URL for preview
+      this.loadImagePreview(img, image.url);
     };
     
     // Create checkbox
@@ -2508,6 +2509,44 @@ class EmmaVaultExtension {
     } catch (error) {
       console.error('🖼️ Failed to download image:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Load preview image into an <img> element by fetching via page-context
+   */
+  async loadImagePreview(imgEl, imageUrl) {
+    try {
+      if (!this.activeTabId || !chrome.scripting) throw new Error('no-active-tab');
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: this.activeTabId },
+        func: async (url) => {
+          try {
+            const res = await fetch(url, { credentials: 'include', mode: 'cors' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const blob = await res.blob();
+            const dataUrl = await new Promise((resolve, reject) => {
+              const r = new FileReader();
+              r.onload = () => resolve(r.result);
+              r.onerror = reject;
+              r.readAsDataURL(blob);
+            });
+            return { dataUrl };
+          } catch (e) {
+            return { error: e?.message || 'preview-fetch-failed' };
+          }
+        },
+        args: [imageUrl]
+      });
+      const value = results && results[0] && results[0].result;
+      if (value && value.dataUrl) {
+        imgEl.src = value.dataUrl;
+        return;
+      }
+      throw new Error(value?.error || 'preview-failed');
+    } catch (e) {
+      // Final fallback placeholder
+      imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMzMzIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0MCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgZm9udC1zaXplPSIxMiI+4p2MPC90ZXh0Pgo8L3N2Zz4K';
     }
   }
   
