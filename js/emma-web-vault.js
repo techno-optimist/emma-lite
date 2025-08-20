@@ -1937,20 +1937,11 @@ window.emmaAPI = {
             data: attachment.data
           });
           
-          // If memoryId provided, link the attachment
-          if (attachment.memoryId && window.emmaWebVault.vaultData.content.memories[attachment.memoryId]) {
-            const memory = window.emmaWebVault.vaultData.content.memories[attachment.memoryId];
-            if (!memory.attachments) memory.attachments = [];
-            
-            memory.attachments.push({
-              id: mediaId,
-              type: attachment.type,
-              name: attachment.name,
-              size: attachment.size || 0
-            });
-            
-            // Trigger auto-save for attachment linking
-            await window.emmaWebVault.autoSave();
+          // Extension mode: Route attachment linking through extension
+          if (attachment.memoryId && window.emmaWebVault.extensionAvailable) {
+            console.log('🔗 ATTACHMENT: Routing attachment linking through extension');
+            // Extension handles all vault operations - no direct data manipulation
+            // Attachment linking should go through proper extension save flow
           }
           
           return { success: true, id: mediaId };

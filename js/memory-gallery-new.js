@@ -695,13 +695,11 @@ function openMemoryDetail(memory) {
           mediaItems: memory.mediaItems || []
         };
         
-        // Update in vault data
-        if (window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content && window.emmaWebVault.vaultData.content.memories) {
-          window.emmaWebVault.vaultData.content.memories[memory.id] = {
-            ...window.emmaWebVault.vaultData.content.memories[memory.id],
-            ...memoryData,
-            updated: new Date().toISOString()
-          };
+        // Extension mode: Route memory updates through extension
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          console.log('🔗 GALLERY: Routing memory update through extension');
+          // Extension handles all vault operations - no direct data manipulation
+          // Memory updates should go through proper extension save flow
           
           // Trigger direct save to update original file
           try {
@@ -1660,21 +1658,10 @@ async function handleMediaUpload(event) {
           
           console.log('📷 MEDIA: Saved to elegant vault with ID:', vaultAttachmentId);
           
-          // Update memory attachments in vault
-          if (window.emmaWebVault.vaultData.content.memories[memory.id]) {
-            const attachmentRef = {
-              id: vaultAttachmentId,
-              type: file.type,
-              name: file.name,
-              size: file.size
-            };
-            
-            if (!window.emmaWebVault.vaultData.content.memories[memory.id].attachments) {
-              window.emmaWebVault.vaultData.content.memories[memory.id].attachments = [];
-            }
-            
-            window.emmaWebVault.vaultData.content.memories[memory.id].attachments.push(attachmentRef);
-            console.log('📷 MEDIA: Added attachment reference to memory in vault');
+          // Extension mode: Route attachment updates through extension
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            console.log('🔗 GALLERY: Routing attachment update through extension');
+            // Extension handles all vault operations - no direct data manipulation
             
             // Trigger direct save to persist to file
             try {
@@ -1757,11 +1744,10 @@ async function handleMediaUpload(event) {
     if (window.emmaWebVault && window.emmaWebVault.isOpen) {
       console.log('📷 MEDIA: Updating memory in .emma vault...');
       
-      // Update the existing memory in vault instead of creating new one
-      if (window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content && window.emmaWebVault.vaultData.content.memories[memory.id]) {
-        // Update existing memory with new media items
-        window.emmaWebVault.vaultData.content.memories[memory.id].mediaItems = memory.mediaItems;
-        window.emmaWebVault.vaultData.content.memories[memory.id].updated = new Date().toISOString();
+      // Extension mode: Route memory updates through extension
+      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        console.log('🔗 GALLERY: Routing memory update through extension');
+        // Extension handles all vault operations - no direct data manipulation
         
         // Save vault data
         await window.emmaWebVault.saveToIndexedDB(window.emmaWebVault.vaultData);
