@@ -31,6 +31,7 @@ class EmmaVaultExtension {
       activeVaultPath: document.getElementById('activeVaultPath'),
       vaultStatusIndicator: document.getElementById('vaultStatusIndicator'),
       memoryCount: document.getElementById('memoryCount'),
+      peopleCount: document.getElementById('peopleCount'),
       vaultSize: document.getElementById('vaultSize'),
       lastSyncTime: document.getElementById('lastSyncTime'),
       
@@ -84,6 +85,18 @@ class EmmaVaultExtension {
           forceHoverState: false
         });
         console.log('🌟 Emma orb initialized');
+        
+        // Initialize small orb for Add Memory button
+        const addMemoryOrb = document.getElementById('addMemoryOrb');
+        if (addMemoryOrb) {
+          new EmmaOrb(addMemoryOrb, {
+            hue: 270,
+            hoverIntensity: 0.5,
+            rotateOnHover: true,
+            forceHoverState: false
+          });
+          console.log('🌟 Add Memory orb initialized');
+        }
       } else {
         console.log('⚠️ Emma orb not available, using CSS fallback');
       }
@@ -135,8 +148,8 @@ class EmmaVaultExtension {
     this.elements.createNewVault.addEventListener('click', () => this.createNewVault());
     this.elements.openExistingVault.addEventListener('click', () => this.openExistingVault());
     
-    // Active vault actions
-    this.elements.addMemoryBtn.addEventListener('click', () => this.addMemory());
+    // Active vault actions - Add Memory opens web app wizard
+    this.elements.addMemoryBtn.addEventListener('click', () => this.openMemoryWizard());
     this.elements.openWebAppBtn.addEventListener('click', () => this.openWebApp());
     this.elements.downloadVaultBtn.addEventListener('click', () => this.downloadVault());
     this.elements.closeVaultBtn.addEventListener('click', () => this.closeVault());
@@ -180,7 +193,10 @@ class EmmaVaultExtension {
       
       // Update stats
       const memoryCount = Object.keys(this.vaultData?.content?.memories || {}).length;
+      const peopleCount = Object.keys(this.vaultData?.content?.people || {}).length;
+      
       this.elements.memoryCount.textContent = memoryCount;
+      this.elements.peopleCount.textContent = peopleCount;
       
       const vaultSize = this.calculateVaultSize();
       this.elements.vaultSize.textContent = this.formatBytes(vaultSize);
@@ -587,6 +603,24 @@ class EmmaVaultExtension {
     } catch (error) {
       console.error('❌ Failed to open web app:', error);
       this.showError('Failed to open web app');
+    }
+  }
+  
+  async openMemoryWizard() {
+    console.log('🧠 Opening memory creation wizard...');
+    
+    try {
+      // Open dashboard and trigger memory wizard
+      await chrome.tabs.create({
+        url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html#create-memory'
+      });
+      
+      // Close popup
+      window.close();
+      
+    } catch (error) {
+      console.error('❌ Failed to open memory wizard:', error);
+      this.showError('Failed to open memory wizard');
     }
   }
   

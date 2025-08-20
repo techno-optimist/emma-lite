@@ -8,7 +8,8 @@
 </head>
 <body>
   <div class="popup-container">
-    <!-- Minimal header - removed text as requested -->
+    <!-- Top spacing for better visual balance -->
+    <div class="popup-header-spacer"></div>
 
     <!-- Main Interface -->
     <main class="main-interface" id="mainInterface">
@@ -85,6 +86,10 @@
               <span class="stat-value" id="memoryCount">0</span>
             </div>
             <div class="stat-item">
+              <span class="stat-label">People:</span>
+              <span class="stat-value" id="peopleCount">0</span>
+            </div>
+            <div class="stat-item">
               <span class="stat-label">Size:</span>
               <span class="stat-value" id="vaultSize">0 KB</span>
             </div>
@@ -97,8 +102,8 @@
 
         <!-- Quick Actions -->
         <div class="quick-actions">
-          <button class="action-btn" id="addMemoryBtn">
-            <span class="action-icon">✨</span>
+          <button class="action-btn emma-orb-btn" id="addMemoryBtn">
+            <div class="action-orb" id="addMemoryOrb"></div>
             <span class="action-text">Add Memory</span>
           </button>
           

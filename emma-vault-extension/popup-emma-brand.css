@@ -49,6 +49,12 @@ body {
   height: 500px;
 }
 
+/* Top spacing for better visual balance */
+.popup-header-spacer {
+  height: 16px;
+  width: 100%;
+}
+
 /* Popup Container */
 .popup-container {
   width: 420px;
@@ -383,6 +389,26 @@ body {
 .action-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Emma Orb Button */
+.emma-orb-btn {
+  background: var(--emma-gradient-2);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+}
+
+.emma-orb-btn:hover {
+  background: var(--emma-gradient-1);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+}
+
+.action-orb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  position: relative;
 }
 
 .action-icon {
