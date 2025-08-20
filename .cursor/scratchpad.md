@@ -256,3 +256,16 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Keep edits surgical; do not alter vault format.
 - Feature-flag new adapters; enable per environment detection.
 - Prefer progressive enhancement; always maintain passphrase path and local-only operation.
+
+### Planning TODOs (Planner)
+- [ ] Finalize KDF parameter matrix (Argon2id: memory/iterations/parallelism per device class; PBKDF2 fallback thresholds) and add to PRD appendix
+- [ ] Specify Journaling manifest schema (fields, checksums, versioning), checksum algo (SHA-256), temp/recovery file naming, auto-repair vs manual prompt, cleanup policy
+- [ ] Lock Device/Performance test matrix (iPhone 12/13/SE3; Pixel 6/7; mid-tier Android), battery/storage thresholds, and p95 targets
+- [ ] Draft App Store/Play crypto export answers, privacy nutrition/data safety labels, permission strings, foreground-only mic statements
+- [ ] Configure PWA export cadence triggers (30 days or >500MB added), dismissal rules, banner conditions
+- [ ] Define Vault Health policy: frequency (on-demand + weekly), scope (header, manifest, attachments), user-visible logs (local-only)
+- [ ] Crash-only diagnostics policy: allowed fields, redaction, retention (last 5 sessions), explicit opt-in UX
+- [ ] Accessibility acceptance checklist per screen (labels, focus order, contrast, reduced motion)
+- [ ] Localization plan (v1 EN only) and copy readiness for later i18n
+- [ ] RACI and timeline: assign owners for T0–T11, phase dates, gate reviews
+- [ ] Ticketization: issues per task with acceptance criteria/tests and PRD links

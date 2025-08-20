@@ -400,3 +400,75 @@ Global patterns
 - Abstractions: `VaultStorageAdapter` interface; `PWA_OPFS_Adapter`, `CapacitorFilesystemAdapter` implementations.
 - Fallback plan: PWA remains supported with explicit limitations messaging.
 
+---
+
+## Appendices
+
+### Appendix A — KDF Parameter Matrix (Mobile)
+- Default preference: Argon2id (WASM) in Web Worker
+  - Modern devices (A14+/Snapdragon 8): memory 64–128 MB, iterations 2–3, parallelism 2–4
+  - Mid devices (A13/662–7xx): memory 32–64 MB, iterations 2–3, parallelism 2
+  - Low-end devices: memory 16–32 MB, iterations 2, parallelism 1–2
+- Fallback: PBKDF2-HMAC-SHA256, 250,000 iterations, salt ≥ 16 bytes
+- Selection policy: probe benchmark on first unlock; store profile in vault header; never silently downgrade below PBKDF2-250k
+- Execution: always in Web Worker; UI shows non-blocking progress on first-run hashing
+
+### Appendix B — Journaling & Atomicity Spec
+- Temp file naming: `vault.tmp` adjacent to final vault; recovery file: `vault.recovery-<timestamp>.emma`
+- Manifest JSON fields:
+  - version, createdAt, targetPath, totalBytes, chunkSize, chunkCount
+  - chunks: [{ index, size, sha256 }]
+  - rootHash (Merkle optional), sourceVersion, appVersion
+- Write process:
+  1) Stream write chunks to temp; compute per-chunk SHA-256
+  2) Flush + fsync; write manifest
+  3) Verify manifest checksums
+  4) Atomic rename temp → final; delete manifest
+- Crash recovery: On launch, if temp/manifest present → verify and promote or move to recovery file; never overwrite final without verification
+- Cleanup: Remove temp/manifest on success; retain last 1 recovery (configurable) with clear UI to delete
+
+### Appendix C — Device & Performance Matrix
+- iOS: iPhone 12, 13, SE (3rd gen) — iOS 16/17
+- Android: Pixel 6, 7, one mid-tier device (e.g., Moto G series) — Android 12–14
+- Budgets:
+  - Unlock median < 1500ms, p95 < 3000ms
+  - Save operation responsive progress under large writes; no UI jank
+  - Crash rate < 0.5% during write chaos tests; 100% recoverable
+- Preflight thresholds: warn < 1 GB free; block critical operation < 200 MB free (configurable)
+
+### Appendix D — Store Readiness Checklist (Privacy & Compliance)
+- Encryption export questionnaire completed; uses platform crypto only
+- Privacy nutrition/data safety: no analytics; local-only processing; optional crash-only diagnostics (opt-in, no PII)
+- Permissions strings:
+  - Microphone: "Enable voice capture to record your stories locally."
+  - Camera/Photos: "Attach photos/videos to your memories."
+  - Biometrics: "Use Face ID/Touch ID or fingerprint for quick unlock."
+- Foreground-only continuous listening; no background recording
+- Backup semantics disclosed; export/import guidance included
+
+### Appendix E — PWA Export Cadence & Triggers
+- Triggers: every 30 days since last export OR > 500 MB net added media since last export (whichever comes first)
+- Banner conditions: iOS PWA installs only; dismiss for 7 days or until next trigger
+- CTAs: Export (primary), Install Native App (secondary)
+
+### Appendix F — Vault Health Policy
+- Frequency: on-demand + weekly auto-check when app opens idle
+- Scope: header integrity, manifest presence, per-chunk checksums sampling, orphaned temp files
+- Outcomes: Healthy (toast), Repaired (modal), Attention (modal with recovery details)
+- Logs: stored locally only; user can clear at any time; never shared
+
+### Appendix G — Crash-only Diagnostics Policy
+- Default OFF; explicit opt-in toggle with clear scope
+- Allowed fields: non-PII error codes, stack traces without payloads, device model/OS version, operation type (unlock/write/import)
+- Redaction: no paths, no content snippets, no keys; size cap 50 KB per report; retain last 5 sessions
+
+### Appendix H — Accessibility Acceptance Checklist
+- Screen-reader labels on all actionable controls
+- Focus order matches visual order; trap-free modals; ESC/back exits safely
+- Contrast ratios meet WCAG AA; reduced-motion respects OS setting
+- Touch targets ≥ 44x44dp; large text layouts verified; audio cues optional
+
+### Appendix I — Localization Plan
+- v1: English-only; all copy centralized for future i18n
+- v1.1+: Identify top 2–3 languages based on user feedback; prepare translation keys; no dynamic content in images
+
