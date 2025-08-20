@@ -1400,19 +1400,51 @@
     }
 
     /* Responsive Design */
+    /* Mobile-First Responsive Design */
     @media (max-width: 768px) {
       .radial-menu {
-        width: 320px;
-        height: 320px;
+        width: 100vw;
+        height: 100vh;
       }
       
       .radial-item {
-        width: 60px;
-        height: 60px;
+        width: 70px !important;
+        height: 70px !important;
+        font-size: 12px;
       }
       
       .radial-item-icon {
         font-size: 24px;
+      }
+      
+      .radial-item-label {
+        font-size: 10px;
+        margin-top: 2px;
+      }
+      
+      .emma-orb-container {
+        width: 120px !important;
+        height: 120px !important;
+      }
+      
+      .welcome-title {
+        font-size: 2.5rem;
+      }
+      
+      .welcome-subtitle {
+        font-size: 0.9rem;
+      }
+      
+      /* Mobile constellation filters */
+      .constellation-burger-menu {
+        top: 10px !important;
+        left: 10px !important;
+      }
+      
+      .constellation-menu-panel {
+        width: 280px !important;
+        max-height: 70vh !important;
+        overflow-y: auto;
       }
       
       .info-panel,
@@ -1436,6 +1468,19 @@
       #daily-brief.right-stack { transform: translateY(0); }
       #ai-insights.right-stack { transform: translateY(0); }
       #quick-actions.right-stack { transform: translateY(0); }
+    }
+    
+    /* Tablet optimizations */
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .radial-item {
+        width: 80px;
+        height: 80px;
+      }
+      
+      .emma-orb-container {
+        width: 160px;
+        height: 160px;
+      }
     }
 
     /* Import Voice Capture Premium Styles */
@@ -2139,38 +2184,131 @@
           });
         });
         
-        // Track mouse position for neural effects
+        // Track mouse/touch position for neural effects
         this.mouseX = 0;
         this.mouseY = 0;
+        
+        // Mouse support
         document.addEventListener('mousemove', (e) => {
           this.mouseX = e.clientX;
           this.mouseY = e.clientY;
-          
-          // Add proximity effects to nodes (both menu and constellation modes)
-          if ((this.isMenuOpen || this.isConstellationMode) && this.nodes.length > 0) {
-            this.nodes.forEach(node => {
-              const dist = Math.sqrt(
-                Math.pow(this.mouseX - node.x, 2) + 
-                Math.pow(this.mouseY - node.y, 2)
-              );
-              
-              if (dist < 150) {
-                // Gentle repel nodes from mouse (petri dish organisms)
-                const force = (150 - dist) / 150;
-                const angle = Math.atan2(node.y - this.mouseY, node.x - this.mouseX);
-                node.vx += Math.cos(angle) * force * 0.5; // Much gentler repulsion
-                node.vy += Math.sin(angle) * force * 0.5;
-                
-                // Add glow effect (stronger for memory nodes)
-                const glowStrength = this.isConstellationMode ? 60 : 40;
-                const baseOpacity = this.isConstellationMode ? 0.8 : 0.6;
-                node.element.style.boxShadow = `0 0 ${glowStrength + force * 30}px rgba(134, 88, 255, ${baseOpacity + force * 0.4})`;
-              } else {
-                const defaultGlow = this.isConstellationMode ? '0 0 40px rgba(134, 88, 255, 0.4)' : '0 0 30px rgba(134, 88, 255, 0.2)';
-                node.element.style.boxShadow = defaultGlow;
-              }
-            });
+          this.updateNodeProximityEffects();
+        });
+        
+        // Touch support for mobile
+        document.addEventListener('touchmove', (e) => {
+          if (e.touches.length > 0) {
+            this.mouseX = e.touches[0].clientX;
+            this.mouseY = e.touches[0].clientY;
+            this.updateNodeProximityEffects();
           }
+        }, { passive: true });
+        
+        document.addEventListener('touchstart', (e) => {
+          if (e.touches.length > 0) {
+            this.mouseX = e.touches[0].clientX;
+            this.mouseY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+      }
+      
+      // Extract proximity effects to separate method for reuse
+      updateNodeProximityEffects() {
+        // Add proximity effects to nodes (both menu and constellation modes)
+        if ((this.isMenuOpen || this.isConstellationMode) && this.nodes.length > 0) {
+          this.nodes.forEach(node => {
+            const dist = Math.sqrt(
+              Math.pow(this.mouseX - node.x, 2) + 
+              Math.pow(this.mouseY - node.y, 2)
+            );
+            
+            if (dist < 120) {
+              // Subtle attraction to mouse with organic feel
+              const force = (120 - dist) / 120;
+              const angle = Math.atan2(this.mouseY - node.y, this.mouseX - node.x);
+              
+              // Very gentle attraction with organic damping
+              const attractionStrength = force * 0.08; // Much more subtle
+              node.vx += Math.cos(angle) * attractionStrength;
+              node.vy += Math.sin(angle) * attractionStrength;
+              
+              // Add glow effect (stronger for memory nodes)
+              const glowStrength = this.isConstellationMode ? 60 : 40;
+              const baseOpacity = this.isConstellationMode ? 0.8 : 0.6;
+              node.element.style.boxShadow = `0 0 ${glowStrength + force * 30}px rgba(134, 88, 255, ${baseOpacity + force * 0.4})`;
+            } else {
+              // Reset glow when mouse is far
+              node.element.style.boxShadow = '';
+            }
+          });
+        }
+      }
+      
+      // Reposition nodes on window resize for responsive behavior
+      repositionNodesOnResize() {
+        if (!this.nodes || this.nodes.length === 0) return;
+        
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        // Recalculate responsive radius
+        const isMobile = window.innerWidth <= 768;
+        const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
+        let radius;
+        
+        if (isMobile) {
+          radius = Math.min(window.innerWidth, window.innerHeight) * 0.25;
+        } else if (isTablet) {
+          radius = 200;
+        } else {
+          radius = 250;
+        }
+        
+        // Reposition each node
+        this.nodes.forEach((node, i) => {
+          if (this.isConstellationMode) {
+            // For constellation mode, maintain relative positions but scale
+            const scaleX = window.innerWidth / (this.lastWindowWidth || window.innerWidth);
+            const scaleY = window.innerHeight / (this.lastWindowHeight || window.innerHeight);
+            
+            node.x = centerX + (node.x - centerX) * scaleX;
+            node.y = centerY + (node.y - centerY) * scaleY;
+            node.baseX = node.x;
+            node.baseY = node.y;
+          } else {
+            // For radial menu, recalculate circular positions
+            const angle = (i / this.nodes.length) * Math.PI * 2 - Math.PI / 2;
+            node.x = centerX + Math.cos(angle) * radius;
+            node.y = centerY + Math.sin(angle) * radius;
+            node.baseX = node.x;
+            node.baseY = node.y;
+          }
+          
+          // Update DOM position
+          if (node.element) {
+            const elementSize = isMobile ? 35 : 45; // Half of element size for centering
+            node.element.style.left = (node.x - elementSize) + 'px';
+            node.element.style.top = (node.y - elementSize) + 'px';
+          }
+        });
+        
+        // Store current window size for next resize
+        this.lastWindowWidth = window.innerWidth;
+        this.lastWindowHeight = window.innerHeight;
+        
+        console.log('🔄 Nodes repositioned for', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop', 'layout');
+      }
+
+        
+        // Handle window resize for responsive repositioning
+        window.addEventListener('resize', () => {
+          // Debounce resize events
+          clearTimeout(this.resizeTimeout);
+          this.resizeTimeout = setTimeout(() => {
+            if (this.isMenuOpen || this.isConstellationMode) {
+              this.repositionNodesOnResize();
+            }
+          }, 250);
         });
         
         // Keyboard shortcuts
@@ -2203,14 +2341,26 @@
       }
 
       initNeuralNetwork() {
-        // Initialize neural nodes
+        // Initialize neural nodes with responsive positioning
         console.log('🔧 radialMenu element:', this.radialMenu);
         console.log('🔧 radialMenu innerHTML preview:', this.radialMenu ? this.radialMenu.innerHTML.substring(0, 200) : 'NULL');
         
         const items = this.radialMenu.querySelectorAll('.radial-item');
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        const radius = 250;
+        
+        // Responsive radius calculation
+        const isMobile = window.innerWidth <= 768;
+        const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
+        let radius;
+        
+        if (isMobile) {
+          radius = Math.min(window.innerWidth, window.innerHeight) * 0.25; // 25% of smaller dimension
+        } else if (isTablet) {
+          radius = 200;
+        } else {
+          radius = 250;
+        }
         
         console.log('🔧 initNeuralNetwork: found', items.length, 'items, center:', centerX, centerY);
         
