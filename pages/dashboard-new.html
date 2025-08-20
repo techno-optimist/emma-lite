@@ -942,9 +942,18 @@
       width: 80px;
       height: 80px;
       margin: 0 auto 20px;
-      background: radial-gradient(circle at 30% 30%, #8658ff, #4f46e5);
+      position: relative;
+      /* Emma's orb will be rendered here via WebGL */
+    }
+
+    /* Fallback for when WebGL orb isn't available */
+    .loading-orb-fallback {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
       border-radius: 50%;
       animation: loading-pulse 1.5s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(138, 94, 250, 0.4);
     }
 
     @keyframes loading-pulse {
@@ -1866,6 +1875,9 @@
         // Show loading
         this.loading.classList.add('active');
         
+        // Initialize Emma's orb in loading screen
+        this.initLoadingOrb();
+        
         // Initialize constellation background
         this.initConstellation();
         
@@ -2169,6 +2181,38 @@
           
           // Reset nodes array (constellation mode exits instead of showing menu overlay)
           this.nodes = [];
+        }
+      }
+      
+      initLoadingOrb() {
+        try {
+          const loadingOrbContainer = document.querySelector('.loading-orb');
+          if (!loadingOrbContainer) {
+            console.warn('🌟 Loading orb container not found');
+            return;
+          }
+          
+          if (window.EmmaOrb) {
+            // Create WebGL Emma Orb for loading screen
+            this.loadingOrb = new window.EmmaOrb(loadingOrbContainer, {
+              hue: 270, // Emma's signature purple-pink
+              hoverIntensity: 0.5,
+              rotateOnHover: false,
+              forceHoverState: true // Always show active state during loading
+            });
+            console.log('🌟 Loading Emma Orb initialized successfully');
+          } else {
+            console.warn('🌟 EmmaOrb class not available for loading, using fallback');
+            // Fallback to gradient orb if WebGL not available
+            loadingOrbContainer.innerHTML = '<div class="loading-orb-fallback"></div>';
+          }
+        } catch (error) {
+          console.error('🚨 Error initializing Loading Emma Orb:', error);
+          // Fallback on error
+          const loadingOrbContainer = document.querySelector('.loading-orb');
+          if (loadingOrbContainer) {
+            loadingOrbContainer.innerHTML = '<div class="loading-orb-fallback"></div>';
+          }
         }
       }
       
