@@ -537,6 +537,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   await updateStats();
   attachEventListeners();
   setupOrbManager();
+  // Backup exclusion toggle wiring
+  try {
+    if (window.EmmaBackupControl) {
+      const toggle = document.getElementById('backup-exclusion-toggle');
+      if (toggle) {
+        try { toggle.checked = !!window.EmmaBackupControl.getBackupExcluded(); } catch {}
+        toggle.addEventListener('change', async () => {
+          try {
+            const res = await window.EmmaBackupControl.setBackupExcluded(toggle.checked);
+            showNotification('Vault backup setting updated' + (res.native ? '' : ' (native flag not available here)'));
+          } catch (e) {
+            showNotification('Failed to update backup setting: ' + e.message, 'error');
+            toggle.checked = !toggle.checked;
+          }
+        });
+      }
+    }
+  } catch {}
   // Wire exit buttons with enhanced navigation
   try {
     const backBtn = document.getElementById('settings-back');

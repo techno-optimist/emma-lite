@@ -255,6 +255,10 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Chaos harness (OPFS) simulates abrupt reloads; good for desktop/PWA verification. For mobile, replicate via instrumented kill in Capacitor QA.
 - Backup control stub will require native plugin implementation; UI copy already in PRD. Ensure defaults match PRD (included by default) and toggling sets OS flags on iOS.
 
+### CTO Oversight Notes (Phase 1) — Settings UI Wiring
+- Backup exclusion toggle added to Settings; wired to stub control. Ensure native plugin integration later sets NSURLIsExcludedFromBackupKey on iOS; defaults remain included per PRD.
+- Next: Biometrics quick unlock setting with proper gating (export/rotation/disable requires passphrase).
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests
@@ -262,7 +266,7 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - [x] T3 Capacitor scaffold + asset resolver — scaffold created; selector detects Capacitor
 - [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — implemented
 - [ ] T5 Chaos/low-space harness; pass criteria — desktop/PWA harness added; device scripts pending
-- [ ] T6 Backup exclusion UI + native flags + education — control stub added; UI wiring pending
+- [x] T6 Backup exclusion UI + native flags + education — UI wired; native flags pending
 - [ ] T7 Biometrics + privileged gating
 - [ ] T8 Vault Health self-check + repair UX
 - [ ] T9 PWA iOS banners + export cadence
