@@ -1858,36 +1858,14 @@ class EmmaWebVault {
           
           console.log('🔓 CRITICAL: Set window.currentVaultStatus.isUnlocked = true');
         } else {
-          console.log('⚠️ Extension has no vault open - FORCING web app to locked state');
+          console.log('⚠️ Extension reports no vault open - but NOT auto-locking web app');
           
-          // CRITICAL: When extension says vault is closed, RESPECT IT and clear all status
-          this.isOpen = false;
-          this.extensionAvailable = true; // Extension is available but vault is closed
+          // CRITICAL FIX: Don't auto-lock when extension reports closed!
+          // Extension might be temporarily restarting - preserve web app vault state
+          console.log('✅ VAULT: Preserving web app vault state despite extension restart');
           
-          // Clear ALL storage that indicates vault is active
-          sessionStorage.setItem('emmaVaultActive', 'false');
-          sessionStorage.removeItem('emmaVaultName');
-          localStorage.setItem('emmaVaultActive', 'false');
-          localStorage.removeItem('emmaVaultName');
-          
-          // Update global status to locked
-          window.currentVaultStatus = { 
-            isUnlocked: false,
-            managedByExtension: true,
-            name: null
-          };
-          
-          // CRITICAL: Force WebVaultStatus to update immediately
-          if (window.webVaultStatus) {
-            window.webVaultStatus.status = {
-              isUnlocked: false,
-              hasVault: false,
-              name: null
-            };
-            console.log('🔒 CRITICAL: Forced WebVaultStatus to locked state');
-          }
-          
-          console.log('🔒 VAULT SYNC: Extension vault closed - web app forced to locked state');
+          // Keep vault open in web app - only lock when user explicitly locks
+          // Don't clear storage or force locked state
         }
         break;
         
