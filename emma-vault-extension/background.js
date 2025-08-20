@@ -83,6 +83,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
       
+    case 'UPDATE_MEMORY_IN_VAULT':
+      handleUpdateMemoryInVault(request.data)
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
     case 'SAVE_PERSON_TO_VAULT':
       handleSavePersonToVault(request.data)
         .then(result => sendResponse(result))
@@ -582,6 +588,59 @@ async function handleSavePersonToVault(personData) {
     
   } catch (error) {
     console.error('❌ Failed to save person to vault:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Handle updating memory in vault file
+ */
+async function handleUpdateMemoryInVault(memoryData) {
+  try {
+    console.log('💾 Background: Updating memory in vault storage');
+    
+    // Get current vault data from storage
+    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
+    if (!vaultReady || !vaultData) {
+      throw new Error('No vault is open. Please open a vault first in the extension popup.');
+    }
+    
+    const currentData = { ...vaultData };
+    
+    // Find existing memory
+    if (!currentData.content.memories) {
+      throw new Error('No memories found in vault');
+    }
+    
+    const existingMemory = currentData.content.memories[memoryData.id];
+    if (!existingMemory) {
+      throw new Error('Memory not found in vault');
+    }
+    
+    // Update memory data (preserve existing data, update only provided fields)
+    const updatedMemory = {
+      ...existingMemory,
+      metadata: {
+        ...existingMemory.metadata,
+        ...memoryData.metadata
+      },
+      updated: new Date().toISOString()
+    };
+    
+    // Save updated memory back to vault
+    currentData.content.memories[memoryData.id] = updatedMemory;
+    
+    // Save updated vault data back to storage
+    await chrome.storage.local.set({
+      vaultData: currentData,
+      lastSaved: new Date().toISOString()
+    });
+    
+    console.log('✅ Memory updated in vault storage successfully');
+    return { success: true, id: memoryData.id };
+    
+  } catch (error) {
+    console.error('❌ Failed to update memory in vault:', error);
     return { success: false, error: error.message };
   }
 }

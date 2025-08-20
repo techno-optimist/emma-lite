@@ -145,6 +145,10 @@ function handleEmmaMessage(message) {
       handleSaveMemory(message.data);
       break;
       
+    case 'UPDATE_MEMORY':
+      handleUpdateMemory(message.data);
+      break;
+      
     case 'SAVE_PERSON':
       handleSavePerson(message.data);
       break;
@@ -462,6 +466,37 @@ function handleSavePerson(personData) {
       postToEmma({
         channel: EMMA_VAULT_CHANNEL,
         type: 'PERSON_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle memory update from web app
+ */
+function handleUpdateMemory(memoryData) {
+  console.log('💾 Extension: Handling memory update from web app:', memoryData);
+  
+  // Forward to background script for actual vault updating
+  chrome.runtime.sendMessage({
+    action: 'UPDATE_MEMORY_IN_VAULT',
+    data: memoryData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Memory updated in vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_UPDATED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to update memory in vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_UPDATE_ERROR',
         data: { success: false, error: response?.error || 'Unknown error' }
       });
     }

@@ -605,6 +605,9 @@ function openMemoryDetail(memory) {
   modal.className = 'memory-modal';
   document.body.appendChild(modal);
   
+  // Store current memory globally for functions
+  window.currentMemory = memory;
+  
   // Set up tab system
   let activeTab = 'overview';
   const bodyHost = modal.querySelector('#memory-detail-body');
@@ -1545,9 +1548,67 @@ function openPersonFromMemory(personId) {
   window.location.href = `pages/people-emma.html?person=${personId}`;
 }
 
-function connectPersonToMemory(memoryId, personId) {
+async function connectPersonToMemory(memoryId, personId) {
   console.log('🔗 Connecting person to memory:', personId, '→', memoryId);
-  showNotification('🔗 Person connection feature coming soon!', 'info');
+  
+  try {
+    // Get current memory data
+    const currentMemory = window.currentMemory;
+    if (!currentMemory) {
+      console.error('❌ No current memory found');
+      showNotification('❌ Error: No memory data found', 'error');
+      return;
+    }
+    
+    // Add person to memory's people list
+    if (!currentMemory.metadata) {
+      currentMemory.metadata = {};
+    }
+    if (!currentMemory.metadata.people) {
+      currentMemory.metadata.people = [];
+    }
+    
+    // Add person if not already connected
+    if (!currentMemory.metadata.people.includes(personId)) {
+      currentMemory.metadata.people.push(personId);
+      console.log('👥 Added person to memory metadata:', personId);
+      
+      // Update memory in vault through extension
+      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        console.log('💾 Updating memory in vault with new person connection...');
+        
+        // Send memory update to extension
+        window.postMessage({
+          channel: 'emma-vault-bridge',
+          type: 'UPDATE_MEMORY',
+          data: {
+            id: memoryId,
+            metadata: currentMemory.metadata,
+            updated: new Date().toISOString()
+          }
+        }, window.location.origin);
+        
+        // Re-render the people tab to show the connection
+        setTimeout(async () => {
+          const bodyHost = document.querySelector('#memory-detail-body');
+          if (bodyHost) {
+            const peopleContent = await renderPeople(currentMemory);
+            bodyHost.innerHTML = peopleContent;
+          }
+        }, 300);
+        
+        showNotification('✅ Person connected to memory!', 'success');
+      } else {
+        showNotification('❌ Extension not available', 'error');
+      }
+    } else {
+      showNotification('👥 Person already connected to this memory', 'info');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error connecting person to memory:', error);
+    showNotification('❌ Failed to connect person', 'error');
+  }
 }
 
 function removeTag(tag) {
