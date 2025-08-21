@@ -600,6 +600,19 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
     
+    // 💝 Check if this message has detected memory - if so, focus on capture instead of search
+    const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis => 
+      analysis.memory && analysis.memory.originalContent && 
+      analysis.memory.originalContent.includes(userMessage.substring(0, 50))
+    );
+    
+    if (hasDetectedMemory) {
+      // Focus on memory capture, not searching existing memories
+      const captureResponse = await this.generateMemoryCaptureResponse(userMessage);
+      this.addMessage(captureResponse, 'emma');
+      return;
+    }
+    
     // 🧠 Use Vectorless AI if available, otherwise fallback to basic responses
     if (this.isVectorlessEnabled && this.vectorlessEngine) {
       try {
@@ -620,6 +633,57 @@ class EmmaChatExperience extends ExperiencePopup {
     // Fallback to basic response generation
     const response = await this.generateEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
+  }
+
+  async generateMemoryCaptureResponse(userMessage) {
+    // Find the detected memory for this message
+    let detectedMemory = null;
+    for (const [msgId, analysis] of this.detectedMemories) {
+      if (analysis.memory && analysis.memory.originalContent && 
+          analysis.memory.originalContent.includes(userMessage.substring(0, 50))) {
+        detectedMemory = analysis;
+        break;
+      }
+    }
+    
+    if (!detectedMemory) {
+      return "I'd love to help you capture this memory! Tell me more about what happened.";
+    }
+    
+    // Generate intelligent follow-up questions based on what's missing
+    const memory = detectedMemory.memory;
+    const signals = detectedMemory.signals;
+    
+    // Determine what information we need
+    const needsPeople = !memory.metadata.people || memory.metadata.people.length === 0;
+    const needsEmotions = !memory.metadata.emotions || memory.metadata.emotions.length === 0;
+    const needsLocation = !memory.metadata.location;
+    const needsPhotos = !memory.attachments || memory.attachments.length === 0;
+    const needsDetails = memory.content && memory.content.length < 100;
+    
+    // Generate contextual follow-up questions
+    let followUp = "";
+    
+    if (signals.types.includes('pet') && needsDetails) {
+      followUp = "Tell me more about your pet! What's their personality like? How did this moment make you feel?";
+    } else if (signals.types.includes('milestone') && needsPeople) {
+      followUp = "What an important moment! Who else was there to share this with you?";
+    } else if (memory.metadata.people.includes('mom') || memory.metadata.people.includes('dad')) {
+      followUp = "Family moments are so precious! What made this time with your parent extra special?";
+    } else if (needsEmotions) {
+      followUp = "How did this moment make you feel? What emotions do you remember most?";
+    } else if (needsLocation) {
+      followUp = "Where did this happen? I'd love to include the setting in your memory.";
+    } else if (needsDetails) {
+      followUp = "Can you paint me a picture of this moment? What details would you want to remember forever?";
+    } else {
+      followUp = "This sounds like such a meaningful moment! What other details would make this memory complete?";
+    }
+    
+    // Always ask about photos
+    const photoPrompt = needsPhotos ? " Do you have any photos from this moment you'd like to add?" : "";
+    
+    return `I can sense this is really special to you! ${followUp}${photoPrompt}`;
   }
 
   async generateEmmaResponse(userMessage) {
@@ -1217,6 +1281,11 @@ class EmmaChatExperience extends ExperiencePopup {
           }, 2000);
         }
         
+        // Start intelligent follow-up conversation for memory enrichment
+        setTimeout(() => {
+          this.startMemoryEnrichmentConversation(analysis);
+        }, 3000);
+        
         if (this.debugMode) {
           console.log(`💝 Memory detected! Score: ${analysis.signals?.score}, Confidence: ${analysis.confidence}%`);
         }
@@ -1246,7 +1315,7 @@ class EmmaChatExperience extends ExperiencePopup {
       <div class="detection-content">
         <span class="pulse-dot"></span>
         <span class="detection-text">Emma detected a memory</span>
-        <span class="confidence">${analysis.confidence}% confident</span>
+        <span class="confidence">${analysis.confidence}%</span>
         <button class="save-memory-btn" onclick="window.chatExperience.saveMemoryFromChat('${messageId}')">
           💾 Save as Memory
         </button>
@@ -1361,14 +1430,17 @@ class EmmaChatExperience extends ExperiencePopup {
             </div>
           </div>
         </div>
-        <div class="dialog-footer">
-          <button class="button-secondary" onclick="window.chatExperience.editMemory('${memory.id}')">
-            ✏️ Edit Details
-          </button>
-          <button class="button-primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
-            💾 Save to Vault
-          </button>
-        </div>
+                  <div class="dialog-footer">
+            <button class="button-secondary" onclick="window.chatExperience.addPhotosToMemory('${memory.id}')">
+              📸 Add Photos
+            </button>
+            <button class="button-secondary" onclick="window.chatExperience.editMemory('${memory.id}')">
+              ✏️ Edit Details
+            </button>
+            <button class="button-primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
+              💾 Save to Vault
+            </button>
+          </div>
       </div>
     `;
     
@@ -1377,6 +1449,66 @@ class EmmaChatExperience extends ExperiencePopup {
     // Animate in
     requestAnimationFrame(() => {
       dialog.classList.add('show');
+    });
+  }
+
+  /**
+   * Add photos to memory
+   */
+  async addPhotosToMemory(memoryId) {
+    // Create file input for photo selection
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.multiple = true;
+    
+    fileInput.onchange = async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      
+      // Find the memory
+      let memory = null;
+      for (const [msgId, analysis] of this.detectedMemories) {
+        if (analysis.memory && analysis.memory.id === memoryId) {
+          memory = analysis.memory;
+          break;
+        }
+      }
+      
+      if (!memory) return;
+      
+      // Process photos
+      for (const file of files) {
+        const base64 = await this.fileToBase64(file);
+        memory.attachments = memory.attachments || [];
+        memory.attachments.push({
+          id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: file.type,
+          name: file.name,
+          size: file.size,
+          data: base64
+        });
+      }
+      
+      // Update the preview dialog
+      document.querySelector('.memory-preview-dialog')?.remove();
+      this.showMemoryPreviewDialog(memory);
+      
+      this.addMessage(`📸 Great! I've added ${files.length} photo${files.length > 1 ? 's' : ''} to your memory. This will make it even more special!`, 'emma');
+    };
+    
+    fileInput.click();
+  }
+
+  /**
+   * Convert file to base64
+   */
+  fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 
@@ -1426,6 +1558,40 @@ class EmmaChatExperience extends ExperiencePopup {
         setTimeout(() => actions.remove(), 300);
       }
     }
+  }
+
+  /**
+   * Start intelligent memory enrichment conversation
+   */
+  async startMemoryEnrichmentConversation(analysis) {
+    const memory = analysis.memory;
+    const signals = analysis.signals;
+    
+    // Generate contextual follow-up based on what we detected
+    let followUpQuestion = "";
+    
+    if (signals.types.includes('pet')) {
+      followUpQuestion = `Tell me more about your pet! What's their personality like, and how did this moment make you feel?`;
+    } else if (signals.types.includes('milestone')) {
+      if (memory.metadata.people.length === 0) {
+        followUpQuestion = `What an important moment! Who else was there to share this milestone with you?`;
+      } else {
+        followUpQuestion = `This sounds like a significant moment! What led up to this, and how did it feel when it happened?`;
+      }
+    } else if (memory.content.includes('mom') || memory.content.includes('dad') || memory.content.includes('family')) {
+      followUpQuestion = `Family moments are so precious! Can you tell me more about what made this time special? Do you have any photos from this moment?`;
+    } else if (signals.emotions.length > 0) {
+      const emotion = signals.emotions[0];
+      followUpQuestion = `I can sense this was a ${emotion} moment for you. What details would you want to remember forever about this experience?`;
+    } else {
+      followUpQuestion = `This sounds meaningful! Can you paint me a picture of this moment? Where were you, and what made it special?`;
+    }
+    
+    // Add the enrichment question
+    this.addMessage(followUpQuestion, 'emma', { 
+      type: 'memory-enrichment',
+      memoryId: memory.id 
+    });
   }
 
   /**
