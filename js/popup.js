@@ -2301,14 +2301,29 @@ async function unlockVault() {
 
 async function lockVault() {
   try {
-    const confirmed = confirm('Are you sure you want to lock the vault? You\'ll need to enter your passphrase to unlock it again.');
-    if (!confirmed) return;
+    // CRITICAL: Ask for passphrase to encrypt vault before locking
+    const passphrase = await showPasswordModal('🔐 Enter passphrase to encrypt and lock vault');
+    if (!passphrase) return;
     
     showNotification('Locking vault...', 'info');
     
-    const result = await chrome.runtime.sendMessage({
-      action: 'vault.lock'
-    });
+    // Use web vault system for locking
+    if (window.emmaWebVault) {
+      await window.emmaWebVault.lockVault();
+      console.log('✅ VAULT: Locked and encrypted successfully');
+      showNotification('Vault locked successfully', 'success');
+      // Refresh page to show locked state
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      // Fallback to extension if available
+      const result = await chrome.runtime.sendMessage({
+        action: 'LOCK'
+      });
+      if (result && result.success) {
+        showNotification('Vault locked successfully', 'success');
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    }
     
     if (result && result.success) {
       showNotification('Vault locked successfully! 🔒', 'success');

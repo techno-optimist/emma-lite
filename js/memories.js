@@ -87,8 +87,15 @@ const isDesktopVault = typeof window !== 'undefined' && window.emma && window.em
 async function ensureVaultReady(vaultBanner) {
   if (!isDesktopVault) return true;
     try {
-      const status = window.VaultGuardian ? await window.VaultGuardian.getStatus() : await window.emma.vault.status();
-      if (status && (status.isUnlocked || !status.locked)) return true;
+      // CRITICAL FIX: Use new extension FSM system instead of VaultGuardian
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+                           sessionStorage.getItem('emmaVaultActive') === 'true' ||
+                           (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
+      
+      if (vaultUnlocked) {
+        console.log('✅ MEMORIES: ensureVaultReady - vault is unlocked');
+        return true;
+      }
 
     // Create overlay modal
     const overlay = document.createElement('div');
@@ -138,8 +145,12 @@ async function ensureVaultReady(vaultBanner) {
       // If a vault already exists, hide create UI and switch copy
       (async () => {
         try {
-          const st = window.VaultGuardian ? await window.VaultGuardian.getStatus() : await window.emma.vault.status();
-          if (st && st.initialized && (st.isLocked || st.locked)) {
+          // CRITICAL FIX: Use new extension FSM system
+          const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+                               sessionStorage.getItem('emmaVaultActive') === 'true' ||
+                               (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
+          
+          if (!vaultUnlocked) {
             const createTab = overlay.querySelector('.create-tab');
             if (createTab) createTab.style.display = 'none';
             const titleEl = overlay.querySelector('.onboarding-header h2');
@@ -382,8 +393,13 @@ async function loadMemories() {
       // Force refresh VaultGuardian status to ensure we have the latest state
       await window.VaultGuardian.getStatus();
       
-      // Check if vault is unlocked
-      if (!window.VaultGuardian.isUnlocked()) {
+      // CRITICAL FIX: Check vault status using new extension FSM system
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+                           sessionStorage.getItem('emmaVaultActive') === 'true' ||
+                           (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
+      
+      if (!vaultUnlocked) {
+        console.log('🔒 MEMORIES: Vault not unlocked - checking extension status');
         // Vault banner hidden - user can see lock status in header
         if (vaultBanner) {
           vaultBanner.style.display = 'none';
@@ -395,6 +411,8 @@ async function loadMemories() {
         }
         return;
       }
+      
+      console.log('✅ MEMORIES: Vault is unlocked - loading memories');
 
       // Reset pagination state for fresh load
       currentOffset = 0;
@@ -1452,16 +1470,19 @@ async function injectHeaderLockStatus() {
   }
   async function refresh() {
     try {
-      // USE VAULTGUARDIAN CACHED STATUS INSTEAD OF DIRECT CALLS
-      const st = window.VaultGuardian ? await window.VaultGuardian.getStatus() : await window.emma.vault.status();
-      const ttl = Math.max(0, (st.expiresAt || 0) - Date.now());
-      const mins = Math.floor(ttl / 60000);
-      const secs = Math.floor((ttl % 60000) / 1000);
-      if (!st.locked) {
-        // Unlocked state - show status with renew/lock buttons
-        node.innerHTML = `🔓 Unlocked · ${mins}:${String(secs).padStart(2,'0')} <button id="emma-renew-now" class="btn-secondary" style="margin-left:8px">Renew</button> <button id="emma-lock-now" class="btn-secondary" style="margin-left:8px">Lock</button>`;
-        const renewBtn = document.getElementById('emma-renew-now');
-        if (renewBtn) renewBtn.onclick = async () => { try { await window.emma.vault.renew(); } catch {} };
+      // CRITICAL FIX: Use new extension FSM system instead of VaultGuardian
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+                           sessionStorage.getItem('emmaVaultActive') === 'true' ||
+                           (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
+      
+      const vaultName = localStorage.getItem('emmaVaultName') || 
+                       sessionStorage.getItem('emmaVaultName') || 
+                       (window.currentVaultStatus && window.currentVaultStatus.name) || 
+                       'My Vault';
+      
+      if (vaultUnlocked) {
+        // Unlocked state - show status with lock button
+        node.innerHTML = `🔓 ${vaultName} <button id="emma-lock-now" class="btn-secondary" style="margin-left:8px">Lock</button>`;
         const lockBtn = document.getElementById('emma-lock-now');
         if (lockBtn) lockBtn.onclick = async () => { 
           try { 
@@ -1469,8 +1490,12 @@ async function injectHeaderLockStatus() {
             const passphrase = await showSimplePasswordPrompt('🔐 Enter passphrase to encrypt and lock vault');
             if (!passphrase) return;
             
-            await window.emma.vault.lock({ passphrase });
-            console.log('✅ VAULT: Locked and encrypted successfully');
+            if (window.emmaWebVault) {
+              await window.emmaWebVault.lockVault();
+              console.log('✅ VAULT: Locked and encrypted successfully');
+              // Refresh page to show locked state
+              window.location.reload();
+            }
           } catch (error) {
             console.error('❌ VAULT: Lock failed:', error);
             alert('Failed to lock vault: ' + error.message);
@@ -1486,20 +1511,15 @@ async function injectHeaderLockStatus() {
               const passphrase = await showSimplePasswordPrompt('🔐 Enter Vault Passphrase');
               if (!passphrase) return;
               
-              const vaultStatus = await window.emma.vault.status();
-              const unlockResult = await window.emma.vault.unlock({
-                passphrase,
-                vaultId: vaultStatus?.vaultId
-              });
-              
-              if (unlockResult && unlockResult.success) {
-                console.log('🛡️ Vault unlocked successfully');
-                // Refresh will be triggered by VaultGuardian events
-              } else {
-                alert('Failed to unlock vault. Please check your passphrase.');
+              // Try to unlock via web vault system
+              if (window.emmaWebVault) {
+                await window.emmaWebVault.openVaultFile();
+                console.log('✅ VAULT: Unlocked successfully');
+                // Refresh page to show unlocked state
+                window.location.reload();
               }
             } catch (error) {
-              console.error('🛡️ Unlock failed:', error);
+              console.error('🔒 Unlock failed:', error);
               alert('Failed to unlock vault: ' + error.message);
             }
           };

@@ -2752,21 +2752,16 @@
           const passphrase = prompt('🔐 Enter your passphrase to encrypt and lock the vault:');
           if (!passphrase) return;
           
-          if (window.emmaAPI && window.emmaAPI.vault) {
-            const result = await window.emmaAPI.vault.lock({ passphrase });
-            
-            if (result && result.success) {
-              window.currentVaultStatus = { isUnlocked: false };
-              await this.loadDashboardData();
-              this.updateVaultNodeStatus(); // Update the floating vault node
-              this.openVaultModal(); // Refresh modal with new status
-              this.showToast('✅ Vault locked and encrypted successfully!', 'success');
-            } else {
-              throw new Error(result?.error || 'Lock failed');
-            }
+          // Use web vault system for locking
+          if (window.emmaWebVault) {
+            await window.emmaWebVault.lockVault();
+            console.log('✅ VAULT: Locked and encrypted successfully');
+            this.showToast('🔒 Vault locked and encrypted!', 'success');
+            // Refresh page to show locked state
+            setTimeout(() => window.location.reload(), 1000);
           } else {
             // Demo mode
-            console.warn('🏠 Dashboard: No Emma API - demo lock');
+            console.warn('🏠 Dashboard: No Emma Web Vault - demo lock');
             window.currentVaultStatus = { isUnlocked: false };
             await this.loadDashboardData();
             this.updateVaultNodeStatus(); // Update the floating vault node
