@@ -10,7 +10,6 @@ class EmmaWebVault {
   constructor() {
     this.currentVault = null;
     this.vaultData = null;
-    this.isOpen = false;
     this.autoSaveTimer = null;
     this.passphrase = null;
     this.fileHandle = null; // For File System Access API
@@ -18,6 +17,27 @@ class EmmaWebVault {
     this.saveDebounceTimer = null;
     this.extensionAvailable = false;
     this.extensionSyncEnabled = false;
+    
+    // CRITICAL FIX: Restore vault state from localStorage on construction
+    const vaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+    const vaultName = localStorage.getItem('emmaVaultName');
+    
+    if (vaultActive && vaultName) {
+      console.log('🔓 CONSTRUCTOR: Restoring vault state from localStorage - vault should be unlocked');
+      this.isOpen = true; // Restore unlocked state
+      
+      // Restore minimal vault data structure
+      this.vaultData = {
+        content: { memories: {}, people: {}, media: {} },
+        stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
+        metadata: { name: vaultName }
+      };
+      
+      console.log('✅ CONSTRUCTOR: Vault restored to unlocked state from localStorage');
+    } else {
+      this.isOpen = false;
+      console.log('🔒 CONSTRUCTOR: No active vault in localStorage - starting locked');
+    }
     
     console.log('💜 Emma Web Vault initialized with elegant file management');
     
