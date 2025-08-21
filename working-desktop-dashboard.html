@@ -1767,16 +1767,17 @@
         <div class="emma-orb-webgl" id="webgl-orb-container">
           <!-- WebGL Emma Orb will be inserted here -->
           
-          <!-- Vault Lock Overlay (shown when vault is locked) -->
+          <!-- Vault Lock Overlay (subtle overlay, Emma orb shows through) -->
           <div class="vault-lock-overlay" id="vaultLockOverlay" style="
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1784,18 +1785,21 @@
             color: white;
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            z-index: 10;
           ">
             <div class="lock-icon" style="
-              font-size: 48px;
-              margin-bottom: 8px;
+              font-size: 32px;
+              margin-bottom: 4px;
               opacity: 0.9;
+              text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
             ">🔒</div>
             <div class="lock-text" style="
-              font-size: 12px;
+              font-size: 10px;
               text-align: center;
-              opacity: 0.8;
+              opacity: 0.9;
               font-weight: 600;
+              text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
             ">Drop .emma file<br>or click to unlock</div>
           </div>
         </div>
@@ -3342,24 +3346,24 @@
           orbContainer.addEventListener('dragover', (event) => {
             event.preventDefault();
             lockOverlay.style.borderColor = 'rgba(139, 92, 246, 0.8)';
-            lockOverlay.style.background = 'rgba(139, 92, 246, 0.2)';
-            lockOverlay.style.transform = 'scale(1.05)';
+            lockOverlay.style.background = 'rgba(139, 92, 246, 0.4)';
+            lockOverlay.style.transform = 'translate(-50%, -50%) scale(1.1)';
             lockOverlay.querySelector('.lock-text').textContent = 'Drop to unlock vault';
           });
           
           orbContainer.addEventListener('dragleave', (event) => {
             event.preventDefault();
-            lockOverlay.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            lockOverlay.style.background = 'rgba(0, 0, 0, 0.7)';
-            lockOverlay.style.transform = 'scale(1)';
+            lockOverlay.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            lockOverlay.style.background = 'rgba(0, 0, 0, 0.3)';
+            lockOverlay.style.transform = 'translate(-50%, -50%) scale(1)';
             lockOverlay.querySelector('.lock-text').innerHTML = 'Drop .emma file<br>or click to unlock';
           });
           
           orbContainer.addEventListener('drop', async (event) => {
             event.preventDefault();
-            lockOverlay.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            lockOverlay.style.background = 'rgba(0, 0, 0, 0.7)';
-            lockOverlay.style.transform = 'scale(1)';
+            lockOverlay.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            lockOverlay.style.background = 'rgba(0, 0, 0, 0.3)';
+            lockOverlay.style.transform = 'translate(-50%, -50%) scale(1)';
             lockOverlay.querySelector('.lock-text').innerHTML = 'Drop .emma file<br>or click to unlock';
             
             const files = event.dataTransfer.files;
