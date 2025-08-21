@@ -201,13 +201,15 @@ class EmmaIntelligentCapture {
     });
     
     // Use vectorless AI for deeper analysis if available
-    if (this.options.vectorlessEngine) {
+    if (this.options.vectorlessEngine && typeof this.options.vectorlessEngine.analyzeMemoryPotential === 'function') {
       try {
         const aiAnalysis = await this.options.vectorlessEngine.analyzeMemoryPotential(content);
         signals.score += aiAnalysis.additionalScore || 0;
         signals.aiInsights = aiAnalysis.insights;
       } catch (error) {
-        console.warn('⚠️ Vectorless analysis failed, using heuristics only');
+        if (this.options.debug) {
+          console.warn('⚠️ Vectorless analysis failed, using heuristics only:', error);
+        }
       }
     }
     
@@ -306,12 +308,14 @@ class EmmaIntelligentCapture {
     }
     
     // Use AI for smarter prompts if available
-    if (this.options.vectorlessEngine) {
+    if (this.options.vectorlessEngine && typeof this.options.vectorlessEngine.generateMemoryPrompts === 'function') {
       try {
         const aiPrompts = await this.options.vectorlessEngine.generateMemoryPrompts(memory);
         prompts.push(...aiPrompts);
       } catch (error) {
-        console.warn('⚠️ AI prompt generation failed, using defaults');
+        if (this.options.debug) {
+          console.warn('⚠️ AI prompt generation failed, using defaults:', error);
+        }
       }
     }
     
@@ -509,12 +513,14 @@ class EmmaIntelligentCapture {
    */
   async generateMemoryTitle(content, signals) {
     // Try AI generation first
-    if (this.options.vectorlessEngine) {
+    if (this.options.vectorlessEngine && typeof this.options.vectorlessEngine.generateTitle === 'function') {
       try {
         const aiTitle = await this.options.vectorlessEngine.generateTitle(content);
         if (aiTitle) return aiTitle;
       } catch (error) {
-        console.warn('⚠️ AI title generation failed');
+        if (this.options.debug) {
+          console.warn('⚠️ AI title generation failed:', error);
+        }
       }
     }
     

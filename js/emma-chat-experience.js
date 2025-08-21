@@ -1089,18 +1089,35 @@ class EmmaChatExperience extends ExperiencePopup {
         await this.loadIntelligentCaptureScript();
       }
       
-      // Initialize capture engine
-      this.intelligentCapture = new EmmaIntelligentCapture({
-        vectorlessEngine: this.vectorlessEngine,
-        vaultManager: window.emmaWebVault,
-        dementiaMode: this.dementiaMode || false,
-        debug: this.debugMode || false
-      });
+      // Wait a moment for the script to fully load
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      console.log('💝 Intelligent Memory Capture initialized');
+      // Initialize capture engine only if vectorless engine is available
+      if (this.vectorlessEngine) {
+        this.intelligentCapture = new EmmaIntelligentCapture({
+          vectorlessEngine: this.vectorlessEngine,
+          vaultManager: window.emmaWebVault,
+          dementiaMode: this.dementiaMode || false,
+          debug: this.debugMode || false
+        });
+        
+        console.log('💝 Intelligent Memory Capture initialized with vectorless engine');
+      } else {
+        // Initialize without vectorless engine (heuristics only)
+        this.intelligentCapture = new EmmaIntelligentCapture({
+          vectorlessEngine: null,
+          vaultManager: window.emmaWebVault,
+          dementiaMode: this.dementiaMode || false,
+          debug: this.debugMode || false
+        });
+        
+        console.log('💝 Intelligent Memory Capture initialized with heuristics only');
+      }
       
     } catch (error) {
       console.error('💝 Failed to initialize Intelligent Capture:', error);
+      // Disable intelligent capture if it fails
+      this.intelligentCapture = null;
     }
   }
 
