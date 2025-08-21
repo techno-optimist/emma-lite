@@ -139,6 +139,53 @@
       60% { transform: scale(0.95); }
       100% { transform: scale(1); }
     }
+    
+    /* EMERGENCY: Force pointer events on critical elements */
+    .emma-orb-container {
+      pointer-events: all !important;
+      cursor: pointer !important;
+    }
+    
+    .vault-lock-overlay {
+      pointer-events: all !important;
+      cursor: pointer !important;
+    }
+    
+    .emergency-vault-controls {
+      pointer-events: all !important;
+    }
+    
+    .emergency-vault-controls button {
+      pointer-events: all !important;
+      cursor: pointer !important;
+    }
+    
+    /* EMERGENCY: Ensure radial menu doesn't block clicks when hidden */
+    .radial-menu:not(.active) {
+      pointer-events: none !important;
+      z-index: -1 !important;
+    }
+    
+    /* EMERGENCY: Force all interactive elements to be clickable */
+    * {
+      pointer-events: auto !important;
+    }
+    
+    /* EMERGENCY: Override specific blocking elements */
+    .aurora-bg, .neural-network, .constellation-canvas {
+      pointer-events: none !important;
+    }
+    
+    /* EMERGENCY: Force body to allow interactions */
+    body {
+      pointer-events: auto !important;
+      overflow: auto !important;
+    }
+    
+    /* EMERGENCY: Make sure no invisible overlays block clicks */
+    .dashboard, .command-center {
+      pointer-events: auto !important;
+    }
 
     /* Orb status removed - clean WebGL orb only */
 
