@@ -375,15 +375,30 @@ function sendVaultData() {
 async function sendVaultStatus() {
   console.log('📊 Checking vault status in extension...');
   
-  // Check if extension has a vault open
+  // CRITICAL FIX: Check web app localStorage as source of truth
+  const webAppVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+  const webAppVaultName = localStorage.getItem('emmaVaultName');
+  
+  // Also check extension internal state
   const response = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
+  
+  // Use web app state as primary source of truth (it's more persistent)
+  const vaultOpen = webAppVaultActive || (response?.vaultReady || false);
+  const vaultName = webAppVaultName || response?.vaultFileName || null;
+  
+  console.log('📊 EXTENSION: Vault status determined:', {
+    webAppActive: webAppVaultActive,
+    extensionReady: response?.vaultReady,
+    finalStatus: vaultOpen,
+    vaultName: vaultName
+  });
   
   postToEmma({
     channel: EMMA_VAULT_CHANNEL,
     type: 'VAULT_STATUS',
     data: {
-      vaultOpen: response?.vaultReady || false,
-      vaultName: response?.vaultFileName || null,
+      vaultOpen: vaultOpen,
+      vaultName: vaultName,
       extensionVersion: chrome.runtime.getManifest().version
     }
   });

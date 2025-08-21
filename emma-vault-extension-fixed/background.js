@@ -43,6 +43,25 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
+// CRITICAL: Auto-restore vault state when service worker starts
+chrome.runtime.onStartup.addListener(async () => {
+  console.log('🔄 EXTENSION: Service worker starting - checking for vault state to restore');
+  
+  try {
+    const storage = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
+    if (storage.vaultReady && storage.vaultFileName && vaultPassphrase) {
+      console.log('🔄 EXTENSION: Attempting auto-recovery on startup');
+      const recovered = await recoverVaultFromBackup(vaultPassphrase);
+      if (recovered) {
+        currentVaultData = recovered;
+        console.log('✅ EXTENSION: Vault auto-recovered on service worker startup');
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ EXTENSION: Failed to auto-recover on startup:', error);
+  }
+});
+
 /**
  * Handle messages from content script
  */
