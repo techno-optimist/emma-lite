@@ -23,14 +23,14 @@ class EmmaIntelligentCapture {
     this.activeMemory = null;
     this.followUpQueue = [];
     
-    // Memory detection thresholds
+    // Memory detection thresholds (lowered for better sensitivity)
     this.thresholds = {
-      memoryWorthy: 5,     // Minimum score to consider memory-worthy
-      autoCapture: 8,      // Auto-suggest capture above this score
+      memoryWorthy: 3,     // Minimum score to consider memory-worthy (lowered from 5)
+      autoCapture: 6,      // Auto-suggest capture above this score (lowered from 8)
       importance: {
-        low: 3,
-        medium: 6,
-        high: 9
+        low: 2,
+        medium: 4,
+        high: 7
       }
     };
     
@@ -133,7 +133,11 @@ class EmmaIntelligentCapture {
       /passed\s+away/i,
       /was\s+born/i,
       /got\s+(?:married|engaged)/i,
-      /new\s+(?:job|house|baby)/i
+      /new\s+(?:job|house|baby)/i,
+      /almost\s+(?:died|killed)/i,
+      /survived/i,
+      /recovered/i,
+      /cutie|pet|dog|cat/i // Pet-related memories
     ];
     
     milestonePatterns.forEach(pattern => {
@@ -211,6 +215,19 @@ class EmmaIntelligentCapture {
           console.warn('⚠️ Vectorless analysis failed, using heuristics only:', error);
         }
       }
+    }
+    
+    // Debug output
+    if (this.options.debug) {
+      console.log('💝 MEMORY SCORING DEBUG:', {
+        content: content.substring(0, 100) + '...',
+        score: signals.score,
+        types: signals.types,
+        emotions: signals.emotions,
+        people: signals.people,
+        milestones: signals.milestones,
+        threshold: this.thresholds.memoryWorthy
+      });
     }
     
     return signals;
