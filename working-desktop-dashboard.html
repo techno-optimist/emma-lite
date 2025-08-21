@@ -132,6 +132,13 @@
       0%, 100% { transform: scale(1); box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1); }
       50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(134, 88, 255, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.2); }
     }
+    
+    @keyframes vault-unlock-pulse {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.1); box-shadow: 0 0 80px rgba(16, 185, 129, 0.8); }
+      60% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
 
     /* Orb status removed - clean WebGL orb only */
 
@@ -1755,11 +1762,46 @@
   <!-- Main Dashboard -->
   <div class="dashboard">
     <div class="command-center">
-      <!-- Central Emma Orb (WebGL) -->
+      <!-- Central Emma Orb (WebGL) with Elegant Vault Unlock -->
       <div class="emma-orb-container" id="emma-orb">
         <div class="emma-orb-webgl" id="webgl-orb-container">
           <!-- WebGL Emma Orb will be inserted here -->
+          
+          <!-- Vault Lock Overlay (shown when vault is locked) -->
+          <div class="vault-lock-overlay" id="vaultLockOverlay" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+          ">
+            <div class="lock-icon" style="
+              font-size: 48px;
+              margin-bottom: 8px;
+              opacity: 0.9;
+            ">🔒</div>
+            <div class="lock-text" style="
+              font-size: 12px;
+              text-align: center;
+              opacity: 0.8;
+              font-weight: 600;
+            ">Drop .emma file<br>or click to unlock</div>
+          </div>
         </div>
+        
+        <!-- Hidden file input for click-to-upload -->
+        <input type="file" id="vaultFileInput" accept=".emma" style="display: none;">
       </div>
     </div>
   </div>
@@ -2600,6 +2642,12 @@
             orbContainer.style.width = '100%';
             orbContainer.style.height = '100%';
           }
+          
+          // Initialize elegant vault unlock functionality
+          this.initializeVaultUnlock();
+          
+          // Update vault lock overlay visibility
+          this.updateVaultLockOverlay();
         } catch (error) {
           console.error('🚨 Error initializing Emma Orb:', error);
           // Ensure fallback is applied
@@ -3237,6 +3285,200 @@
           this.showToast('❌ Failed to lock vault: ' + error.message, 'error');
         }
       }
+
+      // Initialize elegant vault unlock on Emma orb
+      initializeVaultUnlock() {
+        try {
+          console.log('🔒 Initializing elegant vault unlock on Emma orb...');
+          
+          const orbContainer = document.getElementById('emma-orb');
+          const lockOverlay = document.getElementById('vaultLockOverlay');
+          const fileInput = document.getElementById('vaultFileInput');
+          
+          if (!orbContainer || !lockOverlay || !fileInput) {
+            console.error('❌ Vault unlock elements not found');
+            return;
+          }
+          
+          // Click to open file browser
+          lockOverlay.addEventListener('click', async () => {
+            try {
+              console.log('👆 Emma orb clicked - opening native file browser...');
+              
+              // Use native File System Access API
+              if (window.showOpenFilePicker) {
+                const [fileHandle] = await window.showOpenFilePicker({
+                  types: [{
+                    description: 'Emma Vault Files',
+                    accept: { 'application/emma-vault': ['.emma'] }
+                  }],
+                  excludeAcceptAllOption: true,
+                  multiple: false
+                });
+                
+                const file = await fileHandle.getFile();
+                await this.handleVaultFileSelection(file, fileHandle);
+              } else {
+                // Fallback to file input
+                fileInput.click();
+              }
+            } catch (error) {
+              if (error.name !== 'AbortError') {
+                console.error('❌ File selection failed:', error);
+                this.showToast('❌ Failed to open file browser', 'error');
+              }
+            }
+          });
+          
+          // File input fallback handler
+          fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file && file.name.endsWith('.emma')) {
+              await this.handleVaultFileSelection(file);
+            }
+          });
+          
+          // Drag and drop functionality
+          orbContainer.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            lockOverlay.style.borderColor = 'rgba(139, 92, 246, 0.8)';
+            lockOverlay.style.background = 'rgba(139, 92, 246, 0.2)';
+            lockOverlay.style.transform = 'scale(1.05)';
+            lockOverlay.querySelector('.lock-text').textContent = 'Drop to unlock vault';
+          });
+          
+          orbContainer.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            lockOverlay.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            lockOverlay.style.background = 'rgba(0, 0, 0, 0.7)';
+            lockOverlay.style.transform = 'scale(1)';
+            lockOverlay.querySelector('.lock-text').innerHTML = 'Drop .emma file<br>or click to unlock';
+          });
+          
+          orbContainer.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            lockOverlay.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            lockOverlay.style.background = 'rgba(0, 0, 0, 0.7)';
+            lockOverlay.style.transform = 'scale(1)';
+            lockOverlay.querySelector('.lock-text').innerHTML = 'Drop .emma file<br>or click to unlock';
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+              const file = files[0];
+              if (file.name.endsWith('.emma')) {
+                console.log('🎯 Emma vault file dropped on orb!');
+                await this.handleVaultFileSelection(file);
+              } else {
+                this.showToast('❌ Please drop a .emma vault file', 'error');
+              }
+            }
+          });
+          
+          console.log('✅ Elegant vault unlock initialized on Emma orb');
+          
+        } catch (error) {
+          console.error('❌ Failed to initialize vault unlock:', error);
+        }
+      }
+
+      // Handle vault file selection (click or drag-drop)
+      async handleVaultFileSelection(file, fileHandle = null) {
+        try {
+          console.log('🔓 Processing vault file:', file.name);
+          this.showToast(`🔓 Opening ${file.name}...`, 'info');
+          
+          // Use Emma's pure web app vault system
+          if (window.emmaWebVault) {
+            // Set file handle if provided (for seamless saves)
+            if (fileHandle) {
+              window.emmaWebVault.fileHandle = fileHandle;
+            }
+            
+            const result = await window.emmaWebVault.openVaultFile(file);
+            if (result.success) {
+              console.log('✅ Vault opened successfully!');
+              this.showToast(`✅ Welcome back! ${result.stats.memoryCount} memories loaded`, 'success');
+              
+              // Hide lock overlay and show beautiful unlocked state
+              this.updateVaultLockOverlay();
+              
+              // Refresh dashboard data
+              await this.loadDashboardData();
+              
+              // Show success animation
+              this.playVaultUnlockAnimation();
+            }
+          } else {
+            throw new Error('Emma Web Vault not available');
+          }
+          
+        } catch (error) {
+          console.error('❌ Failed to open vault:', error);
+          
+          if (error.message.includes('cancelled')) {
+            this.showToast('🔒 Vault unlock cancelled', 'info');
+          } else if (error.message.includes('passphrase') || error.message.includes('Invalid')) {
+            this.showToast('❌ Invalid passphrase - please try again', 'error');
+          } else {
+            this.showToast(`❌ Failed to open vault: ${error.message}`, 'error');
+          }
+        }
+      }
+
+      // Update vault lock overlay visibility
+      updateVaultLockOverlay() {
+        try {
+          const lockOverlay = document.getElementById('vaultLockOverlay');
+          if (!lockOverlay) return;
+          
+          const isVaultUnlocked = window.currentVaultStatus && window.currentVaultStatus.isUnlocked;
+          
+          if (isVaultUnlocked) {
+            // Hide lock overlay when vault is unlocked
+            lockOverlay.style.display = 'none';
+            console.log('🔓 Vault unlocked - hiding lock overlay');
+          } else {
+            // Show lock overlay when vault is locked
+            lockOverlay.style.display = 'flex';
+            console.log('🔒 Vault locked - showing lock overlay');
+          }
+        } catch (error) {
+          console.error('❌ Failed to update vault lock overlay:', error);
+        }
+      }
+
+      // Play beautiful vault unlock animation
+      playVaultUnlockAnimation() {
+        try {
+          const orbContainer = document.getElementById('emma-orb');
+          const lockOverlay = document.getElementById('vaultLockOverlay');
+          
+          if (lockOverlay) {
+            // Fade out lock overlay with scale effect
+            lockOverlay.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            lockOverlay.style.opacity = '0';
+            lockOverlay.style.transform = 'scale(0.8)';
+            
+            setTimeout(() => {
+              lockOverlay.style.display = 'none';
+            }, 800);
+          }
+          
+          if (orbContainer) {
+            // Pulse effect on successful unlock
+            orbContainer.style.animation = 'vault-unlock-pulse 1.5s ease-out';
+            setTimeout(() => {
+              orbContainer.style.animation = '';
+            }, 1500);
+          }
+          
+          console.log('✨ Vault unlock animation played');
+          
+        } catch (error) {
+          console.error('❌ Failed to play unlock animation:', error);
+        }
+      }
+    }
 
       async showQRShare() {
         console.log('🔗 Starting Emma Share Experience');
