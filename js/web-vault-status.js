@@ -254,11 +254,8 @@ class WebVaultStatus {
   }
   
   isUnlocked() {
-    // CRITICAL FIX: Remove session expiry check - vault stays unlocked until user locks it
-    // Sessions now persist indefinitely until user manually locks vault
-    
-    this.status.isUnlocked = this.status.hasVault; // Unlocked if vault exists
-    window.currentVaultStatus = this.status;
+    // CRITICAL FIX: Don't override status - just return current state
+    // The status is already set correctly by initialize() and other methods
     
     return this.status.isUnlocked;
   }
