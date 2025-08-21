@@ -1523,7 +1523,17 @@ async function getMemoriesData() {
     const memories = currentVaultData?.content?.memories || {};
     const media = currentVaultData?.content?.media || {};
     
-    // Reconstruct memories with media URLs
+    // CRITICAL FIX: Apply memory overrides from chrome.storage.local
+    let memoryOverrides = {};
+    try {
+      const overrideStorage = await chrome.storage.local.get(['emma_memory_overrides']);
+      memoryOverrides = overrideStorage.emma_memory_overrides || {};
+      console.log('📝 DEBUG: Found memory overrides:', Object.keys(memoryOverrides).length);
+    } catch (error) {
+      console.warn('⚠️ Failed to load memory overrides:', error);
+    }
+    
+    // Reconstruct memories with media URLs AND apply overrides
     const memoriesWithMedia = Object.values(memories).map(memory => {
       // Process attachments to include data URLs
       const attachments = (memory.attachments || []).map(attachment => {
@@ -1545,10 +1555,28 @@ async function getMemoriesData() {
         return attachment;
       });
       
-      return {
+      // Apply overrides if they exist for this memory
+      const override = memoryOverrides[memory.id];
+      const finalMemory = {
         ...memory,
         attachments
       };
+      
+      if (override) {
+        console.log(`📝 DEBUG: Applying overrides to memory ${memory.id}:`, override);
+        // Apply title override
+        if (override.title) {
+          finalMemory.metadata = finalMemory.metadata || {};
+          finalMemory.metadata.title = override.title;
+          finalMemory.title = override.title; // Also set top-level title
+        }
+        // Apply content override
+        if (override.content) {
+          finalMemory.content = override.content;
+        }
+      }
+      
+      return finalMemory;
     });
     
     console.log(`📝 Returning ${memoriesWithMedia.length} memories with reconstructed media URLs`);
