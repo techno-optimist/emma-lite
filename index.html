@@ -350,12 +350,16 @@
                     
                     if (!vaultName) return;
                     
-                    const passphrase = await window.cleanSecurePasswordModal.show({
-                        title: 'Secure Your Vault',
-                        message: `Create a passphrase for "${vaultName}":`,
-                        placeholder: 'Enter a secure passphrase...',
-                        confirmPassword: true
-                    });
+                    // TEMP FIX: Use simple prompt until modal issue resolved
+                    const passphrase = prompt(`🔐 Create passphrase for "${vaultName}":`);
+                    
+                    // TODO: Fix Emma modal cancellation issue
+                    // const passphrase = await window.cleanSecurePasswordModal.show({
+                    //     title: 'Secure Your Vault',
+                    //     message: `Create a passphrase for "${vaultName}":`,
+                    //     placeholder: 'Enter a secure passphrase...',
+                    //     confirmPassword: true
+                    // });
                     
                     if (!passphrase) return;
                     
@@ -383,11 +387,15 @@
                     const fileData = new Uint8Array(await file.arrayBuffer());
                     console.log('📖 File read, size:', fileData.length);
                     
-                    const passphrase = await window.cleanSecurePasswordModal.show({
-                        title: 'Unlock Vault',
-                        message: `Enter the passphrase for "${file.name}":`,
-                        placeholder: 'Enter vault passphrase...'
-                    });
+                    // TEMP FIX: Use simple prompt until modal issue resolved
+                    const passphrase = prompt(`🔐 Enter passphrase for "${file.name}":`);
+                    
+                    // TODO: Fix Emma modal cancellation issue
+                    // const passphrase = await window.cleanSecurePasswordModal.show({
+                    //     title: 'Unlock Vault',
+                    //     message: `Enter the passphrase for "${file.name}":`,
+                    //     placeholder: 'Enter vault passphrase...'
+                    // });
                     
                     if (!passphrase) return;
                     
