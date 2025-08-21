@@ -1200,9 +1200,22 @@ class EmmaWebVault {
         
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          if (!db.objectStoreNames.contains('vaults')) {
-            db.createObjectStore('vaults', { keyPath: 'id' });
-          }
+          console.log('🗄️ IndexedDB: Creating object stores...');
+          
+          // Clear any existing stores first
+          const existingStores = Array.from(db.objectStoreNames);
+          existingStores.forEach(storeName => {
+            try {
+              db.deleteObjectStore(storeName);
+              console.log('🗄️ IndexedDB: Deleted existing store:', storeName);
+            } catch (e) {
+              console.warn('⚠️ IndexedDB: Could not delete store:', storeName);
+            }
+          });
+          
+          // Create fresh vault store
+          const vaultStore = db.createObjectStore('vaults', { keyPath: 'id' });
+          console.log('✅ IndexedDB: Created vaults object store');
         };
         
         request.onsuccess = (event) => {
