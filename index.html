@@ -1821,6 +1821,45 @@
         <!-- Hidden file input for click-to-upload -->
         <input type="file" id="vaultFileInput" accept=".emma" style="display: none;">
       </div>
+      
+      <!-- EMERGENCY: Always visible vault controls -->
+      <div class="emergency-vault-controls" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 1000;
+      ">
+        <button id="emergencyOpenVault" style="
+          background: rgba(139, 92, 246, 0.9);
+          border: 2px solid rgba(139, 92, 246, 1);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+        " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          📁 Open Vault
+        </button>
+        
+        <button id="emergencyCreateVault" style="
+          background: rgba(16, 185, 129, 0.9);
+          border: 2px solid rgba(16, 185, 129, 1);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+        " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+          ✨ Create New Vault
+        </button>
+      </div>
     </div>
   </div>
 
@@ -6616,8 +6655,131 @@
 
     // Initialize dashboard
     document.addEventListener('DOMContentLoaded', () => {
-      window.emmaDashboard = new EmmaDashboard();
-      console.log('✨ Emma Dashboard 2.0 initialized');
+      console.log('🚀 EMERGENCY DEBUG: DOM loaded, initializing dashboard...');
+      
+      try {
+        window.emmaDashboard = new EmmaDashboard();
+        console.log('✨ Emma Dashboard 2.0 initialized');
+        
+        // EMERGENCY: Force orb visibility
+        setTimeout(() => {
+          console.log('🔍 EMERGENCY DEBUG: Checking orb visibility...');
+          const orbContainer = document.getElementById('webgl-orb-container');
+          if (orbContainer) {
+            console.log('🔍 EMERGENCY DEBUG: Orb container found, forcing visibility...');
+            orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
+            orbContainer.style.borderRadius = '50%';
+            orbContainer.style.width = '200px';
+            orbContainer.style.height = '200px';
+            orbContainer.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.1)';
+            orbContainer.style.animation = 'orb-pulse 3s ease-in-out infinite';
+            orbContainer.style.position = 'relative';
+            orbContainer.style.zIndex = '5';
+            console.log('✅ EMERGENCY: Forced orb visibility with gradient');
+          } else {
+            console.error('❌ EMERGENCY: Orb container not found!');
+          }
+          
+          // EMERGENCY: Force click handler
+          const emmaOrb = document.getElementById('emma-orb');
+          if (emmaOrb) {
+            console.log('🔍 EMERGENCY DEBUG: Adding direct click handler to orb...');
+            emmaOrb.addEventListener('click', async () => {
+              console.log('👆 EMERGENCY: Direct orb click detected!');
+              try {
+                if (window.showOpenFilePicker) {
+                  console.log('📁 EMERGENCY: Opening file picker...');
+                  const [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                      description: 'Emma Vault Files',
+                      accept: { 'application/emma-vault': ['.emma'] }
+                    }],
+                    excludeAcceptAllOption: true,
+                    multiple: false
+                  });
+                  
+                  const file = await fileHandle.getFile();
+                  console.log('✅ EMERGENCY: File selected:', file.name);
+                  
+                  if (window.emmaDashboard && window.emmaDashboard.handleVaultFileSelection) {
+                    await window.emmaDashboard.handleVaultFileSelection(file, fileHandle);
+                  } else {
+                    console.error('❌ EMERGENCY: Dashboard not available');
+                  }
+                } else {
+                  console.error('❌ EMERGENCY: File System Access API not supported');
+                }
+              } catch (error) {
+                console.error('❌ EMERGENCY: Click handler failed:', error);
+              }
+            });
+            console.log('✅ EMERGENCY: Direct click handler added');
+          } else {
+            console.error('❌ EMERGENCY: Emma orb element not found!');
+          }
+        }, 2000);
+        
+        // EMERGENCY: Add button handlers
+        setTimeout(() => {
+          console.log('🔍 EMERGENCY: Adding button handlers...');
+          
+          const openBtn = document.getElementById('emergencyOpenVault');
+          const createBtn = document.getElementById('emergencyCreateVault');
+          
+          if (openBtn) {
+            openBtn.addEventListener('click', async () => {
+              console.log('📁 EMERGENCY: Open vault button clicked');
+              try {
+                if (window.showOpenFilePicker) {
+                  const [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                      description: 'Emma Vault Files',
+                      accept: { 'application/emma-vault': ['.emma'] }
+                    }],
+                    excludeAcceptAllOption: true,
+                    multiple: false
+                  });
+                  
+                  const file = await fileHandle.getFile();
+                  console.log('✅ EMERGENCY: File selected via button:', file.name);
+                  
+                  if (window.emmaWebVault) {
+                    window.emmaWebVault.fileHandle = fileHandle;
+                    await window.emmaWebVault.openVaultFile(file);
+                    console.log('✅ EMERGENCY: Vault opened via button');
+                    location.reload(); // Refresh to show unlocked state
+                  }
+                }
+              } catch (error) {
+                console.error('❌ EMERGENCY: Open vault failed:', error);
+              }
+            });
+            console.log('✅ EMERGENCY: Open vault button handler added');
+          }
+          
+          if (createBtn) {
+            createBtn.addEventListener('click', async () => {
+              console.log('✨ EMERGENCY: Create vault button clicked');
+              try {
+                const vaultName = prompt('Enter vault name:') || 'My Precious Memories';
+                const passphrase = prompt('Enter passphrase:');
+                
+                if (vaultName && passphrase && window.emmaWebVault) {
+                  await window.emmaWebVault.createVaultFile(vaultName, passphrase);
+                  console.log('✅ EMERGENCY: Vault created via button');
+                  location.reload(); // Refresh to show unlocked state
+                }
+              } catch (error) {
+                console.error('❌ EMERGENCY: Create vault failed:', error);
+              }
+            });
+            console.log('✅ EMERGENCY: Create vault button handler added');
+          }
+        }, 3000);
+        
+      } catch (error) {
+        console.error('❌ EMERGENCY: Dashboard initialization failed:', error);
+      }
       
       // Setup vault modal event listeners
       const dashboard = window.emmaDashboard;
