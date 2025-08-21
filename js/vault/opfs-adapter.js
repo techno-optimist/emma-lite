@@ -21,6 +21,22 @@
     }
   }
 
+  async function exists(dir, name) {
+    try { await dir.getFileHandle(name, { create: false }); return true; } catch { return false; }
+  }
+
+  async function readHandleBytes(fileHandle) {
+    const file = await fileHandle.getFile();
+    const buf = await file.arrayBuffer();
+    return new Uint8Array(buf);
+  }
+
+  async function readJSONHandle(fileHandle) {
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    return JSON.parse(text);
+  }
+
   class EmmaVaultOPFSAdapter extends VaultStorageAdapter {
     constructor() {
       super();
@@ -35,6 +51,36 @@
       this._name = options.vaultName || this._name;
       this._root = await getRootDirectory();
       this._file = await ensureFile(this._root, true);
+      // Startup repair: if temp/manifest present, attempt recovery
+      try {
+        const hasTmp = await exists(this._root, 'vault.tmp');
+        const hasMan = await exists(this._root, 'vault.manifest.json');
+        if (hasMan && hasTmp && verifyManifest && createManifest) {
+          const tmpHandle = await this._root.getFileHandle('vault.tmp', { create: false });
+          const manHandle = await this._root.getFileHandle('vault.manifest.json', { create: false });
+          const tmpBytes = await readHandleBytes(tmpHandle);
+          const manifest = await readJSONHandle(manHandle);
+          const ok = await verifyManifest(tmpBytes, manifest);
+          if (ok) {
+            // Replace original and cleanup
+            const w = await this._file.createWritable();
+            await w.truncate(0);
+            await w.write(tmpBytes);
+            await w.close();
+            try { await this._root.removeEntry('vault.tmp'); } catch {}
+            try { await this._root.removeEntry('vault.manifest.json'); } catch {}
+          } else {
+            // Preserve recovery and cleanup manifest
+            try {
+              const rec = await this._root.getFileHandle(`vault.recovery-${Date.now()}.emma`, { create: true });
+              const r = await rec.createWritable();
+              await r.write(await (await tmpHandle.getFile()).arrayBuffer());
+              await r.close();
+            } catch {}
+            try { await this._root.removeEntry('vault.manifest.json'); } catch {}
+          }
+        }
+      } catch {}
       await this._rememberRecent();
     }
 

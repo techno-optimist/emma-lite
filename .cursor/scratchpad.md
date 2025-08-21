@@ -284,6 +284,11 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 ### CTO Oversight Notes (Chaos Harness Mobile)
 - Mobile chaos harness added at `mobile/pages/test-chaos.html`. Execute on devices to validate recovery; ensure no silent corruption.
 
+### CTO Oversight Notes (Startup Repair + Export URI)
+- Added startup repair in OPFS/Capacitor adapters: on open, if tmp+manifest present, verify and promote or preserve to recovery. Good safety improvement.
+- Export now resolves file URI via Filesystem.getUri before Share where supported.
+- Next: run device tests; then replace passphrase prompt with branded modal and verifier check for privileged actions.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests

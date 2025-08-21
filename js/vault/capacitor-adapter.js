@@ -27,6 +27,14 @@
     return bytes;
   }
 
+  async function getUri(path) {
+    const Filesystem = ensureCapacitor();
+    try {
+      const res = await Filesystem.getUri({ path, directory: 'DOCUMENTS' });
+      return res?.uri || null;
+    } catch { return null; }
+  }
+
   async function exists(path) {
     const Filesystem = ensureCapacitor();
     try { await Filesystem.stat({ path, directory: 'DOCUMENTS' }); return true; } catch { return false; }
@@ -51,6 +59,27 @@
       if (!(await exists(this._path))) {
         await writeFile(this._path, new Uint8Array());
       }
+      // Startup repair: if tmp+manifest exists, verify and promote
+      try {
+        const tmpPath = `Emma/${this._name}.tmp`;
+        const manPath = `Emma/${this._name}.manifest.json`;
+        if (await exists(tmpPath) && await exists(manPath) && createManifest && verifyManifest) {
+          const tmpBytes = await readFile(tmpPath);
+          const manBytes = await readFile(manPath);
+          const manifest = JSON.parse(new TextDecoder().decode(manBytes));
+          const ok = await verifyManifest(tmpBytes, manifest);
+          if (ok) {
+            await writeFile(this._path, tmpBytes);
+            await remove(tmpPath);
+            await remove(manPath);
+          } else {
+            // preserve recovery
+            const recPath = `Emma/${this._name}.recovery-${Date.now()}.emma`;
+            await writeFile(recPath, tmpBytes);
+            await remove(manPath);
+          }
+        }
+      } catch {}
       await this._rememberRecent();
     }
     async readVault() {
@@ -86,11 +115,12 @@
       try {
         const Share = global.Capacitor?.Plugins?.Share;
         if (Share && typeof Share.share === 'function') {
-          // Some platforms accept file URLs or absolute paths. We pass a path; the plugin resolves it.
+          // Resolve a URI for the written file if available
+          const uri = await getUri(exportPath);
           await Share.share({
             title: 'Export Emma Vault',
             text: 'Your Emma vault export',
-            url: exportPath,
+            url: uri || exportPath,
             dialogTitle: 'Share Emma Vault'
           });
         }
