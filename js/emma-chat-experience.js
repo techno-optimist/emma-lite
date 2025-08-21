@@ -30,6 +30,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.intelligentCapture = null;
     this.detectedMemories = new Map();
     this.activeCapture = null;
+    this.enrichmentState = new Map(); // Track enrichment conversations
     
     // Emma personality settings
     this.emmaPersonality = {
@@ -1283,9 +1284,12 @@ class EmmaChatExperience extends ExperiencePopup {
         }
         
         // Start intelligent follow-up conversation for memory enrichment
-        setTimeout(() => {
-          this.startMemoryEnrichmentConversation(analysis);
-        }, 3000);
+        // Only if not auto-capture (to avoid overwhelming user)
+        if (!analysis.autoCapture) {
+          setTimeout(() => {
+            this.startMemoryEnrichmentConversation(analysis);
+          }, 2500);
+        }
         
         if (this.debugMode) {
           console.log(`💝 Memory detected! Score: ${analysis.signals?.score}, Confidence: ${analysis.confidence}%`);
