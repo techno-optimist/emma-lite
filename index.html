@@ -401,8 +401,14 @@
                     localStorage.setItem('emmaVaultActive', 'true');
                     localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
                     
-                    // Save to IndexedDB
-                    await window.emmaWebVault.saveToIndexedDB();
+                    // Save to IndexedDB for persistence (version 2 - clean rebuild)
+                    try {
+                        await window.emmaWebVault.saveToIndexedDB();
+                        console.log('✅ Vault saved to IndexedDB successfully');
+                    } catch (idbError) {
+                        console.warn('⚠️ IndexedDB save failed (non-critical):', idbError);
+                        // Continue without IndexedDB - vault still works
+                    }
                     
                     this.vaultStatus = 'unlocked';
                     this.currentVault = { 

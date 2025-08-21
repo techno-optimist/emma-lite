@@ -108,8 +108,8 @@ class EmmaWebVault {
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
       console.log('✅ Session storage set - new vault active AND unlocked (no expiry - user controlled)!');
       
-      // Save to IndexedDB as backup
-      await this.saveToIndexedDB();
+      // EMERGENCY: Skip IndexedDB - causing errors
+      // await this.saveToIndexedDB();
       
       // FORCE download for new vault creation
       console.log('💾 Creating initial .emma file...');
@@ -1102,7 +1102,7 @@ class EmmaWebVault {
    */
   async loadFromIndexedDB() {
     try {
-      const request = indexedDB.open('EmmaVault', 1);
+      const request = indexedDB.open('EmmaVault', 2); // Match version for consistency
       
       return new Promise((resolve, reject) => {
         request.onerror = () => reject(request.error);
@@ -1196,7 +1196,7 @@ class EmmaWebVault {
   async saveToIndexedDB() {
     return new Promise((resolve, reject) => {
       try {
-        const request = indexedDB.open('EmmaVault', 1);
+        const request = indexedDB.open('EmmaVault', 2); // Increment version for clean rebuild
         
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
