@@ -582,8 +582,8 @@
           console.log('🔍 GALLERY VAULT DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
           console.log('🔍 GALLERY VAULT DEBUG: webVaultStatus exists?', !!window.webVaultStatus);
           
-          // Extension mode - Check if extension is managing vault
-          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          // Pure web app mode - Check if vault is loaded in web app
+          if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
             console.log('🔗 GALLERY: Extension detected - setting up extension-aware mode');
             
             // CRITICAL: Actually open a mock vault for the web app to use
@@ -669,8 +669,8 @@
         // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
         console.log('🔍 GALLERY FALLBACK: Using existing vault instances (no new creation)');
         
-        // Extension mode fallback - Ensure vault is considered active
-        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        // Pure web app mode fallback - Ensure vault is considered active
+        if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
           console.log('🔗 GALLERY: Extension fallback - ensuring vault is active');
           sessionStorage.setItem('emmaVaultActive', 'true');
           window.currentVaultStatus = { isUnlocked: true, managedByExtension: true };

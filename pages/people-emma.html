@@ -1012,8 +1012,8 @@
       console.log('🔍 emmaWebVault exists:', !!window.emmaWebVault);
       console.log('🔍 webVaultStatus exists:', !!window.webVaultStatus);
       
-      // Extension mode - Check if extension is managing vault
-      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+      // Pure web app mode - Check if vault is loaded in web app
+      if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
         console.log('🔗 PEOPLE: Extension detected - extension manages vault, web app is just UI');
         
         // NO MOCK VAULT! Extension handles all vault operations
@@ -1416,8 +1416,8 @@
           try {
             console.log('📷 AVATAR: Saving avatar to vault for person:', name);
             
-            // Use extension for avatar storage
-            if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+            // Use web app for avatar storage
+            if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
               avatarAttachmentId = await window.emmaWebVault.addMedia({
                 name: `avatar_${currentAvatarFile.name}`,
                 type: currentAvatarFile.type,
