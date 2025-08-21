@@ -209,50 +209,30 @@ class EmmaVaultExtension {
     this.updateRecentVaults();
   }
   
-  // CRITICAL FIX: Properly detect if vault is actually unlocked and accessible
+  // SIMPLIFIED: Use localStorage as source of truth (same as web app)
   async checkVaultLockStatus() {
     try {
-      const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
+      // CRITICAL: Use same localStorage logic as web app for consistency
+      const webAppVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+      const webAppVaultName = localStorage.getItem('emmaVaultName');
       
-      console.log('🔍 POPUP: Vault status check:', {
-        vaultFileName: storage.vaultFileName,
-        vaultReady: storage.vaultReady,
-        hasVaultData: !!this.vaultData,
-        memoryCount: this.vaultData?.content?.memories ? Object.keys(this.vaultData.content.memories).length : 0,
-        peopleCount: this.vaultData?.content?.people ? Object.keys(this.vaultData.content.people).length : 0
+      console.log('🔍 POPUP: Checking localStorage vault status:', {
+        webAppVaultActive,
+        webAppVaultName
       });
       
-      // CRITICAL: Get real vault status from background script
-      const backgroundStatus = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
-      
-      console.log('🔍 POPUP: Background vault status:', backgroundStatus);
-      
-      // CRITICAL: Use background script as source of truth
-      const vaultActuallyReady = backgroundStatus && backgroundStatus.vaultReady && !backgroundStatus.dataLost;
-      const hasRealData = backgroundStatus && (backgroundStatus.memoryCount > 0 || backgroundStatus.peopleCount > 0);
-      
-      if (storage.vaultFileName && !vaultActuallyReady) {
-        console.log('🔒 POPUP: Background reports vault not ready - showing unlock overlay');
-        this.showVaultUnlockOverlay(storage.vaultFileName);
-        
-        // CRITICAL: Update vault status indicator to show locked
-        this.elements.vaultStatusIndicator.textContent = '🔒';
-        this.isVaultOpen = false;
-      } else if (vaultActuallyReady && hasRealData) {
-        console.log('✅ POPUP: Background confirms vault is ready with data - hiding unlock overlay');
+      if (webAppVaultActive && webAppVaultName) {
+        console.log('✅ POPUP: localStorage indicates vault is unlocked - hiding overlay');
         this.hideVaultUnlockOverlay();
-        
-        // Update vault status indicator to show unlocked
         this.elements.vaultStatusIndicator.textContent = '🟢';
         this.isVaultOpen = true;
-      } else if (storage.vaultFileName && vaultActuallyReady && !hasRealData) {
-        console.log('⚠️ POPUP: Vault ready but no data - might be empty vault');
-        this.hideVaultUnlockOverlay();
-        this.elements.vaultStatusIndicator.textContent = '🟡';
-        this.isVaultOpen = true;
       } else {
-        console.log('❓ POPUP: No vault file - showing welcome state');
-        this.hideVaultUnlockOverlay();
+        console.log('🔒 POPUP: localStorage indicates vault is locked - showing overlay');
+        const storage = await chrome.storage.local.get(['vaultFileName']);
+        if (storage.vaultFileName) {
+          this.showVaultUnlockOverlay(storage.vaultFileName);
+        }
+        this.elements.vaultStatusIndicator.textContent = '🔒';
         this.isVaultOpen = false;
       }
       
