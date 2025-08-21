@@ -37,23 +37,19 @@ function initializeGallery() {
   // Set up event listeners
   setupEventListeners();
   
-  // Wait for extension communication to complete before loading memories
-  if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-    console.log('💝 GALLERY: Extension already detected - loading memories');
+  // Pure web app mode - load memories directly
+  if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+    console.log('💝 GALLERY: Web app vault data available - loading memories');
     loadMemories();
   } else {
-    console.log('💝 GALLERY: Waiting for extension detection...');
-    // Listen for extension ready event
-    window.addEventListener('extension-vault-ready', () => {
-      console.log('💝 GALLERY: Extension vault ready - now loading memories');
-      loadMemories();
-    });
-    
-    // Also try loading after a delay in case extension is detected
+    console.log('💝 GALLERY: Waiting for vault data to be restored...');
+    // Wait for vault data restoration
     setTimeout(() => {
-      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-        console.log('💝 GALLERY: Extension detected after delay - loading memories');
+      if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+        console.log('💝 GALLERY: Vault data restored - loading memories');
         loadMemories();
+      } else {
+        console.warn('💝 GALLERY: No vault data available after delay');
       }
     }, 2000);
   }
@@ -89,13 +85,13 @@ async function loadMemories() {
     
     // Check if we have the web vault available
     if (window.emmaWebVault) {
-      console.log('💝 GALLERY: Checking extension availability:', window.emmaWebVault.extensionAvailable);
-      
-      if (window.emmaWebVault.extensionAvailable) {
-        console.log('💝 GALLERY: Loading from extension vault...');
-        try {
-          vaultMemories = await window.emmaWebVault.listMemories(1000, 0);
-          console.log('💝 GALLERY: Extension vault result:', vaultMemories);
+          console.log('💝 GALLERY: Using pure web app vault data...');
+    
+    if (window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+      console.log('💝 GALLERY: Loading from web app vault data...');
+      try {
+        vaultMemories = await window.emmaWebVault.listMemories(1000, 0);
+        console.log('💝 GALLERY: Web app vault result:', vaultMemories);
           
           // DEBUG: Log each memory to identify the issue
           vaultMemories.forEach((mem, idx) => {
