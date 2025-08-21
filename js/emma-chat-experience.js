@@ -702,7 +702,9 @@ class EmmaChatExperience extends ExperiencePopup {
       
       // Check if EmmaVectorlessEngine is available
       if (typeof EmmaVectorlessEngine === 'undefined') {
-        console.warn('💬 EmmaVectorlessEngine not available, loading...');
+        if (this.debugMode) {
+          console.warn('💬 EmmaVectorlessEngine not available, loading...');
+        }
         await this.loadVectorlessEngine();
       }
       
@@ -713,16 +715,21 @@ class EmmaChatExperience extends ExperiencePopup {
         debug: this.debugMode || false
       });
       
-      // Try to load vault data
+      // Try to load vault data (non-blocking)
       await this.loadVaultForVectorless();
       
       this.updateVectorlessStatus();
-      console.log('🧠 Vectorless AI Engine initialized successfully');
+      
+      if (this.debugMode) {
+        console.log('🧠 Vectorless AI Engine initialized successfully');
+      }
       
     } catch (error) {
-      console.error('🧠 Failed to initialize Vectorless AI:', error);
+      if (this.debugMode) {
+        console.error('🧠 Failed to initialize Vectorless AI:', error);
+      }
       this.isVectorlessEnabled = false;
-      this.updateVectorlessStatus('Error: ' + error.message);
+      this.updateVectorlessStatus('Heuristics mode - ' + (error.message || 'No vault'));
     }
   }
 
@@ -758,13 +765,9 @@ class EmmaChatExperience extends ExperiencePopup {
       let vaultData = null;
       
       // Check if we have web vault available
-      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-        // Get vault data from extension
-        const vaultInfo = await window.emmaWebVault.getVaultInfo();
-        if (vaultInfo && vaultInfo.isOpen) {
-          // Request vault data for vectorless processing
-          vaultData = await this.requestVaultDataFromExtension();
-        }
+      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable && window.emmaWebVault.isOpen) {
+        // Request vault data for vectorless processing
+        vaultData = await this.requestVaultDataFromExtension();
       }
       
       if (vaultData && this.vectorlessEngine) {
@@ -777,13 +780,17 @@ class EmmaChatExperience extends ExperiencePopup {
           throw new Error(result.error || 'Failed to load vault');
         }
       } else {
-        console.warn('🧠 No vault data available for vectorless processing');
+        if (this.debugMode) {
+          console.warn('🧠 No vault data available for vectorless processing - will use heuristics only');
+        }
         this.isVectorlessEnabled = false;
       }
     } catch (error) {
-      console.error('🧠 Failed to load vault for vectorless:', error);
+      if (this.debugMode) {
+        console.error('🧠 Failed to load vault for vectorless:', error);
+      }
       this.isVectorlessEnabled = false;
-      throw error;
+      // Don't throw error - just disable vectorless features
     }
   }
 
