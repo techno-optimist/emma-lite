@@ -222,29 +222,57 @@ class EmmaVaultExtension {
     this.updateRecentVaults();
   }
   
-  // NUCLEAR OPTION: Dead simple vault status check
+  // NUCLEAR OPTION: Dead simple vault status check - DIRECT localStorage access
   async checkVaultLockStatus() {
     try {
-      // Load simple vault system
-      if (!window.simpleVault) {
-        const script = document.createElement('script');
-        script.src = 'simple-vault.js';
-        document.head.appendChild(script);
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // CRITICAL FIX: Extension popup can't access web app's window.simpleVault!
+      // Check localStorage directly using the same keys as SimpleVault
+      
+      // Query the web app's localStorage by injecting a content script
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      let isUnlocked = false;
+      let vaultName = 'My Vault';
+      
+      if (tab && tab.url && tab.url.includes('emma-hijc.onrender.com')) {
+        try {
+          // Inject script to check localStorage in web app context
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+              const unlocked = localStorage.getItem('emmaSimpleVaultUnlocked') === 'true';
+              const name = localStorage.getItem('emmaSimpleVaultName') || 'My Vault';
+              return { unlocked, name };
+            }
+          });
+          
+          if (results && results[0] && results[0].result) {
+            isUnlocked = results[0].result.unlocked;
+            vaultName = results[0].result.name;
+            console.log('🔥 POPUP: Got vault status from web app localStorage:', { isUnlocked, vaultName });
+          }
+        } catch (scriptError) {
+          console.warn('⚠️ POPUP: Could not check web app localStorage:', scriptError);
+          // Fallback to extension's own storage
+          const storage = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
+          isUnlocked = storage.vaultReady || false;
+          vaultName = storage.vaultFileName || 'My Vault';
+        }
+      } else {
+        // Not on Emma web app - check extension's own storage
+        const storage = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
+        isUnlocked = storage.vaultReady || false;
+        vaultName = storage.vaultFileName || 'My Vault';
+        console.log('🔥 POPUP: Not on Emma web app, using extension storage:', { isUnlocked, vaultName });
       }
       
-      const isUnlocked = window.simpleVault ? window.simpleVault.isUnlocked() : false;
-      const vaultName = window.simpleVault ? window.simpleVault.getVaultName() : 'My Vault';
-      
-      console.log('🔥 POPUP: Simple vault status:', { isUnlocked, vaultName });
-      
       if (isUnlocked) {
-        console.log('✅ POPUP: Simple vault is unlocked - hiding overlay');
+        console.log('✅ POPUP: Vault is unlocked - hiding overlay');
         this.hideVaultUnlockOverlay();
         this.elements.vaultStatusIndicator.textContent = '🟢';
         this.isVaultOpen = true;
       } else {
-        console.log('🔒 POPUP: Simple vault is locked - showing overlay');
+        console.log('🔒 POPUP: Vault is locked - showing overlay');
         const storage = await chrome.storage.local.get(['vaultFileName']);
         if (storage.vaultFileName) {
           this.showVaultUnlockOverlay(storage.vaultFileName);
@@ -629,9 +657,23 @@ class EmmaVaultExtension {
               lastSync: new Date().toISOString()
             };
             
-            // NUCLEAR: Use simple vault system
-            if (window.simpleVault) {
-              window.simpleVault.unlock(selectedFile.name);
+            // CRITICAL FIX: Sync localStorage state to web app
+            if (tab && tab.url && tab.url.includes('emma-hijc.onrender.com')) {
+              try {
+                await chrome.scripting.executeScript({
+                  target: { tabId: tab.id },
+                  func: (vaultName) => {
+                    localStorage.setItem('emmaSimpleVaultUnlocked', 'true');
+                    localStorage.setItem('emmaSimpleVaultName', vaultName);
+                    localStorage.setItem('emmaVaultActive', 'true');
+                    localStorage.setItem('emmaVaultName', vaultName);
+                    console.log('🔄 EXTENSION→WEB: Synced vault unlock state to web app');
+                  },
+                  args: [selectedFile.name]
+                });
+              } catch (syncError) {
+                console.warn('⚠️ POPUP: Could not sync unlock state to web app:', syncError);
+              }
             }
             
             // Mark vault as ready
@@ -984,6 +1026,26 @@ class EmmaVaultExtension {
       localStorage.setItem('emmaVaultActive', 'true');
       localStorage.setItem('emmaVaultName', fileHandle.name);
       console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
+      
+      // CRITICAL FIX: Sync localStorage state to web app
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url && tab.url.includes('emma-hijc.onrender.com')) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (vaultName) => {
+              localStorage.setItem('emmaSimpleVaultUnlocked', 'true');
+              localStorage.setItem('emmaSimpleVaultName', vaultName);
+              localStorage.setItem('emmaVaultActive', 'true');
+              localStorage.setItem('emmaVaultName', vaultName);
+              console.log('🔄 EXTENSION→WEB: Synced vault unlock state to web app');
+            },
+            args: [fileHandle.name]
+          });
+        } catch (syncError) {
+          console.warn('⚠️ POPUP: Could not sync unlock state to web app:', syncError);
+        }
+      }
       
       // SECURITY: Do NOT persist plaintext vault data in extension storage. Keep in-memory only.
       // Mark readiness via minimal metadata; actual content remains in this popup's memory.
@@ -1510,6 +1572,26 @@ class EmmaVaultExtension {
       localStorage.setItem('emmaVaultActive', 'true');
       localStorage.setItem('emmaVaultName', fileHandle.name);
       console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
+      
+      // CRITICAL FIX: Sync localStorage state to web app
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url && tab.url.includes('emma-hijc.onrender.com')) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (vaultName) => {
+              localStorage.setItem('emmaSimpleVaultUnlocked', 'true');
+              localStorage.setItem('emmaSimpleVaultName', vaultName);
+              localStorage.setItem('emmaVaultActive', 'true');
+              localStorage.setItem('emmaVaultName', vaultName);
+              console.log('🔄 EXTENSION→WEB: Synced vault unlock state to web app (create vault)');
+            },
+            args: [fileHandle.name]
+          });
+        } catch (syncError) {
+          console.warn('⚠️ POPUP: Could not sync unlock state to web app:', syncError);
+        }
+      }
       
       // SECURITY: Do NOT persist plaintext vault data in extension storage.
       await chrome.storage.local.set({
