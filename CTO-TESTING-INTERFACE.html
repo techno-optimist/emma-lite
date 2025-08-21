@@ -187,8 +187,12 @@
     </div>
 
     <!-- Load Emma Systems -->
+    <script src="js/emma-input-modal.js"></script>
+    <script src="js/clean-password-modal.js"></script>
     <script src="js/emma-feature-flags.js"></script>
     <script src="js/emma-vault-primary.js"></script>
+    <script src="js/emma-web-vault.js"></script>
+    <script src="js/web-vault-status.js"></script>
     
     <script>
         // CTO Testing Interface Functions
@@ -284,6 +288,93 @@
             }
         }
         
+        async function uploadAndTestVault() {
+            try {
+                log('📁 Testing vault upload...');
+                
+                const fileInput = document.getElementById('vaultFileInput');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    log('❌ No file selected. Please select a .emma vault file first.');
+                    return;
+                }
+                
+                if (!file.name.endsWith('.emma')) {
+                    log('❌ Invalid file type. Please select a .emma vault file.');
+                    return;
+                }
+                
+                log('📖 Reading vault file: ' + file.name);
+                
+                // Read file data
+                const fileData = new Uint8Array(await file.arrayBuffer());
+                log('✅ File read successfully, size: ' + fileData.length + ' bytes');
+                
+                // Request passphrase
+                const passphrase = prompt('🔐 Enter vault passphrase:');
+                if (!passphrase) {
+                    log('❌ Passphrase required for testing');
+                    return;
+                }
+                
+                log('🔓 Attempting to decrypt vault...');
+                
+                // Test decryption
+                if (window.emmaVaultPrimary) {
+                    try {
+                        const result = await window.emmaVaultPrimary.requestDecryption(fileData, passphrase);
+                        if (result.success) {
+                            log('✅ Vault decrypted successfully!');
+                            log('📊 Memories found: ' + Object.keys(result.vaultData.content?.memories || {}).length);
+                            log('👥 People found: ' + Object.keys(result.vaultData.content?.people || {}).length);
+                            log('📷 Media found: ' + Object.keys(result.vaultData.content?.media || {}).length);
+                            
+                            // Update status
+                            const statusDiv = document.getElementById('vaultTestStatus');
+                            statusDiv.className = 'status enabled';
+                            statusDiv.innerHTML = `
+                                <strong>✅ VAULT LOADED</strong><br>
+                                ${file.name}<br>
+                                Memories: ${Object.keys(result.vaultData.content?.memories || {}).length} | 
+                                People: ${Object.keys(result.vaultData.content?.people || {}).length}
+                            `;
+                            
+                        } else {
+                            log('❌ Decryption failed: ' + result.error);
+                        }
+                    } catch (error) {
+                        log('❌ Vault testing failed: ' + error.message);
+                    }
+                } else {
+                    log('❌ EmmaVaultPrimary not available');
+                }
+                
+            } catch (error) {
+                log('❌ Upload test failed: ' + error.message);
+            }
+        }
+        
+        function testCreateNewVault() {
+            log('🆕 Testing new vault creation...');
+            log('📝 Manual test required:');
+            log('  1. Go to main web app');
+            log('  2. Click "Create New Vault"');
+            log('  3. Enter vault name and passphrase');
+            log('  4. Verify vault creates successfully');
+            log('  5. Verify vault persists after page refresh');
+        }
+        
+        function testVaultLocking() {
+            log('🔒 Testing vault locking...');
+            log('📝 Manual test required:');
+            log('  1. Ensure vault is unlocked');
+            log('  2. Click lock button');
+            log('  3. Verify vault locks properly');
+            log('  4. Verify data is encrypted and saved');
+            log('  5. Test unlock with correct passphrase');
+        }
+        
         function testVaultPersistence() {
             log('🧪 Testing vault persistence...');
             log('📝 Check: Does vault data survive page refresh?');
@@ -355,10 +446,33 @@
                 const flags = window.emmaFeatureFlags ? window.emmaFeatureFlags.getAll() : null;
                 log('🚩 Feature flags: ' + (flags ? 'LOADED' : 'NOT LOADED'));
                 
-                // Check vault systems
-                log('🔧 EmmaWebVault: ' + (window.emmaWebVault ? 'LOADED' : 'NOT LOADED'));
-                log('🚀 EmmaVaultPrimary: ' + (window.emmaVaultPrimary ? 'LOADED' : 'NOT LOADED'));
-                log('📊 WebVaultStatus: ' + (window.webVaultStatus ? 'LOADED' : 'NOT LOADED'));
+                // Check vault systems with detailed error info
+                try {
+                    log('🔧 EmmaWebVault: ' + (window.emmaWebVault ? 'LOADED' : 'NOT LOADED'));
+                    if (window.EmmaWebVault) {
+                        log('📦 EmmaWebVault class: AVAILABLE');
+                    }
+                } catch (e) {
+                    log('❌ EmmaWebVault error: ' + e.message);
+                }
+                
+                try {
+                    log('🚀 EmmaVaultPrimary: ' + (window.emmaVaultPrimary ? 'LOADED' : 'NOT LOADED'));
+                    if (window.EmmaVaultPrimary) {
+                        log('📦 EmmaVaultPrimary class: AVAILABLE');
+                    }
+                } catch (e) {
+                    log('❌ EmmaVaultPrimary error: ' + e.message);
+                }
+                
+                try {
+                    log('📊 WebVaultStatus: ' + (window.webVaultStatus ? 'LOADED' : 'NOT LOADED'));
+                    if (window.WebVaultStatus) {
+                        log('📦 WebVaultStatus class: AVAILABLE');
+                    }
+                } catch (e) {
+                    log('❌ WebVaultStatus error: ' + e.message);
+                }
                 
                 // Check current vault status
                 if (window.currentVaultStatus) {
@@ -368,11 +482,11 @@
                     log('❌ No vault status available');
                 }
                 
-                // Check extension connection
+                // Check extension connection (expected to fail on Render)
                 if (window.chrome && window.chrome.runtime) {
                     log('🔌 Extension API: AVAILABLE');
                 } else {
-                    log('❌ Extension API: NOT AVAILABLE');
+                    log('🌐 Extension API: NOT AVAILABLE (expected on Render)');
                 }
                 
                 // Check File System Access API
@@ -382,10 +496,19 @@
                     log('⚠️ File System Access API: NOT SUPPORTED');
                 }
                 
+                // Check script loading errors
+                const scripts = document.querySelectorAll('script[src]');
+                log(`📜 Scripts loaded: ${scripts.length}`);
+                scripts.forEach((script, index) => {
+                    const src = script.src.split('/').pop();
+                    log(`  ${index + 1}. ${src}: ${script.readyState || 'unknown'}`);
+                });
+                
                 log('✅ Diagnostics complete');
                 
             } catch (error) {
                 log('❌ Diagnostics failed: ' + error.message);
+                console.error('Full diagnostic error:', error);
             }
         }
         
@@ -449,13 +572,38 @@
         </div>
         
         <div class="section">
-            <h3>🧪 Testing Protocol</h3>
+            <h3>🔓 Vault Testing</h3>
             
-            <h4>Core Functionality Tests:</h4>
-            <button class="button" onclick="testVaultPersistence()">📊 Test Vault Persistence</button>
-            <button class="button" onclick="testImageCapture()">🖼️ Test Image Capture</button>
+            <h4>📁 Upload .emma Vault File:</h4>
+            <input type="file" id="vaultFileInput" accept=".emma" style="
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 10px;
+                padding: 10px;
+                color: white;
+                margin: 10px 0;
+                width: 100%;
+            ">
+            <button class="button" onclick="uploadAndTestVault()">🔓 Upload & Test Vault</button>
+            
+            <h4>🎯 Vault Operations:</h4>
+            <button class="button" onclick="testCreateNewVault()">🆕 Test Create New Vault</button>
+            <button class="button" onclick="testVaultLocking()">🔒 Test Vault Locking</button>
+            <button class="button" onclick="testVaultPersistence()">💾 Test Persistence</button>
+            
+            <div id="vaultTestStatus" class="status disabled" style="margin-top: 15px;">
+                <strong>No vault loaded</strong><br>
+                Upload a .emma file to begin testing
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>🧪 Core Functionality Tests</h3>
+            
+            <h4>Memory Operations:</h4>
             <button class="button" onclick="testMemoryCreation()">💝 Test Memory Creation</button>
             <button class="button" onclick="testConstellation()">🌟 Test Constellation</button>
+            <button class="button" onclick="testImageCapture()">🖼️ Test Image Capture</button>
             
             <h4>Stress Tests:</h4>
             <button class="button" onclick="testPageRefresh()">🔄 Test Page Refresh</button>

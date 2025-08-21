@@ -275,6 +275,12 @@ class EmmaVaultPrimary {
     try {
       console.log('🔐 PRIMARY: Requesting decryption from extension...');
       
+      // Check if extension API is available (not available on Render)
+      if (!window.chrome || !window.chrome.runtime) {
+        console.warn('🌐 PRIMARY: Extension API not available, using fallback decryption');
+        return await this.fallbackDecryption(encryptedData, passphrase);
+      }
+      
       // Send to extension for decryption
       const response = await chrome.runtime.sendMessage({
         action: 'DECRYPT_VAULT_DATA',
@@ -289,8 +295,8 @@ class EmmaVaultPrimary {
         throw new Error(response?.error || 'Decryption failed');
       }
     } catch (error) {
-      console.error('❌ PRIMARY: Decryption request failed:', error);
-      return { success: false, error: error.message };
+      console.error('❌ PRIMARY: Decryption request failed, trying fallback:', error);
+      return await this.fallbackDecryption(encryptedData, passphrase);
     }
   }
 
@@ -300,6 +306,12 @@ class EmmaVaultPrimary {
   async requestEncryption(vaultData, passphrase) {
     try {
       console.log('🔒 PRIMARY: Requesting encryption from extension...');
+      
+      // Check if extension API is available (not available on Render)
+      if (!window.chrome || !window.chrome.runtime) {
+        console.warn('🌐 PRIMARY: Extension API not available, using fallback encryption');
+        return await this.fallbackEncryption(vaultData, passphrase);
+      }
       
       // Send to extension for encryption
       const response = await chrome.runtime.sendMessage({
@@ -315,8 +327,8 @@ class EmmaVaultPrimary {
         throw new Error(response?.error || 'Encryption failed');
       }
     } catch (error) {
-      console.error('❌ PRIMARY: Encryption request failed:', error);
-      return { success: false, error: error.message };
+      console.error('❌ PRIMARY: Encryption request failed, trying fallback:', error);
+      return await this.fallbackEncryption(vaultData, passphrase);
     }
   }
 
@@ -560,6 +572,150 @@ class EmmaVaultPrimary {
       mediaCount: Object.keys(this.vaultData.content?.media || {}).length,
       totalSize: JSON.stringify(this.vaultData).length
     };
+  }
+
+  /**
+   * PHASE 2.3: Fallback decryption for Render (no extension)
+   */
+  async fallbackDecryption(encryptedData, passphrase) {
+    try {
+      console.log('🔓 PRIMARY FALLBACK: Decrypting vault data locally...');
+      
+      // Verify .emma file format
+      const magicBytes = encryptedData.slice(0, 4);
+      const magicString = new TextDecoder().decode(magicBytes);
+      
+      if (magicString !== 'EMMA') {
+        throw new Error('Invalid .emma file format');
+      }
+      
+      // Extract components
+      const salt = encryptedData.slice(4, 36);
+      const iv = encryptedData.slice(36, 48);
+      const encrypted = encryptedData.slice(48);
+      
+      console.log('🔓 PRIMARY FALLBACK: File format verified, extracting data...');
+      
+      // Derive decryption key
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 250000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      
+      // Decrypt the data
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        encrypted
+      );
+      
+      // Parse JSON
+      const jsonString = new TextDecoder().decode(decrypted);
+      const vaultData = JSON.parse(jsonString);
+      
+      console.log('✅ PRIMARY FALLBACK: Vault decrypted successfully, memories:', 
+        Object.keys(vaultData.content?.memories || {}).length);
+      
+      return {
+        success: true,
+        vaultData: vaultData
+      };
+      
+    } catch (error) {
+      console.error('❌ PRIMARY FALLBACK: Decryption failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * PHASE 2.3: Fallback encryption for Render (no extension)
+   */
+  async fallbackEncryption(vaultData, passphrase) {
+    try {
+      console.log('🔒 PRIMARY FALLBACK: Encrypting vault data locally...');
+      
+      // Generate salt for encryption
+      const salt = crypto.getRandomValues(new Uint8Array(32));
+      
+      // Convert vault data to JSON string
+      const jsonString = JSON.stringify(vaultData);
+      const dataToEncrypt = new TextEncoder().encode(jsonString);
+      
+      // Derive encryption key
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 250000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt']
+      );
+      
+      // Generate IV for encryption
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      
+      // Encrypt the data
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        dataToEncrypt
+      );
+      
+      // Create .emma file format
+      const magicBytes = new TextEncoder().encode('EMMA');
+      const saltBytes = salt;
+      const ivBytes = iv;
+      const encryptedBytes = new Uint8Array(encrypted);
+      
+      // Combine all parts
+      const totalLength = 4 + 32 + 12 + encryptedBytes.length;
+      const fileData = new Uint8Array(totalLength);
+      
+      let offset = 0;
+      fileData.set(magicBytes, offset); offset += 4;
+      fileData.set(saltBytes, offset); offset += 32;
+      fileData.set(ivBytes, offset); offset += 12;
+      fileData.set(encryptedBytes, offset);
+      
+      console.log('✅ PRIMARY FALLBACK: Vault encrypted successfully, size:', fileData.length);
+      
+      return {
+        success: true,
+        encryptedData: fileData
+      };
+      
+    } catch (error) {
+      console.error('❌ PRIMARY FALLBACK: Encryption failed:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   /**
