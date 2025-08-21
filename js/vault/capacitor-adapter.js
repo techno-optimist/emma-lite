@@ -78,8 +78,23 @@
       await this._rememberRecent();
     }
     async exportVault(options = {}) {
-      // TODO: Use Share plugin; for now, ensure file exists in Documents
-      return; 
+      // Read current vault and write to an export path, then present share sheet if available
+      const bytes = await this.readVault().catch(() => new Uint8Array());
+      const filename = options.suggestedName || (this._name + '.emma');
+      const exportPath = `Emma/Exports/${filename}`;
+      await writeFile(exportPath, bytes);
+      try {
+        const Share = global.Capacitor?.Plugins?.Share;
+        if (Share && typeof Share.share === 'function') {
+          // Some platforms accept file URLs or absolute paths. We pass a path; the plugin resolves it.
+          await Share.share({
+            title: 'Export Emma Vault',
+            text: 'Your Emma vault export',
+            url: exportPath,
+            dialogTitle: 'Share Emma Vault'
+          });
+        }
+      } catch { /* ignore */ }
     }
     async importVault(input) {
       if (input instanceof Uint8Array) {

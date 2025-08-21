@@ -274,6 +274,10 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Added `mobile/js/security-gating.js` and wired export button to require biometrics or passphrase. Replace prompt with branded modal later and verify passphrase when backend hook exists.
 - Next: implement actual export using Capacitor Share/Filesystem; device chaos scripts; start internal testing loop.
 
+### CTO Oversight Notes (Export Integration)
+- Mobile export wired through Capacitor adapter with Share plugin handoff after writing export file. Validate path handling on iOS/Android. If Share requires a file URL, adapt accordingly.
+- Ready to run Gate A/B device tests with biometrics/backup and export flows.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests

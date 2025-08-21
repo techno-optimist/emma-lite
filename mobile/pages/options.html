@@ -121,8 +121,19 @@
             notify('Export cancelled', true);
             return;
           }
-          // Proceed with export via mobile adapter or share sheet (to be integrated)
           notify('Export started...', false);
+          try {
+            // Use capacitor adapter for export if available
+            const adapter = (window.EmmaVaultAdapterSelector && await window.EmmaVaultAdapterSelector.selectAdapter?.()) || null;
+            if (adapter && adapter.exportVault) {
+              await adapter.exportVault({ suggestedName: 'emma-vault.emma' });
+              notify('Export complete');
+            } else {
+              notify('Export not available in this environment', true);
+            }
+          } catch (err) {
+            notify('Export failed: ' + (err?.message || err), true);
+          }
         });
       }
 
