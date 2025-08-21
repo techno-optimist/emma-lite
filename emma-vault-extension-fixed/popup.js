@@ -209,25 +209,29 @@ class EmmaVaultExtension {
     this.updateRecentVaults();
   }
   
-  // SIMPLIFIED: Use localStorage as source of truth (same as web app)
+  // NUCLEAR OPTION: Dead simple vault status check
   async checkVaultLockStatus() {
     try {
-      // CRITICAL: Use same localStorage logic as web app for consistency
-      const webAppVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
-      const webAppVaultName = localStorage.getItem('emmaVaultName');
+      // Load simple vault system
+      if (!window.simpleVault) {
+        const script = document.createElement('script');
+        script.src = 'simple-vault.js';
+        document.head.appendChild(script);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       
-      console.log('🔍 POPUP: Checking localStorage vault status:', {
-        webAppVaultActive,
-        webAppVaultName
-      });
+      const isUnlocked = window.simpleVault ? window.simpleVault.isUnlocked() : false;
+      const vaultName = window.simpleVault ? window.simpleVault.getVaultName() : 'My Vault';
       
-      if (webAppVaultActive && webAppVaultName) {
-        console.log('✅ POPUP: localStorage indicates vault is unlocked - hiding overlay');
+      console.log('🔥 POPUP: Simple vault status:', { isUnlocked, vaultName });
+      
+      if (isUnlocked) {
+        console.log('✅ POPUP: Simple vault is unlocked - hiding overlay');
         this.hideVaultUnlockOverlay();
         this.elements.vaultStatusIndicator.textContent = '🟢';
         this.isVaultOpen = true;
       } else {
-        console.log('🔒 POPUP: localStorage indicates vault is locked - showing overlay');
+        console.log('🔒 POPUP: Simple vault is locked - showing overlay');
         const storage = await chrome.storage.local.get(['vaultFileName']);
         if (storage.vaultFileName) {
           this.showVaultUnlockOverlay(storage.vaultFileName);
@@ -237,7 +241,7 @@ class EmmaVaultExtension {
       }
       
     } catch (error) {
-      console.error('❌ POPUP: Error checking vault status:', error);
+      console.error('❌ POPUP: Error checking simple vault status:', error);
       this.hideVaultUnlockOverlay();
       this.isVaultOpen = false;
     }
@@ -552,10 +556,10 @@ class EmmaVaultExtension {
             this.vaultData = recoveryResponse.vaultData;
             this.isVaultOpen = true;
             
-            // CRITICAL: Update localStorage so web app knows vault is unlocked
-            localStorage.setItem('emmaVaultActive', 'true');
-            localStorage.setItem('emmaVaultName', storage.vaultFileName || 'My Vault');
-            console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
+            // NUCLEAR: Use simple vault system
+            if (window.simpleVault) {
+              window.simpleVault.unlock(storage.vaultFileName || 'My Vault');
+            }
             
             // Mark vault as ready
             await chrome.storage.local.set({
@@ -612,10 +616,10 @@ class EmmaVaultExtension {
               lastSync: new Date().toISOString()
             };
             
-            // CRITICAL: Update localStorage so web app knows vault is unlocked
-            localStorage.setItem('emmaVaultActive', 'true');
-            localStorage.setItem('emmaVaultName', selectedFile.name);
-            console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
+            // NUCLEAR: Use simple vault system
+            if (window.simpleVault) {
+              window.simpleVault.unlock(selectedFile.name);
+            }
             
             // Mark vault as ready
             await chrome.storage.local.set({
