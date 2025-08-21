@@ -5959,7 +5959,63 @@
               
               ${(() => {
                 const people = memory.metadata?.people || memory.people || [];
-                return people && people.length > 0 ? `
+                if (!people || people.length === 0) return '';
+                
+                // Get people data from vault to resolve IDs to names/avatars
+                let resolvedPeople = [];
+                try {
+                  // Try to get people from current vault data
+                  if (window.emmaWebVault && window.emmaWebVault.vaultData) {
+                    const vaultPeople = window.emmaWebVault.vaultData.content?.people || {};
+                    const vaultMedia = window.emmaWebVault.vaultData.content?.media || {};
+                    
+                    resolvedPeople = people.map(personId => {
+                      const person = vaultPeople[personId];
+                      if (person) {
+                        // Resolve avatar from media if available
+                        let avatarUrl = person.avatarUrl;
+                        if (!avatarUrl && person.avatarId && vaultMedia[person.avatarId]) {
+                          const mediaItem = vaultMedia[person.avatarId];
+                          avatarUrl = mediaItem.data.startsWith('data:')
+                            ? mediaItem.data
+                            : `data:${mediaItem.type};base64,${mediaItem.data}`;
+                        }
+                        
+                        return {
+                          id: personId,
+                          name: person.name || 'Unknown Person',
+                          relation: person.relation || 'other',
+                          avatarUrl: avatarUrl
+                        };
+                      }
+                      // Fallback for missing person data
+                      return {
+                        id: personId,
+                        name: personId.replace(/^person_/, '').replace(/_.*$/, '') || 'Unknown Person',
+                        relation: 'other',
+                        avatarUrl: null
+                      };
+                    });
+                  } else {
+                    // Fallback: use person IDs as names
+                    resolvedPeople = people.map(personId => ({
+                      id: personId,
+                      name: personId.replace(/^person_/, '').replace(/_.*$/, '') || 'Unknown Person',
+                      relation: 'other',
+                      avatarUrl: null
+                    }));
+                  }
+                } catch (error) {
+                  console.warn('⚠️ Failed to resolve people data:', error);
+                  resolvedPeople = people.map(personId => ({
+                    id: personId,
+                    name: 'Unknown Person',
+                    relation: 'other',
+                    avatarUrl: null
+                  }));
+                }
+                
+                return `
                   <div class="memory-people" style="margin-bottom: 32px;">
                     <div style="
                       color: rgba(255, 255, 255, 0.7); 
@@ -5972,46 +6028,75 @@
                     ">
                       <span style="font-size: 18px;">👥</span>
                       People in this Memory
+                      <span style="
+                        background: rgba(240, 147, 251, 0.2);
+                        color: rgba(255, 255, 255, 0.8);
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: 500;
+                      ">${resolvedPeople.length} ${resolvedPeople.length === 1 ? 'person' : 'people'}</span>
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                      ${people.map(personId => {
-                        // Try to get person name from vault
-                        const personName = personId; // Simplified for now
+                      ${resolvedPeople.map(person => {
+                        const displayName = person.name || 'Unknown Person';
+                        const initials = displayName.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
+                        
                         return `
                           <div style="
                             background: linear-gradient(135deg, rgba(240, 147, 251, 0.2), rgba(134, 88, 255, 0.2));
                             border: 1px solid rgba(240, 147, 251, 0.3);
                             border-radius: 20px;
-                            padding: 8px 16px;
+                            padding: 10px 16px;
                             display: flex;
                             align-items: center;
-                            gap: 8px;
+                            gap: 12px;
                             backdrop-filter: blur(10px);
                             box-shadow: 0 4px 16px rgba(240, 147, 251, 0.2);
+                            transition: all 0.3s ease;
+                            cursor: pointer;
+                          " onmouseover="
+                            this.style.transform='translateY(-2px)';
+                            this.style.boxShadow='0 8px 24px rgba(240, 147, 251, 0.3)';
+                          " onmouseout="
+                            this.style.transform='translateY(0)';
+                            this.style.boxShadow='0 4px 16px rgba(240, 147, 251, 0.2)';
                           ">
                             <div style="
-                              width: 24px;
-                              height: 24px;
+                              width: 32px;
+                              height: 32px;
                               border-radius: 50%;
-                              background: linear-gradient(135deg, rgba(240, 147, 251, 0.4), rgba(134, 88, 255, 0.4));
+                              background: ${person.avatarUrl ? `url('${person.avatarUrl}')` : 'linear-gradient(135deg, rgba(240, 147, 251, 0.5), rgba(134, 88, 255, 0.5))'};
+                              background-size: cover;
+                              background-position: center;
                               display: flex;
                               align-items: center;
                               justify-content: center;
-                              font-size: 12px;
-                              font-weight: 600;
-                              color: white;
-                            ">${personName.charAt(0).toUpperCase()}</div>
-                            <span style="
-                              color: rgba(255, 255, 255, 0.9);
                               font-size: 13px;
-                              font-weight: 500;
-                            ">${personName}</span>
+                              font-weight: 700;
+                              color: white;
+                              border: 2px solid rgba(255, 255, 255, 0.2);
+                              text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                            ">${person.avatarUrl ? '' : initials}</div>
+                            <div>
+                              <div style="
+                                color: rgba(255, 255, 255, 0.95);
+                                font-size: 14px;
+                                font-weight: 600;
+                                margin-bottom: 2px;
+                              ">${displayName}</div>
+                              <div style="
+                                color: rgba(255, 255, 255, 0.6);
+                                font-size: 11px;
+                                text-transform: capitalize;
+                              ">${person.relation || 'other'}</div>
+                            </div>
                           </div>
                         `;
                       }).join('')}
                     </div>
                   </div>
-                ` : '';
+                `;
               })()}
             </div>
             
