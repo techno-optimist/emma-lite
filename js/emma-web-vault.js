@@ -432,8 +432,48 @@ class EmmaWebVault {
         .slice(offset, offset + limit);
     }
     
-    // Extension mode: Request memories from extension storage
-    if (this.extensionAvailable) {
+    // Pure web app mode: Get memories from vault data directly (same as constellation)
+    if (this.isOpen && this.vaultData) {
+      console.log('💝 PURE WEB APP: Getting memories from vault data...');
+      
+      const vaultMemories = this.vaultData.content?.memories || {};
+      const vaultMedia = this.vaultData.content?.media || {};
+      
+      // Convert vault memories to array format (same as constellation)
+      const memories = Object.values(vaultMemories).map(memory => {
+        // Process attachments to include data URLs
+        const attachments = (memory.attachments || []).map(attachment => {
+          const mediaItem = vaultMedia[attachment.id];
+          if (mediaItem && mediaItem.data) {
+            return {
+              ...attachment,
+              url: mediaItem.data.startsWith('data:')
+                ? mediaItem.data
+                : `data:${mediaItem.type};base64,${mediaItem.data}`,
+              dataUrl: mediaItem.data.startsWith('data:')
+                ? mediaItem.data
+                : `data:${mediaItem.type};base64,${mediaItem.data}`,
+              isPersisted: true
+            };
+          }
+          return attachment;
+        });
+        
+        return {
+          ...memory,
+          attachments
+        };
+      });
+      
+      console.log(`💝 PURE WEB APP: Returning ${memories.length} memories from vault data`);
+      
+      // Apply sorting and pagination
+      const sortedMemories = memories.sort((a, b) => new Date(b.created) - new Date(a.created));
+      return sortedMemories.slice(offset, offset + limit);
+    }
+    
+    // Legacy extension mode (disabled)
+    if (false) { // this.extensionAvailable
       console.log('🔗 Extension mode: Requesting memories from extension...');
       
       // Request memories data from extension
@@ -691,34 +731,33 @@ class EmmaWebVault {
    * List people (IDENTICAL API to desktop version!)
    */
   async listPeople() {
-    // Extension mode: Request people from extension storage
-    if (this.extensionAvailable) {
-      console.log('🔗 Extension mode: Requesting people from extension...');
+    // Pure web app mode: Get people from vault data directly
+    if (this.isOpen && this.vaultData) {
+      console.log('👥 PURE WEB APP: Getting people from vault data...');
       
-      // Request people data from extension
-      return new Promise((resolve) => {
-        const messageHandler = (event) => {
-          if (event.data?.channel === 'emma-vault-bridge' && event.data?.type === 'PEOPLE_DATA') {
-            console.log('👥 Received people data from extension:', event.data.data);
-            window.removeEventListener('message', messageHandler);
-            resolve(event.data.data || []);
-          }
+      const vaultPeople = this.vaultData.content?.people || {};
+      const vaultMedia = this.vaultData.content?.media || {};
+      
+      // Convert people object to array with avatar URLs
+      const people = Object.values(vaultPeople).map(person => {
+        let avatarUrl = person.avatarUrl;
+        
+        // Resolve avatar from media if needed
+        if (!avatarUrl && person.avatarId && vaultMedia[person.avatarId]) {
+          const mediaItem = vaultMedia[person.avatarId];
+          avatarUrl = mediaItem.data.startsWith('data:')
+            ? mediaItem.data
+            : `data:${mediaItem.type};base64,${mediaItem.data}`;
+        }
+        
+        return {
+          ...person,
+          avatarUrl
         };
-        
-        window.addEventListener('message', messageHandler);
-        
-        // Request people data from extension
-        window.postMessage({
-          channel: 'emma-vault-bridge',
-          type: 'REQUEST_PEOPLE_DATA'
-        }, window.location.origin);
-        
-        // Timeout fallback
-        setTimeout(() => {
-          window.removeEventListener('message', messageHandler);
-          resolve([]);
-        }, 2000);
       });
+      
+      console.log(`👥 PURE WEB APP: Returning ${people.length} people from vault data`);
+      return people;
     }
     
     // Fallback for non-extension mode
