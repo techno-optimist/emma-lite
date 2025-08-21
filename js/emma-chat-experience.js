@@ -1,6 +1,9 @@
 /**
  * Emma Chat Experience - Intelligent Memory Companion Chat Interface
  * CTO-approved implementation following Emma's premium design principles
+ * 
+ * 🚀 VECTORLESS AI INTEGRATION: Revolutionary memory intelligence without vector embeddings
+ * Privacy-first, local processing with optional cloud LLM enhancement
  */
 
 console.log('💬 CACHE BUST DEBUG: emma-chat-experience.js LOADED at', new Date().toISOString());
@@ -18,12 +21,22 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField = null;
     this.sendButton = null;
     
+    // 🧠 Vectorless AI Engine Integration
+    this.vectorlessEngine = null;
+    this.apiKey = null;
+    this.isVectorlessEnabled = false;
+    
+    // 💝 Intelligent Memory Capture Integration
+    this.intelligentCapture = null;
+    this.detectedMemories = new Map();
+    this.activeCapture = null;
+    
     // Emma personality settings
     this.emmaPersonality = {
       name: "Emma",
       role: "Intelligent Memory Companion",
       tone: "warm, helpful, memory-focused",
-      capabilities: ["memory insights", "capture suggestions", "conversation"]
+      capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
     
     console.log('💬 Emma Chat Experience initialized');
@@ -38,6 +51,16 @@ class EmmaChatExperience extends ExperiencePopup {
     this.setupChatInterface();
     this.setupKeyboardShortcuts();
     this.loadChatHistory();
+    
+    // 🧠 Initialize Vectorless AI Engine
+    await this.initializeVectorlessEngine();
+    
+    // 💝 Initialize Intelligent Memory Capture
+    await this.initializeIntelligentCapture();
+    
+    // Set global reference for onclick handlers
+    window.chatExperience = this;
+    
     this.startWithWelcomeMessage();
     this.enableFocusMode();
   }
@@ -106,6 +129,12 @@ class EmmaChatExperience extends ExperiencePopup {
               rows="1"
               maxlength="2000"
             ></textarea>
+            <button id="vectorless-settings-button" class="vectorless-settings-button" title="Vectorless AI Settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+              </svg>
+            </button>
             <button id="send-button" class="send-button" title="Send message">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
@@ -130,6 +159,76 @@ class EmmaChatExperience extends ExperiencePopup {
           </div>
           <span class="typing-text">Emma is thinking...</span>
         </div>
+
+        <!-- Vectorless AI Settings Modal -->
+        <div class="vectorless-settings-modal" id="vectorless-settings-modal" style="display: none;">
+          <div class="modal-backdrop" id="modal-backdrop"></div>
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>🧠 Vectorless AI Settings</h3>
+              <button class="modal-close" id="modal-close-button">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="settings-section">
+                <h4>🔑 OpenAI API Configuration</h4>
+                <p class="settings-description">
+                  Enable advanced AI responses by providing your OpenAI API key. 
+                  Emma will use intelligent heuristics if no key is provided.
+                </p>
+                <div class="input-group">
+                  <label for="api-key-input">API Key (Optional)</label>
+                  <input 
+                    type="password" 
+                    id="api-key-input" 
+                    class="settings-input"
+                    placeholder="sk-..." 
+                    autocomplete="off"
+                  >
+                  <small class="input-help">Your API key is stored locally and never transmitted to our servers</small>
+                </div>
+              </div>
+              
+              <div class="settings-section">
+                <h4>🤗 Dementia Care Mode</h4>
+                <p class="settings-description">
+                  Specialized responses using validation therapy principles for users with memory impairment.
+                </p>
+                <div class="toggle-group">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="dementia-mode-toggle">
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-label">Enable Dementia Care Mode</span>
+                </div>
+              </div>
+              
+              <div class="settings-section">
+                <h4>🔍 Debug Mode</h4>
+                <p class="settings-description">
+                  Show processing details and performance metrics for development.
+                </p>
+                <div class="toggle-group">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="debug-mode-toggle">
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-label">Enable Debug Mode</span>
+                </div>
+              </div>
+              
+              <div class="settings-section">
+                <div class="vectorless-status" id="vectorless-status">
+                  <div class="status-indicator" id="status-indicator">⚪</div>
+                  <span id="status-text">Initializing...</span>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="button-secondary" id="reset-settings-button">Reset to Defaults</button>
+              <button class="button-primary" id="save-settings-button">Save Settings</button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -139,8 +238,9 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField = document.getElementById('chat-input');
     this.sendButton = document.getElementById('send-button');
     this.voiceButton = document.getElementById('voice-input-button');
+    this.settingsButton = document.getElementById('vectorless-settings-button');
     
-    if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
+    if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton || !this.settingsButton) {
       console.error('💬 Chat interface elements not found');
       return;
     }
@@ -150,12 +250,16 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
+    this.settingsButton.addEventListener('click', () => this.openVectorlessSettings());
 
     // Auto-resize textarea
     this.inputField.addEventListener('input', () => this.autoResizeTextarea());
     
     // Initialize voice recognition
     this.initializeVoiceRecognition();
+    
+    // Setup settings modal
+    this.setupSettingsModal();
   }
 
   setupKeyboardShortcuts() {
@@ -355,10 +459,15 @@ class EmmaChatExperience extends ExperiencePopup {
     if (!message) return;
 
     // Add user message
-    this.addMessage(message, 'user');
+    const messageId = this.addMessage(message, 'user');
     this.inputField.value = '';
     this.autoResizeTextarea();
     this.handleInputChange();
+
+    // 💝 Check for memory detection
+    if (this.intelligentCapture) {
+      this.analyzeForMemory(message, messageId);
+    }
 
     // Show typing indicator
     this.showTypingIndicator();
@@ -370,8 +479,10 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   addMessage(content, sender, options = {}) {
+    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
+    messageDiv.id = messageId;
     
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
@@ -408,6 +519,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Store message
     this.messages.push({
+      id: messageId,
       content,
       sender,
       timestamp: Date.now(),
@@ -416,6 +528,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Auto-scroll to bottom
     this.scrollToBottom();
+    
+    return messageId;
   }
 
   formatMessageContent(content) {
@@ -464,7 +578,24 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
     
-    // Generate contextual response based on user message
+    // 🧠 Use Vectorless AI if available, otherwise fallback to basic responses
+    if (this.isVectorlessEnabled && this.vectorlessEngine) {
+      try {
+        const result = await this.vectorlessEngine.processQuestion(userMessage);
+        
+        if (result.success) {
+          // Add Emma's intelligent response with memory citations
+          this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
+          return;
+        } else {
+          console.warn('💬 Vectorless processing failed, using fallback:', result.error);
+        }
+      } catch (error) {
+        console.error('💬 Vectorless AI error:', error);
+      }
+    }
+    
+    // Fallback to basic response generation
     const response = await this.generateEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
   }
@@ -559,6 +690,692 @@ class EmmaChatExperience extends ExperiencePopup {
     document.body.classList.remove('chat-focus');
   }
 
+  // 🧠 VECTORLESS AI INTEGRATION METHODS
+
+  /**
+   * Initialize the Vectorless AI Engine with vault data
+   */
+  async initializeVectorlessEngine() {
+    try {
+      // Load saved settings
+      this.loadVectorlessSettings();
+      
+      // Check if EmmaVectorlessEngine is available
+      if (typeof EmmaVectorlessEngine === 'undefined') {
+        console.warn('💬 EmmaVectorlessEngine not available, loading...');
+        await this.loadVectorlessEngine();
+      }
+      
+      // Initialize the engine
+      this.vectorlessEngine = new EmmaVectorlessEngine({
+        apiKey: this.apiKey,
+        dementiaMode: this.dementiaMode || false,
+        debug: this.debugMode || false
+      });
+      
+      // Try to load vault data
+      await this.loadVaultForVectorless();
+      
+      this.updateVectorlessStatus();
+      console.log('🧠 Vectorless AI Engine initialized successfully');
+      
+    } catch (error) {
+      console.error('🧠 Failed to initialize Vectorless AI:', error);
+      this.isVectorlessEnabled = false;
+      this.updateVectorlessStatus('Error: ' + error.message);
+    }
+  }
+
+  /**
+   * Load the vectorless engine script if not available
+   */
+  async loadVectorlessEngine() {
+    return new Promise((resolve, reject) => {
+      if (typeof EmmaVectorlessEngine !== 'undefined') {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = '../js/emma-vectorless-engine.js';
+      script.onload = () => {
+        console.log('🧠 Vectorless engine script loaded');
+        resolve();
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load vectorless engine script'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Load vault data for vectorless processing
+   */
+  async loadVaultForVectorless() {
+    try {
+      // Try to get vault data from extension or web vault
+      let vaultData = null;
+      
+      // Check if we have web vault available
+      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        // Get vault data from extension
+        const vaultInfo = await window.emmaWebVault.getVaultInfo();
+        if (vaultInfo && vaultInfo.isOpen) {
+          // Request vault data for vectorless processing
+          vaultData = await this.requestVaultDataFromExtension();
+        }
+      }
+      
+      if (vaultData && this.vectorlessEngine) {
+        const result = await this.vectorlessEngine.loadVault(vaultData);
+        if (result.success) {
+          this.isVectorlessEnabled = true;
+          console.log('🧠 Vault loaded into vectorless engine:', result);
+          return result;
+        } else {
+          throw new Error(result.error || 'Failed to load vault');
+        }
+      } else {
+        console.warn('🧠 No vault data available for vectorless processing');
+        this.isVectorlessEnabled = false;
+      }
+    } catch (error) {
+      console.error('🧠 Failed to load vault for vectorless:', error);
+      this.isVectorlessEnabled = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Request vault data from extension for vectorless processing
+   */
+  async requestVaultDataFromExtension() {
+    return new Promise((resolve) => {
+      const messageHandler = (event) => {
+        if (event.data?.channel === 'emma-vault-bridge' && event.data?.type === 'VAULT_DATA_FOR_VECTORLESS') {
+          console.log('🧠 Received vault data for vectorless processing');
+          window.removeEventListener('message', messageHandler);
+          resolve(event.data.data);
+        }
+      };
+      
+      window.addEventListener('message', messageHandler);
+      
+      // Request vault data from extension
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'REQUEST_VAULT_DATA_FOR_VECTORLESS'
+      }, window.location.origin);
+      
+      // Timeout fallback
+      setTimeout(() => {
+        window.removeEventListener('message', messageHandler);
+        resolve(null);
+      }, 5000);
+    });
+  }
+
+  /**
+   * Add vectorless message with memory citations and suggestions
+   */
+  addVectorlessMessage(content, memories, citations, suggestions) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message emma-message vectorless-message';
+    
+    const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    let citationsHtml = '';
+    if (citations && citations.length > 0) {
+      citationsHtml = `
+        <div class="message-citations">
+          <h5>📚 Referenced Memories:</h5>
+          ${citations.map(c => `
+            <div class="citation-item">
+              <span class="citation-title">${c.title}</span>
+              ${c.relevance ? `<span class="citation-relevance">${c.relevance}/10</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    
+    let suggestionsHtml = '';
+    if (suggestions && suggestions.length > 0) {
+      suggestionsHtml = `
+        <div class="message-suggestions">
+          <div class="suggestions-label">💡 Try asking:</div>
+          <div class="suggestion-buttons">
+            ${suggestions.map(s => `
+              <button class="suggestion-button" onclick="document.getElementById('chat-input').value='${s}'; document.getElementById('chat-input').focus();">
+                ${s}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    messageDiv.innerHTML = `
+      <div class="message-avatar">
+        <div class="emma-avatar-mini vectorless-avatar"></div>
+      </div>
+      <div class="message-content">
+        <div class="message-text">${this.formatMessageContent(content)}</div>
+        ${citationsHtml}
+        ${suggestionsHtml}
+        <div class="message-time">
+          ${messageTime} 
+          <span class="vectorless-badge">🧠 Vectorless AI</span>
+        </div>
+      </div>
+    `;
+
+    // Animate message in
+    messageDiv.style.opacity = '0';
+    messageDiv.style.transform = 'translateY(10px)';
+    this.messageContainer.appendChild(messageDiv);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+      messageDiv.style.transition = 'all 0.3s ease';
+      messageDiv.style.opacity = '1';
+      messageDiv.style.transform = 'translateY(0)';
+    });
+
+    // Store message
+    this.messages.push({
+      content,
+      sender: 'emma',
+      timestamp: Date.now(),
+      vectorless: true,
+      citations,
+      suggestions
+    });
+
+    // Auto-scroll to bottom
+    this.scrollToBottom();
+  }
+
+  /**
+   * Setup settings modal event handlers
+   */
+  setupSettingsModal() {
+    const modal = document.getElementById('vectorless-settings-modal');
+    const backdrop = document.getElementById('modal-backdrop');
+    const closeButton = document.getElementById('modal-close-button');
+    const saveButton = document.getElementById('save-settings-button');
+    const resetButton = document.getElementById('reset-settings-button');
+    
+    if (!modal || !backdrop || !closeButton || !saveButton || !resetButton) {
+      console.error('💬 Settings modal elements not found');
+      return;
+    }
+
+    // Close modal handlers
+    backdrop.addEventListener('click', () => this.closeVectorlessSettings());
+    closeButton.addEventListener('click', () => this.closeVectorlessSettings());
+    
+    // Settings handlers
+    saveButton.addEventListener('click', () => this.saveVectorlessSettings());
+    resetButton.addEventListener('click', () => this.resetVectorlessSettings());
+    
+    // Load current settings into modal
+    this.loadSettingsIntoModal();
+  }
+
+  /**
+   * Open vectorless settings modal
+   */
+  openVectorlessSettings() {
+    const modal = document.getElementById('vectorless-settings-modal');
+    if (modal) {
+      this.loadSettingsIntoModal();
+      modal.style.display = 'flex';
+    }
+  }
+
+  /**
+   * Close vectorless settings modal
+   */
+  closeVectorlessSettings() {
+    const modal = document.getElementById('vectorless-settings-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  /**
+   * Load current settings into modal
+   */
+  loadSettingsIntoModal() {
+    const apiKeyInput = document.getElementById('api-key-input');
+    const dementiaToggle = document.getElementById('dementia-mode-toggle');
+    const debugToggle = document.getElementById('debug-mode-toggle');
+    
+    if (apiKeyInput) apiKeyInput.value = this.apiKey || '';
+    if (dementiaToggle) dementiaToggle.checked = this.dementiaMode || false;
+    if (debugToggle) debugToggle.checked = this.debugMode || false;
+  }
+
+  /**
+   * Save vectorless settings
+   */
+  async saveVectorlessSettings() {
+    const apiKeyInput = document.getElementById('api-key-input');
+    const dementiaToggle = document.getElementById('dementia-mode-toggle');
+    const debugToggle = document.getElementById('debug-mode-toggle');
+    
+    // Get values from modal
+    const newApiKey = apiKeyInput?.value.trim() || null;
+    const newDementiaMode = dementiaToggle?.checked || false;
+    const newDebugMode = debugToggle?.checked || false;
+    
+    // Update settings
+    this.apiKey = newApiKey;
+    this.dementiaMode = newDementiaMode;
+    this.debugMode = newDebugMode;
+    
+    // Save to localStorage
+    const settings = {
+      apiKey: this.apiKey,
+      dementiaMode: this.dementiaMode,
+      debugMode: this.debugMode
+    };
+    
+    try {
+      localStorage.setItem('emma-vectorless-settings', JSON.stringify(settings));
+      
+      // Reinitialize vectorless engine with new settings
+      if (this.vectorlessEngine) {
+        this.vectorlessEngine.options.apiKey = this.apiKey;
+        this.vectorlessEngine.options.dementiaMode = this.dementiaMode;
+        this.vectorlessEngine.options.debug = this.debugMode;
+      }
+      
+      this.updateVectorlessStatus();
+      this.closeVectorlessSettings();
+      
+      // Show success message
+      this.addMessage('⚙️ Settings saved successfully! Vectorless AI updated with new configuration.', 'emma');
+      
+    } catch (error) {
+      console.error('💬 Failed to save settings:', error);
+      this.addMessage('❌ Failed to save settings. Please try again.', 'emma');
+    }
+  }
+
+  /**
+   * Reset vectorless settings to defaults
+   */
+  resetVectorlessSettings() {
+    this.apiKey = null;
+    this.dementiaMode = false;
+    this.debugMode = false;
+    
+    // Clear localStorage
+    localStorage.removeItem('emma-vectorless-settings');
+    
+    // Update modal
+    this.loadSettingsIntoModal();
+    
+    // Reinitialize engine
+    if (this.vectorlessEngine) {
+      this.vectorlessEngine.options.apiKey = null;
+      this.vectorlessEngine.options.dementiaMode = false;
+      this.vectorlessEngine.options.debug = false;
+    }
+    
+    this.updateVectorlessStatus();
+    this.addMessage('🔄 Settings reset to defaults. Vectorless AI will use intelligent heuristics.', 'emma');
+  }
+
+  /**
+   * Load vectorless settings from localStorage
+   */
+  loadVectorlessSettings() {
+    try {
+      const stored = localStorage.getItem('emma-vectorless-settings');
+      if (stored) {
+        const settings = JSON.parse(stored);
+        this.apiKey = settings.apiKey || null;
+        this.dementiaMode = settings.dementiaMode || false;
+        this.debugMode = settings.debugMode || false;
+      }
+    } catch (error) {
+      console.warn('💬 Could not load vectorless settings:', error);
+    }
+  }
+
+  /**
+   * Update vectorless status indicator
+   */
+  updateVectorlessStatus(customMessage = null) {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    
+    if (!statusIndicator || !statusText) return;
+    
+    if (customMessage) {
+      statusIndicator.textContent = '🔴';
+      statusText.textContent = customMessage;
+      return;
+    }
+    
+    if (this.isVectorlessEnabled) {
+      statusIndicator.textContent = '🟢';
+      const mode = this.apiKey ? 'OpenAI API' : 'Heuristics';
+      const extras = [];
+      if (this.dementiaMode) extras.push('Dementia Mode');
+      if (this.debugMode) extras.push('Debug Mode');
+      
+      statusText.textContent = `Active (${mode})${extras.length ? ' • ' + extras.join(', ') : ''}`;
+    } else {
+      statusIndicator.textContent = '🟡';
+      statusText.textContent = 'No vault loaded - basic responses only';
+    }
+  }
+
+  // 💝 INTELLIGENT MEMORY CAPTURE METHODS
+
+  /**
+   * Initialize intelligent memory capture
+   */
+  async initializeIntelligentCapture() {
+    try {
+      // Check if EmmaIntelligentCapture is available
+      if (typeof EmmaIntelligentCapture === 'undefined') {
+        console.warn('💝 EmmaIntelligentCapture not available, loading...');
+        await this.loadIntelligentCaptureScript();
+      }
+      
+      // Initialize capture engine
+      this.intelligentCapture = new EmmaIntelligentCapture({
+        vectorlessEngine: this.vectorlessEngine,
+        vaultManager: window.emmaWebVault,
+        dementiaMode: this.dementiaMode || false,
+        debug: this.debugMode || false
+      });
+      
+      console.log('💝 Intelligent Memory Capture initialized');
+      
+    } catch (error) {
+      console.error('💝 Failed to initialize Intelligent Capture:', error);
+    }
+  }
+
+  /**
+   * Load intelligent capture script
+   */
+  async loadIntelligentCaptureScript() {
+    return new Promise((resolve, reject) => {
+      if (typeof EmmaIntelligentCapture !== 'undefined') {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = '../js/emma-intelligent-capture.js';
+      script.onload = () => {
+        console.log('💝 Intelligent capture script loaded');
+        resolve();
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load intelligent capture script'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Analyze message for memory potential
+   */
+  async analyzeForMemory(message, messageId) {
+    if (!this.intelligentCapture) return;
+    
+    try {
+      const analysis = await this.intelligentCapture.analyzeMessage({
+        content: message,
+        timestamp: Date.now(),
+        sender: 'user'
+      });
+      
+      if (analysis.isMemoryWorthy) {
+        // Store detected memory
+        this.detectedMemories.set(messageId, analysis);
+        
+        // Show memory detection indicator
+        this.showMemoryDetectionIndicator(messageId, analysis);
+        
+        // Auto-suggest capture for high-value memories
+        if (analysis.autoCapture) {
+          setTimeout(() => {
+            this.suggestMemoryCapture(analysis);
+          }, 2000);
+        }
+      }
+      
+      if (this.debugMode) {
+        console.log('💝 Memory analysis:', analysis);
+      }
+      
+    } catch (error) {
+      console.error('💝 Memory analysis failed:', error);
+    }
+  }
+
+  /**
+   * Show memory detection indicator on message
+   */
+  showMemoryDetectionIndicator(messageId, analysis) {
+    const messageEl = document.getElementById(messageId);
+    if (!messageEl) return;
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'memory-detection-indicator';
+    indicator.innerHTML = `
+      <div class="detection-content">
+        <span class="pulse-dot"></span>
+        <span class="detection-text">Emma detected a memory</span>
+        <span class="confidence">${analysis.confidence}% confident</span>
+        <button class="save-memory-btn" onclick="window.chatExperience.saveMemoryFromChat('${messageId}')">
+          💾 Save as Memory
+        </button>
+      </div>
+    `;
+    
+    // Add animation
+    indicator.style.opacity = '0';
+    indicator.style.transform = 'translateY(-10px)';
+    
+    messageEl.querySelector('.message-content').appendChild(indicator);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      indicator.style.transition = 'all 0.3s ease';
+      indicator.style.opacity = '1';
+      indicator.style.transform = 'translateY(0)';
+    });
+  }
+
+  /**
+   * Suggest memory capture to user
+   */
+  suggestMemoryCapture(analysis) {
+    const suggestion = `I noticed you shared something special! ${analysis.memory.title || 'This moment'} seems worth preserving. Would you like me to help you save this as a memory?`;
+    
+    const suggestionId = this.addMessage(suggestion, 'emma', { type: 'memory-suggestion' });
+    
+    // Add action buttons
+    const messageEl = document.getElementById(suggestionId);
+    if (messageEl) {
+      const actions = document.createElement('div');
+      actions.className = 'memory-suggestion-actions';
+      actions.innerHTML = `
+        <button class="suggestion-action primary" onclick="window.chatExperience.startMemoryCapture('${analysis.memory.id}')">
+          💝 Yes, let's save this memory
+        </button>
+        <button class="suggestion-action secondary" onclick="window.chatExperience.dismissMemorySuggestion('${suggestionId}')">
+          Maybe later
+        </button>
+      `;
+      
+      messageEl.querySelector('.message-content').appendChild(actions);
+    }
+  }
+
+  /**
+   * Save memory from chat message
+   */
+  async saveMemoryFromChat(messageId) {
+    const analysis = this.detectedMemories.get(messageId);
+    if (!analysis) {
+      this.addMessage("I couldn't find the memory details. Let me help you capture it fresh!", 'emma');
+      return;
+    }
+    
+    // Show memory preview dialog
+    this.showMemoryPreviewDialog(analysis.memory);
+  }
+
+  /**
+   * Start memory capture conversation
+   */
+  async startMemoryCapture(memoryId) {
+    // Find the memory analysis
+    let analysis = null;
+    for (const [msgId, a] of this.detectedMemories) {
+      if (a.memory && a.memory.id === memoryId) {
+        analysis = a;
+        break;
+      }
+    }
+    
+    if (!analysis) {
+      this.addMessage("Let's start fresh! Tell me about the memory you'd like to capture.", 'emma');
+      return;
+    }
+    
+    // Start capture session
+    this.activeCapture = await this.intelligentCapture.startCaptureSession({
+      content: analysis.memory.originalContent,
+      timestamp: Date.now()
+    });
+    
+    if (this.activeCapture.success && this.activeCapture.nextPrompt) {
+      this.addMessage(this.activeCapture.nextPrompt.text, 'emma', { type: 'memory-prompt' });
+    }
+  }
+
+  /**
+   * Show memory preview dialog
+   */
+  showMemoryPreviewDialog(memory) {
+    const dialog = document.createElement('div');
+    dialog.className = 'memory-preview-dialog';
+    dialog.innerHTML = `
+      <div class="dialog-backdrop"></div>
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>💝 Memory Preview</h3>
+          <button class="dialog-close" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+        </div>
+        <div class="dialog-body">
+          <div class="memory-preview">
+            <h4>${memory.title}</h4>
+            <p>${memory.content}</p>
+            <div class="memory-metadata">
+              ${memory.metadata.people.length > 0 ? `<span class="meta-item">👥 ${memory.metadata.people.join(', ')}</span>` : ''}
+              ${memory.metadata.emotions.length > 0 ? `<span class="meta-item">💭 ${memory.metadata.emotions.join(', ')}</span>` : ''}
+              <span class="meta-item">📅 ${new Date(memory.metadata.date).toLocaleDateString()}</span>
+              <span class="meta-item">⭐ ${memory.metadata.importance} importance</span>
+            </div>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="button-secondary" onclick="window.chatExperience.editMemory('${memory.id}')">
+            ✏️ Edit Details
+          </button>
+          <button class="button-primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
+            💾 Save to Vault
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      dialog.classList.add('show');
+    });
+  }
+
+  /**
+   * Confirm and save memory
+   */
+  async confirmSaveMemory(memoryId) {
+    // Find memory in detected memories
+    let memory = null;
+    for (const [msgId, analysis] of this.detectedMemories) {
+      if (analysis.memory && analysis.memory.id === memoryId) {
+        memory = analysis.memory;
+        break;
+      }
+    }
+    
+    if (!memory) {
+      this.addMessage("I couldn't find that memory. Let me help you create a new one!", 'emma');
+      return;
+    }
+    
+    // Save to vault
+    const result = await this.intelligentCapture.saveMemory(memory);
+    
+    // Remove dialog
+    document.querySelector('.memory-preview-dialog')?.remove();
+    
+    if (result.success) {
+      this.addMessage(`✨ Beautiful! I've saved "${memory.title}" to your memory vault. This special moment is now preserved forever.`, 'emma', { type: 'success' });
+      
+      // Clear from detected memories
+      this.detectedMemories.clear();
+    } else {
+      this.addMessage(`I had trouble saving the memory. ${result.error || 'Please try again.'}`, 'emma', { type: 'error' });
+    }
+  }
+
+  /**
+   * Dismiss memory suggestion
+   */
+  dismissMemorySuggestion(messageId) {
+    const messageEl = document.getElementById(messageId);
+    if (messageEl) {
+      const actions = messageEl.querySelector('.memory-suggestion-actions');
+      if (actions) {
+        actions.style.opacity = '0';
+        setTimeout(() => actions.remove(), 300);
+      }
+    }
+  }
+
+  /**
+   * Handle memory capture continuation
+   */
+  async handleCaptureResponse(response) {
+    if (!this.activeCapture || !this.intelligentCapture) return;
+    
+    const result = await this.intelligentCapture.continueCapture(response);
+    
+    if (result.continue && result.nextPrompt) {
+      this.addMessage(result.nextPrompt.text, 'emma', { type: 'memory-prompt' });
+    } else if (result.complete) {
+      // Show final memory preview
+      this.showMemoryPreviewDialog(result.memory);
+      this.activeCapture = null;
+    }
+  }
+
   cleanup() {
     // Save chat history before closing
     this.saveChatHistory();
@@ -579,6 +1396,19 @@ class EmmaChatExperience extends ExperiencePopup {
       this.webglOrb.dispose();
       this.webglOrb = null;
     }
+    
+    // Clean up vectorless engine
+    if (this.vectorlessEngine) {
+      this.vectorlessEngine = null;
+    }
+    
+    // Clean up intelligent capture
+    if (this.intelligentCapture) {
+      this.intelligentCapture = null;
+    }
+    
+    // Clear detected memories
+    this.detectedMemories.clear();
     
     // Disable focus mode
     this.disableFocusMode();

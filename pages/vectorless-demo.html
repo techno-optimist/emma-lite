@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emma Vectorless AI Demo - Revolutionary Memory Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .demo-card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .vault-upload {
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .vault-upload:hover {
+            background: #f8f9ff;
+            border-color: #764ba2;
+        }
+
+        .vault-upload.active {
+            background: #e8f2ff;
+            border-color: #667eea;
+            border-style: solid;
+        }
+
+        .chat-interface {
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #f8f9ff;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.emma {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .message.system {
+            background: #fff3cd;
+            color: #856404;
+            font-style: italic;
+            text-align: center;
+            max-width: 100%;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 12px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background: #764ba2;
+        }
+
+        .chat-input button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .processing-indicator {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+            color: #667eea;
+            font-style: italic;
+        }
+
+        .processing-indicator.active {
+            display: block;
+        }
+
+        .stats {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .stats h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 15px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .citations {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e8f2ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .citations h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .citation-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .suggestions {
+            margin-top: 15px;
+        }
+
+        .suggestion-button {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #667eea;
+            padding: 8px 15px;
+            margin: 5px 5px 5px 0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border: none;
+            transition: background 0.3s ease;
+        }
+
+        .suggestion-button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .api-config {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .api-config h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .api-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .switch.active {
+            background: #667eea;
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.3s ease;
+        }
+
+        .switch.active::after {
+            left: 28px;
+        }
+
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Emma Vectorless AI</h1>
+            <p>Revolutionary memory intelligence without vector embeddings</p>
+        </div>
+
+        <div class="demo-grid">
+            <div class="demo-card">
+                <h2>📁 Load Your .emma Vault</h2>
+                
+                <div class="api-config">
+                    <h4>⚙️ Configuration</h4>
+                    <input type="password" class="api-input" id="apiKey" placeholder="OpenAI API Key (optional - uses heuristics if empty)">
+                    
+                    <div class="toggle-switch">
+                        <span>Dementia Mode:</span>
+                        <div class="switch" id="dementiaToggle"></div>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <span>Debug Mode:</span>
+                        <div class="switch" id="debugToggle"></div>
+                    </div>
+                </div>
+                
+                <div class="vault-upload" id="vaultUpload">
+                    <div id="uploadContent">
+                        <h3>📤 Drop your .emma file here</h3>
+                        <p>or click to select</p>
+                        <small>Supports encrypted and unencrypted .emma vaults</small>
+                    </div>
+                    <input type="file" id="vaultFile" accept=".emma" style="display: none;">
+                </div>
+                
+                <div id="vaultStatus" style="display: none;">
+                    <h4>✅ Vault Loaded Successfully</h4>
+                    <p id="vaultInfo"></p>
+                </div>
+            </div>
+
+            <div class="demo-card">
+                <h2>💬 Intelligent Memory Chat</h2>
+                
+                <div class="chat-interface">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message system">
+                            Load a .emma vault to start chatting with your memories!
+                        </div>
+                    </div>
+                    
+                    <div class="processing-indicator" id="processingIndicator">
+                        🧠 Processing with vectorless AI...
+                    </div>
+                    
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Ask about your memories..." disabled>
+                        <button id="sendButton" disabled>Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <h3>📊 Processing Statistics</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="statMemories">0</div>
+                    <div class="stat-label">Memories Loaded</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statPeople">0</div>
+                    <div class="stat-label">People Identified</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statQueries">0</div>
+                    <div class="stat-label">Queries Processed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statAvgTime">0ms</div>
+                    <div class="stat-label">Avg Response Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/emma-vectorless-engine.js"></script>
+    <script>
+        class VectorlessDemo {
+            constructor() {
+                this.engine = null;
+                this.queryCount = 0;
+                this.totalResponseTime = 0;
+                this.dementiaMode = false;
+                this.debugMode = false;
+                
+                this.initializeUI();
+                this.setupEventListeners();
+            }
+
+            initializeUI() {
+                // Initialize toggles
+                this.updateToggle('dementiaToggle', this.dementiaMode);
+                this.updateToggle('debugToggle', this.debugMode);
+            }
+
+            setupEventListeners() {
+                // File upload
+                const vaultUpload = document.getElementById('vaultUpload');
+                const vaultFile = document.getElementById('vaultFile');
+                
+                vaultUpload.addEventListener('click', () => vaultFile.click());
+                vaultUpload.addEventListener('dragover', this.handleDragOver.bind(this));
+                vaultUpload.addEventListener('drop', this.handleDrop.bind(this));
+                vaultFile.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // Chat interface
+                const chatInput = document.getElementById('chatInput');
+                const sendButton = document.getElementById('sendButton');
+                
+                sendButton.addEventListener('click', this.sendMessage.bind(this));
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !sendButton.disabled) {
+                        this.sendMessage();
+                    }
+                });
+
+                // Toggles
+                document.getElementById('dementiaToggle').addEventListener('click', this.toggleDementiaMode.bind(this));
+                document.getElementById('debugToggle').addEventListener('click', this.toggleDebugMode.bind(this));
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                document.getElementById('vaultUpload').classList.add('active');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                document.getElementById('vaultUpload').classList.remove('active');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.loadVaultFile(files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.loadVaultFile(file);
+                }
+            }
+
+            async loadVaultFile(file) {
+                try {
+                    this.addSystemMessage('📁 Loading vault file...');
+                    
+                    const content = await this.readFileContent(file);
+                    let vaultData;
+                    
+                    try {
+                        vaultData = JSON.parse(content);
+                    } catch (parseError) {
+                        throw new Error('Invalid .emma file format. Please ensure it\'s a valid JSON file.');
+                    }
+
+                    // Initialize vectorless engine
+                    const apiKey = document.getElementById('apiKey').value.trim();
+                    this.engine = new EmmaVectorlessEngine({
+                        apiKey: apiKey || null,
+                        dementiaMode: this.dementiaMode,
+                        debug: this.debugMode
+                    });
+
+                    // Load vault into engine
+                    const result = await this.engine.loadVault(vaultData);
+                    
+                    if (result.success) {
+                        this.showVaultLoaded(result);
+                        this.enableChat();
+                        this.addSystemMessage('✅ Vault loaded successfully! Ask me anything about your memories.');
+                        this.updateStats(result);
+                    } else {
+                        throw new Error(result.error || 'Failed to load vault');
+                    }
+                    
+                } catch (error) {
+                    console.error('Vault loading error:', error);
+                    this.addSystemMessage(`❌ Error loading vault: ${error.message}`);
+                }
+            }
+
+            readFileContent(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(new Error('Failed to read file'));
+                    reader.readAsText(file);
+                });
+            }
+
+            showVaultLoaded(result) {
+                const vaultStatus = document.getElementById('vaultStatus');
+                const vaultInfo = document.getElementById('vaultInfo');
+                
+                vaultInfo.textContent = `${result.memoryCount} memories, ${result.peopleCount} people`;
+                vaultStatus.style.display = 'block';
+            }
+
+            enableChat() {
+                document.getElementById('chatInput').disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                document.getElementById('chatInput').placeholder = 'Ask about your memories...';
+            }
+
+            async sendMessage() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                
+                if (!message || !this.engine) return;
+
+                // Clear input and add user message
+                input.value = '';
+                this.addUserMessage(message);
+                
+                // Show processing indicator
+                this.showProcessing(true);
+                
+                try {
+                    const startTime = Date.now();
+                    const result = await this.engine.processQuestion(message);
+                    const responseTime = Date.now() - startTime;
+                    
+                    this.showProcessing(false);
+                    
+                    if (result.success) {
+                        this.addEmmaMessage(result.response, result.citations, result.suggestions);
+                        this.updateQueryStats(responseTime);
+                        
+                        if (this.debugMode) {
+                            this.addSystemMessage(`🔍 Debug: ${result.stages.collections} collections, ${result.stages.relevantMemories} relevant memories, ${result.processingTime}ms`);
+                        }
+                    } else {
+                        this.addEmmaMessage(result.fallbackResponse || 'I encountered an error processing your question.');
+                        if (result.error) {
+                            this.addSystemMessage(`❌ Error: ${result.error}`);
+                        }
+                    }
+                    
+                } catch (error) {
+                    this.showProcessing(false);
+                    console.error('Query processing error:', error);
+                    this.addEmmaMessage('I encountered an unexpected error. Please try again.');
+                    this.addSystemMessage(`❌ Error: ${error.message}`);
+                }
+            }
+
+            addUserMessage(text) {
+                this.addMessage(text, 'user');
+            }
+
+            addEmmaMessage(text, citations = [], suggestions = []) {
+                const messageDiv = this.addMessage(text, 'emma');
+                
+                // Add citations if available
+                if (citations && citations.length > 0) {
+                    const citationsDiv = document.createElement('div');
+                    citationsDiv.className = 'citations';
+                    citationsDiv.innerHTML = `
+                        <h4>📚 Referenced Memories:</h4>
+                        ${citations.map(c => `
+                            <div class="citation-item">
+                                <strong>${c.title}</strong>
+                                ${c.relevance ? `<span style="float: right; color: #667eea;">${c.relevance}/10</span>` : ''}
+                            </div>
+                        `).join('')}
+                    `;
+                    messageDiv.appendChild(citationsDiv);
+                }
+                
+                // Add suggestions if available
+                if (suggestions && suggestions.length > 0) {
+                    const suggestionsDiv = document.createElement('div');
+                    suggestionsDiv.className = 'suggestions';
+                    suggestionsDiv.innerHTML = `
+                        <div style="margin-bottom: 10px; font-weight: 600; color: #667eea;">💡 Try asking:</div>
+                        ${suggestions.map(s => `
+                            <button class="suggestion-button" onclick="document.getElementById('chatInput').value='${s}'">${s}</button>
+                        `).join('')}
+                    `;
+                    messageDiv.appendChild(suggestionsDiv);
+                }
+            }
+
+            addSystemMessage(text) {
+                this.addMessage(text, 'system');
+            }
+
+            addMessage(text, type) {
+                const messagesContainer = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                messageDiv.textContent = text;
+                
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                return messageDiv;
+            }
+
+            showProcessing(show) {
+                const indicator = document.getElementById('processingIndicator');
+                const sendButton = document.getElementById('sendButton');
+                
+                if (show) {
+                    indicator.classList.add('active');
+                    sendButton.disabled = true;
+                } else {
+                    indicator.classList.remove('active');
+                    sendButton.disabled = false;
+                }
+            }
+
+            updateStats(result) {
+                document.getElementById('statMemories').textContent = result.memoryCount || 0;
+                document.getElementById('statPeople').textContent = result.peopleCount || 0;
+            }
+
+            updateQueryStats(responseTime) {
+                this.queryCount++;
+                this.totalResponseTime += responseTime;
+                
+                document.getElementById('statQueries').textContent = this.queryCount;
+                document.getElementById('statAvgTime').textContent = 
+                    Math.round(this.totalResponseTime / this.queryCount) + 'ms';
+            }
+
+            toggleDementiaMode() {
+                this.dementiaMode = !this.dementiaMode;
+                this.updateToggle('dementiaToggle', this.dementiaMode);
+                
+                if (this.engine) {
+                    this.engine.options.dementiaMode = this.dementiaMode;
+                }
+                
+                this.addSystemMessage(this.dementiaMode ? 
+                    '🤗 Dementia mode enabled - responses will be extra gentle and validating' :
+                    '💬 Dementia mode disabled - normal conversation mode'
+                );
+            }
+
+            toggleDebugMode() {
+                this.debugMode = !this.debugMode;
+                this.updateToggle('debugToggle', this.debugMode);
+                
+                if (this.engine) {
+                    this.engine.options.debug = this.debugMode;
+                }
+                
+                this.addSystemMessage(this.debugMode ? 
+                    '🔍 Debug mode enabled - showing processing details' :
+                    '🔍 Debug mode disabled'
+                );
+            }
+
+            updateToggle(id, active) {
+                const toggle = document.getElementById(id);
+                if (active) {
+                    toggle.classList.add('active');
+                } else {
+                    toggle.classList.remove('active');
+                }
+            }
+        }
+
+        // Initialize demo when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VectorlessDemo();
+        });
+    </script>
+</body>
+</html>
