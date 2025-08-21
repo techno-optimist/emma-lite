@@ -144,6 +144,10 @@ function handleEmmaMessage(message) {
       sendMemoriesData();
       break;
       
+    case 'REQUEST_VAULT_DATA_FOR_VECTORLESS':
+      sendVaultDataForVectorless();
+      break;
+      
     case 'ENABLE_SYNC':
       enableSync();
       break;
@@ -434,6 +438,46 @@ async function sendMemoriesData() {
     type: 'MEMORIES_DATA',
     data: response?.memories || []
   });
+}
+
+/**
+ * Send vault data for vectorless AI processing
+ */
+async function sendVaultDataForVectorless() {
+  console.log('🧠 Sending vault data for vectorless AI processing...');
+  
+  try {
+    // Get full vault data from background script
+    const response = await chrome.runtime.sendMessage({ action: 'GET_VAULT_DATA_FOR_VECTORLESS' });
+    
+    if (response?.success) {
+      console.log('🧠 VECTORLESS: Vault data retrieved, sending to web app');
+      
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'VAULT_DATA_FOR_VECTORLESS',
+        data: response.vaultData
+      });
+    } else {
+      console.warn('🧠 VECTORLESS: No vault data available:', response?.error);
+      
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'VAULT_DATA_FOR_VECTORLESS',
+        data: null,
+        error: response?.error || 'No vault data available'
+      });
+    }
+  } catch (error) {
+    console.error('🧠 VECTORLESS: Failed to get vault data:', error);
+    
+    postToEmma({
+      channel: EMMA_VAULT_CHANNEL,
+      type: 'VAULT_DATA_FOR_VECTORLESS',
+      data: null,
+      error: error.message
+    });
+  }
 }
 
 /**

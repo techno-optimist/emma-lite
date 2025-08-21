@@ -306,6 +306,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ memories: [], error: error.message }));
       return true;
       
+    case 'GET_VAULT_DATA_FOR_VECTORLESS':
+      // Provide vault data for vectorless AI processing
+      (async () => {
+        try {
+          if (!currentVaultData) {
+            sendResponse({ success: false, error: 'No vault data available' });
+            return;
+          }
+          
+          console.log('🧠 VECTORLESS: Providing vault data for AI processing');
+          
+          // Return the full vault data for vectorless processing
+          sendResponse({ 
+            success: true, 
+            vaultData: currentVaultData,
+            memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
+            peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0
+          });
+        } catch (error) {
+          console.error('❌ Failed to get vault data for vectorless:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+      })();
+      return true;
+      
     default:
       sendResponse({ success: false, error: 'Unknown action' });
   }
