@@ -484,9 +484,10 @@ class EmmaChatExperience extends ExperiencePopup {
     this.handleInputChange();
 
     // 💝 Check for memory detection
+    console.log('🚨 DEBUG: intelligentCapture exists?', !!this.intelligentCapture);
     if (this.intelligentCapture) {
       console.log('💝 TESTING: About to analyze message for memory:', message);
-      this.analyzeForMemory(message, messageId);
+      await this.analyzeForMemory(message, messageId);
     } else {
       console.log('💝 TESTING: No intelligent capture available for memory analysis');
     }
