@@ -238,6 +238,9 @@ class WebVaultStatus {
   }
 
   isUnlocked() {
+    // CRITICAL FIX: Don't override status - just return current state
+    // The status is already set correctly by initialize() and other methods
+    
     return this.status.isUnlocked;
   }
 
@@ -251,13 +254,6 @@ class WebVaultStatus {
 
   getStatus() {
     return { ...this.status };
-  }
-  
-  isUnlocked() {
-    // CRITICAL FIX: Don't override status - just return current state
-    // The status is already set correctly by initialize() and other methods
-    
-    return this.status.isUnlocked;
   }
 
   unlock(vaultName = null) {
