@@ -2629,22 +2629,39 @@
             return;
           }
           
+          console.log('🔍 DEBUG: Checking WebGL orb initialization...');
+          console.log('🔍 DEBUG: window.EmmaOrb available?', !!window.EmmaOrb);
+          console.log('🔍 DEBUG: orbContainer found?', !!orbContainer);
+          console.log('🔍 DEBUG: orbContainer dimensions:', orbContainer?.offsetWidth, 'x', orbContainer?.offsetHeight);
+          
           if (window.EmmaOrb) {
-            // Create WebGL Emma Orb with Emma's signature purple-pink hue
-            this.webglOrb = new window.EmmaOrb(orbContainer, {
-              hue: 270, // Purple-pink Emma colors
-              hoverIntensity: 0.35,
-              rotateOnHover: true,
-              forceHoverState: false
-            });
-            console.log('🌟 WebGL Emma Orb initialized successfully');
-          } else {
+            try {
+              // Create WebGL Emma Orb with Emma's signature purple-pink hue
+              this.webglOrb = new window.EmmaOrb(orbContainer, {
+                hue: 270, // Purple-pink Emma colors
+                hoverIntensity: 0.35,
+                rotateOnHover: true,
+                forceHoverState: false
+              });
+              console.log('🌟 WebGL Emma Orb initialized successfully');
+              console.log('🔍 DEBUG: WebGL orb created:', !!this.webglOrb);
+            } catch (webglError) {
+              console.error('❌ WebGL orb creation failed:', webglError);
+              // Force fallback
+              window.EmmaOrb = null;
+            }
+          }
+          
+          if (!window.EmmaOrb || !this.webglOrb) {
             console.warn('🌟 EmmaOrb class not available, using fallback');
-            // Fallback to simple gradient if EmmaOrb class not loaded
-            orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5)';
+            // Fallback to beautiful gradient if EmmaOrb class not loaded
+            orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
             orbContainer.style.borderRadius = '50%';
             orbContainer.style.width = '100%';
             orbContainer.style.height = '100%';
+            orbContainer.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.1)';
+            orbContainer.style.animation = 'orb-pulse 3s ease-in-out infinite';
+            console.log('✅ Fallback Emma orb created with gradient');
           }
           
           // Initialize elegant vault unlock functionality
@@ -3304,9 +3321,16 @@
             return;
           }
           
-          // Click to open file browser
-          lockOverlay.addEventListener('click', async () => {
+          // Click entire orb container to open file browser when locked
+          const handleOrbClick = async () => {
             try {
+              // Only handle clicks when vault is locked
+              const isVaultUnlocked = window.currentVaultStatus && window.currentVaultStatus.isUnlocked;
+              if (isVaultUnlocked) {
+                console.log('🔓 Vault already unlocked - ignoring orb click');
+                return;
+              }
+              
               console.log('👆 Emma orb clicked - opening native file browser...');
               
               // Use native File System Access API
@@ -3332,7 +3356,11 @@
                 this.showToast('❌ Failed to open file browser', 'error');
               }
             }
-          });
+          };
+          
+          // Add click handler to both lock overlay AND orb container
+          lockOverlay.addEventListener('click', handleOrbClick);
+          orbContainer.addEventListener('click', handleOrbClick);
           
           // File input fallback handler
           fileInput.addEventListener('change', async (event) => {
@@ -3443,8 +3471,8 @@
             console.log('🔓 Vault unlocked - hiding lock overlay');
           } else {
             // Show lock overlay when vault is locked
-            lockOverlay.style.display = 'flex';
-            console.log('🔒 Vault locked - showing lock overlay');
+            lockOverlay.style.display = 'none'; // TEMP: Hide to see Emma orb
+            console.log('🔒 Vault locked - TEMP: hiding lock overlay to debug Emma orb');
           }
         } catch (error) {
           console.error('❌ Failed to update vault lock overlay:', error);
