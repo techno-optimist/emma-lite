@@ -506,7 +506,7 @@
                 }, 3000);
             }
 
-            // Working Emma passphrase modal (copied from extension)
+            // Working Emma passphrase modal with password confirmation
             async showEmmaPassphraseModal(fileName, isCreate = false) {
                 return new Promise((resolve, reject) => {
                     const modalOverlay = document.createElement('div');
@@ -544,7 +544,7 @@
                         </div>
                         
                         <form id="emmaPassphraseForm">
-                            <div style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 15px;">
                                 <input type="password" id="emmaPassphrase" placeholder="Enter passphrase" required autofocus style="
                                     width: 100%;
                                     padding: 12px 16px;
@@ -554,7 +554,21 @@
                                     color: white;
                                     font-size: 16px;
                                     outline: none;
+                                    margin-bottom: 8px;
                                 ">
+                                ${isCreate ? `
+                                <input type="password" id="emmaPassphraseConfirm" placeholder="Confirm passphrase" required style="
+                                    width: 100%;
+                                    padding: 12px 16px;
+                                    border: 2px solid rgba(134, 88, 255, 0.3);
+                                    border-radius: 10px;
+                                    background: rgba(255, 255, 255, 0.1);
+                                    color: white;
+                                    font-size: 16px;
+                                    outline: none;
+                                ">
+                                <div id="passwordMatch" style="margin-top: 5px; font-size: 12px;"></div>
+                                ` : ''}
                                 <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px; display: block;">
                                     🔒 Your passphrase ${isCreate ? 'secures' : 'decrypts'} your precious memories locally
                                 </small>
@@ -585,15 +599,51 @@
                     modalOverlay.appendChild(modal);
                     document.body.appendChild(modalOverlay);
                     
-                    // Handle form submission
+                    // Handle form submission with password confirmation
                     document.getElementById('emmaPassphraseForm').addEventListener('submit', (e) => {
                         e.preventDefault();
                         const passphrase = document.getElementById('emmaPassphrase').value.trim();
+                        
+                        if (isCreate) {
+                            const confirmPassphrase = document.getElementById('emmaPassphraseConfirm').value.trim();
+                            if (passphrase !== confirmPassphrase) {
+                                alert('Passwords do not match. Please try again.');
+                                return;
+                            }
+                        }
+                        
                         if (passphrase) {
                             document.body.removeChild(modalOverlay);
                             resolve(passphrase);
                         }
                     });
+                    
+                    // Add password match indicator for create mode
+                    if (isCreate) {
+                        const passwordInput = document.getElementById('emmaPassphrase');
+                        const confirmInput = document.getElementById('emmaPassphraseConfirm');
+                        const matchDiv = document.getElementById('passwordMatch');
+                        
+                        const updateMatch = () => {
+                            const password = passwordInput.value;
+                            const confirm = confirmInput.value;
+                            
+                            if (confirm.length === 0) {
+                                matchDiv.innerHTML = '';
+                                return;
+                            }
+                            
+                            const matches = password === confirm;
+                            matchDiv.innerHTML = `
+                                <span style="color: ${matches ? '#10b981' : '#ef4444'};">
+                                    ${matches ? '✅ Passwords match' : '❌ Passwords do not match'}
+                                </span>
+                            `;
+                        };
+                        
+                        passwordInput.addEventListener('input', updateMatch);
+                        confirmInput.addEventListener('input', updateMatch);
+                    }
                     
                     // Handle cancel
                     document.getElementById('cancelBtn').addEventListener('click', () => {
