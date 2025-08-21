@@ -10,6 +10,10 @@
     <script src="js/clean-password-modal.js"></script>
     <script src="js/emma-web-vault.js"></script>
     
+    <!-- Emma Orb System -->
+    <script src="js/base-orb.js"></script>
+    <script src="js/emma-orb.js"></script>
+    
     <style>
         /* Emma Brand Variables */
         :root {
@@ -68,7 +72,7 @@
             transform: scale(1.05);
         }
 
-        .emma-orb {
+        .emma-orb-webgl {
             width: 100%;
             height: 100%;
             border-radius: 50%;
@@ -79,6 +83,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+        }
+        
+        .emma-orb-webgl canvas {
+            border-radius: 50%;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         @keyframes orb-pulse {
@@ -190,9 +201,9 @@
         <h1 class="emma-title">emma</h1>
         <p class="emma-subtitle">Your Intelligent Memory Companion</p>
         
-        <!-- Clean Emma Orb -->
+        <!-- Emma Orb (using existing system) -->
         <div class="emma-orb-container" id="emmaOrbContainer">
-            <div class="emma-orb" id="emmaOrb"></div>
+            <div class="emma-orb-webgl" id="emmaOrb"></div>
         </div>
         
         <!-- Vault Status -->
@@ -234,6 +245,7 @@
                 console.log('🚀 Clean Emma App initializing...');
                 
                 this.initializeElements();
+                this.initializeEmmaOrb();
                 this.setupEventListeners();
                 this.updateUI();
                 
@@ -243,12 +255,33 @@
             initializeElements() {
                 this.orbContainer = document.getElementById('emmaOrbContainer');
                 this.orb = document.getElementById('emmaOrb');
-                this.vaultStatus = document.getElementById('vaultStatus');
+                this.vaultStatusDiv = document.getElementById('vaultStatus');
                 this.vaultStatusText = document.getElementById('vaultStatusText');
                 this.openVaultBtn = document.getElementById('openVaultBtn');
                 this.createVaultBtn = document.getElementById('createVaultBtn');
                 this.dragDropZone = document.getElementById('dragDropZone');
                 this.fileInput = document.getElementById('vaultFileInput');
+            }
+
+            initializeEmmaOrb() {
+                try {
+                    console.log('🌟 Initializing Emma orb...');
+                    
+                    if (window.EmmaOrb && this.orb) {
+                        this.webglOrb = new window.EmmaOrb(this.orb, {
+                            hue: 270, // Emma's purple
+                            hoverIntensity: 0.5,
+                            rotateOnHover: true
+                        });
+                        console.log('✅ Emma orb initialized successfully');
+                    } else {
+                        console.warn('⚠️ Emma orb class not available, using CSS fallback');
+                        this.orb.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
+                        this.orb.style.animation = 'orb-pulse 4s ease-in-out infinite';
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to initialize Emma orb:', error);
+                }
             }
 
             setupEventListeners() {
@@ -346,6 +379,10 @@
                 try {
                     console.log('🔓 Processing vault file:', file.name);
                     
+                    // Read file data first
+                    const fileData = new Uint8Array(await file.arrayBuffer());
+                    console.log('📖 File read, size:', fileData.length);
+                    
                     const passphrase = await window.cleanSecurePasswordModal.show({
                         title: 'Unlock Vault',
                         message: `Enter the passphrase for "${file.name}":`,
@@ -354,27 +391,41 @@
                     
                     if (!passphrase) return;
                     
-                    // Open vault using Emma Web Vault
+                    // Decrypt using native crypto
+                    const vaultData = await window.emmaWebVault.nativeDecryptVault(fileData, passphrase);
+                    
+                    // Set vault data in Emma Web Vault
+                    window.emmaWebVault.vaultData = vaultData;
+                    window.emmaWebVault.isOpen = true;
+                    window.emmaWebVault.passphrase = passphrase;
                     if (fileHandle) {
                         window.emmaWebVault.fileHandle = fileHandle;
                     }
                     
-                    const result = await window.emmaWebVault.openVaultFile(file);
+                    // Set session storage
+                    sessionStorage.setItem('emmaVaultActive', 'true');
+                    sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+                    localStorage.setItem('emmaVaultActive', 'true');
+                    localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
                     
-                    if (result.success) {
-                        this.vaultStatus = 'unlocked';
-                        this.currentVault = { 
-                            name: file.name,
-                            stats: result.stats
-                        };
-                        this.updateUI();
-                        this.showSuccess(`Vault opened! ${result.stats.memoryCount} memories loaded`);
-                        
-                        // Navigate to main dashboard after successful unlock
-                        setTimeout(() => {
-                            window.location.href = 'working-desktop-dashboard.html';
-                        }, 2000);
-                    }
+                    // Save to IndexedDB
+                    await window.emmaWebVault.saveToIndexedDB();
+                    
+                    this.vaultStatus = 'unlocked';
+                    this.currentVault = { 
+                        name: vaultData.metadata?.name || file.name,
+                        stats: {
+                            memoryCount: Object.keys(vaultData.content?.memories || {}).length,
+                            peopleCount: Object.keys(vaultData.content?.people || {}).length
+                        }
+                    };
+                    this.updateUI();
+                    this.showSuccess(`Vault opened! ${this.currentVault.stats.memoryCount} memories loaded`);
+                    
+                    // Navigate to main dashboard after successful unlock
+                    setTimeout(() => {
+                        window.location.href = 'working-desktop-dashboard.html';
+                    }, 2000);
                     
                 } catch (error) {
                     console.error('❌ Failed to process vault:', error);
@@ -418,11 +469,11 @@
             updateUI() {
                 if (this.vaultStatus === 'unlocked') {
                     this.orbContainer.classList.remove('vault-locked');
-                    this.vaultStatus.classList.add('unlocked');
+                    this.vaultStatusDiv.classList.add('unlocked');
                     this.vaultStatusText.textContent = `🔓 ${this.currentVault.name} (${this.currentVault.stats?.memoryCount || 0} memories)`;
                 } else {
                     this.orbContainer.classList.add('vault-locked');
-                    this.vaultStatus.classList.remove('unlocked');
+                    this.vaultStatusDiv.classList.remove('unlocked');
                     this.vaultStatusText.textContent = '🔒 No vault loaded';
                 }
             }
