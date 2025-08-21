@@ -379,12 +379,12 @@ async function sendVaultStatus() {
   const webAppVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
   const webAppVaultName = localStorage.getItem('emmaVaultName');
   
-  // Also check extension internal state
-  const response = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
+  // Also check extension internal state using new FSM
+  const response = await chrome.runtime.sendMessage({ action: 'CHECK_STATE' });
   
   // Use web app state as primary source of truth (it's more persistent)
-  const vaultOpen = webAppVaultActive || (response?.vaultReady || false);
-  const vaultName = webAppVaultName || response?.vaultFileName || null;
+  const vaultOpen = webAppVaultActive || (response?.state === 'unlocked');
+  const vaultName = webAppVaultName || response?.fileName || null;
   
   console.log('📊 EXTENSION: Vault status determined:', {
     webAppActive: webAppVaultActive,
