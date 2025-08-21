@@ -401,7 +401,7 @@ class EmmaVaultControlPanel {
   }
 
   /**
-   * Download updated vault file
+   * Download updated vault file with proper encryption
    */
   async downloadUpdatedVault() {
     try {
@@ -417,15 +417,65 @@ class EmmaVaultControlPanel {
       downloadBtn.innerHTML = '⏳ Preparing download...';
       downloadBtn.disabled = true;
       
-      // Use existing download functionality
+      // Request passphrase for encryption using Emma's beautiful modal
+      let passphrase;
+      try {
+        if (window.cleanSecurePasswordModal) {
+          passphrase = await window.cleanSecurePasswordModal.show({
+            title: 'Encrypt Vault for Download',
+            message: 'Enter your vault passphrase to encrypt and save:',
+            placeholder: 'Enter vault passphrase...'
+          });
+        } else {
+          // Fallback to simple prompt if modal not available
+          passphrase = prompt('🔐 Enter your vault passphrase to encrypt and save:');
+        }
+      } catch (error) {
+        if (error.message === 'User cancelled') {
+          console.log('💾 Download cancelled by user');
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.disabled = false;
+          return;
+        }
+        throw error;
+      }
+      
+      if (!passphrase) {
+        console.log('💾 Download cancelled - no passphrase provided');
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+        return;
+      }
+      
+      downloadBtn.innerHTML = '🔒 Encrypting vault...';
+      
+      // Encrypt vault data using native crypto
+      const encryptedData = await window.emmaWebVault.nativeEncryptVault(
+        window.emmaWebVault.vaultData, 
+        passphrase
+      );
+      
+      downloadBtn.innerHTML = '💾 Saving vault...';
+      
+      // Save using File System Access API or download
       if (window.emmaWebVault.fileHandle) {
         // Use File System Access API for seamless save
-        await window.emmaWebVault.saveVaultToFile();
+        const writable = await window.emmaWebVault.fileHandle.createWritable();
+        await writable.write(encryptedData);
+        await writable.close();
         this.showToast('✅ Vault saved to your local file successfully!', 'success');
       } else {
         // Fallback to download
         const fileName = `${window.emmaWebVault.vaultData.metadata?.name || 'vault'}-updated.emma`;
-        await window.emmaWebVault.downloadVaultFile(fileName);
+        const blob = new Blob([encryptedData], { type: 'application/emma-vault' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        
+        URL.revokeObjectURL(url);
         this.showToast('📥 Updated vault downloaded successfully!', 'success');
       }
       
@@ -437,14 +487,18 @@ class EmmaVaultControlPanel {
       downloadBtn.innerHTML = originalText;
       downloadBtn.disabled = false;
       
+      console.log('✅ Vault download completed successfully');
+      
     } catch (error) {
       console.error('❌ Failed to download vault:', error);
       this.showToast('❌ Failed to download vault: ' + error.message, 'error');
       
       // Restore button
       const downloadBtn = document.getElementById('downloadVaultBtn');
-      downloadBtn.innerHTML = '💾 Download Updated Vault';
-      downloadBtn.disabled = false;
+      if (downloadBtn) {
+        downloadBtn.innerHTML = '💾 Download Updated Vault';
+        downloadBtn.disabled = false;
+      }
     }
   }
 
