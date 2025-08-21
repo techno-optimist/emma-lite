@@ -602,22 +602,13 @@ class EmmaVaultExtension {
   
   async updateStatsFromBackground() {
     try {
-      // Get current stats from background script
-      const status = await chrome.runtime.sendMessage({ action: 'CHECK_VAULT_STATUS' });
-      
-      if (status) {
-        this.elements.memoryCount.textContent = status.memoryCount || 0;
-        this.elements.peopleCount.textContent = status.peopleCount || 0;
-        console.log('📊 POPUP: Updated stats from background - memories:', status.memoryCount, 'people:', status.peopleCount);
-        
-        // CRITICAL: If data was lost, force unlock
-        if (status.dataLost) {
-          console.log('🚨 POPUP: Vault data lost in background - forcing unlock');
-          await chrome.storage.local.set({ vaultReady: false });
-          this.isVaultOpen = false;
-          this.vaultData = null;
-          this.updateUI(); // This will trigger the unlock overlay
-        }
+      // Get current stats from background FSM authority
+      const state = await chrome.runtime.sendMessage({ action: 'CHECK_STATE' });
+      if (state) {
+        this.elements.memoryCount.textContent = state.memoryCount || 0;
+        this.elements.peopleCount.textContent = state.peopleCount || 0;
+        console.log('📊 POPUP: Updated stats from background FSM - memories:', state.memoryCount, 'people:', state.peopleCount, 'state:', state.state);
+        // Do NOT mutate UI state here to avoid loops; updateUI() owns state transitions
       }
     } catch (error) {
       console.error('❌ POPUP: Failed to get stats from background:', error);
