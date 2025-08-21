@@ -552,6 +552,11 @@ class EmmaVaultExtension {
             this.vaultData = recoveryResponse.vaultData;
             this.isVaultOpen = true;
             
+            // CRITICAL: Update localStorage so web app knows vault is unlocked
+            localStorage.setItem('emmaVaultActive', 'true');
+            localStorage.setItem('emmaVaultName', storage.vaultFileName || 'My Vault');
+            console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
+            
             // Mark vault as ready
             await chrome.storage.local.set({
               vaultReady: true,
@@ -606,6 +611,11 @@ class EmmaVaultExtension {
               fileName: selectedFile.name,
               lastSync: new Date().toISOString()
             };
+            
+            // CRITICAL: Update localStorage so web app knows vault is unlocked
+            localStorage.setItem('emmaVaultActive', 'true');
+            localStorage.setItem('emmaVaultName', selectedFile.name);
+            console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
             
             // Mark vault as ready
             await chrome.storage.local.set({
@@ -952,6 +962,11 @@ class EmmaVaultExtension {
         console.error('❌ POPUP DEBUG: Failed to load vault data into background:', error);
         console.error('❌ POPUP DEBUG: Error details:', error.message, error.stack);
       }
+      
+      // CRITICAL: Update localStorage so web app knows vault is unlocked
+      localStorage.setItem('emmaVaultActive', 'true');
+      localStorage.setItem('emmaVaultName', fileHandle.name);
+      console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
       
       // SECURITY: Do NOT persist plaintext vault data in extension storage. Keep in-memory only.
       // Mark readiness via minimal metadata; actual content remains in this popup's memory.
@@ -1473,6 +1488,11 @@ class EmmaVaultExtension {
       } catch (error) {
         console.error('❌ Failed to load vault data into background:', error);
       }
+      
+      // CRITICAL: Update localStorage so web app knows vault is unlocked
+      localStorage.setItem('emmaVaultActive', 'true');
+      localStorage.setItem('emmaVaultName', fileHandle.name);
+      console.log('✅ POPUP: Updated localStorage - vault marked as unlocked');
       
       // SECURITY: Do NOT persist plaintext vault data in extension storage.
       await chrome.storage.local.set({
