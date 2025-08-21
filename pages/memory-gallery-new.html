@@ -584,43 +584,12 @@
           
           // Pure web app mode - Check if vault is loaded in web app
           if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
-            console.log('🔗 GALLERY: Extension detected - setting up extension-aware mode');
+            console.log('🌐 GALLERY: Pure web app mode - vault data available');
+            console.log('📊 GALLERY: Vault has', Object.keys(window.emmaWebVault.vaultData.content?.memories || {}).length, 'memories');
             
-            // CRITICAL: Actually open a mock vault for the web app to use
-            window.emmaWebVault.isOpen = true;
-            window.emmaWebVault.currentVault = 'extension-managed-vault';
-            window.emmaWebVault.vaultData = {
-              version: '1.0',
-              name: 'Extension Vault',
-              created: new Date().toISOString(),
-              encryption: {
-                enabled: true,
-                algorithm: 'AES-GCM'
-              },
-              content: {
-                memories: {},
-                people: {},
-                settings: {}
-              },
-              stats: {
-                memoryCount: 0,
-                peopleCount: 0,
-                totalSize: 0
-              }
-            };
-            
-            // Set vault as active for extension mode
-            sessionStorage.setItem('emmaVaultActive', 'true');
-            sessionStorage.setItem('emmaVaultName', 'Extension Vault');
-            
-            // Mock vault status for smooth operation
-            window.currentVaultStatus = { 
-              isUnlocked: true, 
-              managedByExtension: true 
-            };
-            
-            console.log('✅ GALLERY: Extension vault mode configured');
-            console.log('✅ GALLERY: Mock vault opened for web app compatibility');
+            // Vault data already loaded in web app - don't overwrite it!
+            console.log('✅ GALLERY: Using existing vault data from web app');
+            console.log('📊 GALLERY: Vault contains', Object.keys(window.emmaWebVault.vaultData.content?.memories || {}).length, 'memories');
             
           } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
             (async () => {
