@@ -195,31 +195,28 @@ class EmmaVaultExtension {
   }
   
   updateUI() {
-    // NUCLEAR SIMPLICITY: Use ONLY localStorage as source of truth
-    const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true';
-    const vaultName = localStorage.getItem('emmaVaultName');
-    
-    console.log('🔥 POPUP: Simple UI update - vault unlocked:', vaultUnlocked);
-    
-    this.isVaultOpen = vaultUnlocked;
-    
-    if (vaultUnlocked) {
-      console.log('✅ POPUP: Vault unlocked - showing active state');
-      this.hideVaultUnlockOverlay();
-      this.showActiveVaultState();
-      this.elements.vaultStatusIndicator.textContent = '🟢';
-    } else {
-      console.log('🔒 POPUP: Vault locked - showing welcome/unlock state');
-      this.showWelcomeState();
-      // Only show unlock overlay if we have a vault file
-      chrome.storage.local.get(['vaultFileName']).then(storage => {
-        if (storage.vaultFileName) {
-          this.showVaultUnlockOverlay(storage.vaultFileName);
-        }
-      });
-    }
-    
-    this.updateRecentVaults();
+    // Authoritative state from background
+    chrome.runtime.sendMessage({ action: 'CHECK_STATE' }, (state) => {
+      if (!state || state.state === 'locked') {
+        console.log('🔒 POPUP: Background reports locked');
+        this.isVaultOpen = false;
+        this.showWelcomeState();
+        chrome.storage.local.get(['vaultFileName']).then(storage => {
+          if (storage.vaultFileName) {
+            this.showVaultUnlockOverlay(storage.vaultFileName);
+          }
+        });
+        return;
+      }
+      if (state.state === 'unlocked') {
+        console.log('✅ POPUP: Background reports unlocked');
+        this.isVaultOpen = true;
+        this.hideVaultUnlockOverlay();
+        this.showActiveVaultState();
+        this.elements.vaultStatusIndicator.textContent = '🟢';
+      }
+      this.updateRecentVaults();
+    });
   }
   
   // NUCLEAR OPTION: Dead simple vault status check - DIRECT localStorage access
@@ -1288,14 +1285,16 @@ class EmmaVaultExtension {
   
   async closeVault() {
     console.log('🔒 Closing vault...');
-    
+    try {
+      const res = await chrome.runtime.sendMessage({ action: 'LOCK' });
+      console.log('🔒 LOCK result:', res);
+    } catch (e) {
+      console.warn('⚠️ LOCK call failed:', e);
+    }
     this.currentVault = null;
     this.vaultData = null;
     this.isVaultOpen = false;
-    
-    await this.saveState();
     this.updateUI();
-    
     console.log('✅ Vault closed');
   }
   

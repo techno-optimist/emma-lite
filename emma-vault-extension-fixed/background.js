@@ -14,6 +14,52 @@ let lastSyncTime = null;
 let currentVaultData = null;
 let vaultPassphrase = null; // Temporarily store passphrase for auto-recovery
 
+// Vault State Machine Helpers (single source of truth)
+const VAULT_STATE_KEY = 'vaultState';
+
+async function getVaultState() {
+  const { vaultState, vaultFileName, resumeToken } = await chrome.storage.local.get([
+    VAULT_STATE_KEY,
+    'vaultFileName',
+    'resumeToken',
+  ]);
+  return {
+    state: vaultState || 'locked',
+    fileName: vaultFileName || null,
+    resumeToken: resumeToken || null,
+  };
+}
+
+async function setVaultState(newState, extras = {}) {
+  await chrome.storage.local.set({ [VAULT_STATE_KEY]: newState, ...extras });
+}
+
+async function clearEncryptedBackup() {
+  try {
+    const dbRequest = indexedDB.open('EmmaVaultPersistence', 1);
+    await new Promise((resolve) => {
+      dbRequest.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('encryptedVaults')) {
+          db.createObjectStore('encryptedVaults');
+        }
+      };
+      dbRequest.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(['encryptedVaults'], 'readwrite');
+        const store = transaction.objectStore('encryptedVaults');
+        store.delete('current');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => resolve();
+      };
+      dbRequest.onerror = () => resolve();
+    });
+  } catch (e) {
+    // Non-fatal
+    console.warn('⚠️ Failed to clear encrypted backup:', e);
+  }
+}
+
 /**
  * Initialize extension on install
  */
@@ -46,16 +92,25 @@ chrome.runtime.onInstalled.addListener((details) => {
 // CRITICAL: Auto-restore vault state when service worker starts
 chrome.runtime.onStartup.addListener(async () => {
   console.log('🔄 EXTENSION: Service worker starting - checking for vault state to restore');
-  
+
   try {
-    const storage = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
-    if (storage.vaultReady && storage.vaultFileName && vaultPassphrase) {
-      console.log('🔄 EXTENSION: Attempting auto-recovery on startup');
-      const recovered = await recoverVaultFromBackup(vaultPassphrase);
-      if (recovered) {
-        currentVaultData = recovered;
-        console.log('✅ EXTENSION: Vault auto-recovered on service worker startup');
+    const { state } = await getVaultState();
+    if (state === 'unlocked') {
+      // Try session-scoped passphrase for seamless resume
+      const session = await chrome.storage.session.get(['vaultPassphrase']);
+      const sessionPassphrase = session?.vaultPassphrase;
+      if (sessionPassphrase) {
+        const recovered = await recoverVaultFromBackup(sessionPassphrase);
+        if (recovered) {
+          currentVaultData = recovered;
+          vaultPassphrase = sessionPassphrase;
+          console.log('✅ EXTENSION: Vault auto-recovered on service worker startup');
+          return;
+        }
       }
+      // If recovery fails, fall back to locked; user can resume explicitly
+      await setVaultState('locked', { vaultReady: false });
+      console.warn('⚠️ EXTENSION: Auto-recovery unavailable; setting state to locked');
     }
   } catch (error) {
     console.warn('⚠️ EXTENSION: Failed to auto-recover on startup:', error);
@@ -69,6 +124,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Received message:', request.action);
   
   switch (request.action) {
+    case 'CHECK_STATE':
+      (async () => {
+        const { state, fileName } = await getVaultState();
+        sendResponse({
+          success: true,
+          state,
+          fileName,
+          hasData: !!currentVaultData,
+          memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
+          peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0,
+        });
+      })();
+      return true;
+
+    case 'LOCK':
+      (async () => {
+        try {
+          currentVaultData = null;
+          vaultPassphrase = null;
+          await chrome.storage.session.remove('vaultPassphrase');
+          await clearEncryptedBackup();
+          await setVaultState('locked', { vaultReady: false, vaultFileName: null, resumeToken: null });
+          sendResponse({ success: true });
+        } catch (e) {
+          sendResponse({ success: false, error: e?.message || String(e) });
+        }
+      })();
+      return true;
+
+    case 'DEBUG_DUMP_STATE':
+      (async () => {
+        const { state, fileName, resumeToken } = await getVaultState();
+        const sess = await chrome.storage.session.get(['vaultPassphrase']);
+        sendResponse({
+          success: true,
+          state,
+          fileName,
+          resumeTokenPresent: !!resumeToken,
+          hasData: !!currentVaultData,
+          passphraseInSession: !!sess?.vaultPassphrase,
+        });
+      })();
+      return true;
     case 'VAULT_LOAD':
       console.log('🚨 BACKGROUND DEBUG: Received VAULT_LOAD message');
       console.log('🚨 BACKGROUND DEBUG: Request data keys:', Object.keys(request.data || {}));
@@ -459,12 +557,13 @@ async function loadVaultData(vaultData) {
   console.log('🚨 LOAD DEBUG: Vault data validation passed, setting currentVaultData');
   currentVaultData = vaultData;
   
-  // CRITICAL FIX: Mark vault as ready in storage so handleSaveMemoryToVault works
-  await chrome.storage.local.set({ 
-    vaultReady: true,
-    vaultFileName: vaultData.name || 'Unknown Vault'
+  // Mark state as unlocked and persist snapshot for resume
+  await setVaultState('unlocked', {
+    vaultReady: true, // temporary compatibility for older checks
+    vaultFileName: vaultData.name || 'Unknown Vault',
+    resumeToken: 'current',
   });
-  console.log('🚨 LOAD DEBUG: Marked vault as ready in chrome.storage.local');
+  console.log('🚨 LOAD DEBUG: State set to unlocked with resume token');
   
   // INNOVATION: Store encrypted backup in IndexedDB for auto-recovery
   if (vaultPassphrase) {
@@ -647,9 +746,9 @@ async function handleSaveMemoryToVault(memoryData) {
   try {
     console.log('💾 Background: Saving memory directly to vault storage');
     
-    // Get current vault data from storage
-    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
-    if (!vaultReady) {
+    // Require unlocked state
+    const { state } = await getVaultState();
+    if (state !== 'unlocked') {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
@@ -743,9 +842,8 @@ async function handleSavePersonToVault(personData) {
   try {
     console.log('👥 Background: Saving person directly to vault storage');
     
-    // Get current vault data from storage
-    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
-    if (!vaultReady) {
+    const { state } = await getVaultState();
+    if (state !== 'unlocked') {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
@@ -834,9 +932,8 @@ async function deleteMemory(memoryId) {
   try {
     console.log('🗑️ BACKGROUND: Deleting memory:', memoryId);
     
-    // Check if vault is ready
-    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
-    if (!vaultReady) {
+    const { state } = await getVaultState();
+    if (state !== 'unlocked') {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
@@ -890,9 +987,8 @@ async function handleUpdateMemoryInVault(memoryData) {
   try {
     console.log('💾 Background: Updating memory in vault storage');
     
-    // Get current vault data from storage
-    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
-    if (!vaultReady) {
+    const { state } = await getVaultState();
+    if (state !== 'unlocked') {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
@@ -941,9 +1037,8 @@ async function handleUpdatePersonInVault(personData) {
   try {
     console.log('👥 Background: Updating person in vault storage');
     
-    // Get current vault data from storage
-    const { vaultReady } = await chrome.storage.local.get(['vaultReady']);
-    if (!vaultReady) {
+    const { state } = await getVaultState();
+    if (state !== 'unlocked') {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
@@ -1035,9 +1130,9 @@ async function handleSaveMediaToVault(mediaData) {
   try {
     console.log('📷 Background: Saving media directly to vault storage');
     
-    // Get current vault data from storage
-    const { vaultData, vaultReady } = await chrome.storage.local.get(['vaultData', 'vaultReady']);
-    if (!vaultReady || !vaultData) {
+    const { state } = await getVaultState();
+    const { vaultData } = await chrome.storage.local.get(['vaultData']);
+    if (state !== 'unlocked' || !vaultData) {
       throw new Error('No vault is open. Please open a vault first in the extension popup.');
     }
     
@@ -1092,10 +1187,10 @@ async function handleSaveMediaToVault(mediaData) {
  */
 async function checkVaultStatus() {
   try {
-    const { vaultReady, vaultFileName } = await chrome.storage.local.get(['vaultReady', 'vaultFileName']);
+    const { state, fileName } = await getVaultState();
     
-    // INNOVATION: Auto-recovery when data is lost but vault should be ready
-    if (vaultReady && !currentVaultData && vaultPassphrase) {
+    // Auto-recovery when marked unlocked but data missing and passphrase available
+    if (state === 'unlocked' && !currentVaultData && vaultPassphrase) {
       console.log('🔄 AUTO-RECOVERY: Attempting to restore vault from encrypted backup');
       try {
         const recovered = await recoverVaultFromBackup(vaultPassphrase);
@@ -1108,21 +1203,14 @@ async function checkVaultStatus() {
       }
     }
     
-    // CRITICAL FIX: If vaultReady is true but currentVaultData is null, vault is actually locked
-    const actuallyReady = vaultReady && currentVaultData && currentVaultData.content;
-    
-    if (vaultReady && !currentVaultData) {
-      console.log('🚨 BACKGROUND: Vault marked ready but data lost - marking as locked');
-      // Reset vault ready status since data is lost
-      await chrome.storage.local.set({ vaultReady: false });
-    }
+    const actuallyReady = state === 'unlocked' && currentVaultData && currentVaultData.content;
     
     return {
       vaultReady: actuallyReady,
-      vaultFileName: vaultFileName || null,
+      vaultFileName: fileName || null,
       memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
       peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0,
-      dataLost: vaultReady && !currentVaultData // Flag indicating data was lost
+      dataLost: state === 'unlocked' && !currentVaultData // Flag indicating data was lost
     };
   } catch (error) {
     console.error('❌ Failed to check vault status:', error);
@@ -1178,6 +1266,12 @@ async function unlockVaultWithPassphrase(passphrase) {
     
     // INNOVATION: Store passphrase for auto-recovery (in memory only)
     vaultPassphrase = passphrase;
+    // Persist passphrase for the browser session only (not disk)
+    try {
+      await chrome.storage.session.set({ vaultPassphrase: passphrase });
+    } catch (e) {
+      console.warn('⚠️ Unable to persist passphrase in session storage:', e);
+    }
     
     // Store encrypted backup for persistence
     try {
@@ -1192,6 +1286,12 @@ async function unlockVaultWithPassphrase(passphrase) {
       peopleCount: Object.keys(vaultData.content.people || {}).length
     });
     
+    await setVaultState('unlocked', {
+      vaultReady: true,
+      vaultFileName: vaultData.name || 'Unknown Vault',
+      resumeToken: 'current',
+    });
+
     return {
       success: true,
       vaultData: vaultData
