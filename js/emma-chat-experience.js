@@ -1092,38 +1092,40 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Check if EmmaIntelligentCapture is available
       if (typeof EmmaIntelligentCapture === 'undefined') {
-        console.warn('💝 EmmaIntelligentCapture not available, loading...');
+        if (this.debugMode) {
+          console.warn('💝 EmmaIntelligentCapture not available, loading...');
+        }
         await this.loadIntelligentCaptureScript();
+        
+        // Wait for script to fully initialize
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
-      // Wait a moment for the script to fully load
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Double-check that the class is now available
+      if (typeof EmmaIntelligentCapture === 'undefined') {
+        console.warn('💝 EmmaIntelligentCapture still not available after loading - skipping intelligent capture');
+        this.intelligentCapture = null;
+        return;
+      }
       
-      // Initialize capture engine only if vectorless engine is available
-      if (this.vectorlessEngine) {
-        this.intelligentCapture = new EmmaIntelligentCapture({
-          vectorlessEngine: this.vectorlessEngine,
-          vaultManager: window.emmaWebVault,
-          dementiaMode: this.dementiaMode || false,
-          debug: this.debugMode || false
-        });
-        
-        console.log('💝 Intelligent Memory Capture initialized with vectorless engine');
-      } else {
-        // Initialize without vectorless engine (heuristics only)
-        this.intelligentCapture = new EmmaIntelligentCapture({
-          vectorlessEngine: null,
-          vaultManager: window.emmaWebVault,
-          dementiaMode: this.dementiaMode || false,
-          debug: this.debugMode || false
-        });
-        
-        console.log('💝 Intelligent Memory Capture initialized with heuristics only');
+      // Initialize capture engine (works with or without vectorless)
+      this.intelligentCapture = new EmmaIntelligentCapture({
+        vectorlessEngine: this.vectorlessEngine || null,
+        vaultManager: window.emmaWebVault || null,
+        dementiaMode: this.dementiaMode || false,
+        debug: this.debugMode || false
+      });
+      
+      if (this.debugMode) {
+        const mode = this.vectorlessEngine ? 'with vectorless engine' : 'with heuristics only';
+        console.log(`💝 Intelligent Memory Capture initialized ${mode}`);
       }
       
     } catch (error) {
-      console.error('💝 Failed to initialize Intelligent Capture:', error);
-      // Disable intelligent capture if it fails
+      if (this.debugMode) {
+        console.error('💝 Failed to initialize Intelligent Capture:', error);
+      }
+      // Gracefully disable intelligent capture
       this.intelligentCapture = null;
     }
   }
@@ -1155,14 +1157,27 @@ class EmmaChatExperience extends ExperiencePopup {
    * Analyze message for memory potential
    */
   async analyzeForMemory(message, messageId) {
-    if (!this.intelligentCapture) return;
+    if (!this.intelligentCapture) {
+      if (this.debugMode) {
+        console.log('💝 No intelligent capture available - skipping memory analysis');
+      }
+      return;
+    }
     
     try {
+      if (this.debugMode) {
+        console.log('💝 Analyzing message for memory potential:', message);
+      }
+      
       const analysis = await this.intelligentCapture.analyzeMessage({
         content: message,
         timestamp: Date.now(),
         sender: 'user'
       });
+      
+      if (this.debugMode) {
+        console.log('💝 Memory analysis result:', analysis);
+      }
       
       if (analysis.isMemoryWorthy) {
         // Store detected memory
@@ -1177,14 +1192,20 @@ class EmmaChatExperience extends ExperiencePopup {
             this.suggestMemoryCapture(analysis);
           }, 2000);
         }
-      }
-      
-      if (this.debugMode) {
-        console.log('💝 Memory analysis:', analysis);
+        
+        if (this.debugMode) {
+          console.log(`💝 Memory detected! Score: ${analysis.signals?.score}, Confidence: ${analysis.confidence}%`);
+        }
+      } else {
+        if (this.debugMode) {
+          console.log(`💝 Not memory-worthy. Score: ${analysis.signals?.score}, Reason: ${analysis.reason}`);
+        }
       }
       
     } catch (error) {
-      console.error('💝 Memory analysis failed:', error);
+      if (this.debugMode) {
+        console.error('💝 Memory analysis failed:', error);
+      }
     }
   }
 
