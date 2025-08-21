@@ -532,10 +532,13 @@ class EmmaVaultPrimary {
   }
 
   /**
-   * Request passphrase with beautiful Emma modal
+   * Request passphrase with beautiful Emma secure modal
+   * SECURITY: Uses Emma's encrypted modal system
    */
   async requestPassphrase(fileName) {
     try {
+      console.log('🔐 PRIMARY: Requesting passphrase using Emma secure modal...');
+      
       if (window.cleanSecurePasswordModal) {
         return await window.cleanSecurePasswordModal.show({
           title: 'Unlock Vault',
@@ -543,7 +546,8 @@ class EmmaVaultPrimary {
           placeholder: 'Enter vault passphrase...'
         });
       } else {
-        // Fallback to browser prompt
+        console.warn('⚠️ PRIMARY: Secure modal not available, using fallback');
+        // SECURITY WARNING: This fallback is not encrypted
         const passphrase = prompt(`🔐 Enter passphrase for ${fileName}:`);
         if (!passphrase) {
           throw new Error('Passphrase required');
@@ -554,6 +558,7 @@ class EmmaVaultPrimary {
       if (error.message === 'User cancelled') {
         throw new Error('Vault unlock cancelled');
       }
+      console.error('❌ PRIMARY: Passphrase request failed:', error);
       throw error;
     }
   }

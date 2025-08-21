@@ -311,8 +311,28 @@
                 const fileData = new Uint8Array(await file.arrayBuffer());
                 log('✅ File read successfully, size: ' + fileData.length + ' bytes');
                 
-                // Request passphrase
-                const passphrase = prompt('🔐 Enter vault passphrase:');
+                // Request passphrase using Emma's secure modal
+                log('🔐 Requesting passphrase using secure Emma modal...');
+                let passphrase;
+                try {
+                    if (window.cleanSecurePasswordModal) {
+                        passphrase = await window.cleanSecurePasswordModal.show({
+                            title: 'Unlock Vault for Testing',
+                            message: `Enter the passphrase for your vault: ${file.name}`,
+                            placeholder: 'Enter vault passphrase...'
+                        });
+                    } else {
+                        log('⚠️ Secure modal not available, using fallback');
+                        passphrase = prompt('🔐 Enter vault passphrase:');
+                    }
+                } catch (error) {
+                    if (error.message === 'User cancelled') {
+                        log('❌ Passphrase entry cancelled');
+                        return;
+                    }
+                    throw error;
+                }
+                
                 if (!passphrase) {
                     log('❌ Passphrase required for testing');
                     return;
