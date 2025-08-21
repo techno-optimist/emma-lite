@@ -71,6 +71,7 @@
 
   <script src="../js/vault/backup-control.js"></script>
   <script src="../js/vault/biometrics.js"></script>
+  <script src="../js/security-gating.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Backup toggle
@@ -109,6 +110,21 @@
       }
 
       document.getElementById('settings-close')?.addEventListener('click', () => history.back());
+
+      // Example privileged action gating for exports
+      const exportBtn = document.getElementById('export-vault');
+      if (exportBtn && window.EmmaSecurity) {
+        exportBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const ok = await window.EmmaSecurity.requirePrivilegedAction({ reason: 'Confirm vault export' });
+          if (!ok) {
+            notify('Export cancelled', true);
+            return;
+          }
+          // Proceed with export via mobile adapter or share sheet (to be integrated)
+          notify('Export started...', false);
+        });
+      }
 
       function notify(msg, isError) {
         const n = document.getElementById('notification');

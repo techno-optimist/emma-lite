@@ -270,6 +270,10 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Added placeholder `mobile/capacitor/capacitor.config.ts` pointing webDir to `mobile/pages`. In practice, we will build to a `www/` folder; adjust webDir accordingly during build.
 - Next: biometrics gating (export/key rotation) and device chaos script; then start TestFlight/Play internal testing.
 
+### CTO Oversight Notes (Privileged Gating)
+- Added `mobile/js/security-gating.js` and wired export button to require biometrics or passphrase. Replace prompt with branded modal later and verify passphrase when backend hook exists.
+- Next: implement actual export using Capacitor Share/Filesystem; device chaos scripts; start internal testing loop.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests
