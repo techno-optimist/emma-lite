@@ -47,7 +47,8 @@ class EmmaWebVault {
     console.log('💜 Emma Web Vault initialized with elegant file management');
     
     // Check for Emma Vault Extension
-    this.checkExtensionAvailability();
+    // PURE WEB APP: No extension communication needed
+    console.log('🌐 PURE WEB APP: Extension communication disabled - standalone mode');
   }
 
   /**
