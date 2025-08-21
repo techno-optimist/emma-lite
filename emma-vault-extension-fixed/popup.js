@@ -1018,9 +1018,33 @@ class EmmaVaultExtension {
     try {
       console.log('📤 Processing uploaded vault:', file.name);
       
-      // Read file content
-      const content = await file.text();
-      const vaultData = JSON.parse(content);
+      // Check if file is binary (encrypted) or text (JSON)
+      const arrayBuffer = await file.arrayBuffer();
+      const data = new Uint8Array(arrayBuffer);
+      const magic = new TextDecoder().decode(data.slice(0, 4));
+      
+      console.log('📁 BRAVE: First 4 bytes as text:', magic);
+      
+      let vaultData;
+      if (magic === 'EMMA') {
+        console.log('📁 BRAVE: Detected encrypted .emma file - requesting passphrase');
+        
+        // Show Emma-branded passphrase modal for Brave
+        const passphrase = await this.showBravePassphraseModal(file.name);
+        if (!passphrase) {
+          throw new Error('Passphrase required to unlock encrypted vault');
+        }
+        
+        // Decrypt the vault using the proven web vault logic
+        console.log('🔓 BRAVE: Decrypting vault with passphrase...');
+        vaultData = await this.decryptBinaryVaultFile(data, passphrase);
+        console.log('✅ BRAVE: Vault decrypted successfully!');
+      } else {
+        console.log('📁 BRAVE: Detected unencrypted JSON .emma file');
+        // This is a text JSON file
+        const content = new TextDecoder().decode(data);
+        vaultData = JSON.parse(content);
+      }
       
       // Validate vault structure
       if (!this.validateVaultData(vaultData)) {
@@ -1291,6 +1315,91 @@ class EmmaVaultExtension {
   
   closeModal() {
     this.elements.modalOverlay.classList.add('hidden');
+  }
+
+  // Emma-branded passphrase modal for Brave
+  async showBravePassphraseModal(fileName) {
+    return new Promise((resolve, reject) => {
+      const modalContent = `
+        <div class="modal-header">
+          <div class="emma-orb-container">
+            <div class="emma-orb" id="passphraseOrb"></div>
+          </div>
+          <h2>🔐 Unlock Vault</h2>
+          <p>Enter the passphrase for your encrypted vault:</p>
+          <p class="file-name" style="
+            background: rgba(134, 88, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(134, 88, 255, 0.3);
+            margin: 8px 0;
+          ">${fileName}</p>
+        </div>
+        
+        <form id="bravePassphraseForm" class="modal-form">
+          <div class="form-group">
+            <label for="bravePassphrase">Vault Passphrase:</label>
+            <input type="password" id="bravePassphrase" placeholder="Enter your passphrase" required autofocus>
+            <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px; display: block;">
+              🔒 Your passphrase decrypts your precious memories locally
+            </small>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="emmaApp.cancelBravePassphrase()">Cancel</button>
+            <button type="submit" class="btn-primary">🔓 Unlock Vault</button>
+          </div>
+        </form>
+        
+        <div class="help-note" style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.85rem;">
+          <strong>💡 Brave Browser:</strong> Your vault will be opened in read-only mode. Changes will download as a new file.
+        </div>
+      `;
+      
+      this.showModal(modalContent);
+      
+      // Initialize orb
+      setTimeout(() => {
+        try {
+          const orbContainer = document.getElementById('passphraseOrb');
+          if (orbContainer && window.EmmaOrb) {
+            new EmmaOrb(orbContainer, {
+              hue: 270,
+              hoverIntensity: 0.3,
+              rotateOnHover: false
+            });
+          }
+        } catch (e) {
+          console.warn('⚠️ Could not initialize passphrase orb:', e);
+        }
+      }, 100);
+      
+      // Handle form submission
+      document.getElementById('bravePassphraseForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const passphrase = document.getElementById('bravePassphrase').value.trim();
+        if (passphrase) {
+          this.closeModal();
+          resolve(passphrase);
+        }
+      });
+      
+      // Global cancel function
+      window.emmaApp = window.emmaApp || {};
+      window.emmaApp.cancelBravePassphrase = () => {
+        this.closeModal();
+        reject(new Error('User cancelled passphrase entry'));
+      };
+      
+      // Focus the input
+      setTimeout(() => {
+        const input = document.getElementById('bravePassphrase');
+        if (input) input.focus();
+      }, 200);
+    });
   }
   
   // Vault Operations
