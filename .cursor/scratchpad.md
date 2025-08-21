@@ -278,15 +278,18 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Mobile export wired through Capacitor adapter with Share plugin handoff after writing export file. Validate path handling on iOS/Android. If Share requires a file URL, adapt accordingly.
 - Ready to run Gate A/B device tests with biometrics/backup and export flows.
 
+### CTO Oversight Notes (Chaos Harness Mobile)
+- Mobile chaos harness added at `mobile/pages/test-chaos.html`. Execute on devices to validate recovery; ensure no silent corruption.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests
 - [x] T2 Crypto Worker/WASM + perf harness (Gate A) — implemented; device validation pending
 - [x] T3 Capacitor scaffold + asset resolver — scaffold created; selector detects Capacitor
 - [x] T4 CapacitorFilesystemAdapter + journaling + preflight (Gate B) — implemented
-- [ ] T5 Chaos/low-space harness; pass criteria — desktop/PWA harness added; device scripts pending
+- [x] T5 Chaos/low-space harness; pass criteria — harnesses added; device runs pending
 - [x] T6 Backup exclusion UI + native flags + education — mobile UI wired; native flags pending
-- [ ] T7 Biometrics + privileged gating — mobile UI toggle wired; gating flows pending
+- [ ] T7 Biometrics + privileged gating — mobile UI toggle wired; gating on export implemented; key rotation gating pending
 - [ ] T8 Vault Health self-check + repair UX
 - [ ] T9 PWA iOS banners + export cadence
 - [ ] T10 Accessibility AA pass
