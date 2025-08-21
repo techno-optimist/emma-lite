@@ -53,8 +53,18 @@ class EmmaIntelligentCapture {
       // Add to conversation context
       this.updateConversationContext(message);
       
-      // Detect memory signals
+      // Detect memory signals (current message)
       const signals = await this.detectMemorySignals(message);
+
+      // Light multi-turn context boost (last 3 user messages)
+      const contextText = this.getRecentContextText(3);
+      if (contextText) {
+        const ctxBoost = this.detectContextBoost(contextText);
+        if (ctxBoost.scoreBoost > 0) {
+          signals.score += ctxBoost.scoreBoost;
+          if (!signals.types.includes('context')) signals.types.push('context');
+        }
+      }
       
       if (this.options.debug) {
         console.log('📊 Memory signals detected:', signals);
@@ -192,7 +202,7 @@ class EmmaIntelligentCapture {
       });
     });
     
-    // People detection (enhanced patterns)
+    // People detection (generic patterns only - no hardcoded names)
     const peoplePatterns = [
       /\b(mom|dad|mother|father|parent)\b/i,
       /\b(son|daughter|child|children|kids?)\b/i,
@@ -200,8 +210,6 @@ class EmmaIntelligentCapture {
       /\b(grandma|grandpa|grandmother|grandfather)\b/i,
       /\b(sister|brother|sibling)\b/i,
       /\b(friend|best friend)\b/i,
-      /\bKevin\b/i, // Specific name
-      /\bDebbe\b/i, // Specific name  
       /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/, // Names like "John and Mary"
       /\b(he|she|they)\s+(?:was|were|used to|would)/i // Pronouns with past tense
     ];
@@ -213,6 +221,18 @@ class EmmaIntelligentCapture {
         signals.people.push(...matches);
       }
     });
+
+    // Proper-noun name candidates (contextual, no hardcoded names)
+    const properNames = this.extractProperNames(content);
+    if (properNames.length > 0) {
+      properNames.forEach(name => {
+        if (!signals.people.includes(name)) {
+          signals.people.push(name);
+        }
+      });
+      // Weight once for detected proper names (avoid over-scoring)
+      signals.score += Math.min(2, properNames.length);
+    }
     
     // Photo attachment bonus
     if (message.attachments && message.attachments.length > 0) {
@@ -265,6 +285,84 @@ class EmmaIntelligentCapture {
   }
 
   /**
+   * Get recent user context (excluding current) up to N messages
+   */
+  getRecentContextText(n = 3) {
+    const recent = this.conversationContext
+      .filter(m => m && m.sender === 'user')
+      .slice(-n-1, -1) // exclude current (added beforehand)
+      .map(m => m.content)
+      .filter(Boolean);
+    return recent.join(' ');
+  }
+
+  /**
+   * Heuristic context boost using soft signals across recent turns
+   */
+  detectContextBoost(text) {
+    let scoreBoost = 0;
+    const softPatterns = [
+      /\bremember(ed)?\b/i,
+      /\bback\s+then\b/i,
+      /\bwhen\s+I\s+was\b/i,
+      /\b(in|around)\s+(19|20)\d{2}\b/,
+      /\b(last|this|next)\s+(year|summer|winter|spring|fall|month|week)\b/i,
+      /\b(mom|dad|mother|father|grand(ma|pa|mother|father))\b/i
+    ];
+    softPatterns.forEach(p => { if (p.test(text)) scoreBoost++; });
+    scoreBoost = Math.min(3, scoreBoost); // cap
+    return { scoreBoost };
+  }
+
+  /**
+   * Extract candidate proper names from free text using conservative heuristics
+   * - Detect capitalized tokens not at sentence start
+   * - Exclude common words/months/days
+   * - Return unique list
+   */
+  extractProperNames(text) {
+    const excluded = new Set([
+      'I','The','A','An','And','But','Or','So','Because','When','While','Before','After',
+      'He','She','They','We','You','It','His','Her','Their','Our','Your','Its',
+      'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday',
+      'January','February','March','April','May','June','July','August','September','October','November','December'
+    ]);
+    const names = new Set();
+    const tokens = text.split(/([.!?]\s+)/); // keep sentence boundaries
+    for (let i = 0; i < tokens.length; i++) {
+      const sentence = tokens[i];
+      if (!sentence || /[.!?]\s+/.test(sentence)) continue;
+      const words = sentence.split(/\s+/);
+      for (let w = 0; w < words.length; w++) {
+        const word = words[w].replace(/[^A-Za-z'-]/g, '');
+        if (!word) continue;
+        // Skip first word of sentence to avoid capitalization bias
+        if (w === 0) continue;
+        if (/^[A-Z][a-z'-]{1,}$/.test(word) && !excluded.has(word)) {
+          names.add(word);
+        }
+      }
+    }
+    return Array.from(names);
+  }
+
+  /**
+   * Temporal phrase detection and scoring
+   */
+  detectTemporalSignals(content, signals) {
+    const temporalPatterns = [
+      /\b(in|during|around)\s+(19|20)\d{2}\b/i,
+      /\b(last|this|next)\s+(year|summer|winter|spring|fall|autumn|month|week)\b/i,
+      /\bwhen\s+I\s+was\s+(a\s+kid|little|young|in\s+(high\s+school|college))\b/i,
+      /\bage\s+\d+\b/i,
+      /\bdecades?\s+ago\b/i
+    ];
+    let matched = false;
+    temporalPatterns.forEach(p => { if (p.test(content)) { signals.score += 2; matched = true; } });
+    if (matched && !signals.types.includes('temporal')) signals.types.push('temporal');
+  }
+
+  /**
    * Extract memory components from message and context
    */
   async extractMemoryComponents(message, signals) {
@@ -291,6 +389,9 @@ class EmmaIntelligentCapture {
       aiGenerated: true
     };
     
+    // Additional temporal extraction
+    this.detectTemporalSignals(content, signals);
+
     // Build memory object
     const memory = {
       id: this.generateMemoryId(),

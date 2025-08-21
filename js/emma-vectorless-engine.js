@@ -266,17 +266,8 @@ Respond with only a JSON array of indices: [1, 3, 7, ...]`;
 
     try {
       const response = await this.callLLM(prompt, { maxTokens: 200 });
-      
-      // Clean the response - remove markdown code blocks
-      let cleanResponse = response.trim();
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/\s*```$/, '');
-      }
-      if (cleanResponse.startsWith('```')) {
-        cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      const indices = JSON.parse(cleanResponse);
+      const clean = this.cleanJsonFromLLM(response);
+      const indices = JSON.parse(clean);
       return indices.map(i => memories[i - 1]).filter(Boolean);
     } catch (error) {
       console.warn('⚠️ LLM collection selection failed, using heuristics:', error);
@@ -356,18 +347,8 @@ Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": 
 
     try {
       const response = await this.callLLM(prompt, { maxTokens: 800 });
-      
-      // Clean the response - remove markdown code blocks
-      let cleanResponse = response.trim();
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/\s*```$/, '');
-      }
-      if (cleanResponse.startsWith('```')) {
-        cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/\s*```$/, '');
-      }
-      
-      const result = JSON.parse(cleanResponse);
-      
+      const clean = this.cleanJsonFromLLM(response);
+      const result = JSON.parse(clean);
       return result.relevantMemories
         .sort((a, b) => b.relevance - a.relevance)
         .slice(0, 5)
@@ -380,6 +361,19 @@ Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": 
       console.warn('⚠️ LLM relevance detection failed, using heuristics:', error);
       return await this.heuristicDetectRelevance(userQuestion, selectedMemories);
     }
+  }
+
+  /**
+   * Central JSON cleaner for LLM output
+   */
+  cleanJsonFromLLM(text) {
+    if (!text) return 'null';
+    let t = String(text).trim();
+    if (t.startsWith('```json')) t = t.replace(/```json\s*/, '').replace(/\s*```$/, '');
+    else if (t.startsWith('```')) t = t.replace(/```\s*/, '').replace(/\s*```$/, '');
+    // Remove stray trailing commas
+    t = t.replace(/,\s*([}\]])/g, '$1');
+    return t;
   }
 
   /**
