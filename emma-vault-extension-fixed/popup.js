@@ -573,132 +573,16 @@ class EmmaVaultExtension {
       unlockBtn.innerHTML = '<span class="btn-icon">⏳</span> Unlocking...';
       unlockBtn.disabled = true;
       
-      // Get the vault file that needs unlocking
-      const storage = await chrome.storage.local.get(['vaultFileName', 'vaultReady']);
-      
-      if (storage.vaultFileName) {
-        console.log('🔓 POPUP: Attempting to unlock vault file:', storage.vaultFileName);
-        
-        // SIMPLIFIED: Try to unlock with existing vault data first
-        try {
-          console.log('🔓 POPUP: Attempting to unlock existing vault');
-          
-          // First, try to use auto-recovery from background
-          const recoveryResponse = await chrome.runtime.sendMessage({
-            action: 'RECOVER_VAULT',
-            passphrase: passphrase
-          });
-          
-          if (recoveryResponse && recoveryResponse.success) {
-            console.log('✅ POPUP: Vault recovered from encrypted backup');
-            this.vaultData = recoveryResponse.vaultData;
-            this.isVaultOpen = true;
-            
-            // NUCLEAR: Use simple vault system
-            if (window.simpleVault) {
-              window.simpleVault.unlock(storage.vaultFileName || 'My Vault');
-            }
-            
-            // Mark vault as ready
-            await chrome.storage.local.set({
-              vaultReady: true,
-              lastUnlocked: new Date().toISOString()
-            });
-            
-          } else {
-            // Fallback: If recovery fails, ask user to reselect file
-            console.log('🔓 POPUP: Recovery failed - asking user to reselect vault file');
-            
-            const fileHandle = await window.showOpenFilePicker({
-              types: [{
-                description: 'Emma vault files',
-                accept: { 'application/json': ['.emma'] }
-              }],
-              multiple: false
-            });
-            
-            if (!fileHandle || fileHandle.length === 0) {
-              throw new Error('No file selected');
-            }
-            
-            const selectedFile = fileHandle[0];
-            console.log('🔓 POPUP: File reselected:', selectedFile.name);
-            
-            // Read and decrypt the file
-            const file = await selectedFile.getFile();
-            const vaultData = await this.decryptVaultFile(file, passphrase);
-            
-            // Send file handle to background script
-            await chrome.runtime.sendMessage({
-              action: 'SET_FILE_HANDLE',
-              handle: selectedFile
-            });
-            
-            // Load vault data into background
-            await chrome.runtime.sendMessage({
-              action: 'VAULT_LOAD',
-              data: vaultData
-            });
-            
-            // Store passphrase for future auto-recovery
-            await chrome.runtime.sendMessage({
-              action: 'STORE_PASSPHRASE',
-              passphrase: passphrase
-            });
-            
-            // Update local state
-            this.vaultData = vaultData;
-            this.currentVault = {
-              fileHandle: selectedFile,
-              fileName: selectedFile.name,
-              lastSync: new Date().toISOString()
-            };
-            
-            // CRITICAL FIX: Sync localStorage state to web app
-            if (tab && tab.url && tab.url.includes('emma-hijc.onrender.com')) {
-              try {
-                await chrome.scripting.executeScript({
-                  target: { tabId: tab.id },
-                  func: (vaultName) => {
-                    localStorage.setItem('emmaSimpleVaultUnlocked', 'true');
-                    localStorage.setItem('emmaSimpleVaultName', vaultName);
-                    localStorage.setItem('emmaVaultActive', 'true');
-                    localStorage.setItem('emmaVaultName', vaultName);
-                    console.log('🔄 EXTENSION→WEB: Synced vault unlock state to web app');
-                  },
-                  args: [selectedFile.name]
-                });
-              } catch (syncError) {
-                console.warn('⚠️ POPUP: Could not sync unlock state to web app:', syncError);
-              }
-            }
-            
-            // Mark vault as ready
-            await chrome.storage.local.set({
-              vaultFileName: selectedFile.name,
-              vaultReady: true,
-              lastUnlocked: new Date().toISOString()
-            });
-            
-            this.isVaultOpen = true;
-          }
-          
-          console.log('🔓 POPUP: Vault unlock process completed');
-          
-        } catch (decryptError) {
-          throw new Error('Failed to unlock vault: ' + decryptError.message);
-        }
-        
-        // Success
-        this.hideVaultUnlockOverlay();
-        this.showSuccess('Vault unlocked successfully!');
-        
-        // Update UI to show unlocked state
-        this.updateUI();
-        
-      } else {
-        throw new Error('No locked vault file found');
+      // Ask background to unlock using its file handle and passphrase
+      const response = await chrome.runtime.sendMessage({ action: 'UNLOCK_VAULT', passphrase });
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'Unlock failed');
       }
+      this.vaultData = response.vaultData;
+      this.isVaultOpen = true;
+      this.hideVaultUnlockOverlay();
+      this.showSuccess('Vault unlocked successfully!');
+      this.updateUI();
       
     } catch (error) {
       console.error('❌ POPUP: Unlock failed:', error);
