@@ -223,7 +223,10 @@ class EmmaDashboard {
           window.currentVaultStatus = status || { isUnlocked: false };
         } catch (e) {
           console.warn('⚠️ Vault status unavailable:', e.message);
-          window.currentVaultStatus = { isUnlocked: false };
+          // CRITICAL FIX: Don't force lock status - preserve existing state
+          if (!window.currentVaultStatus) {
+            window.currentVaultStatus = { isUnlocked: false };
+          }
         }
         
         // Load stats safely
@@ -241,13 +244,19 @@ class EmmaDashboard {
       } else {
         // Demo data when API not available
         console.log('🎭 Using demo data - Emma API not available');
-        window.currentVaultStatus = { isUnlocked: false };
+        // CRITICAL FIX: Don't force lock status - preserve existing state
+        if (!window.currentVaultStatus) {
+          window.currentVaultStatus = { isUnlocked: false };
+        }
         this.updateStats({ memories: 42, people: 12, today: 3 });
       }
     } catch (error) {
       console.error('🚨 Dashboard data load error:', error);
       // Fallback to demo data
-      window.currentVaultStatus = { isUnlocked: false };
+      // CRITICAL FIX: Don't force lock status - preserve existing state
+      if (!window.currentVaultStatus) {
+        window.currentVaultStatus = { isUnlocked: false };
+      }
       this.updateStats({ memories: 42, people: 12, today: 3 });
     }
   }
