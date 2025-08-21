@@ -195,15 +195,28 @@ class EmmaVaultExtension {
   }
   
   updateUI() {
-    console.log('🔄 Updating UI - isVaultOpen:', this.isVaultOpen);
+    // NUCLEAR SIMPLICITY: Use ONLY localStorage as source of truth
+    const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true';
+    const vaultName = localStorage.getItem('emmaVaultName');
     
-    // CRITICAL: Check if vault exists but is locked (needs unlock overlay)
-    this.checkVaultLockStatus();
+    console.log('🔥 POPUP: Simple UI update - vault unlocked:', vaultUnlocked);
     
-    if (this.isVaultOpen) {
+    this.isVaultOpen = vaultUnlocked;
+    
+    if (vaultUnlocked) {
+      console.log('✅ POPUP: Vault unlocked - showing active state');
+      this.hideVaultUnlockOverlay();
       this.showActiveVaultState();
+      this.elements.vaultStatusIndicator.textContent = '🟢';
     } else {
+      console.log('🔒 POPUP: Vault locked - showing welcome/unlock state');
       this.showWelcomeState();
+      // Only show unlock overlay if we have a vault file
+      chrome.storage.local.get(['vaultFileName']).then(storage => {
+        if (storage.vaultFileName) {
+          this.showVaultUnlockOverlay(storage.vaultFileName);
+        }
+      });
     }
     
     this.updateRecentVaults();
