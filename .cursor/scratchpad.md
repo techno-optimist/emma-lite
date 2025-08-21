@@ -259,6 +259,9 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 - Backup exclusion toggle added to Settings; wired to stub control. Ensure native plugin integration later sets NSURLIsExcludedFromBackupKey on iOS; defaults remain included per PRD.
 - Next: Biometrics quick unlock setting with proper gating (export/rotation/disable requires passphrase).
 
+### CTO Oversight Notes (Key Rotation Gating)
+- Added `mobile/js/key-rotation.js` stub with privileged gating. Replace with real re-encryption flow in Phase 2; gating UX validated via same mechanism as export.
+
 ### CTO Oversight Notes (Mobile Shell Entrypoint)
 - Added `mobile/pages/index.html` linking to mobile dashboard and mobile settings. Capacitor should load this as the start URL.
 - Next: Update Capacitor config (once initialized) to serve `mobile/pages/index.html` and bundle `mobile/` assets.

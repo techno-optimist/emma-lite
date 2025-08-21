@@ -72,7 +72,19 @@
   <script src="../js/vault/backup-control.js"></script>
   <script src="../js/vault/biometrics.js"></script>
   <script src="../js/security-gating.js"></script>
+  <script src="../js/key-rotation.js"></script>
   <script>
+      // Example button wiring for key rotation if present
+      const rotateBtn = document.getElementById('rotate-key');
+      if (rotateBtn && window.EmmaKeyRotation) {
+        rotateBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          try {
+            const res = await window.EmmaKeyRotation.rotateWithGating();
+            if (res.ok) notify('Vault key rotation complete'); else notify('Key rotation cancelled', true);
+          } catch (err) { notify('Key rotation failed: ' + (err?.message || err), true); }
+        });
+      }
     document.addEventListener('DOMContentLoaded', () => {
       // Backup toggle
       const backupToggle = document.getElementById('backup-exclusion-toggle');
