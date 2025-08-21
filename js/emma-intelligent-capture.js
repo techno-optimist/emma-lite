@@ -122,7 +122,7 @@ class EmmaIntelligentCapture {
       keywords: []
     };
     
-    // Milestone detection
+    // Milestone detection (more comprehensive patterns)
     const milestonePatterns = [
       /first\s+time/i,
       /learned\s+to/i,
@@ -134,10 +134,24 @@ class EmmaIntelligentCapture {
       /was\s+born/i,
       /got\s+(?:married|engaged)/i,
       /new\s+(?:job|house|baby)/i,
-      /almost\s+(?:died|killed)/i,
+      /almost\s+(?:died|killed|lost)/i,
       /survived/i,
       /recovered/i,
-      /cutie|pet|dog|cat/i // Pet-related memories
+      /adventure/i,
+      /story\s+about/i,
+      /reminded\s+me/i,
+      /lifting\s+me\s+up/i,
+      /crane/i
+    ];
+    
+    // Pet-related patterns (separate for better scoring)
+    const petPatterns = [
+      /cutie/i,
+      /\bpet\b/i,
+      /\bdog\b/i,
+      /\bcat\b/i,
+      /puppy/i,
+      /kitten/i
     ];
     
     milestonePatterns.forEach(pattern => {
@@ -148,11 +162,20 @@ class EmmaIntelligentCapture {
       }
     });
     
+    // Pet-related scoring (separate for better tracking)
+    petPatterns.forEach(pattern => {
+      if (pattern.test(content)) {
+        signals.score += 3;
+        signals.types.push('pet');
+        signals.milestones.push(pattern.source);
+      }
+    });
+    
     // Emotional intensity detection
     const emotionalWords = {
-      high: ['amazing', 'incredible', 'wonderful', 'terrible', 'devastating', 'perfect', 'worst', 'best'],
-      medium: ['happy', 'sad', 'excited', 'worried', 'proud', 'disappointed'],
-      low: ['nice', 'good', 'okay', 'fine']
+      high: ['amazing', 'incredible', 'wonderful', 'terrible', 'devastating', 'perfect', 'worst', 'best', 'adventure', 'special', 'precious'],
+      medium: ['happy', 'sad', 'excited', 'worried', 'proud', 'disappointed', 'reminded', 'story', 'memory'],
+      low: ['nice', 'good', 'okay', 'fine', 'talked', 'told']
     };
     
     Object.entries(emotionalWords).forEach(([intensity, words]) => {
