@@ -18,6 +18,12 @@ class EmmaWebVault {
     this.extensionAvailable = false;
     this.extensionSyncEnabled = false;
     
+    // PHASE 2: Web App Primary Architecture integration
+    this.useWebAppPrimary = localStorage.getItem('USE_WEBAPP_PRIMARY') === 'true';
+    this.primaryVault = null; // Will hold EmmaVaultPrimary instance
+    
+    console.log('🔧 EMMA WEB VAULT: Architecture mode:', this.useWebAppPrimary ? 'WEB APP PRIMARY' : 'LEGACY');
+    
     // CRITICAL FIX: Restore vault state from localStorage on construction
     const vaultActive = localStorage.getItem('emmaVaultActive') === 'true';
     const vaultName = localStorage.getItem('emmaVaultName');
@@ -389,6 +395,16 @@ class EmmaWebVault {
    * List memories (IDENTICAL API to desktop version!)
    */
   async listMemories(limit = 50, offset = 0) {
+    // PHASE 2: Use Web App Primary if enabled
+    if (this.useWebAppPrimary && window.emmaVaultPrimary) {
+      console.log('🚀 PRIMARY: Getting memories from Web App Primary vault...');
+      const memories = await window.emmaVaultPrimary.getMemories();
+      // Apply pagination
+      return memories
+        .sort((a, b) => new Date(b.created) - new Date(a.created))
+        .slice(offset, offset + limit);
+    }
+    
     // Extension mode: Request memories from extension storage
     if (this.extensionAvailable) {
       console.log('🔗 Extension mode: Requesting memories from extension...');

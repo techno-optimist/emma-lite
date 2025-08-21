@@ -306,30 +306,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ memories: [], error: error.message }));
       return true;
       
-    case 'GET_VAULT_DATA_FOR_VECTORLESS':
-      // Provide vault data for vectorless AI processing
-      (async () => {
-        try {
-          if (!currentVaultData) {
-            sendResponse({ success: false, error: 'No vault data available' });
-            return;
-          }
-          
-          console.log('🧠 VECTORLESS: Providing vault data for AI processing');
-          
-          // Return the full vault data for vectorless processing
-          sendResponse({ 
-            success: true, 
-            vaultData: currentVaultData,
-            memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
-            peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0
-          });
-        } catch (error) {
-          console.error('❌ Failed to get vault data for vectorless:', error);
-          sendResponse({ success: false, error: error.message });
-        }
-      })();
-      return true;
+         case 'GET_VAULT_DATA_FOR_VECTORLESS':
+       // Provide vault data for vectorless AI processing
+       (async () => {
+         try {
+           if (!currentVaultData) {
+             sendResponse({ success: false, error: 'No vault data available' });
+             return;
+           }
+           
+           console.log('🧠 VECTORLESS: Providing vault data for AI processing');
+           
+           // Return the full vault data for vectorless processing
+           sendResponse({ 
+             success: true, 
+             vaultData: currentVaultData,
+             memoryCount: currentVaultData?.content?.memories ? Object.keys(currentVaultData.content.memories).length : 0,
+             peopleCount: currentVaultData?.content?.people ? Object.keys(currentVaultData.content.people).length : 0
+           });
+         } catch (error) {
+           console.error('❌ Failed to get vault data for vectorless:', error);
+           sendResponse({ success: false, error: error.message });
+         }
+       })();
+       return true;
+       
+     case 'ENCRYPT_VAULT_DATA':
+       // PHASE 2.3: Pure encryption service for Web App Primary
+       (async () => {
+         try {
+           const result = await handleEncryptVaultData(request.vaultData, request.passphrase);
+           sendResponse(result);
+         } catch (error) {
+           sendResponse({ success: false, error: error.message });
+         }
+       })();
+       return true;
+       
+     case 'DECRYPT_VAULT_DATA':
+       // PHASE 2.3: Pure decryption service for Web App Primary
+       (async () => {
+         try {
+           const result = await handleDecryptVaultData(request.encryptedData, request.passphrase);
+           sendResponse(result);
+         } catch (error) {
+           sendResponse({ success: false, error: error.message });
+         }
+       })();
+       return true;
+       
+     case 'GENERATE_ENCRYPTION_SALT':
+       // PHASE 2.3: Generate encryption salt for new vaults
+       try {
+         const result = handleGenerateEncryptionSalt();
+         sendResponse(result);
+       } catch (error) {
+         sendResponse({ success: false, error: error.message });
+       }
+       return true;
       
     default:
       sendResponse({ success: false, error: 'Unknown action' });
@@ -1761,4 +1795,176 @@ async function downloadEncryptedVault(passphrase, vaultName) {
   }
 }
 
+/**
+ * PHASE 2.3: Pure Crypto Service Functions for Web App Primary Architecture
+ */
+
+/**
+ * ENCRYPT_VAULT_DATA: Pure encryption service (no data storage)
+ */
+async function handleEncryptVaultData(vaultData, passphrase) {
+  try {
+    console.log('🔒 CRYPTO SERVICE: Encrypting vault data...');
+    
+    // Generate salt for encryption
+    const salt = crypto.getRandomValues(new Uint8Array(32));
+    
+    // Convert vault data to JSON string
+    const jsonString = JSON.stringify(vaultData);
+    const dataToEncrypt = new TextEncoder().encode(jsonString);
+    
+    // Derive encryption key
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 250000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt']
+    );
+    
+    // Generate IV for encryption
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    
+    // Encrypt the data
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      dataToEncrypt
+    );
+    
+    // Create .emma file format
+    const magicBytes = new TextEncoder().encode('EMMA');
+    const saltBytes = salt;
+    const ivBytes = iv;
+    const encryptedBytes = new Uint8Array(encrypted);
+    
+    // Combine all parts
+    const totalLength = 4 + 32 + 12 + encryptedBytes.length;
+    const fileData = new Uint8Array(totalLength);
+    
+    let offset = 0;
+    fileData.set(magicBytes, offset); offset += 4;
+    fileData.set(saltBytes, offset); offset += 32;
+    fileData.set(ivBytes, offset); offset += 12;
+    fileData.set(encryptedBytes, offset);
+    
+    console.log('✅ CRYPTO SERVICE: Vault encrypted successfully, size:', fileData.length);
+    
+    return {
+      success: true,
+      encryptedData: Array.from(fileData), // Convert for message passing
+      salt: Array.from(salt),
+      iv: Array.from(iv)
+    };
+    
+  } catch (error) {
+    console.error('❌ CRYPTO SERVICE: Encryption failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * DECRYPT_VAULT_DATA: Pure decryption service (no data storage)
+ */
+async function handleDecryptVaultData(encryptedData, passphrase) {
+  try {
+    console.log('🔓 CRYPTO SERVICE: Decrypting vault data...');
+    
+    // Convert array back to Uint8Array
+    const fileData = new Uint8Array(encryptedData);
+    
+    // Verify .emma file format
+    const magicBytes = fileData.slice(0, 4);
+    const magicString = new TextDecoder().decode(magicBytes);
+    
+    if (magicString !== 'EMMA') {
+      throw new Error('Invalid .emma file format');
+    }
+    
+    // Extract components
+    const salt = fileData.slice(4, 36);
+    const iv = fileData.slice(36, 48);
+    const encrypted = fileData.slice(48);
+    
+    console.log('🔓 CRYPTO SERVICE: File format verified, extracting data...');
+    
+    // Derive decryption key
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(passphrase),
+      'PBKDF2',
+      false,
+      ['deriveKey']
+    );
+    
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 250000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    );
+    
+    // Decrypt the data
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      encrypted
+    );
+    
+    // Parse JSON
+    const jsonString = new TextDecoder().decode(decrypted);
+    const vaultData = JSON.parse(jsonString);
+    
+    console.log('✅ CRYPTO SERVICE: Vault decrypted successfully, memories:', 
+      Object.keys(vaultData.content?.memories || {}).length);
+    
+    return {
+      success: true,
+      vaultData: vaultData
+    };
+    
+  } catch (error) {
+    console.error('❌ CRYPTO SERVICE: Decryption failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * GENERATE_ENCRYPTION_SALT: Generate new salt for vault creation
+ */
+function handleGenerateEncryptionSalt() {
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(32));
+    console.log('🧂 CRYPTO SERVICE: Generated new encryption salt');
+    
+    return {
+      success: true,
+      salt: Array.from(salt)
+    };
+  } catch (error) {
+    console.error('❌ CRYPTO SERVICE: Failed to generate salt:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 console.log('Emma Vault Bridge background service initialized');
+console.log('🔐 CRYPTO SERVICE: Pure crypto functions ready for Web App Primary architecture');
