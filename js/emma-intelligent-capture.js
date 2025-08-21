@@ -242,15 +242,15 @@ class EmmaIntelligentCapture {
     
     // Debug output
     if (this.options.debug) {
-      console.log('💝 MEMORY SCORING DEBUG:', {
-        content: content.substring(0, 100) + '...',
-        score: signals.score,
-        types: signals.types,
-        emotions: signals.emotions,
-        people: signals.people,
-        milestones: signals.milestones,
-        threshold: this.thresholds.memoryWorthy
-      });
+      console.log('💝 MEMORY SCORING DEBUG:');
+      console.log('   Content:', content.substring(0, 100) + '...');
+      console.log('   Score:', signals.score);
+      console.log('   Types:', signals.types);
+      console.log('   Emotions:', signals.emotions);
+      console.log('   People:', signals.people);
+      console.log('   Milestones:', signals.milestones);
+      console.log('   Threshold:', this.thresholds.memoryWorthy);
+      console.log('   Is Memory Worthy?', signals.score >= this.thresholds.memoryWorthy);
     }
     
     return signals;

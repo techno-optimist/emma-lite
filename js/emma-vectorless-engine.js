@@ -266,7 +266,17 @@ Respond with only a JSON array of indices: [1, 3, 7, ...]`;
 
     try {
       const response = await this.callLLM(prompt, { maxTokens: 200 });
-      const indices = JSON.parse(response.trim());
+      
+      // Clean the response - remove markdown code blocks
+      let cleanResponse = response.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/\s*```$/, '');
+      }
+      if (cleanResponse.startsWith('```')) {
+        cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      const indices = JSON.parse(cleanResponse);
       return indices.map(i => memories[i - 1]).filter(Boolean);
     } catch (error) {
       console.warn('⚠️ LLM collection selection failed, using heuristics:', error);
@@ -346,7 +356,17 @@ Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": 
 
     try {
       const response = await this.callLLM(prompt, { maxTokens: 800 });
-      const result = JSON.parse(response.trim());
+      
+      // Clean the response - remove markdown code blocks
+      let cleanResponse = response.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/\s*```$/, '');
+      }
+      if (cleanResponse.startsWith('```')) {
+        cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      const result = JSON.parse(cleanResponse);
       
       return result.relevantMemories
         .sort((a, b) => b.relevance - a.relevance)
