@@ -221,6 +221,48 @@ class EmmaVaultExtension {
   
   // REMOVED: Old checkVaultLockStatus - now using FSM via updateUI() → CHECK_STATE
   
+  // DIAGNOSTIC: Debug vault state (call from console: emmaApp.debugVaultState())
+  async debugVaultState() {
+    console.log('🔍 VAULT STATE DIAGNOSTIC:');
+    
+    try {
+      // Check background FSM state
+      const bgState = await chrome.runtime.sendMessage({ action: 'CHECK_STATE' });
+      console.log('🔍 Background FSM State:', bgState);
+      
+      // Check debug dump
+      const debugDump = await chrome.runtime.sendMessage({ action: 'DEBUG_DUMP_STATE' });
+      console.log('🔍 Background Debug Dump:', debugDump);
+      
+      // Check web app localStorage (if on Emma site)
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url && tab.url.includes('emma-hijc.onrender.com')) {
+        const webAppState = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => ({
+            emmaVaultActive: localStorage.getItem('emmaVaultActive'),
+            emmaVaultName: localStorage.getItem('emmaVaultName'),
+            sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
+            sessionVaultName: sessionStorage.getItem('emmaVaultName'),
+            currentVaultStatus: window.currentVaultStatus,
+            emmaWebVaultIsOpen: window.emmaWebVault ? window.emmaWebVault.isOpen : 'not available'
+          })
+        });
+        console.log('🔍 Web App State:', webAppState[0]?.result);
+      }
+      
+      // Check extension popup state
+      console.log('🔍 Extension Popup State:', {
+        isVaultOpen: this.isVaultOpen,
+        currentVault: this.currentVault,
+        vaultData: !!this.vaultData
+      });
+      
+    } catch (error) {
+      console.error('🔍 Diagnostic failed:', error);
+    }
+  }
+  
   // Show elegant vault unlock overlay
   showVaultUnlockOverlay(vaultName) {
     // Remove any existing overlay
@@ -2789,6 +2831,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Make available globally for modal callbacks
   window.emmaApp = emmaApp;
+  
+  // Expose diagnostic function globally
+  window.debugVaultState = () => emmaApp.debugVaultState();
+  console.log('🔍 DIAGNOSTIC: Call debugVaultState() in console to check vault state');
   
   console.log('🎉 Emma Vault Extension ready for Debbe and all precious memories!');
 });
