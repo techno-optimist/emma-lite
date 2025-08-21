@@ -2035,7 +2035,7 @@ if (!window.emmaWebVault) {
   window.emmaWebVault = new EmmaWebVault();
   console.log('🌟 EmmaWebVault created for first time');
 } else {
-  console.log('✅ EmmaWebVault already exists - preserving data');
+  console.log('✅ VAULT: Preserving existing EmmaWebVault instance - no reset');
 }
 
 // Compatibility layer - IDENTICAL API to desktop version!

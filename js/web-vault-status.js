@@ -303,6 +303,12 @@ class WebVaultStatus {
 }
 
 // Initialize global vault status manager
-window.webVaultStatus = new WebVaultStatus();
+// CRITICAL FIX: Only create if doesn't exist (preserve vault state across navigation)
+if (!window.webVaultStatus) {
+  window.webVaultStatus = new WebVaultStatus();
+  console.log('🌟 WebVaultStatus created for first time');
+} else {
+  console.log('✅ VAULT: Preserving existing WebVaultStatus instance - no reset');
+}
 
 console.log('🔐 WebVaultStatus: Initialized');
