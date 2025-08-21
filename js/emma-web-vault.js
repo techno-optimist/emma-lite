@@ -15,14 +15,13 @@ class EmmaWebVault {
     this.fileHandle = null; // For File System Access API
     this.pendingChanges = false;
     this.saveDebounceTimer = null;
-    this.extensionAvailable = false;
+    
+    // REVOLUTION: Pure web app mode (no extension dependencies)
+    this.extensionAvailable = false; // Force pure web app mode
     this.extensionSyncEnabled = false;
+    this.pureWebAppMode = true; // Emma works standalone
     
-    // PHASE 2: Web App Primary Architecture integration
-    this.useWebAppPrimary = localStorage.getItem('USE_WEBAPP_PRIMARY') === 'true';
-    this.primaryVault = null; // Will hold EmmaVaultPrimary instance
-    
-    console.log('🔧 EMMA WEB VAULT: Architecture mode:', this.useWebAppPrimary ? 'WEB APP PRIMARY' : 'LEGACY');
+    console.log('🚀 EMMA WEB VAULT: PURE WEB APP MODE - Standalone vault management');
     
     // CRITICAL FIX: Restore vault state from localStorage on construction
     const vaultActive = localStorage.getItem('emmaVaultActive') === 'true';
@@ -172,17 +171,21 @@ class EmmaWebVault {
         }
       }
       
-      // If no file provided, use File System Access API
+      // PURE WEB APP: Use native File System Access API (no extension needed)
       if (!file && 'showOpenFilePicker' in window) {
+        console.log('📁 PURE WEB APP: Using native File System Access API...');
         const [fileHandle] = await window.showOpenFilePicker({
           types: [{
             description: 'Emma Vault Files',
-            accept: { 'application/emma': ['.emma'] }
-          }]
+            accept: { 'application/emma-vault': ['.emma'] }
+          }],
+          excludeAcceptAllOption: true,
+          multiple: false
         });
         
         this.fileHandle = fileHandle;
         fileToProcess = await fileHandle.getFile();
+        console.log('✅ PURE WEB APP: Vault file selected natively:', fileToProcess.name);
       }
       
       if (!fileToProcess) {
@@ -199,7 +202,8 @@ class EmmaWebVault {
       this.passphrase = passphrase;
       
       // Decrypt and load vault
-      const vaultData = await this.decryptVaultFile(fileToProcess, passphrase);
+      // Decrypt vault data using NATIVE crypto (no extension needed)
+      const vaultData = await this.nativeDecryptVault(fileData, passphrase);
       
       this.vaultData = vaultData;
       this.isOpen = true;
@@ -2064,9 +2068,144 @@ class EmmaWebVault {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
+  /**
+   * PURE WEB APP: Native vault decryption (no extension needed)
+   */
+  async nativeDecryptVault(fileData, passphrase) {
+    try {
+      console.log('🔓 NATIVE CRYPTO: Decrypting vault with Web Crypto API...');
+      
+      // Verify .emma file format
+      const magicBytes = fileData.slice(0, 4);
+      const magicString = new TextDecoder().decode(magicBytes);
+      
+      if (magicString !== 'EMMA') {
+        throw new Error('Invalid .emma file format');
+      }
+      
+      // Extract encryption components
+      const salt = fileData.slice(4, 36);
+      const iv = fileData.slice(36, 48);
+      const encrypted = fileData.slice(48);
+      
+      console.log('🔓 NATIVE CRYPTO: File format verified, decrypting...');
+      
+      // Derive decryption key using Web Crypto API
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 250000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      
+      // Decrypt the vault data
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        encrypted
+      );
+      
+      // Parse decrypted JSON
+      const jsonString = new TextDecoder().decode(decrypted);
+      const vaultData = JSON.parse(jsonString);
+      
+      console.log('✅ NATIVE CRYPTO: Vault decrypted successfully! Memories:', 
+        Object.keys(vaultData.content?.memories || {}).length);
+      
+      return vaultData;
+      
+    } catch (error) {
+      console.error('❌ NATIVE CRYPTO: Decryption failed:', error);
+      if (error.name === 'OperationError') {
+        throw new Error('Invalid passphrase or corrupted vault file');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * PURE WEB APP: Native vault encryption (no extension needed)
+   */
+  async nativeEncryptVault(vaultData, passphrase) {
+    try {
+      console.log('🔒 NATIVE CRYPTO: Encrypting vault with Web Crypto API...');
+      
+      // Generate encryption salt and IV
+      const salt = crypto.getRandomValues(new Uint8Array(32));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      
+      // Convert vault data to bytes
+      const jsonString = JSON.stringify(vaultData);
+      const dataToEncrypt = new TextEncoder().encode(jsonString);
+      
+      // Derive encryption key
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+      
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 250000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt']
+      );
+      
+      // Encrypt the data
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        dataToEncrypt
+      );
+      
+      // Create .emma file format
+      const magicBytes = new TextEncoder().encode('EMMA');
+      const encryptedBytes = new Uint8Array(encrypted);
+      
+      // Combine all parts: EMMA + salt + iv + encrypted data
+      const totalLength = 4 + 32 + 12 + encryptedBytes.length;
+      const fileData = new Uint8Array(totalLength);
+      
+      let offset = 0;
+      fileData.set(magicBytes, offset); offset += 4;
+      fileData.set(salt, offset); offset += 32;
+      fileData.set(iv, offset); offset += 12;
+      fileData.set(encryptedBytes, offset);
+      
+      console.log('✅ NATIVE CRYPTO: Vault encrypted successfully, size:', fileData.length);
+      
+      return fileData;
+      
+    } catch (error) {
+      console.error('❌ NATIVE CRYPTO: Encryption failed:', error);
+      throw error;
+    }
+  }
 }
 
-// Global instance - ONLY create if doesn't exist (prevent data loss!)
 if (!window.emmaWebVault) {
   window.emmaWebVault = new EmmaWebVault();
   console.log('🌟 EmmaWebVault created for first time');
