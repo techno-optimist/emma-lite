@@ -31,14 +31,36 @@ class EmmaWebVault {
       console.log('🔓 CONSTRUCTOR: Restoring vault state from localStorage - vault should be unlocked');
       this.isOpen = true; // Restore unlocked state
       
-      // Restore minimal vault data structure
-      this.vaultData = {
-        content: { memories: {}, people: {}, media: {} },
-        stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
-        metadata: { name: vaultName }
-      };
+      // CRITICAL FIX: Restore actual vault data from IndexedDB
+      setTimeout(async () => {
+        try {
+          console.log('📖 CONSTRUCTOR: Attempting to restore vault data from IndexedDB...');
+          const vaultData = await this.loadFromIndexedDB();
+          if (vaultData) {
+            this.vaultData = vaultData;
+            console.log('✅ CONSTRUCTOR: Vault data restored from IndexedDB with', 
+              Object.keys(vaultData.content?.memories || {}).length, 'memories');
+          } else {
+            console.warn('⚠️ CONSTRUCTOR: No vault data in IndexedDB - creating minimal structure');
+            // Fallback to minimal structure
+            this.vaultData = {
+              content: { memories: {}, people: {}, media: {} },
+              stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
+              metadata: { name: vaultName }
+            };
+          }
+        } catch (error) {
+          console.error('❌ CONSTRUCTOR: Failed to restore vault data:', error);
+          // Fallback to minimal structure
+          this.vaultData = {
+            content: { memories: {}, people: {}, media: {} },
+            stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
+            metadata: { name: vaultName }
+          };
+        }
+      }, 100); // Small delay to ensure IndexedDB is ready
       
-      console.log('✅ CONSTRUCTOR: Vault restored to unlocked state from localStorage');
+      console.log('✅ CONSTRUCTOR: Vault state restoration initiated');
     } else {
       this.isOpen = false;
       console.log('🔒 CONSTRUCTOR: No active vault in localStorage - starting locked');
