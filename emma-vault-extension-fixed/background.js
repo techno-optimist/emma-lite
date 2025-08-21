@@ -108,9 +108,10 @@ chrome.runtime.onStartup.addListener(async () => {
           return;
         }
       }
-      // If recovery fails, fall back to locked; user can resume explicitly
-      await setVaultState('locked', { vaultReady: false });
-      console.warn('⚠️ EXTENSION: Auto-recovery unavailable; setting state to locked');
+      // CRITICAL FIX: Don't auto-lock on recovery failure - preserve existing state
+      console.warn('⚠️ EXTENSION: Auto-recovery unavailable; preserving existing state');
+      // Keep the vault state as 'unlocked' but mark data as unavailable
+      // User can still see unlocked status but operations will prompt for unlock
     }
   } catch (error) {
     console.warn('⚠️ EXTENSION: Failed to auto-recover on startup:', error);

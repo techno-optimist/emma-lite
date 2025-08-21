@@ -574,16 +574,10 @@
         setTimeout(() => {
           console.log('🚀 GALLERY: Initializing vault system...');
           
-          // Initialize vault objects if they don't exist
-          if (!window.emmaWebVault && typeof EmmaWebVault !== 'undefined') {
-            window.emmaWebVault = new EmmaWebVault();
-            console.log('✅ GALLERY: EmmaWebVault created');
-          }
-          
-          if (!window.webVaultStatus && typeof WebVaultStatus !== 'undefined') {
-            window.webVaultStatus = new WebVaultStatus();
-            console.log('✅ GALLERY: WebVaultStatus created');
-          }
+          // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
+          console.log('🔍 GALLERY: Using existing vault instances (no new creation)');
+          console.log('🔍 emmaWebVault exists:', !!window.emmaWebVault);
+          console.log('🔍 webVaultStatus exists:', !!window.webVaultStatus);
           
           console.log('🔍 GALLERY VAULT DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
           console.log('🔍 GALLERY VAULT DEBUG: webVaultStatus exists?', !!window.webVaultStatus);
@@ -672,15 +666,8 @@
         // CRITICAL: Initialize vault system for memory saving (fallback)
         console.log('🚀 GALLERY: Initializing vault system (fallback)...');
         
-        if (!window.emmaWebVault && typeof EmmaWebVault !== 'undefined') {
-          window.emmaWebVault = new EmmaWebVault();
-          console.log('✅ GALLERY: EmmaWebVault created (fallback)');
-        }
-        
-        if (!window.webVaultStatus && typeof WebVaultStatus !== 'undefined') {
-          window.webVaultStatus = new WebVaultStatus();
-          console.log('✅ GALLERY: WebVaultStatus created (fallback)');
-        }
+        // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
+        console.log('🔍 GALLERY FALLBACK: Using existing vault instances (no new creation)');
         
         // Extension mode fallback - Ensure vault is considered active
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {

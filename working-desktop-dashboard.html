@@ -6362,16 +6362,11 @@
         console.log('🔍 window.emmaWebVault exists?', !!window.emmaWebVault);
         console.log('🔍 window.webVaultStatus exists?', !!window.webVaultStatus);
         
-        // Force initialize if missing
-        if (!window.emmaWebVault && typeof EmmaWebVault !== 'undefined') {
-          window.emmaWebVault = new EmmaWebVault();
-          console.log('🔧 EMERGENCY: Created EmmaWebVault instance');
-        }
-        
-        if (!window.webVaultStatus && typeof WebVaultStatus !== 'undefined') {
-          window.webVaultStatus = new WebVaultStatus();
-          console.log('🔧 EMERGENCY: Created WebVaultStatus instance');
-        }
+        // CRITICAL FIX: Don't create new instances - they already exist from script loading!
+        // The global scripts (emma-web-vault.js, web-vault-status.js) already create instances
+        console.log('🔍 VAULT DEBUG: Using existing instances from global scripts');
+        console.log('🔍 emmaWebVault exists:', !!window.emmaWebVault);
+        console.log('🔍 webVaultStatus exists:', !!window.webVaultStatus);
         
         // Extension mode - Set up extension-aware vault status
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
