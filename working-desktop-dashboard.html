@@ -3460,6 +3460,10 @@
         
         this.isConstellationMode = true;
         
+        // PERSISTENCE: Save constellation state for page refresh
+        localStorage.setItem('emmaConstellationActive', 'true');
+        console.log('✅ CONSTELLATION: State saved - will restore on refresh');
+        
         // Add constellation-active class to hide all UI
         document.body.classList.add('constellation-active');
         
@@ -5522,6 +5526,10 @@
         console.log('🧠 Exiting memory neural network mode');
         this.isConstellationMode = false;
         
+        // PERSISTENCE: Clear constellation state
+        localStorage.removeItem('emmaConstellationActive');
+        console.log('✅ CONSTELLATION: State cleared - will show dashboard on refresh');
+        
         // Stop neural animation (EXACT same as main menu)
         this.isMenuOpen = false;
         if (this.neuralAnimationId) {
@@ -6021,7 +6029,16 @@
       });
       
       // Vault status is managed by WebVaultStatus - don't override here!
-      console.log('🎯 Dashboard initialization complete - WebVaultStatus manages vault state');
+              console.log('🎯 Dashboard initialization complete - WebVaultStatus manages vault state');
+        
+        // PERSISTENCE: Check if constellation was active before refresh
+        const constellationWasActive = localStorage.getItem('emmaConstellationActive') === 'true';
+        if (constellationWasActive) {
+          console.log('🔄 CONSTELLATION: Restoring constellation view after refresh');
+          setTimeout(() => {
+            this.enterMemoryConstellation();
+          }, 1000); // Wait for dashboard to fully initialize
+        }
       
       // CRITICAL: Initialize vault objects AFTER all scripts load
       setTimeout(() => {
