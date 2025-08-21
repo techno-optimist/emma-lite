@@ -108,10 +108,11 @@ chrome.runtime.onStartup.addListener(async () => {
           return;
         }
       }
-      // CRITICAL FIX: Don't auto-lock on recovery failure - preserve existing state
-      console.warn('⚠️ EXTENSION: Auto-recovery unavailable; preserving existing state');
-      // Keep the vault state as 'unlocked' but mark data as unavailable
-      // User can still see unlocked status but operations will prompt for unlock
+      // CRITICAL FIX: Force unlock prompt when data is lost
+      console.error('🚨 EXTENSION: Auto-recovery failed - vault data lost! Forcing re-unlock...');
+      // Reset to locked state to force user to re-unlock and restore data
+      await setVaultState('locked', { vaultReady: false, vaultFileName: null, resumeToken: null });
+      console.log('🔒 EXTENSION: Vault state reset to locked - user must re-unlock to restore data');
     }
   } catch (error) {
     console.warn('⚠️ EXTENSION: Failed to auto-recover on startup:', error);
@@ -1519,6 +1520,16 @@ async function getMemoriesData() {
     console.log('📝 DEBUG: Getting memories data from memory...');
     console.log('📝 DEBUG: currentVaultData exists?', !!currentVaultData);
     console.log('📝 DEBUG: Memories object:', currentVaultData?.content?.memories);
+    
+    // CRITICAL FIX: Detect data loss scenario
+    const { state } = await getVaultState();
+    if (state === 'unlocked' && !currentVaultData) {
+      console.error('🚨 DATA LOSS DETECTED: Vault marked unlocked but currentVaultData is null!');
+      console.error('🚨 This indicates service worker restart with failed recovery');
+      // Force re-lock to trigger proper unlock flow
+      await setVaultState('locked', { vaultReady: false, vaultFileName: null, resumeToken: null });
+      throw new Error('Vault data lost due to service worker restart. Please unlock again.');
+    }
     
     const memories = currentVaultData?.content?.memories || {};
     const media = currentVaultData?.content?.media || {};
