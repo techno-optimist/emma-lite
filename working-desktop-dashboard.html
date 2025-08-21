@@ -3611,12 +3611,40 @@
         try {
           console.log('💝 CONSTELLATION: Loading memories from .emma vault file');
           
-          // Use extension-based loading like gallery and people pages
-          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-            console.log('💝 CONSTELLATION: Loading from extension vault...');
-            const memories = await window.emmaWebVault.listMemories(1000); // Get all memories
+          // Use web app vault data directly (pure web app mode)
+          if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+            console.log('💝 CONSTELLATION: Loading from web app vault data...');
             
-            console.log('💝 CONSTELLATION: Found memories in extension vault:', memories.length);
+            const vaultMemories = window.emmaWebVault.vaultData.content?.memories || {};
+            const vaultMedia = window.emmaWebVault.vaultData.content?.media || {};
+            
+            // Convert vault memories to array format
+            const memories = Object.values(vaultMemories).map(memory => {
+              // Process attachments to include data URLs
+              const attachments = (memory.attachments || []).map(attachment => {
+                const mediaItem = vaultMedia[attachment.id];
+                if (mediaItem && mediaItem.data) {
+                  return {
+                    ...attachment,
+                    url: mediaItem.data.startsWith('data:')
+                      ? mediaItem.data
+                      : `data:${mediaItem.type};base64,${mediaItem.data}`,
+                    dataUrl: mediaItem.data.startsWith('data:')
+                      ? mediaItem.data
+                      : `data:${mediaItem.type};base64,${mediaItem.data}`,
+                    isPersisted: true
+                  };
+                }
+                return attachment;
+              });
+              
+              return {
+                ...memory,
+                attachments
+              };
+            });
+            
+            console.log('💝 CONSTELLATION: Found memories in web app vault:', memories.length);
             
             // FIXED: Add thumbnail from first attachment for constellation display
             const memoriesWithThumbnails = memories.map(memory => {
