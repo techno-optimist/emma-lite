@@ -266,6 +266,10 @@ Timeline is phase-based with decision gates. Each task includes success criteria
 ### CTO Oversight Notes (Mobile Copies)
 - Web assets copied to `mobile/` for safe customization. Mobile settings page created with backup and biometrics toggles; uses stubbed controls pending native plugins.
 
+### CTO Oversight Notes (Capacitor Config)
+- Added placeholder `mobile/capacitor/capacitor.config.ts` pointing webDir to `mobile/pages`. In practice, we will build to a `www/` folder; adjust webDir accordingly during build.
+- Next: biometrics gating (export/key rotation) and device chaos script; then start TestFlight/Play internal testing.
+
 ### Project Status Board — Mobile v1 (Sequenced)
 - [x] T0 Adapter interface and codebase routing
 - [x] T1 PWA_OPFS_Adapter complete with tests
