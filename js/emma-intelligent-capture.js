@@ -141,7 +141,12 @@ class EmmaIntelligentCapture {
       /story\s+about/i,
       /reminded\s+me/i,
       /lifting\s+me\s+up/i,
-      /crane/i
+      /crane/i,
+      /\bremember\s+when/i,
+      /\bwas\s+little/i,
+      /\bused\s+to/i,
+      /\bwould\s+always/i,
+      /climb\s+trees/i
     ];
     
     // Pet-related patterns (separate for better scoring)
@@ -187,7 +192,7 @@ class EmmaIntelligentCapture {
       });
     });
     
-    // People detection
+    // People detection (enhanced patterns)
     const peoplePatterns = [
       /\b(mom|dad|mother|father|parent)\b/i,
       /\b(son|daughter|child|children|kids?)\b/i,
@@ -195,7 +200,10 @@ class EmmaIntelligentCapture {
       /\b(grandma|grandpa|grandmother|grandfather)\b/i,
       /\b(sister|brother|sibling)\b/i,
       /\b(friend|best friend)\b/i,
-      /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/ // Names like "John and Mary"
+      /\bKevin\b/i, // Specific name
+      /\bDebbe\b/i, // Specific name  
+      /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/, // Names like "John and Mary"
+      /\b(he|she|they)\s+(?:was|were|used to|would)/i // Pronouns with past tense
     ];
     
     peoplePatterns.forEach(pattern => {
