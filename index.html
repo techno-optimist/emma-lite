@@ -384,8 +384,8 @@
                     
                     if (!passphrase) return;
                     
-                    // Decrypt using existing Emma crypto (compatible format)
-                    const vaultData = await window.emmaWebVault.decryptVaultFile(file, passphrase);
+                    // Use EXACT working crypto from extension
+                    const vaultData = await window.emmaWebVault.exactWorkingDecrypt(fileData, passphrase);
                     
                     // Set vault data in Emma Web Vault
                     window.emmaWebVault.vaultData = vaultData;

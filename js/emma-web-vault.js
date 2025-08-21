@@ -2083,41 +2083,49 @@ class EmmaWebVault {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
   /**
-   * PURE WEB APP: Native vault decryption (no extension needed)
+   * EXACT WORKING CRYPTO: Copied from extension background.js
    */
-  async nativeDecryptVault(fileData, passphrase) {
+  async exactWorkingDecrypt(fileData, passphrase) {
     try {
-      console.log('🔓 NATIVE CRYPTO: Decrypting vault with Web Crypto API...');
+      console.log('🔓 EXACT WORKING: Using proven extension crypto...');
       
-      // Verify .emma file format
-      const magicBytes = fileData.slice(0, 4);
-      const magicString = new TextDecoder().decode(magicBytes);
+      // Parse .emma file format: EMMA + version + salt + iv + encrypted data
+      const data = new Uint8Array(fileData);
       
-      if (magicString !== 'EMMA') {
+      // Check magic bytes
+      const magic = new TextDecoder().decode(data.slice(0, 4));
+      if (magic !== 'EMMA') {
         throw new Error('Invalid .emma file format');
       }
       
-      // Extract encryption components
-      const salt = fileData.slice(4, 36);
-      const iv = fileData.slice(36, 48);
-      const encrypted = fileData.slice(48);
+      // Extract components (EXACT format from working extension)
+      const version = data.slice(4, 6);
+      const salt = data.slice(6, 38); // 32 bytes
+      const iv = data.slice(38, 50); // 12 bytes
+      const encrypted = data.slice(50);
       
-      console.log('🔓 NATIVE CRYPTO: File format verified, decrypting...');
+      console.log('🔓 EXACT WORKING: Extracted vault components:', {
+        magic,
+        version: Array.from(version),
+        saltLength: salt.length,
+        ivLength: iv.length,
+        encryptedLength: encrypted.length
+      });
       
-      // Derive decryption key using Web Crypto API
+      // Derive key from passphrase using PBKDF2 (EXACT parameters)
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(passphrase),
         'PBKDF2',
         false,
-        ['deriveKey']
+        ['deriveBits', 'deriveKey']
       );
       
       const key = await crypto.subtle.deriveKey(
         {
           name: 'PBKDF2',
           salt: salt,
-          iterations: 250000,
+          iterations: 250000, // EXACT same as extension
           hash: 'SHA-256'
         },
         keyMaterial,
@@ -2126,28 +2134,25 @@ class EmmaWebVault {
         ['decrypt']
       );
       
-      // Decrypt the vault data
+      // Decrypt the data (EXACT same as extension)
       const decrypted = await crypto.subtle.decrypt(
         { name: 'AES-GCM', iv: iv },
         key,
         encrypted
       );
       
-      // Parse decrypted JSON
+      // Parse JSON
       const jsonString = new TextDecoder().decode(decrypted);
       const vaultData = JSON.parse(jsonString);
       
-      console.log('✅ NATIVE CRYPTO: Vault decrypted successfully! Memories:', 
+      console.log('✅ EXACT WORKING: Vault decrypted successfully! Memories:', 
         Object.keys(vaultData.content?.memories || {}).length);
       
       return vaultData;
       
     } catch (error) {
-      console.error('❌ NATIVE CRYPTO: Decryption failed:', error);
-      if (error.name === 'OperationError') {
-        throw new Error('Invalid passphrase or corrupted vault file');
-      }
-      throw error;
+      console.error('❌ EXACT WORKING: Decryption failed:', error);
+      throw new Error('Failed to decrypt vault: ' + error.message);
     }
   }
 
