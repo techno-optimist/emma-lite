@@ -391,8 +391,8 @@
                     
                     if (!passphrase) return;
                     
-                    // Decrypt using native crypto
-                    const vaultData = await window.emmaWebVault.nativeDecryptVault(fileData, passphrase);
+                    // Decrypt using existing Emma crypto (compatible format)
+                    const vaultData = await window.emmaWebVault.decryptVaultFile(file, passphrase);
                     
                     // Set vault data in Emma Web Vault
                     window.emmaWebVault.vaultData = vaultData;
