@@ -459,6 +459,13 @@ async function loadVaultData(vaultData) {
   console.log('🚨 LOAD DEBUG: Vault data validation passed, setting currentVaultData');
   currentVaultData = vaultData;
   
+  // CRITICAL FIX: Mark vault as ready in storage so handleSaveMemoryToVault works
+  await chrome.storage.local.set({ 
+    vaultReady: true,
+    vaultFileName: vaultData.name || 'Unknown Vault'
+  });
+  console.log('🚨 LOAD DEBUG: Marked vault as ready in chrome.storage.local');
+  
   // INNOVATION: Store encrypted backup in IndexedDB for auto-recovery
   if (vaultPassphrase) {
     try {
