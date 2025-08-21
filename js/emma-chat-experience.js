@@ -56,10 +56,29 @@ class EmmaChatExperience extends ExperiencePopup {
     await this.initializeVectorlessEngine();
     
     // 💝 Initialize Intelligent Memory Capture
+    console.log('🚨 AUDIT: About to initialize intelligent capture');
     await this.initializeIntelligentCapture();
+    console.log('🚨 AUDIT: Intelligent capture initialization complete. Result:', !!this.intelligentCapture);
     
     // Set global reference for onclick handlers
     window.chatExperience = this;
+    
+    // 🚨 AUDIT: Add test function for memory detection
+    window.testMemoryDetection = async (message) => {
+      console.log('🧪 TESTING: Manual memory detection test');
+      if (this.intelligentCapture) {
+        const result = await this.intelligentCapture.analyzeMessage({
+          content: message || 'my dog cutie almost died from a fungus',
+          timestamp: Date.now(),
+          sender: 'user'
+        });
+        console.log('🧪 TEST RESULT:', result);
+        return result;
+      } else {
+        console.log('🧪 TEST FAILED: No intelligent capture available');
+        return null;
+      }
+    };
     
     this.startWithWelcomeMessage();
     this.enableFocusMode();
@@ -1093,41 +1112,43 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async initializeIntelligentCapture() {
     try {
+      console.log('🚨 AUDIT: Checking EmmaIntelligentCapture availability:', typeof EmmaIntelligentCapture);
+      
       // Check if EmmaIntelligentCapture is available
       if (typeof EmmaIntelligentCapture === 'undefined') {
-        if (this.debugMode) {
-          console.warn('💝 EmmaIntelligentCapture not available, loading...');
-        }
+        console.log('🚨 AUDIT: EmmaIntelligentCapture not available, loading script...');
         await this.loadIntelligentCaptureScript();
         
         // Wait for script to fully initialize
         await new Promise(resolve => setTimeout(resolve, 200));
+        console.log('🚨 AUDIT: After script loading, EmmaIntelligentCapture type:', typeof EmmaIntelligentCapture);
       }
       
       // Double-check that the class is now available
       if (typeof EmmaIntelligentCapture === 'undefined') {
-        console.warn('💝 EmmaIntelligentCapture still not available after loading - skipping intelligent capture');
+        console.error('🚨 AUDIT: EmmaIntelligentCapture still not available after loading - CRITICAL FAILURE');
         this.intelligentCapture = null;
         return;
       }
+      
+      console.log('🚨 AUDIT: About to create EmmaIntelligentCapture instance');
       
       // Initialize capture engine (works with or without vectorless)
       this.intelligentCapture = new EmmaIntelligentCapture({
         vectorlessEngine: this.vectorlessEngine || null,
         vaultManager: window.emmaWebVault || null,
         dementiaMode: this.dementiaMode || false,
-        debug: this.debugMode || false
+        debug: true // Force debug for audit
       });
       
-      if (this.debugMode) {
-        const mode = this.vectorlessEngine ? 'with vectorless engine' : 'with heuristics only';
-        console.log(`💝 Intelligent Memory Capture initialized ${mode}`);
-      }
+      console.log('🚨 AUDIT: EmmaIntelligentCapture created successfully:', !!this.intelligentCapture);
+      
+      const mode = this.vectorlessEngine ? 'with vectorless engine' : 'with heuristics only';
+      console.log(`💝 Intelligent Memory Capture initialized ${mode}`);
       
     } catch (error) {
-      if (this.debugMode) {
-        console.error('💝 Failed to initialize Intelligent Capture:', error);
-      }
+      console.error('🚨 AUDIT: CRITICAL - Failed to initialize Intelligent Capture:', error);
+      console.error('🚨 AUDIT: Error stack:', error.stack);
       // Gracefully disable intelligent capture
       this.intelligentCapture = null;
     }
