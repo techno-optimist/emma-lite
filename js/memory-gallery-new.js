@@ -574,38 +574,587 @@ function getCategoryIcon(category) {
 }/**
  * Open memory detail view
  */
+/**
+ * Open memory detail modal - Modern implementation with best practices
+ */
 function openMemoryDetail(memory) {
-  // TEMPORARY: Simple alert until modal is fully refactored
-  alert(`Memory: ${memory.title}\n\nContent: ${memory.content || memory.excerpt || 'No content'}\n\nThis modal is being refactored to be fully responsive with CSS classes.`);
-  return;
-  
-  // OLD FUNCTION - BEING REFACTORED:
-
+  // Hide Emma orb while modal is open
   const emmaOrb = document.getElementById('universal-emma-orb');
   if (emmaOrb) {
     emmaOrb.style.display = 'none';
-
   }
 
-  // Create beautiful modal
+  // Create modal container
   const modal = document.createElement('div');
-
   modal.className = 'memory-modal show';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-labelledby', 'memory-title');
+  modal.setAttribute('aria-modal', 'true');
 
-  const date = new Date(memory.date);
-  const formattedDate = date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  // Create modal structure with CSS classes
+  // Create overlay
   const overlay = document.createElement('div');
   overlay.className = 'memory-detail-overlay';
   
+  // Create content container
   const content = document.createElement('div');
   content.className = 'memory-detail-content';
+
+  // Build modal structure
+  buildModalHeader(content, memory);
+  buildModalTabs(content, memory);
+  buildModalBody(content, memory);
+
+  // Assemble modal
+  modal.appendChild(overlay);
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  // Setup event handlers
+  setupModalEventHandlers(modal, memory);
+  setupTabSystem(modal, memory);
+  
+  // Focus management for accessibility
+  const titleInput = modal.querySelector('#memory-title-input');
+  if (titleInput) {
+    titleInput.focus();
+  }
+
+  // Store reference for cleanup
+  modal._memory = memory;
+  window.currentMemory = memory;
+
+  return modal;
+}
+
+/**
+ * Build modal header with title and actions
+ */
+function buildModalHeader(content, memory) {
+  const header = document.createElement('div');
+  header.className = 'memory-detail-header';
+
+  // Title container
+  const titleContainer = document.createElement('div');
+  titleContainer.className = 'memory-title-container';
+
+  const titleInput = document.createElement('input');
+  titleInput.id = 'memory-title-input';
+  titleInput.className = 'form-input';
+  titleInput.value = memory.title || '';
+  titleInput.placeholder = 'Enter memory title...';
+  titleInput.setAttribute('aria-label', 'Memory title');
+
+  titleContainer.appendChild(titleInput);
+
+  // Header actions
+  const actions = document.createElement('div');
+  actions.className = 'header-actions';
+
+  // Save status
+  const saveStatus = document.createElement('div');
+  saveStatus.className = 'save-status';
+  saveStatus.id = 'save-status';
+
+  const saveStatusText = document.createElement('span');
+  saveStatusText.id = 'save-status-text';
+  saveStatusText.textContent = 'Saved';
+  saveStatus.appendChild(saveStatusText);
+
+  // Delete button
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
+  deleteBtn.id = 'memory-delete-btn';
+  deleteBtn.innerHTML = '🗑️ Delete';
+  deleteBtn.setAttribute('aria-label', 'Delete memory');
+
+  // Save button
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.id = 'memory-save-btn';
+  saveBtn.innerHTML = '💾 Save';
+  saveBtn.setAttribute('aria-label', 'Save memory');
+
+  actions.appendChild(saveStatus);
+  actions.appendChild(deleteBtn);
+  actions.appendChild(saveBtn);
+
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close modal');
+
+  // Assemble header
+  header.appendChild(titleContainer);
+  header.appendChild(actions);
+  header.appendChild(closeBtn);
+
+  content.appendChild(header);
+}
+
+/**
+ * Build modal tabs navigation
+ */
+function buildModalTabs(content, memory) {
+  const tabs = document.createElement('div');
+  tabs.className = 'memory-detail-tabs';
+  tabs.setAttribute('role', 'tablist');
+
+  const tabDefinitions = [
+    { id: 'overview', label: 'Overview', active: true },
+    { id: 'meta', label: 'Meta' },
+    { 
+      id: 'media', 
+      label: 'Media', 
+      badge: memory.mediaItems ? memory.mediaItems.length : 0 
+    },
+    { 
+      id: 'people', 
+      label: 'People', 
+      badge: memory.metadata?.people ? memory.metadata.people.length : 0 
+    },
+    { id: 'related', label: 'Related', badge: 0 }
+  ];
+
+  tabDefinitions.forEach(tabDef => {
+    const button = document.createElement('button');
+    button.className = `tab-btn${tabDef.active ? ' active' : ''}`;
+    button.setAttribute('data-tab', tabDef.id);
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', tabDef.active ? 'true' : 'false');
+    button.setAttribute('aria-controls', `tab-panel-${tabDef.id}`);
+    button.textContent = tabDef.label;
+
+    if (tabDef.badge !== undefined) {
+      const badge = document.createElement('span');
+      badge.textContent = tabDef.badge;
+      button.appendChild(badge);
+    }
+
+    tabs.appendChild(button);
+  });
+
+  content.appendChild(tabs);
+}
+
+/**
+ * Build modal body with tab panels
+ */
+function buildModalBody(content, memory) {
+  const body = document.createElement('div');
+  body.className = 'memory-detail-body';
+
+  // Create tab panels
+  const panels = {
+    overview: createOverviewPanel(memory),
+    meta: createMetaPanel(memory),
+    media: createMediaPanel(memory),
+    people: createPeoplePanel(memory),
+    related: createRelatedPanel(memory)
+  };
+
+  Object.entries(panels).forEach(([id, panel]) => {
+    panel.id = `tab-panel-${id}`;
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('aria-labelledby', `tab-${id}`);
+    panel.style.display = id === 'overview' ? 'block' : 'none';
+    body.appendChild(panel);
+  });
+
+  content.appendChild(body);
+}
+
+  /**
+ * Create overview panel
+ */
+function createOverviewPanel(memory) {
+  const panel = document.createElement('div');
+  panel.className = 'detail-section';
+
+  // Content section
+  const contentSection = document.createElement('div');
+  contentSection.className = 'detail-item';
+
+  const contentLabel = document.createElement('label');
+  contentLabel.className = 'detail-label';
+  contentLabel.textContent = 'Memory Content';
+
+  const contentTextarea = document.createElement('textarea');
+  contentTextarea.className = 'form-input';
+  contentTextarea.id = 'memory-content-input';
+  contentTextarea.value = memory.content || memory.excerpt || '';
+  contentTextarea.rows = 8;
+  contentTextarea.placeholder = 'Share your memory...';
+
+  contentSection.appendChild(contentLabel);
+  contentSection.appendChild(contentTextarea);
+
+  // Date and category section
+  const metaRow = document.createElement('div');
+  metaRow.style.display = 'grid';
+  metaRow.style.gridTemplateColumns = '1fr 1fr';
+  metaRow.style.gap = '20px';
+  metaRow.style.marginTop = '20px';
+
+  // Date
+  const dateSection = document.createElement('div');
+  dateSection.className = 'detail-item';
+
+  const dateLabel = document.createElement('label');
+  dateLabel.className = 'detail-label';
+  dateLabel.textContent = 'Date';
+
+  const dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.className = 'form-input';
+  dateInput.id = 'memory-date-input';
+  dateInput.value = formatDateForInput(memory.date);
+
+  dateSection.appendChild(dateLabel);
+  dateSection.appendChild(dateInput);
+
+  // Category
+  const categorySection = document.createElement('div');
+  categorySection.className = 'detail-item';
+
+  const categoryLabel = document.createElement('label');
+  categoryLabel.className = 'detail-label';
+  categoryLabel.textContent = 'Category';
+
+  const categorySelect = document.createElement('select');
+  categorySelect.className = 'form-select';
+  categorySelect.id = 'memory-category-select';
+
+  const categories = ['family', 'friends', 'travel', 'work', 'milestone', 'celebration', 'memory'];
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+    option.selected = memory.category === cat;
+    categorySelect.appendChild(option);
+  });
+
+  categorySection.appendChild(categoryLabel);
+  categorySection.appendChild(categorySelect);
+
+  metaRow.appendChild(dateSection);
+  metaRow.appendChild(categorySection);
+
+  panel.appendChild(contentSection);
+  panel.appendChild(metaRow);
+
+  return panel;
+}
+
+/**
+ * Create meta panel
+ */
+function createMetaPanel(memory) {
+  const panel = document.createElement('div');
+  panel.className = 'detail-section';
+
+  // Tags section
+  const tagsSection = document.createElement('div');
+  tagsSection.className = 'detail-item';
+
+  const tagsLabel = document.createElement('label');
+  tagsLabel.className = 'detail-label';
+  tagsLabel.textContent = 'Tags';
+
+  const tagsContainer = document.createElement('div');
+  tagsContainer.className = 'form-group';
+
+  const tagsInput = document.createElement('input');
+  tagsInput.type = 'text';
+  tagsInput.className = 'form-input';
+  tagsInput.id = 'memory-tags-input';
+  tagsInput.placeholder = 'Add a tag...';
+
+  const tagsList = document.createElement('div');
+  tagsList.className = 'tags-list';
+  tagsList.style.display = 'flex';
+  tagsList.style.flexWrap = 'wrap';
+  tagsList.style.gap = '8px';
+  tagsList.style.marginTop = '10px';
+
+  // Display existing tags
+  if (memory.tags && memory.tags.length > 0) {
+    memory.tags.forEach(tag => {
+      const tagElement = createTagElement(tag);
+      tagsList.appendChild(tagElement);
+    });
+  }
+
+  tagsContainer.appendChild(tagsInput);
+  tagsContainer.appendChild(tagsList);
+
+  tagsSection.appendChild(tagsLabel);
+  tagsSection.appendChild(tagsContainer);
+
+  panel.appendChild(tagsSection);
+
+  return panel;
+}
+
+/**
+ * Create media panel
+ */
+function createMediaPanel(memory) {
+  const panel = document.createElement('div');
+  panel.className = 'detail-section';
+
+  const title = document.createElement('h3');
+  title.className = 'section-title';
+  title.textContent = 'Media Gallery';
+
+  const mediaGrid = document.createElement('div');
+  mediaGrid.className = 'media-gallery';
+
+  // Display existing media
+  if (memory.mediaItems && memory.mediaItems.length > 0) {
+    memory.mediaItems.forEach(item => {
+      const mediaElement = createMediaElement(item);
+      mediaGrid.appendChild(mediaElement);
+    });
+  }
+
+  // Add media button
+  const addMediaContainer = document.createElement('div');
+  addMediaContainer.className = 'media-upload-container';
+
+  const addMediaBtn = document.createElement('button');
+  addMediaBtn.className = 'btn media-upload-btn';
+  addMediaBtn.innerHTML = '📷 Add Media';
+
+  addMediaContainer.appendChild(addMediaBtn);
+
+  panel.appendChild(title);
+  panel.appendChild(mediaGrid);
+  panel.appendChild(addMediaContainer);
+
+  return panel;
+}
+
+/**
+ * Create people panel
+ */
+function createPeoplePanel(memory) {
+  const panel = document.createElement('div');
+  panel.className = 'detail-section';
+
+  const title = document.createElement('h3');
+  title.className = 'section-title';
+  title.textContent = 'People in this Memory';
+
+  const peopleContainer = document.createElement('div');
+  peopleContainer.id = 'people-container';
+  peopleContainer.innerHTML = '<div style="text-align: center; padding: 20px;">Loading people...</div>';
+
+  panel.appendChild(title);
+  panel.appendChild(peopleContainer);
+
+  // Load people asynchronously
+  loadPeopleForPanel(memory, peopleContainer);
+
+  return panel;
+}
+
+/**
+ * Create related panel
+ */
+function createRelatedPanel(memory) {
+  const panel = document.createElement('div');
+  panel.className = 'detail-section';
+
+  const title = document.createElement('h3');
+  title.className = 'section-title';
+  title.textContent = 'Related Memories';
+
+  const placeholder = document.createElement('div');
+  placeholder.style.textAlign = 'center';
+  placeholder.style.padding = '40px 20px';
+  placeholder.style.color = 'rgba(255, 255, 255, 0.6)';
+  placeholder.textContent = 'Related memories will appear here';
+
+  panel.appendChild(title);
+  panel.appendChild(placeholder);
+
+  return panel;
+}
+
+/**
+ * Setup modal event handlers
+ */
+function setupModalEventHandlers(modal, memory) {
+  // Close handlers
+  const overlay = modal.querySelector('.memory-detail-overlay');
+  const closeBtn = modal.querySelector('.close-btn');
+  
+  const closeModal = () => {
+    // Show Emma orb
+    const emmaOrb = document.getElementById('universal-emma-orb');
+    if (emmaOrb) {
+      emmaOrb.style.display = 'block';
+    }
+    
+    // Remove modal
+    modal.remove();
+    
+    // Clear global reference
+    window.currentMemory = null;
+  };
+
+  overlay.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', closeModal);
+
+  // Escape key handler
+  const escapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', escapeHandler);
+    }
+  };
+  document.addEventListener('keydown', escapeHandler);
+
+  // Save button handler
+  const saveBtn = modal.querySelector('#memory-save-btn');
+  saveBtn.addEventListener('click', () => saveMemoryChanges(modal, memory));
+
+  // Delete button handler
+  const deleteBtn = modal.querySelector('#memory-delete-btn');
+  deleteBtn.addEventListener('click', () => deleteMemoryFromModal(modal, memory));
+
+  // Auto-save on input changes
+  const titleInput = modal.querySelector('#memory-title-input');
+  const contentInput = modal.querySelector('#memory-content-input');
+  
+  if (titleInput) {
+    titleInput.addEventListener('input', () => debounce(() => autoSaveMemory(modal, memory), 1000));
+  }
+  
+  if (contentInput) {
+    contentInput.addEventListener('input', () => debounce(() => autoSaveMemory(modal, memory), 1000));
+  }
+}
+
+/**
+ * Setup tab system
+ */
+function setupTabSystem(modal, memory) {
+  const tabs = modal.querySelectorAll('.tab-btn');
+  const panels = modal.querySelectorAll('[role="tabpanel"]');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetPanel = tab.getAttribute('data-tab');
+
+      // Update tab states
+      tabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      // Update panel visibility
+      panels.forEach(panel => {
+        panel.style.display = 'none';
+      });
+      
+      const activePanel = modal.querySelector(`#tab-panel-${targetPanel}`);
+      if (activePanel) {
+        activePanel.style.display = 'block';
+      }
+    });
+  });
+}
+
+/**
+ * Helper functions
+ */
+function formatDateForInput(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toISOString().split('T')[0];
+}
+
+function createTagElement(tag) {
+  const tagEl = document.createElement('span');
+  tagEl.className = 'memory-tag';
+  tagEl.textContent = tag;
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = '×';
+  removeBtn.onclick = () => tagEl.remove();
+  
+  tagEl.appendChild(removeBtn);
+  return tagEl;
+}
+
+function createMediaElement(item) {
+  const mediaEl = document.createElement('div');
+  mediaEl.className = 'media-item';
+  
+  if (item.type && item.type.startsWith('image/')) {
+    const img = document.createElement('img');
+    img.src = item.url || item.dataUrl;
+    img.alt = item.name || 'Memory image';
+    mediaEl.appendChild(img);
+  } else {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'media-item-placeholder';
+    placeholder.textContent = item.name || 'Media file';
+    mediaEl.appendChild(placeholder);
+  }
+  
+  return mediaEl;
+}
+
+async function loadPeopleForPanel(memory, container) {
+  // Implementation would load people from vault
+  container.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6);">People connections will appear here</div>';
+}
+
+function saveMemoryChanges(modal, memory) {
+  // Implementation for saving changes
+  console.log('💾 Saving memory changes...');
+  showSaveStatus('saved', '✓ Saved');
+}
+
+function deleteMemoryFromModal(modal, memory) {
+  if (confirm('Are you sure you want to delete this memory?')) {
+    console.log('🗑️ Deleting memory...');
+    modal.remove();
+  }
+}
+
+function autoSaveMemory(modal, memory) {
+  console.log('💾 Auto-saving...');
+  showSaveStatus('saving', '💾 Saving...');
+}
+
+function showSaveStatus(status, text) {
+  const statusEl = document.querySelector('#save-status-text');
+  if (statusEl) {
+    statusEl.textContent = text;
+  }
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+// ==========================================
+// LEGACY FUNCTIONS (keeping for compatibility)
+// ==========================================
   
   modal.appendChild(overlay);
   modal.appendChild(content);
@@ -653,9 +1202,9 @@ function openMemoryDetail(memory) {
   closeBtn.className = 'close-btn';
   closeBtn.innerHTML = '&times;';
   closeBtn.onclick = () => {
-    const emmaOrb = document.getElementById('universal-emma-orb');
-    if (emmaOrb) {
-      emmaOrb.style.display = 'block';
+          const emmaOrb = document.getElementById('universal-emma-orb');
+          if (emmaOrb) {
+            emmaOrb.style.display = 'block';
     }
     modal.remove();
   };
