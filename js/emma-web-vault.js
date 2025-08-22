@@ -38,6 +38,16 @@ class EmmaWebVault {
           const vaultData = await this.loadFromIndexedDB();
           if (vaultData) {
             this.vaultData = vaultData;
+            
+            // CRITICAL: Also restore passphrase from sessionStorage during IndexedDB restoration
+            const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
+            if (sessionPassphrase) {
+              this.passphrase = sessionPassphrase;
+              console.log('✅ CONSTRUCTOR: Passphrase restored from sessionStorage during IndexedDB restoration');
+            } else {
+              console.warn('⚠️ CONSTRUCTOR: No passphrase in sessionStorage - vault restored but not fully unlocked');
+            }
+            
             console.log('✅ CONSTRUCTOR: Vault data restored from IndexedDB with', 
               Object.keys(vaultData.content?.memories || {}).length, 'memories');
           } else {
