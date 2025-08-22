@@ -124,8 +124,21 @@ class EmmaVoiceTranscription {
    * Stop voice transcription
    */
   stopTranscription() {
+    console.log('🎤 STOP: stopTranscription called');
+    console.log('🎤 STOP: recognition exists?', !!this.recognition);
+    console.log('🎤 STOP: isRecording?', this.isRecording);
+    
     if (this.recognition && this.isRecording) {
+      console.log('🎤 STOP: Calling recognition.stop()');
       this.recognition.stop();
+    } else {
+      console.log('🎤 STOP: Not recording or no recognition, showing preview directly');
+      // If not recording, go directly to preview
+      if (this.finalResults.trim()) {
+        this.showTranscriptionPreview();
+      } else {
+        this.closeTranscriptionOverlay();
+      }
     }
   }
   
@@ -447,13 +460,27 @@ class EmmaVoiceTranscription {
     const stopBtn = document.getElementById('stop-recording-btn');
     const cancelBtn = document.getElementById('cancel-recording-btn');
     
-    stopBtn.addEventListener('click', () => {
-      this.stopTranscription();
-    });
+    if (stopBtn) {
+      stopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎤 STOP: Stop button clicked');
+        this.stopTranscription();
+      });
+    } else {
+      console.error('🎤 STOP: Stop button not found!');
+    }
     
-    cancelBtn.addEventListener('click', () => {
-      this.cancelTranscription();
-    });
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎤 CANCEL: Cancel button clicked');
+        this.cancelTranscription();
+      });
+    } else {
+      console.error('🎤 CANCEL: Cancel button not found!');
+    }
     
     // Close on escape key
     const escapeHandler = (e) => {
@@ -561,8 +588,13 @@ class EmmaVoiceTranscription {
       
       transcriptionDiv.innerHTML = displayHTML;
       
+      // CRITICAL: Auto-scroll to follow the last word
+      transcriptionDiv.scrollTop = transcriptionDiv.scrollHeight;
+      
       // Clear interim div since we're showing it inline
       interimDiv.innerHTML = '';
+      
+      console.log('🎤 SCROLL: Auto-scrolled to bottom for word following');
       
     } else {
       // Show placeholder
