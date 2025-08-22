@@ -426,7 +426,7 @@ function attachEventListeners() {
   }
 
   if (elements.memoriesGalleryBtn) {
-    elements.memoriesGalleryBtn.addEventListener('click', () => { try { viewMemoriesGallery(); } catch { try { window.location.href='memory-gallery-new.html'; } catch {} } });
+    elements.memoriesGalleryBtn.addEventListener('click', () => { try { viewMemoriesGallery(); } catch { try { window.location.href='gallery.html'; } catch {} } });
   }
 
   if (elements.searchQuickBtn) {
@@ -488,20 +488,20 @@ function attachEventListeners() {
         // Check if we're in Electron or browser extension
         if (window.emmaAPI) {
           // Electron environment - navigate directly
-          window.location.href = 'memory-gallery-new.html';
+          window.location.href = 'gallery.html';
         } else if (chrome.tabs && chrome.tabs.create) {
           // Browser extension environment
-          chrome.tabs.create({ url: chrome.runtime.getURL('memory-gallery-new.html') });
+          chrome.tabs.create({ url: chrome.runtime.getURL('gallery.html') });
         } else {
           // Fallback - try direct navigation
-          window.location.href = 'memory-gallery-new.html';
+          window.location.href = 'gallery.html';
         }
       } catch (error) {
         console.error('Failed to open memories page:', error);
         showNotification('Could not open memories page', 'error');
         // Final fallback
         try {
-          window.location.href = 'memory-gallery-new.html';
+          window.location.href = 'gallery.html';
         } catch (e) {
           console.error('All navigation methods failed:', e);
         }
@@ -960,26 +960,26 @@ function hideSearchResults() {
 function viewAllMemories() {
   // For Electron environment, navigate directly
   if (window.emmaAPI) {
-    window.location.href = 'memory-gallery-new.html';
+    window.location.href = 'gallery.html';
     return;
   }
 
   // For browser extension environment
   chrome.tabs.create({
-    url: chrome.runtime.getURL('memory-gallery-new.html')
+    url: chrome.runtime.getURL('gallery.html')
   });
 }
 
 function viewMemoriesGallery() {
   // For Electron environment, navigate directly
   if (window.emmaAPI) {
-    window.location.href = 'memory-gallery-new.html';
+    window.location.href = 'gallery.html';
     return;
   }
 
   // For browser extension environment
   chrome.tabs.create({
-    url: chrome.runtime.getURL('memory-gallery-new.html')
+    url: chrome.runtime.getURL('gallery.html')
   });
 }
 

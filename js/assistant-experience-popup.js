@@ -185,7 +185,7 @@ class AssistantExperience extends ExperiencePopup {
             <div class="memories-mini-gallery full-width">
               <div class="mini-gallery-header">
                 <h3>Your Memory Collection</h3>
-                <button class="view-all-btn" onclick="window.location.href='memory-gallery-new.html'">View All</button>
+                <button class="view-all-btn" onclick="window.location.href='gallery.html'">View All</button>
               </div>
               <div class="mini-gallery-grid" id="memories-mini-gallery-grid">
                 <!-- Memory cards will be loaded here -->
@@ -2046,7 +2046,7 @@ class AssistantExperience extends ExperiencePopup {
   navigateToMemoryGallery() {
 
     // Simple direct navigation like the dashboard
-    window.location.href = 'memory-gallery-new.html';
+    window.location.href = 'gallery.html';
   }
 
   createNewMemory() {
@@ -2804,12 +2804,12 @@ class AssistantExperience extends ExperiencePopup {
     editBtn.addEventListener('click', () => {
       modal.remove();
       // Navigate to full gallery for editing
-      window.location.href = `memory-gallery-new.html#${memory.id}`;
+      window.location.href = `gallery.html#${memory.id}`;
     });
 
     galleryBtn.addEventListener('click', () => {
       modal.remove();
-      window.location.href = `memory-gallery-new.html#${memory.id}`;
+      window.location.href = `gallery.html#${memory.id}`;
     });
 
     // Close on background click
@@ -3092,7 +3092,7 @@ class AssistantExperience extends ExperiencePopup {
         // Navigate to memory gallery to show the new memory
         setTimeout(() => {
 
-          window.location.href = 'memory-gallery-new.html';
+          window.location.href = 'gallery.html';
         }, 2000);
 
       } else if (result) {
@@ -3107,7 +3107,7 @@ class AssistantExperience extends ExperiencePopup {
         // Still navigate to gallery in demo mode
         setTimeout(() => {
           console.log('🔄 VOICE: Navigating to memory gallery (demo)');
-          window.location.href = 'memory-gallery-new.html';
+          window.location.href = 'gallery.html';
         }, 2000);
       }
 

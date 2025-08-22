@@ -217,7 +217,7 @@ MEMORY_UPDATED, PERSON_UPDATED
 
 ### **Core Pages**
 
-#### **1. Dashboard** (`working-desktop-dashboard.html`)
+#### **1. Dashboard** (`dashboard.html`)
 **Purpose**: Central hub with Emma orb and constellation
 - **Emma Orb**: WebGL-powered central interface
 - **Radial Menu**: 4 core functions (Capture, Memories, People, Chat)
@@ -232,7 +232,7 @@ MEMORY_UPDATED, PERSON_UPDATED
 - Extension detection and routing
 - Responsive design with glass-morphism
 
-#### **2. Memory Gallery** (`pages/memory-gallery-new.html`)
+#### **2. Memory Gallery** (`pages/gallery.html`)
 **Purpose**: Visual memory exploration and management
 - **Grid Layout**: Beautiful memory cards with photo previews
 - **Memory Detail Modal**: Tabbed interface (Overview, Meta, Media, People)
@@ -811,7 +811,7 @@ emma-lite-extension/
 ├── pages/                   # Web app pages
 │   ├── people-emma.html     # People directory
 │   └── memory-gallery-new.html # Memory gallery
-├── working-desktop-dashboard.html # Main dashboard
+├── dashboard.html # Main dashboard
 └── index.html              # Entry point
 ```
 

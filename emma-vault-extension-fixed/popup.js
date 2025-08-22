@@ -921,7 +921,7 @@ class EmmaVaultExtension {
       console.log('🚀 Redirecting to Emma dashboard...');
       setTimeout(() => {
         chrome.tabs.create({
-          url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html'
+          url: 'https://emma-hjjc.onrender.com/dashboard.html'
         });
         window.close(); // Close popup after redirect
       }, 1500);
@@ -1088,7 +1088,7 @@ class EmmaVaultExtension {
     try {
       // Open directly to dashboard since vault is already managed by extension
       await chrome.tabs.create({
-        url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html'
+        url: 'https://emma-hjjc.onrender.com/dashboard.html'
       });
       
       // Close popup
@@ -1106,7 +1106,7 @@ class EmmaVaultExtension {
     try {
       // Open dashboard and trigger memory wizard
       await chrome.tabs.create({
-        url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html#create-memory'
+        url: 'https://emma-hjjc.onrender.com/dashboard.html#create-memory'
       });
       
       // Close popup
@@ -1576,7 +1576,7 @@ class EmmaVaultExtension {
       console.log('🚀 Redirecting to Emma dashboard...');
       setTimeout(() => {
         chrome.tabs.create({
-          url: 'https://emma-hjjc.onrender.com/working-desktop-dashboard.html'
+          url: 'https://emma-hjjc.onrender.com/dashboard.html'
         });
         window.close(); // Close popup after redirect
       }, 1500);
