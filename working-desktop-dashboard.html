@@ -3047,26 +3047,14 @@
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
-        // Position the chat panel optimally - slightly larger than voice capture
-        let left = orbRect.right + 24;
-        let top = Math.max(40, orbRect.top - 100);
-        
         // Chat panel dimensions
         const panelWidth = 600; // Wider for comfortable chat
         const panelHeight = 700;
         
-        // Ensure it fits in viewport
-        if (left + panelWidth > viewportWidth - 40) {
-          left = orbRect.left - panelWidth - 24;
-        }
-        
-        if (top + panelHeight > viewportHeight - 40) {
-          top = viewportHeight - panelHeight - 40;
-        }
-        
+        // Center position in the middle of the page
         const position = {
-          left: Math.max(40, left),
-          top: Math.max(40, top),
+          left: (viewportWidth - panelWidth) / 2,
+          top: (viewportHeight - panelHeight) / 2,
           width: panelWidth,
           height: panelHeight
         };
