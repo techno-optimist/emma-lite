@@ -1948,10 +1948,15 @@ class EmmaChatExperience extends ExperiencePopup {
               console.log('🌟 CONSTELLATION: Entering memory constellation via dashboard...');
               window.dashboard.enterMemoryConstellation();
             } else {
-              console.log('🌟 FALLBACK: Dashboard not available, using URL navigation...');
-              // Fallback to URL-based navigation
-              window.location.hash = 'constellation';
-              window.location.reload();
+              console.log('🌟 FALLBACK: Dashboard not available, trying direct DOM manipulation...');
+              // CRITICAL: NO RELOAD - preserves sessionStorage!
+              // Try to trigger constellation view without reload
+              const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]');
+              if (constellationBtn) {
+                constellationBtn.click();
+              } else {
+                console.warn('🌟 Could not find constellation button - staying on dashboard');
+              }
             }
           }, 500);
         }, 2000);
