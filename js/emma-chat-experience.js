@@ -100,14 +100,9 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   renderContent(contentElement) {
-    // CLEAN REDESIGN: Remove inner container, direct modal content
+    // CLEAN REDESIGN: Remove inner container styling - let ExperiencePopup handle the container
+    // Just set up the content layout without duplicating container styles
     contentElement.style.cssText = `
-      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
-      border: 2px solid rgba(139, 92, 246, 0.3);
-      border-radius: 24px;
-      padding: 32px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
       display: flex;
       flex-direction: column;
       gap: 24px;
@@ -117,16 +112,13 @@ class EmmaChatExperience extends ExperiencePopup {
       width: 100%;
       height: 100%;
       box-sizing: border-box;
+      padding: 0;
+      background: transparent;
+      border: none;
     `;
     
     contentElement.innerHTML = `
-      <!-- Close Button Only -->
-      <button class="chat-close-btn" id="chat-close-btn">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
+      <!-- NO DUPLICATE Close Button - ExperiencePopup handles this -->
 
       <!-- Chat Messages -->
       <div class="emma-chat-messages" id="chat-messages">
@@ -256,7 +248,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.messageContainer = document.getElementById('chat-messages');
     this.inputField = document.getElementById('chat-input');
     this.sendButton = document.getElementById('send-btn');
-    this.closeButton = document.getElementById('chat-close-btn');
+    // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
     this.settingsButton = document.getElementById('chat-settings-btn');
     
@@ -271,7 +263,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
     this.settingsButton.addEventListener('click', () => this.showChatSettings());
-    this.closeButton.addEventListener('click', () => this.close());
+    // NO DUPLICATE close button event listener - ExperiencePopup handles this
 
     // Auto-resize textarea
     this.inputField.addEventListener('input', () => this.autoResizeTextarea());

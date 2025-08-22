@@ -197,6 +197,11 @@ class EmmaMobileUIFixes {
           position: fixed !important;
           top: 0 !important;
           left: 0 !important;
+          pointer-events: none !important; /* Container non-clickable */
+        }
+        
+        .radial-menu.active {
+          pointer-events: all !important; /* Allow clicks when active */
         }
         
         /* Radial Menu Items - Properly Anchored */
@@ -205,6 +210,8 @@ class EmmaMobileUIFixes {
           height: 70px !important;
           position: absolute !important;
           transform-origin: center center !important;
+          z-index: 1001 !important; /* Ensure clickable above other elements */
+          pointer-events: auto !important; /* Ensure clickable */
         }
         
         .radial-item-icon {
@@ -464,6 +471,8 @@ class EmmaMobileUIFixes {
           item.style.left = (x - elementSize) + 'px';
           item.style.top = (y - elementSize) + 'px';
           item.style.transform = 'none'; // Remove any conflicting transforms
+          item.style.zIndex = '1001'; // Ensure clickable
+          item.style.pointerEvents = 'auto'; // Ensure clickable
           
           console.log(`🎯 FIXED: Positioned radial item ${i} at center(${centerX}, ${centerY}) + radius(${radius}) = (${x}, ${y}) -> DOM(${x - elementSize}, ${y - elementSize})`);
           
@@ -546,7 +555,8 @@ class EmmaMobileUIFixes {
         item.style.left = (x - itemSize) + 'px';
         item.style.top = (y - itemSize) + 'px';
         item.style.transform = 'none';
-        item.style.zIndex = '1000';
+        item.style.zIndex = '1001'; // Higher than menu container
+        item.style.pointerEvents = 'auto'; // Ensure clickable
         
         console.log(`🎯 ANCHORED: Item ${i} to orb center(${centerX}, ${centerY}) at angle ${angle} -> position(${x - itemSize}, ${y - itemSize})`);
       });
