@@ -101,12 +101,12 @@ class ExperiencePopup {
     let finalPosition = { ...this.position };
     
     if (isMobile) {
-      // Mobile: Full screen with minimal padding
+      // Mobile: Full screen with proper padding
       finalPosition = {
-        left: 10,
-        top: 20,
-        width: window.innerWidth - 20,
-        height: window.innerHeight - 40
+        left: 12,
+        top: 24,
+        width: window.innerWidth - 24,
+        height: window.innerHeight - 48
       };
     } else if (isTablet) {
       // Tablet: Larger but not full screen
@@ -150,8 +150,8 @@ class ExperiencePopup {
       ${isMobile ? '' : 'resize: both;'}
       min-width: ${isMobile ? 'auto' : '400px'};
       min-height: ${isMobile ? 'auto' : '300px'};
-      max-width: calc(100vw - ${isMobile ? '20px' : '16px'});
-      max-height: calc(100vh - ${isMobile ? '40px' : '16px'});
+      max-width: calc(100vw - ${isMobile ? '24px' : '16px'});
+      max-height: calc(100vh - ${isMobile ? '48px' : '16px'});
     `;
 
     // Create header

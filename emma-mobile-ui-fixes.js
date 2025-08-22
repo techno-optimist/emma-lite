@@ -95,47 +95,54 @@ class EmmaMobileUIFixes {
         }
         
         .experience-popup-container {
-          width: calc(100vw - 20px) !important;
-          height: calc(100vh - 40px) !important;
+          width: calc(100vw - 24px) !important;
+          height: calc(100vh - 48px) !important;
           max-width: none !important;
           max-height: none !important;
-          min-height: calc(100vh - 40px) !important;
+          min-height: calc(100vh - 48px) !important;
           position: fixed !important;
-          top: 20px !important;
-          left: 10px !important;
-          right: 10px !important;
-          bottom: 20px !important;
+          top: 24px !important;
+          left: 12px !important;
+          right: 12px !important;
+          bottom: 24px !important;
         }
         
         .experience-popup-content {
           width: 100% !important;
           height: 100% !important;
           max-height: none !important;
-          padding: 16px !important;
+          padding: 20px !important;
           border-radius: 16px !important;
+          box-sizing: border-box !important;
         }
         
         /* Chat Messages Area */
         .emma-chat-messages {
           max-height: calc(100vh - 200px) !important;
           min-height: 300px !important;
-          padding: 12px 8px !important;
+          padding: 20px 16px !important;
+          margin: 0 !important;
         }
         
         /* Chat Input Area */
         .emma-chat-input {
-          padding: 12px 0 !important;
+          padding: 16px !important;
+          margin: 0 !important;
         }
         
         .input-wrapper {
-          padding: 8px !important;
-          gap: 6px !important;
+          padding: 12px !important;
+          gap: 8px !important;
+          border-radius: 12px !important;
+          background: rgba(255, 255, 255, 0.05) !important;
         }
         
         .chat-textarea {
           font-size: 16px !important; /* Prevent zoom on iOS */
-          padding: 12px !important;
+          padding: 12px 16px !important;
           min-height: 44px !important; /* iOS touch target */
+          border-radius: 8px !important;
+          margin: 0 !important;
         }
         
         .voice-btn, .settings-btn, .send-btn {
@@ -147,10 +154,11 @@ class EmmaMobileUIFixes {
         
         /* Chat Header */
         .emma-chat-header {
-          padding: 12px 0 !important;
+          padding: 16px 8px !important;
           flex-direction: column !important;
           text-align: center !important;
           gap: 12px !important;
+          margin-bottom: 8px !important;
         }
         
         .emma-chat-title {
@@ -163,8 +171,8 @@ class EmmaMobileUIFixes {
         
         /* Close Button */
         .chat-close-btn {
-          top: 8px !important;
-          right: 8px !important;
+          top: 12px !important;
+          right: 12px !important;
           width: 36px !important;
           height: 36px !important;
         }
@@ -172,16 +180,49 @@ class EmmaMobileUIFixes {
         /* Message Bubbles */
         .user-message .message-bubble,
         .emma-message .message-content {
-          max-width: calc(100% - 20px) !important;
+          max-width: calc(100% - 40px) !important;
           font-size: 15px !important;
+          margin: 8px 12px !important;
+          padding: 12px 16px !important;
+        }
+        
+        .user-message,
+        .emma-message {
+          margin: 12px 0 !important;
+          padding: 0 8px !important;
         }
         
         /* Settings Modal */
         .emma-settings-modal .settings-content {
-          padding: 20px !important;
-          margin: 10px !important;
-          max-height: calc(100vh - 40px) !important;
+          padding: 24px 20px !important;
+          margin: 16px !important;
+          max-height: calc(100vh - 60px) !important;
           overflow-y: auto !important;
+          border-radius: 16px !important;
+        }
+        
+        .settings-section {
+          margin: 20px 0 !important;
+          padding: 16px !important;
+        }
+        
+        .settings-input {
+          padding: 12px 16px !important;
+          margin: 8px 0 !important;
+        }
+        
+        /* Input Hints */
+        .input-hints {
+          padding: 8px 12px !important;
+          margin-top: 8px !important;
+          font-size: 12px !important;
+          text-align: center !important;
+        }
+        
+        /* Typing Indicator */
+        .emma-typing {
+          padding: 12px 16px !important;
+          margin: 8px 0 !important;
         }
       }
       
@@ -375,10 +416,10 @@ class EmmaMobileUIFixes {
         // Apply mobile-specific positioning
         if (window.innerWidth <= 768) {
           this.position = {
-            left: 10,
-            top: 20,
-            width: window.innerWidth - 20,
-            height: window.innerHeight - 40
+            left: 12,
+            top: 24,
+            width: window.innerWidth - 24,
+            height: window.innerHeight - 48
           };
         } else if (window.innerWidth <= 1024) {
           this.position = {
@@ -403,16 +444,16 @@ class EmmaMobileUIFixes {
    * Fix existing chat instances
    */
   fixExistingChatInstances() {
-    const chatContainers = document.querySelectorAll('.experience-popup-container');
+          const chatContainers = document.querySelectorAll('.experience-popup-container');
     chatContainers.forEach(container => {
       if (this.isMobile) {
         container.style.cssText += `
-          width: calc(100vw - 20px) !important;
-          height: calc(100vh - 40px) !important;
-          top: 20px !important;
-          left: 10px !important;
-          right: 10px !important;
-          bottom: 20px !important;
+          width: calc(100vw - 24px) !important;
+          height: calc(100vh - 48px) !important;
+          top: 24px !important;
+          left: 12px !important;
+          right: 12px !important;
+          bottom: 24px !important;
           position: fixed !important;
         `;
       }
