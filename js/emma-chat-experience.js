@@ -2277,12 +2277,21 @@ class EmmaChatExperience extends ExperiencePopup {
           originalHasDataUrl: !!mediaItem.dataUrl,
           originalHasData: !!mediaItem.data,
           convertedHasData: !!convertedItem.data,
-          dataType: typeof convertedItem.data
+          dataType: typeof convertedItem.data,
+          convertedItem: convertedItem
         });
         
         return convertedItem;
       })
     };
+    
+    // NUCLEAR DEBUG: Log final enriched memory structure
+    console.log('🔥 FINAL ENRICHED MEMORY:', {
+      memoryId: enrichedMemory.id,
+      attachmentCount: enrichedMemory.attachments?.length || 0,
+      attachments: enrichedMemory.attachments || [],
+      hasDataInAttachments: enrichedMemory.attachments?.every(att => !!att.data) || false
+    });
     
     if (this.debugMode) {
       console.log('🎯 ENRICHMENT FSM: Completed enrichment for memory:', memoryId, enrichedMemory);
