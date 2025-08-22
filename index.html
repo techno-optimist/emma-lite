@@ -414,6 +414,7 @@
                     // Set session storage
                     sessionStorage.setItem('emmaVaultActive', 'true');
                     sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+                    sessionStorage.setItem('emmaVaultPassphrase', passphrase); // CRITICAL: Store passphrase for session
                     localStorage.setItem('emmaVaultActive', 'true');
                     localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
                     
