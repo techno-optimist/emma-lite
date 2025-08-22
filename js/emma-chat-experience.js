@@ -2747,6 +2747,15 @@ class EmmaChatExperience extends ExperiencePopup {
 
     const mediaCount = state.collectedData.media?.length || 0;
     
+    // NUCLEAR DEBUG: Check media state before completion
+    console.log('🔥 MEDIA COMPLETION DEBUG:', {
+      memoryId,
+      mediaCount: state.collectedData.media?.length || 0,
+      mediaItems: state.collectedData.media || [],
+      stagesCompleted: state.stagesCompleted,
+      hasMediaData: state.collectedData.media?.every(item => !!item.dataUrl)
+    });
+    
     if (mediaCount > 0) {
       this.addMessage(`Perfect! I've added ${mediaCount} ${mediaCount === 1 ? 'file' : 'files'} to your memory. Let me put together a beautiful memory capsule for you to review.`, 'emma');
     } else {
