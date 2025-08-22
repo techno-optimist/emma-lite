@@ -18,11 +18,11 @@
   <script src="js/emma-web-vault.js"></script>
   <script src="js/web-vault-status.js"></script>
 
-  <!-- Browser Compatibility Layer -->
-  <script src="emma-browser-compatibility-fix.js"></script>
-
-  <!-- Mobile UI Fixes -->
-  <script src="emma-mobile-ui-fixes.js"></script>
+    <!-- Browser Compatibility Layer - PRODUCTION: Removed for clean deployment -->
+  <!-- <script src="emma-browser-compatibility-fix.js"></script> -->
+  
+  <!-- Mobile UI Fixes - PRODUCTION: Removed for clean deployment -->
+  <!-- <script src="emma-mobile-ui-fixes.js"></script> -->
 
   <!-- VAULT STATE MONITOR: Real-time auto-lock detection -->
   <script src="emma-vault-extension-fixed/vault-state-monitor.js"></script>
@@ -4252,11 +4252,11 @@
         document.body.appendChild(modal);
 
         // Add event listeners
-        const skipBtn = modal.querySelector('.skip-btn');
-        const continueBtn = modal.querySelector('.continue-btn');
+        const skipBtnQuery = modal.querySelector('.skip-btn');
+        const continueBtnQuery = modal.querySelector('.continue-btn');
 
-        skipBtn.addEventListener('click', () => modal.remove());
-        continueBtn.addEventListener('click', () => {
+        skipBtnQuery.addEventListener('click', () => modal.remove());
+        continueBtnQuery.addEventListener('click', () => {
           // For now, just show a message and close
           this.showToast('🎤 Voice wizard coming soon!', 'info');
           modal.remove();

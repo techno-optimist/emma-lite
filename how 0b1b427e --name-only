@@ -1,0 +1,5 @@
+[33m5d02738c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m  PRODUCTION SECURITY HARDENING - SHERLOCK PROTOCOL COMPLETE
+[33m0b1b427e[m  SIMPLIFIED VOICE FLOW: Stop  Send (no preview step)
+[33m862ae6ee[m  VOICE TRANSCRIPTION POLISH: Auto-scroll + stop button fix
+[33md6908c02[m  REMOVE BURGER MENU: Clean dashboard interface
+[33mf953342c[m  CRITICAL VOICE FIXES: Speech recognition initialization + transcript access

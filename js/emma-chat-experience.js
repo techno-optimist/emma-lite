@@ -2965,7 +2965,7 @@ class EmmaChatExperience extends ExperiencePopup {
     const state = this.enrichmentState.get(memoryId);
     if (!state) return;
 
-    const mediaCount = state.collectedData.media?.length || 0;    });
+    const mediaCount = state.collectedData.media?.length || 0;
 
     if (mediaCount > 0) {
       this.addMessage(`Perfect! I've added ${mediaCount} ${mediaCount === 1 ? 'file' : 'files'} to your memory. Let me put together a beautiful memory capsule for you to review.`, 'emma');

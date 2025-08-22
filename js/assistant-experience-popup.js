@@ -1386,8 +1386,6 @@ class AssistantExperience extends ExperiencePopup {
           // Apply the new positioning
           this.element.style.height = optimalHeight + 'px';
           this.element.style.top = Math.max(20, newTop) + 'px'; // Ensure it doesn't go off-screen
-
-          });
         }
 
       } catch (error) {
