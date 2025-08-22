@@ -1776,8 +1776,8 @@
         <div class="radial-item" data-action="memories">
           <div class="radial-item-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 12l2 2 4-4"/>
-              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-2.5 2.5M6.5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H6.5z"/>
+              <path d="M9 10h6M9 14h4"/>
             </svg>
           </div>
           <div class="radial-item-label">Memories</div>
@@ -1804,11 +1804,21 @@
   <!-- Bottom Left Utility Icons -->
   <div class="utility-icons">
     <div class="utility-item" data-action="search">
-      <div class="utility-icon">🔍</div>
+      <div class="utility-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
       <div class="utility-label">Search</div>
     </div>
     <div class="utility-item" data-action="settings">
-      <div class="utility-icon">⚙️</div>
+      <div class="utility-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
+        </svg>
+      </div>
       <div class="utility-label">Settings</div>
     </div>
   </div>
@@ -3033,8 +3043,7 @@
       async startEmmaChatExperience() {
         console.log('💬 Starting Emma Chat Experience');
         
-        // Calculate elegant position relative to Emma orb
-        const orbRect = this.orb.getBoundingClientRect();
+        // Center chat in the middle of the page
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
