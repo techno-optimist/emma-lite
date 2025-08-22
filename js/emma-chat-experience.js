@@ -119,7 +119,26 @@ class EmmaChatExperience extends ExperiencePopup {
     
     contentElement.innerHTML = `
       <!-- Settings Button - Top Left (identical to close button but mirrored) -->
-      <button class="chat-settings-btn" id="chat-settings-btn" title="Chat settings">
+      <button class="chat-settings-btn" id="chat-settings-btn" title="Chat settings" style="
+        position: absolute !important;
+        top: ${window.innerWidth <= 768 ? '12px' : '16px'} !important;
+        left: ${window.innerWidth <= 768 ? '12px' : '16px'} !important;
+        width: ${window.innerWidth <= 768 ? '36px' : '40px'} !important;
+        height: ${window.innerWidth <= 768 ? '36px' : '40px'} !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: none !important;
+        border-radius: 50% !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 10 !important;
+        right: auto !important;
+        bottom: auto !important;
+        margin: 0 !important;
+      ">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
@@ -271,6 +290,19 @@ class EmmaChatExperience extends ExperiencePopup {
     // Settings button event listener (if button exists)
     if (this.settingsButton) {
       this.settingsButton.addEventListener('click', () => this.showChatSettings());
+      
+      // Add hover effects to match close button exactly
+      this.settingsButton.addEventListener('mouseenter', () => {
+        this.settingsButton.style.background = 'rgba(255, 255, 255, 0.2)';
+        this.settingsButton.style.color = 'white';
+        this.settingsButton.style.transform = 'scale(1.1)';
+      });
+      
+      this.settingsButton.addEventListener('mouseleave', () => {
+        this.settingsButton.style.background = 'rgba(255, 255, 255, 0.1)';
+        this.settingsButton.style.color = 'rgba(255, 255, 255, 0.7)';
+        this.settingsButton.style.transform = 'scale(1)';
+      });
     }
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
 

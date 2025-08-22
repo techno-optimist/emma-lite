@@ -196,6 +196,10 @@ class EmmaMobileUIFixes {
           align-items: center !important;
           justify-content: center !important;
           z-index: 10 !important;
+          /* Override any conflicting styles from emma-chat-clean.css */
+          right: auto !important;
+          bottom: auto !important;
+          margin: 0 !important;
         }
         
         .chat-settings-btn:hover {
@@ -492,6 +496,10 @@ class EmmaMobileUIFixes {
           align-items: center !important;
           justify-content: center !important;
           z-index: 10 !important;
+          /* Override any conflicting styles from emma-chat-clean.css */
+          right: auto !important;
+          bottom: auto !important;
+          margin: 0 !important;
         }
         
         .chat-settings-btn:hover {
