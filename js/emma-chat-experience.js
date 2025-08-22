@@ -1932,15 +1932,28 @@ class EmmaChatExperience extends ExperiencePopup {
         // Add confirmation message and redirect to constellation
         this.addMessage("Perfect! Your memory has been saved to your vault. Let me show you how it connects to your other memories! 🌟", 'emma');
         
-        // Redirect to constellation after brief delay
+        // Redirect to constellation after brief delay to show new memory
         setTimeout(() => {
           console.log('🌟 REDIRECT: Opening constellation to show new memory...');
-          window.location.href = '#constellation';
           
-          // Close chat experience
+          // Close chat experience first
           if (this.close) {
             this.close();
           }
+          
+          // Wait for chat to close, then enter constellation
+          setTimeout(() => {
+            // Access the dashboard instance and enter constellation mode
+            if (window.dashboard && typeof window.dashboard.enterMemoryConstellation === 'function') {
+              console.log('🌟 CONSTELLATION: Entering memory constellation via dashboard...');
+              window.dashboard.enterMemoryConstellation();
+            } else {
+              console.log('🌟 FALLBACK: Dashboard not available, using URL navigation...');
+              // Fallback to URL-based navigation
+              window.location.hash = 'constellation';
+              window.location.reload();
+            }
+          }, 500);
         }, 2000);
         
       } else {
