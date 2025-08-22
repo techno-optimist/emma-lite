@@ -77,21 +77,37 @@ class EmmaIntelligentCapture {
       const heuristicsScore = this.computeHeuristicsScore(content, message); // 0..1
 
       let llmScore = 0; // 0..1
-      const needsLLM = heuristicsScore > 0.30 && heuristicsScore < 0.70; // borderline → ask LLM if available
-      if (needsLLM && this.options.vectorlessEngine && typeof this.options.vectorlessEngine.analyzeMemoryPotential === 'function') {
+      // ALWAYS try LLM if available (remove gating for now to debug)
+      if (this.options.vectorlessEngine && typeof this.options.vectorlessEngine.analyzeMemoryPotential === 'function') {
         try {
           const ctx = this.getRecentContextText(3);
+          if (this.options.debug) {
+            console.log('🧠 LLM: Calling analyzeMemoryPotential with content:', content.substring(0, 100));
+          }
           const ai = await this.options.vectorlessEngine.analyzeMemoryPotential(content, { context: ctx });
           llmScore = this.normalizeLLMScore(ai && (ai.score0to10 ?? ai.score));
           if (ai && ai.rationale) signals.aiInsights = ai.rationale;
+          if (this.options.debug) {
+            console.log('🧠 LLM: Got response:', { score0to10: ai?.score0to10, rationale: ai?.rationale, normalizedScore: llmScore });
+          }
         } catch (err) {
           if (this.options.debug) console.warn('⚠️ LLM gating failed, using heuristics only:', err);
+        }
+      } else {
+        if (this.options.debug) {
+          console.log('🧠 LLM: Not available - vectorlessEngine exists?', !!this.options.vectorlessEngine);
+          console.log('🧠 LLM: analyzeMemoryPotential function exists?', typeof this.options.vectorlessEngine?.analyzeMemoryPotential);
         }
       }
 
       const noveltyPenalty = await this.computeNoveltyPenalty(content); // 0..1 (higher = more similar → lower final)
 
-      const finalScore = this.clamp01(0.6 * llmScore + 0.3 * heuristicsScore - 0.2 * noveltyPenalty);
+      // ADAPTIVE WEIGHTING: If no LLM, boost heuristics
+      const hasLLM = llmScore > 0;
+      const finalScore = hasLLM 
+        ? this.clamp01(0.6 * llmScore + 0.3 * heuristicsScore - 0.1 * noveltyPenalty)
+        : this.clamp01(0.8 * heuristicsScore - 0.1 * noveltyPenalty); // Boost heuristics when offline
+      
       const isMemoryWorthy = finalScore >= this.thresholdsNormalized.memoryWorthy;
       const autoCapture = finalScore >= this.thresholdsNormalized.autoCapture;
 
@@ -390,43 +406,78 @@ class EmmaIntelligentCapture {
 
   /**
    * Normalized heuristics-based memory worthiness (0..1)
-   * No hard-coded scenarios; relies on general linguistic signals.
+   * FIXED: Much more sensitive scoring for memory detection
    */
   computeHeuristicsScore(text, message) {
     const content = (text || '').trim();
     if (!content) return 0;
 
-    // First-person indicator
-    const firstPerson = /(\bI\b|\bI'm\b|\bI was\b|\bwe\b|\bwe're\b|\bwe were\b)/i.test(content) ? 1 : 0;
-
-    // Past-tense proxy: ratio of words ending with 'ed' (very rough)
-    const tokens = content.split(/\s+/).filter(Boolean);
-    const edCount = tokens.filter(w => /[a-z]{3,}ed\b/i.test(w)).length;
-    const pastTense = tokens.length ? Math.min(1, edCount / Math.max(8, tokens.length)) : 0; // cap and de-bias short texts
-
-    // Temporal hint (generic)
-    const temporal = /(yesterday|today|years?\s+ago|last\s+(week|month|year)|when\s+I\s+was)/i.test(content) ? 1 : 0;
-
-    // Named entity density (proper names)
-    const names = this.extractProperNames(content);
-    const nameDensity = tokens.length ? Math.min(1, names.length / Math.max(20, tokens.length)) : 0;
-
-    // Coherence/length (discourage too-short, too-long)
-    const len = content.length;
-    const lengthScore = len < 30 ? 0 : len > 600 ? 0.6 : Math.min(1, (len - 30) / 300);
-
-    // Attachments hint
-    const hasAttachments = (message.attachments && message.attachments.length > 0) ? 1 : 0;
-
-    // Weighted aggregation (sum then clamp)
     let score = 0;
-    score += 0.20 * firstPerson;
-    score += 0.20 * pastTense;
-    score += 0.15 * temporal;
-    score += 0.15 * nameDensity;
-    score += 0.10 * lengthScore;
-    score += 0.10 * hasAttachments;
-    // Remaining 0.10 intentionally left unallocated for neutrality
+    const tokens = content.split(/\s+/).filter(Boolean);
+
+    // First-person indicator (BOOSTED - critical for memories)
+    const firstPerson = /(\bI\b|\bI'm\b|\bI was\b|\bwe\b|\bwe're\b|\bwe were\b|\bmy\b|\bour\b)/i.test(content);
+    if (firstPerson) score += 0.35; // MAJOR BOOST
+
+    // Past-tense indicators (ENHANCED patterns)
+    const pastTensePatterns = [
+      /\b(remember|remembered)\b/i,
+      /\b(was|were|had|did|went|came|saw|felt|thought)\b/i,
+      /\b\w+ed\b/i, // words ending in 'ed'
+      /\b(used to|would always|back then)\b/i
+    ];
+    let pastTenseHits = 0;
+    pastTensePatterns.forEach(pattern => {
+      if (pattern.test(content)) pastTenseHits++;
+    });
+    score += Math.min(0.25, pastTenseHits * 0.08); // Up to 0.25 for strong past-tense
+
+    // Temporal/childhood indicators (ENHANCED)
+    const temporalPatterns = [
+      /\b(kid|child|childhood|little|young)\b/i,
+      /\b(yesterday|today|years?\s+ago|last\s+(week|month|year))\b/i,
+      /\b(when\s+I\s+was|as\s+a\s+kid|growing\s+up)\b/i,
+      /\b(school|playground|home|family)\b/i
+    ];
+    let temporalHits = 0;
+    temporalPatterns.forEach(pattern => {
+      if (pattern.test(content)) temporalHits++;
+    });
+    score += Math.min(0.25, temporalHits * 0.08); // Up to 0.25 for strong temporal
+
+    // Event/story indicators (NEW)
+    const eventPatterns = [
+      /\b(fell|hit|hurt|accident|happened|story|time|moment)\b/i,
+      /\b(climbing|playing|running|walking|going)\b/i,
+      /\b(tree|house|park|hospital|doctor)\b/i
+    ];
+    let eventHits = 0;
+    eventPatterns.forEach(pattern => {
+      if (pattern.test(content)) eventHits++;
+    });
+    score += Math.min(0.15, eventHits * 0.05); // Up to 0.15 for events
+
+    // Length bonus (reasonable stories)
+    const len = content.length;
+    if (len > 50) score += 0.10; // Bonus for substantial content
+
+    // Attachments bonus
+    if (message.attachments && message.attachments.length > 0) {
+      score += 0.10;
+    }
+
+    if (this.options.debug) {
+      console.log('🧮 HEURISTICS DEBUG:', {
+        content: content.substring(0, 100),
+        firstPerson,
+        pastTenseHits,
+        temporalHits,
+        eventHits,
+        length: len,
+        finalHeuristicsScore: score
+      });
+    }
+
     return this.clamp01(score);
   }
 
