@@ -67,11 +67,8 @@ class EmmaVoiceTranscription {
       this.isRecording = false;
       this.updateRecordingIndicator();
       
-      if (this.finalResults.trim()) {
-        this.showTranscriptionPreview();
-      } else {
-        this.closeTranscriptionOverlay();
-      }
+      // SIMPLIFIED: Just switch to send mode, no preview needed
+      this.switchToSendMode();
     };
     
     this.recognition.onerror = (event) => {
@@ -132,13 +129,9 @@ class EmmaVoiceTranscription {
       console.log('🎤 STOP: Calling recognition.stop()');
       this.recognition.stop();
     } else {
-      console.log('🎤 STOP: Not recording or no recognition, showing preview directly');
-      // If not recording, go directly to preview
-      if (this.finalResults.trim()) {
-        this.showTranscriptionPreview();
-      } else {
-        this.closeTranscriptionOverlay();
-      }
+      console.log('🎤 STOP: Not recording, switching to send mode');
+      // SIMPLIFIED: Just switch to send mode
+      this.switchToSendMode();
     }
   }
   
@@ -304,8 +297,8 @@ class EmmaVoiceTranscription {
           flex-wrap: wrap;
         ">
           <button class="emma-voice-btn emma-stop-btn" id="stop-recording-btn" style="
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            background: linear-gradient(135deg, #8B5CF6, #F093FB);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: ${window.innerWidth <= 768 ? '16px 24px' : '14px 20px'};
             border-radius: ${window.innerWidth <= 768 ? '16px' : '12px'};
@@ -323,7 +316,7 @@ class EmmaVoiceTranscription {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <rect x="6" y="6" width="12" height="12" rx="2"/>
             </svg>
-            <span>Stop</span>
+            <span id="stop-btn-text">Stop</span>
           </button>
           
           <button class="emma-voice-btn emma-cancel-btn" id="cancel-recording-btn" style="
@@ -616,7 +609,7 @@ class EmmaVoiceTranscription {
    * Update recording indicator
    */
   updateRecordingIndicator() {
-    const micVisual = document.getElementById('mic-visual');
+    const micVisual = document.getElementById('emma-mic-orb');
     const recordingStatus = document.getElementById('recording-status');
     
     if (!micVisual || !recordingStatus) return;
@@ -628,6 +621,83 @@ class EmmaVoiceTranscription {
       micVisual.classList.remove('recording');
       recordingStatus.style.opacity = '0.5';
     }
+  }
+  
+  /**
+   * Switch to send mode after recording stops - SIMPLIFIED FLOW
+   */
+  switchToSendMode() {
+    console.log('🎤 SEND MODE: Switching to send mode');
+    
+    const stopBtn = document.getElementById('stop-recording-btn');
+    const stopBtnText = document.getElementById('stop-btn-text');
+    const recordingStatus = document.getElementById('recording-status');
+    
+    if (!this.finalResults.trim()) {
+      console.log('🎤 SEND MODE: No text to send, closing overlay');
+      this.closeTranscriptionOverlay();
+      return;
+    }
+    
+    // Update button to "Send" mode
+    if (stopBtn && stopBtnText) {
+      stopBtnText.textContent = 'Send to Emma';
+      stopBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      
+      // Update the icon to send icon
+      const svg = stopBtn.querySelector('svg');
+      if (svg) {
+        svg.innerHTML = `<path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>`;
+      }
+      
+      // Remove old event listener and add send functionality
+      const newStopBtn = stopBtn.cloneNode(true);
+      stopBtn.parentNode.replaceChild(newStopBtn, stopBtn);
+      
+      newStopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎤 SEND: Send button clicked');
+        this.sendTranscription();
+      });
+    }
+    
+    // Update recording status
+    if (recordingStatus) {
+      recordingStatus.innerHTML = `
+        <div style="
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+        "></div>
+        <span>Ready to send your message</span>
+      `;
+    }
+    
+    console.log('🎤 SEND MODE: UI updated to send mode');
+  }
+  
+  /**
+   * Send transcription directly to chat
+   */
+  sendTranscription() {
+    const finalText = this.finalResults.trim();
+    
+    if (!finalText) {
+      console.warn('🎤 SEND: No text to send');
+      this.closeTranscriptionOverlay();
+      return;
+    }
+    
+    console.log('🎤 SEND: Sending transcription:', finalText);
+    
+    // Call the completion callback
+    this.options.onTranscriptionComplete(finalText);
+    
+    // Close overlay
+    this.closeTranscriptionOverlay();
   }
   
   /**
