@@ -1624,7 +1624,14 @@ class EmmaChatExperience extends ExperiencePopup {
     indicator.style.opacity = '0';
     indicator.style.transform = 'translateY(-10px)';
     
-    messageEl.querySelector('.message-content').appendChild(indicator);
+    // Fix: User messages have .message-bubble, Emma messages have .message-content
+    const contentContainer = messageEl.querySelector('.message-content') || messageEl.querySelector('.message-bubble');
+    if (contentContainer) {
+      contentContainer.appendChild(indicator);
+    } else {
+      console.error('💝 Could not find content container for memory indicator');
+      messageEl.appendChild(indicator); // Fallback
+    }
     
     // Animate in
     requestAnimationFrame(() => {
@@ -1656,7 +1663,14 @@ class EmmaChatExperience extends ExperiencePopup {
         </button>
       `;
       
-      messageEl.querySelector('.message-content').appendChild(actions);
+      // Fix: User messages have .message-bubble, Emma messages have .message-content
+      const contentContainer = messageEl.querySelector('.message-content') || messageEl.querySelector('.message-bubble');
+      if (contentContainer) {
+        contentContainer.appendChild(actions);
+      } else {
+        console.error('💝 Could not find content container for memory actions');
+        messageEl.appendChild(actions); // Fallback
+      }
     }
   }
 
