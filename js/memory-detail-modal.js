@@ -29,7 +29,7 @@ function openMemoryDetailModal(memory) {
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    z-index: 10000;
+    z-index: 2147483651;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -83,6 +83,19 @@ function openMemoryDetailModal(memory) {
   }, 300); // Longer delay to ensure modal is stable
 
   console.log('✨ MODAL: Memory detail modal opened successfully');
+  
+  // DEBUG: Verify modal exists in DOM
+  setTimeout(() => {
+    const modalCheck = document.querySelector('.memory-modal');
+    const modalCount = document.querySelectorAll('.memory-modal').length;
+    console.log('🔍 MODAL DEBUG: Modal exists in DOM?', !!modalCheck);
+    console.log('🔍 MODAL DEBUG: Modal count in DOM:', modalCount);
+    console.log('🔍 MODAL DEBUG: Modal z-index:', modalCheck?.style.zIndex);
+    console.log('🔍 MODAL DEBUG: Modal computed z-index:', window.getComputedStyle(modalCheck).zIndex);
+    console.log('🔍 MODAL DEBUG: Modal display:', modalCheck?.style.display);
+    console.log('🔍 MODAL DEBUG: Modal visibility:', modalCheck?.style.visibility);
+  }, 100);
+  
   return modal;
 }
 
@@ -508,7 +521,7 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Add CSS for fade-in animation
+// Add CSS for fade-in animation and NUCLEAR Z-INDEX
 const style = document.createElement('style');
 style.textContent = `
   @keyframes fadeIn {
@@ -518,6 +531,21 @@ style.textContent = `
   
   .memory-modal .memory-detail-content {
     animation: fadeIn 0.3s ease;
+  }
+  
+  /* NUCLEAR Z-INDEX - FORCE MODAL TO TOP OF EVERYTHING */
+  .memory-modal {
+    z-index: 2147483651 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+  }
+  
+  .memory-modal * {
+    z-index: 2147483651 !important;
   }
 `;
 document.head.appendChild(style);

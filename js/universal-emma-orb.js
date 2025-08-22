@@ -426,13 +426,20 @@ class UniversalEmmaOrb {
         e.stopPropagation();
         console.log('🌍 UniversalEmmaOrb: Orb clicked, type:', orbType);
         
-        if (window.OrbExperienceManager) {
+        // NEW: Open Emma Chat Experience instead of old assistant
+        if (window.EmmaChatExperience) {
+          console.log('💬 ORBLICK: Opening new Emma Chat Experience');
+          const emmaChatExperience = new window.EmmaChatExperience();
+          emmaChatExperience.show();
+        } else if (window.OrbExperienceManager) {
+          console.log('🔄 ORB CLICK: Fallback to old experience manager');
           const experienceManager = window.OrbExperienceManager.getInstance();
           experienceManager.handleOrbClick(orbType, this.container);
           
           // Set up dialog state tracking
           this.setupDialogStateTracking(experienceManager);
         } else {
+          console.log('❌ ORB CLICK: No chat system available');
           this.showClickNotification(orbType);
         }
       } else {
