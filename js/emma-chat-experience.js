@@ -593,7 +593,7 @@ class EmmaChatExperience extends ExperiencePopup {
     });
 
     // Auto-scroll to bottom (with delay for DOM update)
-    setTimeout(() => this.scrollToBottom(), 100);
+    setTimeout(() => this.scrollToBottom(), 200);
     
     return messageId;
   }
@@ -607,11 +607,19 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   scrollToBottom() {
-    // FIXED: Use correct chat messages container ID
+    // ENHANCED: Ensure scroll works with proper timing
     const messagesContainer = document.getElementById('chat-messages');
     if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      console.log('📜 SCROLL: Auto-scrolled to bottom');
+      // Force layout recalculation before scrolling
+      messagesContainer.offsetHeight;
+      
+      // Smooth scroll to bottom
+      messagesContainer.scrollTo({
+        top: messagesContainer.scrollHeight,
+        behavior: 'smooth'
+      });
+      
+      console.log('📜 SCROLL: Auto-scrolled to bottom - scrollHeight:', messagesContainer.scrollHeight);
     } else {
       console.warn('📜 SCROLL: Messages container not found');
     }
@@ -1025,7 +1033,7 @@ class EmmaChatExperience extends ExperiencePopup {
     });
 
     // Auto-scroll to bottom (with delay for DOM update)
-    setTimeout(() => this.scrollToBottom(), 100);
+    setTimeout(() => this.scrollToBottom(), 200);
   }
 
   /**
