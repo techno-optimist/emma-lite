@@ -31,6 +31,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.detectedMemories = new Map();
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
+    this.debugMode = true; // Enable debug mode to see scoring
     
     // Emma personality settings
     this.emmaPersonality = {
