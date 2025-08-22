@@ -999,7 +999,7 @@ class EmmaChatExperience extends ExperiencePopup {
           </div>
           <div class="suggestion-grid">
             ${suggestions.map(s => `
-              <button class="emma-suggestion-btn" onclick="document.getElementById('chat-input').value='${s.replace(/'/g, '\\\')}'; document.getElementById('chat-input').focus();">
+              <button class="emma-suggestion-btn" onclick="window.chatExperience.fillSuggestion(\`${s}\`);">
                 ${s}
               </button>
             `).join('')}
@@ -1051,6 +1051,17 @@ class EmmaChatExperience extends ExperiencePopup {
   showAllMemories() {
     console.log('📚 Showing all memories...');
     this.addMessage("Would you like me to open the memory gallery to explore all your memories?", 'emma');
+  }
+
+  /**
+   * Fill suggestion into chat input
+   */
+  fillSuggestion(suggestion) {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+      chatInput.value = suggestion;
+      chatInput.focus();
+    }
   }
 
   /**
