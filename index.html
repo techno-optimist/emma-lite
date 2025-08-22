@@ -437,7 +437,7 @@
                     this.updateUI();
                     this.showSuccess(`Vault opened! ${this.currentVault.stats.memoryCount} memories loaded`);
                     
-                    // Navigate to main dashboard after successful unlock
+                    // Navigate to main dashboard after successful unlock (with mobile fallback)
                     setTimeout(() => {
                         window.location.href = 'working-desktop-dashboard.html';
                     }, 2000);

@@ -116,149 +116,112 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   renderContent(contentElement) {
+    // CLEAN REDESIGN: Remove inner container, direct modal content
+    contentElement.style.cssText = `
+      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      border-radius: 24px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: white;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    `;
+    
     contentElement.innerHTML = `
-      <div class="emma-chat-studio">
-        <!-- Emma WebGL Orb Anchor -->
-        <div class="emma-anchor">
-          <div class="webgl-orb-container" id="chat-emma-orb"></div>
-          <p class="emma-hint" id="chat-emma-hint">Ready to chat about your memories</p>
+      <!-- Emma Chat Header with Real Orb -->
+      <div class="emma-chat-header">
+        <div class="emma-orb-chat" id="chat-emma-orb"></div>
+        <div class="emma-chat-intro">
+          <h2 class="emma-chat-title">Chat with Emma</h2>
+          <p class="emma-chat-subtitle">Your Intelligent Memory Companion</p>
         </div>
+        <button class="chat-close-btn" id="chat-close-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
 
-        <!-- Chat Messages Area -->
-        <div class="chat-messages-area" id="chat-messages-area">
-          <div class="messages-container" id="messages-container">
-            <!-- Messages will be dynamically added here -->
+      <!-- Chat Messages -->
+      <div class="emma-chat-messages" id="chat-messages">
+        <div class="emma-welcome-message">
+          <div class="emma-avatar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6m0 6v6"/>
+              <path d="M1 12h6m6 0h6"/>
+            </svg>
+          </div>
+          <div class="message-content">
+            <p>Welcome! I'm Emma, and I love helping people with their precious memories. What would you like to explore?</p>
+            <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
         </div>
+      </div>
 
-        <!-- Chat Input Area -->
-        <div class="chat-input-area">
-          <div class="input-container">
-            <button id="voice-input-button" class="voice-input-button" title="Voice to text">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            </button>
-            <textarea 
-              id="chat-input" 
-              class="chat-input" 
-              placeholder="Ask Emma about your memories..." 
-              rows="1"
-              maxlength="2000"
-            ></textarea>
-            <button id="vectorless-settings-button" class="vectorless-settings-button" title="Vectorless AI Settings">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-              </svg>
-            </button>
-            <button id="send-button" class="send-button" title="Send message">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-              </svg>
-            </button>
-          </div>
-          <div class="input-hints">
-            <span class="hint-item">Press Enter to send</span>
-            <span class="hint-separator">•</span>
-            <span class="hint-item">Click mic for voice input</span>
-            <span class="hint-separator">•</span>
-            <span class="hint-item">Shift+Enter for new line</span>
-          </div>
+      <!-- Chat Input -->
+      <div class="emma-chat-input">
+        <div class="input-wrapper">
+          <button class="voice-btn" id="voice-input-btn" title="Voice input">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <textarea 
+            id="chat-input" 
+            class="chat-textarea" 
+            placeholder="Ask Emma about your memories..."
+            rows="1"
+            maxlength="2000"
+          ></textarea>
+          <button class="settings-btn" id="chat-settings-btn" title="Chat settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
+            </svg>
+          </button>
+          <button class="send-btn" id="send-btn" title="Send message">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
         </div>
+        <div class="input-hints">
+          <span>Press Enter to send • Click mic for voice • Shift+Enter for new line</span>
+        </div>
+      </div>
 
-        <!-- Typing Indicator -->
-        <div class="typing-indicator" id="typing-indicator" style="display: none;">
-          <div class="typing-dots">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-          <span class="typing-text">Emma is thinking...</span>
+      <!-- Typing Indicator -->
+      <div class="emma-typing" id="typing-indicator" style="display: none;">
+        <div class="typing-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
         </div>
-
-        <!-- Vectorless AI Settings Modal -->
-        <div class="vectorless-settings-modal" id="vectorless-settings-modal" style="display: none;">
-          <div class="modal-backdrop" id="modal-backdrop"></div>
-          <div class="modal-content">
-            <div class="modal-header">
-              <h3>🧠 Vectorless AI Settings</h3>
-              <button class="modal-close" id="modal-close-button">×</button>
-            </div>
-            <div class="modal-body">
-              <div class="settings-section">
-                <h4>🔑 OpenAI API Configuration</h4>
-                <p class="settings-description">
-                  Enable advanced AI responses by providing your OpenAI API key. 
-                  Emma will use intelligent heuristics if no key is provided.
-                </p>
-                <div class="input-group">
-                  <label for="api-key-input">API Key (Optional)</label>
-                  <input 
-                    type="password" 
-                    id="api-key-input" 
-                    class="settings-input"
-                    placeholder="sk-..." 
-                    autocomplete="off"
-                  >
-                  <small class="input-help">Your API key is stored locally and never transmitted to our servers</small>
-                </div>
-              </div>
-              
-              <div class="settings-section">
-                <h4>🤗 Dementia Care Mode</h4>
-                <p class="settings-description">
-                  Specialized responses using validation therapy principles for users with memory impairment.
-                </p>
-                <div class="toggle-group">
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="dementia-mode-toggle">
-                    <span class="toggle-slider"></span>
-                  </label>
-                  <span class="toggle-label">Enable Dementia Care Mode</span>
-                </div>
-              </div>
-              
-              <div class="settings-section">
-                <h4>🔍 Debug Mode</h4>
-                <p class="settings-description">
-                  Show processing details and performance metrics for development.
-                </p>
-                <div class="toggle-group">
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="debug-mode-toggle">
-                    <span class="toggle-slider"></span>
-                  </label>
-                  <span class="toggle-label">Enable Debug Mode</span>
-                </div>
-              </div>
-              
-              <div class="settings-section">
-                <div class="vectorless-status" id="vectorless-status">
-                  <div class="status-indicator" id="status-indicator">⚪</div>
-                  <span id="status-text">Initializing...</span>
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="button-secondary" id="reset-settings-button">Reset to Defaults</button>
-              <button class="button-primary" id="save-settings-button">Save Settings</button>
-            </div>
-          </div>
-        </div>
+        <span>Emma is thinking...</span>
       </div>
     `;
   }
 
   setupChatInterface() {
-    this.messageContainer = document.getElementById('messages-container');
+    this.messageContainer = document.getElementById('chat-messages');
     this.inputField = document.getElementById('chat-input');
-    this.sendButton = document.getElementById('send-button');
-    this.voiceButton = document.getElementById('voice-input-button');
-    this.settingsButton = document.getElementById('vectorless-settings-button');
+    this.sendButton = document.getElementById('send-btn');
+    this.closeButton = document.getElementById('chat-close-btn');
+    this.voiceButton = document.getElementById('voice-input-btn');
+    this.settingsButton = document.getElementById('chat-settings-btn');
     
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton || !this.settingsButton) {
       console.error('💬 Chat interface elements not found');
@@ -270,7 +233,8 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
-    this.settingsButton.addEventListener('click', () => this.openVectorlessSettings());
+    this.settingsButton.addEventListener('click', () => this.showChatSettings());
+    this.closeButton.addEventListener('click', () => this.close());
 
     // Auto-resize textarea
     this.inputField.addEventListener('input', () => this.autoResizeTextarea());
@@ -505,26 +469,30 @@ class EmmaChatExperience extends ExperiencePopup {
   addMessage(content, sender, options = {}) {
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
+    messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
     
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     if (sender === 'emma') {
       messageDiv.innerHTML = `
-        <div class="message-avatar">
-          <div class="emma-avatar-mini"></div>
+        <div class="emma-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6"/>
+            <path d="M1 12h6m6 0h6"/>
+          </svg>
         </div>
         <div class="message-content">
-          <div class="message-text">${this.formatMessageContent(content)}</div>
-          <div class="message-time">${messageTime}</div>
+          <p>${this.formatMessageContent(content)}</p>
+          <span class="message-time">${messageTime}</span>
         </div>
       `;
     } else {
       messageDiv.innerHTML = `
-        <div class="message-content">
-          <div class="message-text">${this.formatMessageContent(content)}</div>
-          <div class="message-time">${messageTime}</div>
+        <div class="message-bubble">
+          <p class="message-text">${this.formatMessageContent(content)}</p>
+          <span class="message-time">${messageTime}</span>
         </div>
       `;
     }
@@ -1020,14 +988,12 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Open vectorless settings modal
+   * Show chat settings modal (Emma-branded)
    */
-  openVectorlessSettings() {
-    const modal = document.getElementById('vectorless-settings-modal');
-    if (modal) {
-      this.loadSettingsIntoModal();
-      modal.style.display = 'flex';
-    }
+  showChatSettings() {
+    console.log('⚙️ Opening Emma chat settings...');
+    this.showToast('⚙️ Chat settings coming soon!', 'info');
+    // TODO: Implement beautiful Emma-branded settings modal
   }
 
   /**

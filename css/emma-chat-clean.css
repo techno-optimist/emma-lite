@@ -1,0 +1,780 @@
+/**
+ * Emma Chat Experience - Clean Redesigned Interface
+ * CTO-approved perfect responsive design for Debbe's demo
+ * 
+ * VISION: Clean, elegant, Emma-branded chat modal
+ * - No inner containers, direct modal styling
+ * - Real Emma orb integration
+ * - Perfect responsive design for all screens
+ * - Emma's signature purple gradient branding
+ * 
+ * FOR DEBBE: Beautiful, accessible chat interface ❤️
+ */
+
+/* ================================
+   CHAT HEADER - Emma Orb + Title
+   ================================ */
+
+.emma-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid rgba(139, 92, 246, 0.2);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.emma-orb-chat {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(139, 92, 246, 0.9) 0%,
+    rgba(118, 75, 162, 0.8) 40%,
+    rgba(240, 147, 251, 0.9) 100%
+  );
+  box-shadow: 
+    0 0 20px rgba(139, 92, 246, 0.6),
+    0 0 40px rgba(240, 147, 251, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: emma-pulse 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes emma-pulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 20px rgba(139, 92, 246, 0.6),
+      0 0 40px rgba(240, 147, 251, 0.3);
+  }
+  50% { 
+    box-shadow: 
+      0 0 30px rgba(139, 92, 246, 0.8),
+      0 0 60px rgba(240, 147, 251, 0.5);
+  }
+}
+
+.emma-chat-intro {
+  flex: 1;
+  min-width: 0;
+}
+
+.emma-chat-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: white;
+  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.emma-chat-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  font-weight: 500;
+}
+
+.chat-close-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chat-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* ================================
+   CHAT MESSAGES - Clean & Responsive
+   ================================ */
+
+.emma-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 4px;
+  margin: 0 -4px;
+  scroll-behavior: smooth;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.emma-chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emma-chat-messages::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.emma-chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.4);
+  border-radius: 3px;
+}
+
+.emma-chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.6);
+}
+
+/* Welcome Message */
+.emma-welcome-message {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.emma-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
+  border: 2px solid rgba(139, 92, 246, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-content p {
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.message-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* User Messages */
+.user-message {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+
+.user-message .message-bubble {
+  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 16px;
+  max-width: 70%;
+  word-wrap: break-word;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.user-message .message-text {
+  color: white;
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0 0 4px 0;
+}
+
+.user-message .message-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* Emma Messages */
+.emma-message {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 16px 0;
+}
+
+.emma-message .message-content {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 4px 18px 18px 18px;
+  padding: 12px 16px;
+  max-width: 70%;
+  word-wrap: break-word;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.emma-message .message-content p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0 0 4px 0;
+}
+
+.emma-message .message-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* ================================
+   CHAT INPUT - Perfect Responsive
+   ================================ */
+
+.emma-chat-input {
+  flex-shrink: 0;
+  padding-top: 20px;
+  border-top: 2px solid rgba(139, 92, 246, 0.2);
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.voice-btn, .settings-btn, .send-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.voice-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border: 2px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+}
+
+.voice-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+  transform: scale(1.1);
+}
+
+.settings-btn {
+  background: rgba(156, 163, 175, 0.2);
+  border: 2px solid rgba(156, 163, 175, 0.4);
+  color: #9ca3af;
+}
+
+.settings-btn:hover {
+  background: rgba(156, 163, 175, 0.3);
+  transform: scale(1.1);
+}
+
+.send-btn {
+  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+  border: 2px solid rgba(139, 92, 246, 0.6);
+  color: white;
+}
+
+.send-btn:hover {
+  background: linear-gradient(135deg, #7C3AED, #E879F9);
+  transform: scale(1.1);
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.chat-textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 120px;
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  padding: 8px 0;
+  line-height: 1.5;
+}
+
+.chat-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-hints {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* ================================
+   TYPING INDICATOR - Emma Branded
+   ================================ */
+
+.emma-typing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.6);
+  animation: typing-bounce 1.4s ease-in-out infinite both;
+}
+
+.typing-dots .dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots .dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dots .dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* ================================
+   RESPONSIVE DESIGN - All Screens
+   ================================ */
+
+/* Mobile Portrait (320px - 480px) */
+@media (max-width: 480px) {
+  .emma-chat-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+  
+  .emma-chat-title {
+    font-size: 20px;
+  }
+  
+  .emma-chat-subtitle {
+    font-size: 13px;
+  }
+  
+  .chat-close-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .input-wrapper {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .voice-btn, .settings-btn, .send-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .chat-textarea {
+    font-size: 14px;
+  }
+  
+  .input-hints {
+    font-size: 11px;
+  }
+}
+
+/* Mobile Landscape (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .emma-chat-header {
+    gap: 18px;
+  }
+  
+  .emma-chat-title {
+    font-size: 22px;
+  }
+  
+  .input-wrapper {
+    gap: 10px;
+  }
+}
+
+/* Tablet (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .emma-chat-header {
+    gap: 20px;
+  }
+  
+  .emma-chat-title {
+    font-size: 24px;
+  }
+}
+
+/* Desktop (1025px+) */
+@media (min-width: 1025px) {
+  .emma-chat-header {
+    gap: 24px;
+  }
+  
+  .emma-chat-title {
+    font-size: 26px;
+  }
+}
+
+/* ================================
+   ACCESSIBILITY & FOCUS STATES
+   ================================ */
+
+.voice-btn:focus,
+.settings-btn:focus,
+.send-btn:focus,
+.chat-close-btn:focus {
+  outline: 3px solid rgba(139, 92, 246, 0.6);
+  outline-offset: 2px;
+}
+
+.chat-textarea:focus {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .input-wrapper {
+    border-color: rgba(139, 92, 246, 0.8);
+  }
+  
+  .emma-chat-title {
+    color: white;
+    -webkit-text-fill-color: white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .emma-orb-chat {
+    animation: none;
+  }
+  
+  .typing-dots .dot {
+    animation: none;
+  }
+  
+  .voice-btn, .settings-btn, .send-btn, .chat-close-btn {
+    transition: none;
+  }
+}
+
+/* ================================
+   SETTINGS MODAL - Emma Branded
+   ================================ */
+
+.emma-settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(15px);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.emma-settings-modal.show {
+  opacity: 1;
+}
+
+.settings-content {
+  background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.emma-settings-modal.show .settings-content {
+  transform: scale(1);
+}
+
+.settings-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(139, 92, 246, 0.2);
+}
+
+.settings-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.settings-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+}
+
+.settings-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.settings-description {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.settings-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.settings-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-help {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Toggle Switches */
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 26px;
+  transition: all 0.3s ease;
+}
+
+.toggle-slider:before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+/* Settings Buttons */
+.settings-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 2px solid rgba(139, 92, 246, 0.2);
+}
+
+.settings-btn-secondary {
+  padding: 12px 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.settings-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.settings-btn-primary {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.settings-btn-primary:hover {
+  background: linear-gradient(135deg, #7C3AED, #E879F9);
+  transform: translateY(-2px);
+}
+
+/* ================================
+   RESPONSIVE BREAKPOINTS
+   ================================ */
+
+/* Extra small devices (phones, 320px and up) */
+@media (max-width: 375px) {
+  .emma-chat-header {
+    padding-bottom: 12px;
+  }
+  
+  .emma-orb-chat {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .emma-chat-title {
+    font-size: 18px;
+  }
+  
+  .emma-chat-subtitle {
+    font-size: 12px;
+  }
+  
+  .input-wrapper {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .voice-btn, .settings-btn, .send-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .voice-btn svg, .settings-btn svg, .send-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Large screens (1400px and up) */
+@media (min-width: 1400px) {
+  .emma-chat-header {
+    gap: 28px;
+    padding-bottom: 24px;
+  }
+  
+  .emma-orb-chat {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .emma-chat-title {
+    font-size: 28px;
+  }
+  
+  .emma-chat-subtitle {
+    font-size: 16px;
+  }
+}
