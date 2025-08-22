@@ -655,7 +655,7 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
     
-    // 🧠 Use Vectorless AI if available, otherwise fallback to basic responses
+    // 🧠 Use Vectorless AI if available, otherwise fallback to dynamic responses
     if (this.isVectorlessEnabled && this.vectorlessEngine) {
       try {
         const result = await this.vectorlessEngine.processQuestion(userMessage);
@@ -672,9 +672,67 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     }
     
-    // Fallback to basic response generation
-    const response = await this.generateEmmaResponse(userMessage);
+    // Dynamic fallback generation for contextual, non-scripted replies
+    const response = this.generateDynamicEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
+  }
+
+  /**
+   * Generate a dynamic, contextual Emma fallback response without LLM
+   */
+  generateDynamicEmmaResponse(userMessage) {
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+    const emojis = ['💜','✨','🌟','🫶','💡'];
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+    const lower = (userMessage || '').toLowerCase();
+    const wantsToSave = /(\bsave\b|\bremember\b|\bmemory\b|\bcapture\b|\brecord\b)/.test(lower);
+    const pastTense = /(i\s+remember\b|\bwas\b|\bwere\b|\bdid\b|\bwent\b|\bhad\b|\bsaw\b|\btold\b|\blearned\b)/.test(lower);
+
+    let contextSnippet = '';
+    try {
+      const vd = window.emmaWebVault?.vaultData?.content?.memories || {};
+      const ids = Object.keys(vd);
+      if (ids.length > 0) {
+        const last = vd[ids[ids.length - 1]];
+        const lastWhen = new Date(last?.created || Date.now()).toLocaleDateString();
+        contextSnippet = ` I can also see your latest saved memory from ${lastWhen}.`;
+      }
+    } catch (_) {}
+
+    const openers = [
+      `Good ${timeGreeting}! ${emoji}`,
+      `I’m here with you ${emoji}`,
+      `Thanks for sharing that ${emoji}`,
+      `I’m listening ${emoji}`
+    ];
+    const opener = openers[Math.floor(Math.random() * openers.length)];
+
+    if (wantsToSave) {
+      const prompts = [
+        "Want me to help turn that into a memory now? Share who was there and roughly when.",
+        "Let’s capture it—who was part of it and where did it happen?",
+        "Beautiful. To save it, tell me who was there, where, and how it felt."
+      ];
+      return `${opener} That sounds meaningful.${contextSnippet} ${prompts[Math.floor(Math.random() * prompts.length)]}`;
+    }
+
+    if (pastTense) {
+      const prompts = [
+        "Would you like to save this moment?",
+        "If you'd like, I can turn this into a memory capsule.",
+        "Shall we keep this in your vault so it doesn’t get lost?"
+      ];
+      return `${opener} That’s a special moment.${contextSnippet} ${prompts[Math.floor(Math.random() * prompts.length)]}`;
+    }
+
+    const followups = [
+      "Tell me a little more—who was with you?",
+      "When did this happen, roughly?",
+      "Where were you, and how did it make you feel?"
+    ];
+    return `${opener} I’m here.${contextSnippet} ${followups[Math.floor(Math.random() * followups.length)]}`;
   }
 
   async generateMemoryCaptureResponse(userMessage) {
@@ -1787,7 +1845,7 @@ class EmmaChatExperience extends ExperiencePopup {
               ${memory.attachments.slice(0, 4).map(attachment => `
                 <div class="media-thumbnail">
                   ${attachment.type?.startsWith('image/') ? `
-                    <img src="${attachment.dataUrl || attachment.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOEI1Q0Y2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'}" alt="${attachment.name}" />
+                    <img src="${attachment.data || attachment.dataUrl || attachment.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOEI1Q0Y2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'}" alt="${attachment.name}" />
                   ` : attachment.type?.startsWith('video/') ? `
                     <video src="${attachment.dataUrl || attachment.url}" muted>
                       <div class="video-overlay">🎥</div>
