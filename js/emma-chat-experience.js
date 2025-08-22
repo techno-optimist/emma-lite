@@ -2027,39 +2027,7 @@ class EmmaChatExperience extends ExperiencePopup {
     });
   }
 
-  /**
-   * Confirm and save memory
-   */
-  async confirmSaveMemory(memoryId) {
-    // Find memory in detected memories
-    let memory = null;
-    for (const [msgId, analysis] of this.detectedMemories) {
-      if (analysis.memory && analysis.memory.id === memoryId) {
-        memory = analysis.memory;
-        break;
-      }
-    }
-    
-    if (!memory) {
-      this.addMessage("I couldn't find that memory. Let me help you create a new one!", 'emma');
-      return;
-    }
-    
-    // Save to vault
-    const result = await this.intelligentCapture.saveMemory(memory);
-    
-    // Remove dialog
-    document.querySelector('.memory-preview-dialog')?.remove();
-    
-    if (result.success) {
-      this.addMessage(`✨ Beautiful! I've saved "${memory.title}" to your memory vault. This special moment is now preserved forever.`, 'emma', { type: 'success' });
-      
-      // Clear from detected memories
-      this.detectedMemories.clear();
-    } else {
-      this.addMessage(`I had trouble saving the memory. ${result.error || 'Please try again.'}`, 'emma', { type: 'error' });
-    }
-  }
+
 
   /**
    * Dismiss memory suggestion

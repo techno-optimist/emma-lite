@@ -130,8 +130,8 @@ class EmmaWebVault {
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
       console.log('✅ Session storage set - new vault active AND unlocked (no expiry - user controlled)!');
       
-      // EMERGENCY: Skip IndexedDB - causing errors
-      // await this.saveToIndexedDB();
+      // Save to IndexedDB for persistence
+      await this.saveToIndexedDB();
       
       // FORCE download for new vault creation
       console.log('💾 Creating initial .emma file...');
@@ -388,7 +388,12 @@ class EmmaWebVault {
       console.log(`🔗 VAULT: Processing ${attachments.length} attachments for memory ${memoryId}`);
       for (const attachment of attachments) {
         console.log('🔗 VAULT: Processing attachment:', attachment.name, attachment.type);
-        const mediaId = await this.addMedia(attachment);
+        // Fix: Pass the correct parameters to addMedia
+        const mediaId = await this.addMedia({
+          name: attachment.name,
+          type: attachment.type,
+          data: attachment.data
+        });
         console.log('🔗 VAULT: Media stored with ID:', mediaId);
         
         const attachmentRef = {
@@ -1185,13 +1190,36 @@ class EmmaWebVault {
    */
   async loadFromIndexedDB() {
     try {
-      const request = indexedDB.open('EmmaVault', 2); // Match version for consistency
+      const request = indexedDB.open('EmmaVault', 3); // Increment to force fresh rebuild
       
       return new Promise((resolve, reject) => {
         request.onerror = () => reject(request.error);
         
+        // CRITICAL: Handle database upgrade for version 3
+        request.onupgradeneeded = (event) => {
+          console.log('🔧 IndexedDB: Upgrading database to version 3...');
+          const db = event.target.result;
+          
+          // Delete old object stores if they exist
+          if (db.objectStoreNames.contains('vaults')) {
+            db.deleteObjectStore('vaults');
+          }
+          
+          // Create new object store
+          const store = db.createObjectStore('vaults', { keyPath: 'id' });
+          console.log('✅ IndexedDB: Database upgraded successfully');
+        };
+        
         request.onsuccess = () => {
           const db = request.result;
+          
+          // Check if object store exists
+          if (!db.objectStoreNames.contains('vaults')) {
+            console.warn('⚠️ IndexedDB: Object store "vaults" not found - returning null');
+            resolve(null);
+            return;
+          }
+          
           const transaction = db.transaction(['vaults'], 'readonly');
           const store = transaction.objectStore('vaults');
           const getRequest = store.get('current');
@@ -1279,7 +1307,7 @@ class EmmaWebVault {
   async saveToIndexedDB() {
     return new Promise((resolve, reject) => {
       try {
-        const request = indexedDB.open('EmmaVault', 2); // Increment version for clean rebuild
+        const request = indexedDB.open('EmmaVault', 3); // Increment version for clean rebuild
         
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
