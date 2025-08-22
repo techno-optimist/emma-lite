@@ -841,7 +841,7 @@
    ELEGANT FILE UPLOAD - EMMA BRANDED
    ================================ */
 
-.emma-file-upload {
+.emma-file-upload, .emma-simple-upload {
   margin-top: 16px;
   padding: 20px;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.08));
@@ -849,9 +849,33 @@
   border-radius: 16px;
   text-align: center;
   transition: all 0.3s ease;
-  cursor: pointer;
   position: relative;
   overflow: hidden;
+}
+
+.upload-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.emma-file-btn {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.emma-file-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
 .emma-file-upload:hover {

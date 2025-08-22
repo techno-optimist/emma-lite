@@ -2521,7 +2521,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     const uploadId = `upload-${Date.now()}`;
     const uploadHTML = `
-      <div class="emma-file-upload" id="${uploadId}">
+      <div class="emma-simple-upload" id="${uploadId}">
         <input type="file" 
                class="file-input-hidden" 
                id="${uploadId}-input"
@@ -2529,10 +2529,12 @@ class EmmaChatExperience extends ExperiencePopup {
                accept="image/*,video/*,audio/*"
                onchange="window.chatExperience.handleEnrichmentFileSelect(event, '${memoryId}', '${uploadId}')">
         
-        <div class="upload-icon">📷</div>
-        <div class="upload-text">Add Photos & Videos</div>
-        <div class="upload-hint">Drag & drop files here or click to browse</div>
-        <div class="upload-formats">JPG, PNG, MP4, MOV, etc.</div>
+        <div class="upload-button-container">
+          <button class="emma-file-btn" onclick="document.getElementById('${uploadId}-input').click(); event.stopPropagation();">
+            📷 Choose Photos & Videos
+          </button>
+          <div class="upload-formats">JPG, PNG, MP4, MOV, etc.</div>
+        </div>
         
         <div class="file-preview-area" id="${uploadId}-preview" style="display: none;">
           <!-- File previews will appear here -->
@@ -2555,12 +2557,7 @@ class EmmaChatExperience extends ExperiencePopup {
       contentContainer.insertAdjacentHTML('beforeend', uploadHTML);
       console.log('📷 UPLOAD: File upload interface added to message');
       
-      // Setup drag and drop functionality
-      const uploadArea = document.getElementById(uploadId);
-      if (uploadArea) {
-        this.setupFileUploadDragDrop(uploadArea, memoryId, uploadId);
-        console.log('📷 UPLOAD: Drag & drop setup complete');
-      }
+      console.log('📷 UPLOAD: Simple file button setup complete');
       
       // Auto-scroll to show upload area
       setTimeout(() => this.scrollToBottom(), 300);
