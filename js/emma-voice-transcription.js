@@ -150,54 +150,66 @@ class EmmaVoiceTranscription {
     `;
     
     this.overlay.innerHTML = `
-      <!-- Voice Transcription Interface -->
-      <div class="voice-transcription-container" style="
-        background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
-        border: 2px solid rgba(139, 92, 246, 0.3);
-        border-radius: 24px;
-        padding: 48px 40px;
-        max-width: 700px;
-        width: 90%;
+      <!-- Emma Voice Transcription - Mobile-First Design -->
+      <div class="emma-voice-container" style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        border: none;
+        border-radius: ${window.innerWidth <= 768 ? '20px' : '28px'};
+        padding: ${window.innerWidth <= 768 ? '32px 24px' : '48px 40px'};
+        max-width: ${window.innerWidth <= 768 ? '95%' : '600px'};
+        width: ${window.innerWidth <= 768 ? '95%' : '90%'};
         text-align: center;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
+        backdrop-filter: blur(30px);
+        box-shadow: 0 32px 120px rgba(139, 92, 246, 0.6);
         position: relative;
+        min-height: ${window.innerWidth <= 768 ? '70vh' : 'auto'};
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       ">
         <!-- Emma Voice Header -->
-        <div class="voice-header" style="
-          margin-bottom: 32px;
+        <div class="emma-voice-header" style="
+          margin-bottom: ${window.innerWidth <= 768 ? '40px' : '32px'};
+          animation: fadeInUp 0.6s ease;
         ">
-          <h2 style="
-            font-size: 28px;
+          <div style="
+            font-size: ${window.innerWidth <= 768 ? '42px' : '32px'};
             font-weight: 300;
             color: white;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+          ">emma</div>
+          <div style="
+            font-size: ${window.innerWidth <= 768 ? '18px' : '16px'};
+            color: rgba(255, 255, 255, 0.9);
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #8B5CF6, #F093FB);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-          ">emma is listening</h2>
-          <p style="
-            font-size: 16px;
+            font-weight: 500;
+          ">is listening to you</div>
+          <div style="
+            font-size: ${window.innerWidth <= 768 ? '16px' : '14px'};
             color: rgba(255, 255, 255, 0.7);
             margin: 0;
-          ">Speak naturally - your words will appear below</p>
+          ">Speak naturally and watch your words appear</div>
         </div>
         
-        <!-- Microphone Visual -->
-        <div class="mic-visual" id="mic-visual" style="
-          width: 80px;
-          height: 80px;
+        <!-- Emma Orb Microphone -->
+        <div class="emma-mic-orb" id="emma-mic-orb" style="
+          width: ${window.innerWidth <= 768 ? '120px' : '100px'};
+          height: ${window.innerWidth <= 768 ? '120px' : '100px'};
           border-radius: 50%;
-          background: linear-gradient(135deg, #8B5CF6, #F093FB);
+          background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0 auto 32px;
-          box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
-          transition: all 0.3s ease;
+          margin: 0 auto ${window.innerWidth <= 768 ? '40px' : '32px'};
+          box-shadow: 
+            0 0 60px rgba(255, 255, 255, 0.4),
+            inset 0 0 40px rgba(255, 255, 255, 0.1);
+          transition: all 0.4s ease;
+          animation: orbPulse 3s ease-in-out infinite;
         ">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="${window.innerWidth <= 768 ? '40' : '36'}" height="${window.innerWidth <= 768 ? '40' : '36'}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
             <line x1="12" y1="19" x2="12" y2="23"/>
@@ -205,156 +217,203 @@ class EmmaVoiceTranscription {
           </svg>
         </div>
         
-        <!-- Real-time Transcription Display -->
-        <div class="transcription-display" style="
-          min-height: 120px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 2px solid rgba(255, 255, 255, 0.1);
-          border-radius: 16px;
-          padding: 24px;
-          margin-bottom: 32px;
+        <!-- Transcription Display -->
+        <div class="emma-transcription-display" style="
+          min-height: ${window.innerWidth <= 768 ? '150px' : '120px'};
+          background: rgba(255, 255, 255, 0.15);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: ${window.innerWidth <= 768 ? '20px' : '16px'};
+          padding: ${window.innerWidth <= 768 ? '32px 24px' : '24px'};
+          margin-bottom: ${window.innerWidth <= 768 ? '40px' : '32px'};
           position: relative;
           overflow-y: auto;
-          max-height: 300px;
+          max-height: ${window.innerWidth <= 768 ? '200px' : '300px'};
+          backdrop-filter: blur(10px);
+          box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
         ">
           <div id="transcription-text" style="
-            font-size: 24px;
-            line-height: 1.4;
+            font-size: ${window.innerWidth <= 768 ? '28px' : '24px'};
+            line-height: 1.3;
             color: white;
             font-weight: 300;
-            text-align: left;
-            min-height: 72px;
+            text-align: center;
+            min-height: ${window.innerWidth <= 768 ? '84px' : '72px'};
             display: flex;
             align-items: center;
             justify-content: center;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.5px;
           ">
-            <span style="color: rgba(255, 255, 255, 0.5); font-style: italic;">
-              Waiting for your voice...
+            <span style="color: rgba(255, 255, 255, 0.6); font-style: italic; font-size: ${window.innerWidth <= 768 ? '20px' : '18px'};">
+              💜 Waiting for your voice...
             </span>
           </div>
           
-          <!-- Interim text (lighter) -->
-          <div id="interim-text" style="
-            font-size: 20px;
-            line-height: 1.3;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 300;
-            text-align: left;
-            font-style: italic;
-            margin-top: 8px;
-            min-height: 24px;
-          "></div>
+          <div id="interim-text" style="display: none;"></div>
         </div>
         
         <!-- Recording Status -->
-        <div class="recording-status" id="recording-status" style="
+        <div class="emma-recording-status" id="recording-status" style="
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
-          margin-bottom: 24px;
-          font-size: 16px;
-          color: rgba(255, 255, 255, 0.8);
+          gap: 16px;
+          margin-bottom: ${window.innerWidth <= 768 ? '40px' : '32px'};
+          font-size: ${window.innerWidth <= 768 ? '18px' : '16px'};
+          color: white;
+          font-weight: 500;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         ">
-          <div class="recording-dot" style="
-            width: 12px;
-            height: 12px;
+          <div class="emma-recording-dot" style="
+            width: ${window.innerWidth <= 768 ? '16px' : '14px'};
+            height: ${window.innerWidth <= 768 ? '16px' : '14px'};
             border-radius: 50%;
-            background: #ef4444;
-            animation: pulse 1.5s infinite;
+            background: #ff4757;
+            animation: emmaPulse 1.2s infinite;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
           "></div>
-          <span>Recording...</span>
+          <span>Recording your memories...</span>
         </div>
         
-        <!-- Action Buttons -->
-        <div class="voice-actions" style="
+        <!-- Emma Action Buttons -->
+        <div class="emma-voice-actions" style="
           display: flex;
-          gap: 16px;
+          gap: ${window.innerWidth <= 768 ? '12px' : '16px'};
           justify-content: center;
+          flex-wrap: wrap;
         ">
-          <button class="voice-action-btn" id="stop-recording-btn" style="
-            background: rgba(239, 68, 68, 0.2);
-            border: 2px solid rgba(239, 68, 68, 0.4);
-            color: #ef4444;
-            padding: 12px 24px;
-            border-radius: 12px;
+          <button class="emma-voice-btn emma-stop-btn" id="stop-recording-btn" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: ${window.innerWidth <= 768 ? '16px 24px' : '14px 20px'};
+            border-radius: ${window.innerWidth <= 768 ? '16px' : '12px'};
             cursor: pointer;
             font-weight: 600;
+            font-size: ${window.innerWidth <= 768 ? '16px' : '14px'};
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 8px;
+            backdrop-filter: blur(10px);
+            min-width: ${window.innerWidth <= 768 ? '140px' : '120px'};
+            justify-content: center;
           ">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="6" y="6" width="12" height="12"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="6" y="6" width="12" height="12" rx="2"/>
             </svg>
-            Stop Recording
+            <span>Stop</span>
           </button>
           
-          <button class="voice-action-btn" id="cancel-recording-btn" style="
-            background: rgba(156, 163, 175, 0.2);
-            border: 2px solid rgba(156, 163, 175, 0.4);
-            color: #9ca3af;
-            padding: 12px 24px;
-            border-radius: 12px;
+          <button class="emma-voice-btn emma-cancel-btn" id="cancel-recording-btn" style="
+            background: rgba(255, 71, 87, 0.2);
+            border: 2px solid rgba(255, 71, 87, 0.4);
+            color: #ff4757;
+            padding: ${window.innerWidth <= 768 ? '16px 24px' : '14px 20px'};
+            border-radius: ${window.innerWidth <= 768 ? '16px' : '12px'};
             cursor: pointer;
             font-weight: 600;
+            font-size: ${window.innerWidth <= 768 ? '16px' : '14px'};
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 8px;
+            backdrop-filter: blur(10px);
+            min-width: ${window.innerWidth <= 768 ? '140px' : '120px'};
+            justify-content: center;
           ">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
-            Cancel
+            <span>Cancel</span>
           </button>
         </div>
       </div>
       
-      <!-- CSS Animations -->
+      <!-- Emma Voice Animations -->
       <style>
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.2); }
+        @keyframes emmaPulse {
+          0%, 100% { 
+            opacity: 1; 
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+          }
+          50% { 
+            opacity: 0.7; 
+            transform: scale(1.3);
+            box-shadow: 0 0 40px rgba(255, 71, 87, 0.9);
+          }
         }
         
-        @keyframes micPulse {
+        @keyframes orbPulse {
           0%, 100% { 
-            box-shadow: 0 0 40px rgba(139, 92, 246, 0.6);
+            box-shadow: 
+              0 0 60px rgba(255, 255, 255, 0.4),
+              inset 0 0 40px rgba(255, 255, 255, 0.1);
             transform: scale(1);
           }
           50% { 
-            box-shadow: 0 0 60px rgba(139, 92, 246, 0.9);
-            transform: scale(1.05);
+            box-shadow: 
+              0 0 80px rgba(255, 255, 255, 0.6),
+              inset 0 0 60px rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
           }
         }
         
-        .mic-visual.recording {
-          animation: micPulse 2s infinite;
-        }
-        
-        .voice-action-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Transcription text animations */
-        .transcription-word {
-          display: inline;
-          opacity: 0;
-          animation: wordAppear 0.3s ease forwards;
-        }
-        
-        @keyframes wordAppear {
+        @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(30px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+        
+        .emma-voice-btn:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .emma-voice-btn:active {
+          transform: translateY(-1px) scale(0.98);
+        }
+        
+        /* Emma transcription text animations */
+        .emma-word {
+          display: inline;
+          opacity: 0;
+          animation: emmaWordAppear 0.4s ease forwards;
+        }
+        
+        @keyframes emmaWordAppear {
+          from {
+            opacity: 0;
+            transform: translateY(15px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        /* Mobile-specific animations */
+        @media (max-width: 768px) {
+          .emma-voice-container {
+            animation: mobileSlideUp 0.5s ease;
+          }
+          
+          @keyframes mobileSlideUp {
+            from {
+              opacity: 0;
+              transform: translateY(50px) scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
           }
         }
       </style>
@@ -408,11 +467,20 @@ class EmmaVoiceTranscription {
     let interimTranscript = '';
     let finalTranscript = '';
     
+    console.log('🎤 Raw transcription event:', event);
+    
     // Process all results
     for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i].transcript;
+      const result = event.results[i];
+      const transcript = result.transcript || '';
       
-      if (event.results[i].isFinal) {
+      console.log(`🎤 Result ${i}:`, {
+        transcript: transcript,
+        isFinal: result.isFinal,
+        confidence: result.confidence
+      });
+      
+      if (result.isFinal) {
         finalTranscript += transcript;
       } else {
         interimTranscript += transcript;
@@ -420,17 +488,18 @@ class EmmaVoiceTranscription {
     }
     
     // Update stored results
-    if (finalTranscript) {
-      this.finalResults += finalTranscript;
+    if (finalTranscript.trim()) {
+      this.finalResults += finalTranscript + ' ';
+      console.log('🎤 Added final transcript:', finalTranscript);
     }
     this.interimResults = interimTranscript;
     
     // Update display with beautiful animation
     this.updateTranscriptionDisplay();
     
-    console.log('🎤 Transcription update:', {
-      final: this.finalResults,
-      interim: this.interimResults
+    console.log('🎤 Current state:', {
+      finalResults: this.finalResults,
+      interimResults: this.interimResults
     });
   }
   
@@ -441,19 +510,47 @@ class EmmaVoiceTranscription {
     const transcriptionDiv = document.getElementById('transcription-text');
     const interimDiv = document.getElementById('interim-text');
     
-    if (!transcriptionDiv || !interimDiv) return;
+    if (!transcriptionDiv || !interimDiv) {
+      console.error('🎤 Transcription display elements not found');
+      return;
+    }
     
-    // Update final text (confirmed words)
-    if (this.finalResults.trim()) {
+    console.log('🎤 Updating display with:', {
+      final: this.finalResults,
+      interim: this.interimResults
+    });
+    
+    // Combine final and interim for display
+    const allText = this.finalResults + this.interimResults;
+    
+    if (allText.trim()) {
+      // Show transcribed text
       transcriptionDiv.style.textAlign = 'left';
       transcriptionDiv.style.justifyContent = 'flex-start';
       transcriptionDiv.style.alignItems = 'flex-start';
+      transcriptionDiv.style.display = 'block';
       
-      // Animate words appearing
-      const words = this.finalResults.trim().split(' ');
-      transcriptionDiv.innerHTML = words.map((word, index) => 
-        `<span class="transcription-word" style="animation-delay: ${index * 0.1}s">${word} </span>`
-      ).join('');
+      // Split into final and interim parts
+      const finalWords = this.finalResults.trim();
+      const interimWords = this.interimResults.trim();
+      
+      let displayHTML = '';
+      
+      // Final words (confirmed)
+      if (finalWords) {
+        displayHTML += `<span style="color: white; font-weight: 400;">${finalWords}</span>`;
+      }
+      
+      // Interim words (currently speaking)
+      if (interimWords) {
+        displayHTML += `<span style="color: rgba(255, 255, 255, 0.7); font-style: italic;"> ${interimWords}</span>`;
+      }
+      
+      transcriptionDiv.innerHTML = displayHTML;
+      
+      // Clear interim div since we're showing it inline
+      interimDiv.innerHTML = '';
+      
     } else {
       // Show placeholder
       transcriptionDiv.innerHTML = `
@@ -464,15 +561,9 @@ class EmmaVoiceTranscription {
       transcriptionDiv.style.textAlign = 'center';
       transcriptionDiv.style.justifyContent = 'center';
       transcriptionDiv.style.alignItems = 'center';
-    }
-    
-    // Update interim text (current speaking)
-    if (this.interimResults.trim()) {
-      interimDiv.textContent = this.interimResults;
-      interimDiv.style.opacity = '0.8';
-    } else {
-      interimDiv.textContent = '';
-      interimDiv.style.opacity = '0';
+      transcriptionDiv.style.display = 'flex';
+      
+      interimDiv.innerHTML = '';
     }
   }
   
