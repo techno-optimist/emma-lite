@@ -1954,15 +1954,25 @@ class EmmaChatExperience extends ExperiencePopup {
             if (window.dashboard && typeof window.dashboard.enterMemoryConstellation === 'function') {
               console.log('🌟 CONSTELLATION: Entering memory constellation via dashboard...');
               window.dashboard.enterMemoryConstellation();
+            } else if (window.parent && window.parent.dashboard && typeof window.parent.dashboard.enterMemoryConstellation === 'function') {
+              console.log('🌟 CONSTELLATION: Entering via parent dashboard...');
+              window.parent.dashboard.enterMemoryConstellation();
             } else {
-              console.log('🌟 FALLBACK: Dashboard not available, trying direct DOM manipulation...');
-              // CRITICAL: NO RELOAD - preserves sessionStorage!
-              // Try to trigger constellation view without reload
-              const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]');
+              console.log('🌟 FALLBACK: Trying direct constellation trigger...');
+              // Try multiple ways to trigger constellation
+              const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]') || 
+                                     document.querySelector('[data-action="memories"]') ||
+                                     document.querySelector('.radial-item[data-action="memories"]');
+              
               if (constellationBtn) {
+                console.log('🌟 Found constellation trigger, clicking...');
                 constellationBtn.click();
               } else {
-                console.warn('🌟 Could not find constellation button - staying on dashboard');
+                console.log('🌟 SUCCESS: Memory saved! Staying on dashboard - you can manually enter constellation');
+                // Show success message on dashboard
+                if (window.showToast) {
+                  window.showToast('✅ Memory saved! Check the constellation view to see it connected to your other memories.', 'success');
+                }
               }
             }
           }, 500);
