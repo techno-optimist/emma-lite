@@ -413,6 +413,17 @@ class EmmaWebVault {
       console.log(`🔗 VAULT: Processing ${attachments.length} attachments for memory ${memoryId}`);
       for (const attachment of attachments) {
         console.log('🔗 VAULT: Processing attachment:', attachment.name, attachment.type);
+        // NUCLEAR DEBUG: Log exact attachment structure
+        console.log('🔥 ATTACHMENT DEBUG: Processing attachment:', {
+          name: attachment.name,
+          type: attachment.type,
+          hasData: !!attachment.data,
+          dataType: typeof attachment.data,
+          dataLength: attachment.data?.length,
+          dataStart: typeof attachment.data === 'string' ? attachment.data.substring(0, 50) : 'not string',
+          fullAttachment: attachment
+        });
+        
         // Fix: Pass the correct parameters to addMedia
         const mediaId = await this.addMedia({
           name: attachment.name,
@@ -818,6 +829,17 @@ class EmmaWebVault {
    * Add media file with encryption
    */
   async addMedia({ type, data, name, file }) {
+    // NUCLEAR DEBUG: Log exact parameters received
+    console.log('🔥 ADD_MEDIA DEBUG: Received parameters:', {
+      type,
+      name,
+      hasFile: !!file,
+      hasData: !!data,
+      dataType: typeof data,
+      dataLength: data?.length,
+      dataConstructor: data?.constructor?.name,
+      dataStart: typeof data === 'string' ? data.substring(0, 50) : 'not string'
+    });
     // Extension mode: Route media saving through extension
     if (this.extensionAvailable) {
       console.log('🔗 Extension mode: Routing media save through extension');
