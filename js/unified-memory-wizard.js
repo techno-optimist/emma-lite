@@ -1788,11 +1788,10 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         }
       }
 
-      // CRITICAL: Check for extension mode OR normal vault unlock
-      const extensionMode = window.emmaWebVault && window.emmaWebVault.extensionAvailable;
-      const normalVaultUnlocked = window.emmaWebVault && window.webVaultStatus && window.webVaultStatus.isUnlocked();
+      // CRITICAL: Check for webapp-only vault unlock (no extension needed)
+      const webappVaultUnlocked = window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true';
 
-      if (extensionMode || normalVaultUnlocked) {
+      if (webappVaultUnlocked) {
         try {
           console.log('💾 Using emmaWebVault.addMemory() for .emma vault');
           // Convert media items to vault format
@@ -1852,7 +1851,10 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         }
       } else {
         console.warn('💾 Web vault not available or locked - cannot save memory');
-        this.showErrorMessage('Vault is not unlocked. Please unlock your vault first.');
+        console.warn('💾 DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
+        console.warn('💾 DEBUG: emmaWebVault.isOpen?', window.emmaWebVault?.isOpen);
+        console.warn('💾 DEBUG: sessionStorage active?', sessionStorage.getItem('emmaVaultActive'));
+        this.showErrorMessage('Vault is not unlocked. Please unlock your .emma vault file first from the dashboard.');
         return;
       }
 

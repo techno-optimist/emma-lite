@@ -2111,8 +2111,11 @@ class EmmaChatExperience extends ExperiencePopup {
       if (!memory) {
         this.showToast('❌ Memory not found', 'error');
         return;
-      }      // Save to vault
-      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+      }
+      
+      // Save to vault (webapp-only mode)
+      if (window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true') {
+        console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
         await window.emmaWebVault.addMemory({
           content: memory.content,
           metadata: memory.metadata,
@@ -2167,8 +2170,11 @@ class EmmaChatExperience extends ExperiencePopup {
         }, 2000);
 
       } else {
-        this.showToast('❌ Vault not available', 'error');
-        console.error('💾 SAVE: Vault not available for saving');
+        console.warn('💾 EMMA CHAT: Vault save failed - debugging info:');
+        console.warn('💾 DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
+        console.warn('💾 DEBUG: emmaWebVault.isOpen?', window.emmaWebVault?.isOpen);
+        console.warn('💾 DEBUG: sessionStorage active?', sessionStorage.getItem('emmaVaultActive'));
+        this.showToast('❌ Vault not unlocked - please unlock your .emma vault first', 'error');
       }
 
     } catch (error) {

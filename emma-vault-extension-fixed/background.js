@@ -916,7 +916,15 @@ async function handleSaveMemoryToVault(memoryData) {
     // Save updated vault data back to storage
     currentVaultData = currentData;
     
-    console.log('✅ Memory saved to vault storage successfully');
+    // CRITICAL FIX: Write to .emma file immediately after memory save
+    try {
+      await writeToEmmaFile(currentData);
+      console.log('✅ Memory saved to vault storage AND .emma file successfully');
+    } catch (fileError) {
+      console.error('❌ Failed to write memory to .emma file:', fileError);
+      // Still return success for memory save, but log file save failure
+    }
+    
     return { success: true, id: memoryId };
     
   } catch (error) {
@@ -1003,9 +1011,16 @@ async function handleSavePersonToVault(personData) {
     // Save updated vault data back to storage
     currentVaultData = currentData;
     
-    console.log('✅ Person saved to vault storage successfully');
-    console.log('👥 DEBUG: Updated vault data people count:', Object.keys(currentData.content.people).length);
-    console.log('👥 DEBUG: People in storage:', Object.keys(currentData.content.people));
+    // CRITICAL FIX: Write to .emma file immediately after person save
+    try {
+      await writeToEmmaFile(currentData);
+      console.log('✅ Person saved to vault storage AND .emma file successfully');
+      console.log('👥 DEBUG: Updated vault data people count:', Object.keys(currentData.content.people).length);
+      console.log('👥 DEBUG: People in storage:', Object.keys(currentData.content.people));
+    } catch (fileError) {
+      console.error('❌ Failed to write person to .emma file:', fileError);
+      // Still return success for memory save, but log file save failure
+    }
     
     return { success: true, id: personId };
     
@@ -1111,7 +1126,15 @@ async function handleUpdateMemoryInVault(memoryData) {
     // Save updated vault data back to storage
     currentVaultData = currentData;
     
-    console.log('✅ Memory updated in vault storage successfully');
+    // CRITICAL FIX: Write to .emma file immediately after memory update
+    try {
+      await writeToEmmaFile(currentData);
+      console.log('✅ Memory updated in vault storage AND .emma file successfully');
+    } catch (fileError) {
+      console.error('❌ Failed to write memory update to .emma file:', fileError);
+      // Still return success for memory update, but log file save failure
+    }
+    
     return { success: true, id: memoryData.id };
     
   } catch (error) {
