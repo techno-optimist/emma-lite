@@ -2181,7 +2181,13 @@ class EmmaChatExperience extends ExperiencePopup {
         enrichmentComplete: true
       },
       content: this.buildEnrichedContent(state.collectedData),
-      attachments: state.collectedData.media
+      attachments: (state.collectedData.media || []).map(mediaItem => ({
+        id: mediaItem.id,
+        name: mediaItem.name,
+        type: mediaItem.type,
+        size: mediaItem.size,
+        data: mediaItem.dataUrl // Convert dataUrl to data for vault compatibility
+      }))
     };
     
     if (this.debugMode) {
