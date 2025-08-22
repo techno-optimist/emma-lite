@@ -127,7 +127,7 @@ class EmmaMobileUIFixes {
         /* Chat Input Area */
         .emma-chat-input {
           padding: 16px !important;
-          padding-bottom: 20px !important; /* Extra bottom spacing */
+          padding-bottom: 32px !important; /* Match top padding exactly */
           margin: 0 !important;
         }
         
@@ -187,9 +187,9 @@ class EmmaMobileUIFixes {
           width: 36px !important;
           height: 36px !important;
           background: rgba(255, 255, 255, 0.1) !important;
-          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          border: none !important;
           border-radius: 50% !important;
-          color: rgba(255, 255, 255, 0.8) !important;
+          color: rgba(255, 255, 255, 0.7) !important;
           cursor: pointer !important;
           transition: all 0.3s ease !important;
           display: flex !important;
@@ -201,7 +201,7 @@ class EmmaMobileUIFixes {
         .chat-settings-btn:hover {
           background: rgba(255, 255, 255, 0.2) !important;
           color: white !important;
-          transform: scale(1.05) !important;
+          transform: scale(1.1) !important;
         }
         
         /* Message Bubbles */
@@ -427,7 +427,7 @@ class EmmaMobileUIFixes {
         
         .emma-chat-input {
           padding: 16px !important;
-          padding-bottom: 24px !important; /* Extra bottom spacing for desktop */
+          padding-bottom: 32px !important; /* Match top padding exactly */
           margin: 0 !important;
         }
         
@@ -483,9 +483,9 @@ class EmmaMobileUIFixes {
           width: 40px !important;
           height: 40px !important;
           background: rgba(255, 255, 255, 0.1) !important;
-          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          border: none !important;
           border-radius: 50% !important;
-          color: rgba(255, 255, 255, 0.8) !important;
+          color: rgba(255, 255, 255, 0.7) !important;
           cursor: pointer !important;
           transition: all 0.3s ease !important;
           display: flex !important;
@@ -497,7 +497,7 @@ class EmmaMobileUIFixes {
         .chat-settings-btn:hover {
           background: rgba(255, 255, 255, 0.2) !important;
           color: white !important;
-          transform: scale(1.05) !important;
+          transform: scale(1.1) !important;
         }
         
         /* Settings Modal Desktop */

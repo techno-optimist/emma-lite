@@ -118,9 +118,9 @@ class EmmaChatExperience extends ExperiencePopup {
     `;
     
     contentElement.innerHTML = `
-      <!-- Settings Button - Top Left (mirrored to close button) -->
+      <!-- Settings Button - Top Left (identical to close button but mirrored) -->
       <button class="chat-settings-btn" id="chat-settings-btn" title="Chat settings">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
         </svg>
@@ -157,8 +157,8 @@ class EmmaChatExperience extends ExperiencePopup {
           </button>
         </div>
         
-        <!-- Add bottom spacing for input area -->
-        <div style="height: 16px;"></div>
+        <!-- Add bottom spacing for input area - match top padding exactly -->
+        <div style="height: 32px;"></div>
       </div>
 
       <!-- Typing Indicator -->
