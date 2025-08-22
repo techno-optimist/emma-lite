@@ -405,17 +405,26 @@ function createMemorySlideshow(memory) {
       slideshow.appendChild(slide);
     });
 
-    // Start carousel if multiple slides
+    // Start carousel if multiple slides with VARIABLE timing
     if (images.length > 1) {
       let currentSlide = 0;
-      setInterval(() => {
-        const slides = slideshow.querySelectorAll('.memory-slide-bg');
-        if (slides.length > 1) {
-          slides[currentSlide].classList.remove('active');
-          currentSlide = (currentSlide + 1) % slides.length;
-          slides[currentSlide].classList.add('active');
-        }
-      }, 4000); // Change slide every 4 seconds
+      
+      // Random interval between 3-7 seconds for natural feel
+      const randomInterval = 3000 + Math.random() * 4000;
+      
+      // Add random delay before starting (0-2 seconds)
+      const startDelay = Math.random() * 2000;
+      
+      setTimeout(() => {
+        setInterval(() => {
+          const slides = slideshow.querySelectorAll('.memory-slide-bg');
+          if (slides.length > 1) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+          }
+        }, randomInterval);
+      }, startDelay);
     }
 
     return slideshow;

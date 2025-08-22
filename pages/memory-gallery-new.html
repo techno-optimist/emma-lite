@@ -198,14 +198,14 @@
       }
     }
 
-    /* Memory Card - Matching People Card Design */
+    /* Memory Card - Photo-First Design */
     .memory-card {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 20px;
-      padding: 48px 32px;
+      padding: 0; /* Remove padding for full photo coverage */
       text-align: center;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
@@ -213,8 +213,8 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch; /* Stretch to fill */
+      justify-content: flex-end; /* Content at bottom */
       min-height: 400px;
       width: 100%;
     }
@@ -307,7 +307,7 @@
         0 0 0 1px rgba(139, 92, 246, 0.1);
     }
 
-    /* Memory Card Layout - Photo-focused */
+    /* Memory Card Layout - Photo-focused with full coverage */
     .memory-info-overlay {
       position: absolute;
       bottom: 0;
@@ -315,14 +315,16 @@
       right: 0;
       background: linear-gradient(
         transparent 0%,
-        rgba(0, 0, 0, 0.4) 50%,
-        rgba(0, 0, 0, 0.8) 100%
+        rgba(0, 0, 0, 0.3) 40%,
+        rgba(0, 0, 0, 0.7) 80%,
+        rgba(0, 0, 0, 0.9) 100%
       );
-      padding: 32px 24px 24px;
+      padding: 40px 20px 20px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
       z-index: 2;
+      border-radius: 0 0 20px 20px; /* Match card border radius */
     }
 
     .memory-text-content {
