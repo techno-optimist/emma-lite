@@ -1160,6 +1160,43 @@ function debounce(func, wait) {
 }
 
 /**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * Render empty state when no vault memories exist
+ */
+function renderEmptyState() {
+  const memoriesGrid = document.getElementById('memories-grid');
+  if (!memoriesGrid) return;
+
+  memoriesGrid.innerHTML = `
+    <div class="empty-state-card">
+      <div class="empty-icon">💝</div>
+      <h2 class="empty-title">Your Memory Gallery is Ready</h2>
+      <p class="empty-message">
+        Start capturing your precious memories! Click the <strong>Emma orb</strong> below to create your first memory capsule.
+      </p>
+      <div class="empty-cta-box">
+        <div class="empty-cta-icon">👇</div>
+        <div class="empty-cta-content">
+          <h3 class="empty-cta-title">Click the Emma Orb</h3>
+          <p class="empty-cta-text">
+            Look for the glowing purple orb in the bottom-right corner<br/>
+            Click it to open Emma's memory creation wizard
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Create a new empty memory for editing
  */
 async function createNewMemory() {
