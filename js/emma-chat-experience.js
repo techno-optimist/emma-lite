@@ -330,20 +330,43 @@ class EmmaChatExperience extends ExperiencePopup {
     // Create beautiful voice transcription experience
     const voiceTranscription = new EmmaVoiceTranscription({
       onTranscriptionComplete: (text) => {
-        console.log('🎤 Voice transcription completed:', text);
+        console.log('🎤 CALLBACK: Voice transcription completed with text:', text);
+        console.log('🎤 CALLBACK: Input field exists?', !!this.inputField);
         
-        // Add the transcribed text to the input field
-        this.inputField.value = text;
+        if (!text || !text.trim()) {
+          console.warn('🎤 CALLBACK: No text to inject');
+          return;
+        }
+        
+        if (!this.inputField) {
+          console.error('🎤 CALLBACK: Input field not found!');
+          return;
+        }
+        
+        // CRITICAL FIX: Ensure text injection works
+        const trimmedText = text.trim();
+        console.log('🎤 CALLBACK: Injecting text:', trimmedText);
+        
+        // Clear and set the input field
+        this.inputField.value = '';
+        this.inputField.value = trimmedText;
+        
+        // Trigger input events for proper handling
+        this.inputField.dispatchEvent(new Event('input', { bubbles: true }));
         this.autoResizeTextarea();
+        this.handleInputChange();
         
         // Update Emma orb state
         if (this.webglOrb && this.webglOrb.options) {
           this.webglOrb.options.forceHoverState = true;
         }
         
-        // Focus input for editing/sending
-        this.inputField.focus();
-        this.inputField.setSelectionRange(text.length, text.length);
+        // Focus input for editing/sending with delay
+        setTimeout(() => {
+          this.inputField.focus();
+          this.inputField.setSelectionRange(trimmedText.length, trimmedText.length);
+          console.log('🎤 CALLBACK: Input focused and cursor positioned');
+        }, 100);
       },
       
       onTranscriptionCancel: () => {

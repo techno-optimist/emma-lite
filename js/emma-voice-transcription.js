@@ -29,9 +29,10 @@ class EmmaVoiceTranscription {
     this.interimResults = '';
     this.finalResults = '';
     
+    // CRITICAL FIX: Initialize speech recognition in constructor
     this.initializeSpeechRecognition();
     
-    console.log('🎤 Emma Voice Transcription initialized');
+    console.log('🎤 Emma Voice Transcription initialized with recognition:', !!this.recognition);
   }
   
   /**
@@ -83,12 +84,17 @@ class EmmaVoiceTranscription {
    * Start voice transcription with beautiful overlay
    */
   async startTranscription() {
+    console.log('🎤 START: startTranscription called');
+    console.log('🎤 START: recognition exists?', !!this.recognition);
+    
     if (!this.recognition) {
+      console.error('🎤 START: Speech recognition not initialized!');
       this.showError('Voice recognition not supported in this browser');
       return;
     }
     
     if (this.isRecording) {
+      console.log('🎤 START: Already recording, stopping first');
       this.stopTranscription();
       return;
     }
@@ -97,18 +103,20 @@ class EmmaVoiceTranscription {
     this.transcriptionText = '';
     this.interimResults = '';
     this.finalResults = '';
+    console.log('🎤 START: Transcription state reset');
     
     // Create beautiful overlay
     this.createTranscriptionOverlay();
     
     try {
       // Start recognition
+      console.log('🎤 START: About to call recognition.start()');
       this.recognition.start();
-      console.log('🎤 Starting Emma voice transcription...');
+      console.log('🎤 START: recognition.start() called successfully');
     } catch (error) {
-      console.error('🎤 Failed to start voice recognition:', error);
+      console.error('🎤 START: Failed to start voice recognition:', error);
       this.closeTranscriptionOverlay();
-      this.showError('Failed to start voice recognition');
+      this.showError('Failed to start voice recognition: ' + error.message);
     }
   }
   
@@ -469,21 +477,26 @@ class EmmaVoiceTranscription {
     
     console.log('🎤 Raw transcription event:', event);
     
-    // Process all results
+    // Process all results - FIXED transcript access
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i];
-      const transcript = result.transcript || '';
+      
+      // CRITICAL FIX: Correct transcript access pattern
+      const transcript = (result[0] && result[0].transcript) || result.transcript || '';
       
       console.log(`🎤 Result ${i}:`, {
+        result: result,
         transcript: transcript,
         isFinal: result.isFinal,
-        confidence: result.confidence
+        confidence: result[0] ? result[0].confidence : 'unknown'
       });
       
-      if (result.isFinal) {
-        finalTranscript += transcript;
-      } else {
-        interimTranscript += transcript;
+      if (transcript.trim()) {
+        if (result.isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
       }
     }
     
