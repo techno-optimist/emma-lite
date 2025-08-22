@@ -37,8 +37,8 @@ class EmmaIntelligentCapture {
     // Normalized decision thresholds for the new MemoryWorthinessEngine (0..1 scale)
     // LOWERED for better sensitivity - Emma should catch more memories
     this.thresholdsNormalized = {
-      memoryWorthy: 0.35,   // begin enrichment (lowered from 0.40)
-      autoCapture: 0.65     // offer quick capture in addition to enrichment (lowered from 0.70)
+      memoryWorthy: 0.25,   // maximum sensitivity for Debbe
+      autoCapture: 0.55     // easier auto-capture
     };
     
     // Conversation state
@@ -464,10 +464,25 @@ class EmmaIntelligentCapture {
     // Length bonus (reasonable stories)
     const len = content.length;
     if (len > 50) score += 0.10; // Bonus for substantial content
+    if (len > 20) score += 0.05; // Small bonus for any meaningful content
 
     // Attachments bonus
     if (message.attachments && message.attachments.length > 0) {
       score += 0.10;
+    }
+    
+    // Memory intent keywords (for explicit memory requests)
+    const memoryIntentPatterns = [
+      /\b(save|remember|memory|capture|record)\b/i,
+      /\b(want to|need to|should)\s+(save|remember|capture|record)\b/i
+    ];
+    let intentHits = 0;
+    memoryIntentPatterns.forEach(pattern => {
+      if (pattern.test(content)) intentHits++;
+    });
+    if (intentHits > 0) {
+      score += 0.30; // Significant boost for explicit memory intent
+      console.log('🎯 MEMORY INTENT DETECTED: Boosting score by 0.30');
     }
 
     if (this.options.debug) {

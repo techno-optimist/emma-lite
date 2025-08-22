@@ -959,7 +959,7 @@ class EmmaChatExperience extends ExperiencePopup {
               <div class="memory-card" onclick="window.chatExperience.openMemoryDetail('${memory.id}')">
                 ${memory.attachments && memory.attachments.length > 0 ? `
                   <div class="memory-thumbnail">
-                    <img src="${memory.attachments[0].url || memory.attachments[0].dataUrl}" alt="${memory.title}" />
+                    <img src="${memory.attachments[0].url || memory.attachments[0].dataUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOEI1Q0Y2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'}" alt="${memory.title}" />
                     ${memory.attachments.length > 1 ? `<div class="media-count">+${memory.attachments.length - 1}</div>` : ''}
                   </div>
                 ` : `
@@ -1787,7 +1787,7 @@ class EmmaChatExperience extends ExperiencePopup {
               ${memory.attachments.slice(0, 4).map(attachment => `
                 <div class="media-thumbnail">
                   ${attachment.type?.startsWith('image/') ? `
-                    <img src="${attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                    <img src="${attachment.dataUrl || attachment.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOEI1Q0Y2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'}" alt="${attachment.name}" />
                   ` : attachment.type?.startsWith('video/') ? `
                     <video src="${attachment.dataUrl || attachment.url}" muted>
                       <div class="video-overlay">🎥</div>
