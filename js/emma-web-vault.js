@@ -424,18 +424,22 @@ class EmmaWebVault {
           fullAttachment: attachment
         });
         
-        // NUCLEAR FIX: Check if attachment has valid data
-        if (!attachment.data) {
+        // NUCLEAR FIX: Check if attachment has valid data (support both data and dataUrl)
+        const attachmentData = attachment.data || attachment.dataUrl;
+        if (!attachmentData) {
           console.error('❌ ATTACHMENT MISSING DATA:', attachment);
           throw new Error('Attachment missing data - file may not have been uploaded properly');
         }
         
-        console.log('🔥 CALLING addMedia with valid attachment data...');
-        const mediaId = await this.addMedia({
+        // Normalize attachment object for addMedia
+        const normalizedAttachment = {
           name: attachment.name,
           type: attachment.type,
-          data: attachment.data
-        });
+          data: attachmentData  // Use either data or dataUrl
+        };
+        
+        console.log('🔥 CALLING addMedia with normalized attachment data...');
+        const mediaId = await this.addMedia(normalizedAttachment);
         console.log('🔗 VAULT: Media stored with ID:', mediaId);
         
         const attachmentRef = {
