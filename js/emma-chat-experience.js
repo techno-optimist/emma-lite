@@ -2181,13 +2181,23 @@ class EmmaChatExperience extends ExperiencePopup {
         enrichmentComplete: true
       },
       content: this.buildEnrichedContent(state.collectedData),
-      attachments: (state.collectedData.media || []).map(mediaItem => ({
-        id: mediaItem.id,
-        name: mediaItem.name,
-        type: mediaItem.type,
-        size: mediaItem.size,
-        data: mediaItem.dataUrl // Convert dataUrl to data for vault compatibility
-      }))
+      attachments: (state.collectedData.media || []).map(mediaItem => {
+        console.log('🔥 ENRICHMENT CONVERSION: Converting media item:', {
+          id: mediaItem.id,
+          name: mediaItem.name,
+          type: mediaItem.type,
+          hasDataUrl: !!mediaItem.dataUrl,
+          dataUrlStart: mediaItem.dataUrl ? mediaItem.dataUrl.substring(0, 50) : 'none'
+        });
+        
+        return {
+          id: mediaItem.id,
+          name: mediaItem.name,
+          type: mediaItem.type,
+          size: mediaItem.size,
+          data: mediaItem.dataUrl // Convert dataUrl to data property
+        };
+      })
     };
     
     if (this.debugMode) {
