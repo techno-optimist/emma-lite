@@ -75,7 +75,7 @@ class EmmaIntelligentCapture {
       
       // New: Aggregated normalized scoring (0..1) with novelty and optional LLM gating
       const content = message.content || message.text || '';
-      const heuristicsScore = this.computeHeuristicsScore(content, message); // 0..1
+      const heuristicsScore = this.calculateHeuristicsScore(content, message); // 0..1
 
       let llmScore = 0; // 0..1
       // ALWAYS try LLM if available (remove gating for now to debug)
@@ -101,7 +101,7 @@ class EmmaIntelligentCapture {
         }
       }
 
-      const noveltyPenalty = await this.computeNoveltyPenalty(content); // 0..1 (higher = more similar → lower final)
+      const noveltyPenalty = await this.calculateNoveltyPenalty(content); // 0..1 (higher = more similar → lower final)
 
       // ADAPTIVE WEIGHTING: If no LLM, boost heuristics
       const hasLLM = llmScore > 0;
@@ -409,7 +409,7 @@ class EmmaIntelligentCapture {
    * Normalized heuristics-based memory worthiness (0..1)
    * FIXED: Much more sensitive scoring for memory detection
    */
-  computeHeuristicsScore(text, message) {
+  calculateHeuristicsScore(text, message) {
     const content = (text || '').trim();
     if (!content) return 0;
 
@@ -473,7 +473,7 @@ class EmmaIntelligentCapture {
     if (this.options.debug) {
       console.log('🧮 HEURISTICS DEBUG:', {
         content: content.substring(0, 100),
-        firstPerson,
+        firstPersonMatches: firstPersonMatches.length,
         pastTenseHits,
         temporalHits,
         eventHits,
@@ -488,7 +488,7 @@ class EmmaIntelligentCapture {
   /**
    * Novelty penalty (0..1) using Jaccard similarity of bigrams vs existing memories
    */
-  async computeNoveltyPenalty(content) {
+  async calculateNoveltyPenalty(content) {
     try {
       const vault = this.options.vaultManager && this.options.vaultManager.vaultData;
       const memories = (vault && vault.content && vault.content.memories) ? Object.values(vault.content.memories) : [];
