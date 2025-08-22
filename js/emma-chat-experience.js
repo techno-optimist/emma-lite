@@ -592,8 +592,8 @@ class EmmaChatExperience extends ExperiencePopup {
       ...options
     });
 
-    // Auto-scroll to bottom
-    this.scrollToBottom();
+    // Auto-scroll to bottom (with delay for DOM update)
+    setTimeout(() => this.scrollToBottom(), 100);
     
     return messageId;
   }
@@ -607,9 +607,13 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   scrollToBottom() {
-    const messagesArea = document.getElementById('chat-messages-area');
-    if (messagesArea) {
-      messagesArea.scrollTop = messagesArea.scrollHeight;
+    // FIXED: Use correct chat messages container ID
+    const messagesContainer = document.getElementById('chat-messages');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      console.log('📜 SCROLL: Auto-scrolled to bottom');
+    } else {
+      console.warn('📜 SCROLL: Messages container not found');
     }
   }
 
@@ -1020,8 +1024,8 @@ class EmmaChatExperience extends ExperiencePopup {
       suggestions
     });
 
-    // Auto-scroll to bottom
-    this.scrollToBottom();
+    // Auto-scroll to bottom (with delay for DOM update)
+    setTimeout(() => this.scrollToBottom(), 100);
   }
 
   /**
@@ -1721,6 +1725,8 @@ class EmmaChatExperience extends ExperiencePopup {
    * Show memory preview dialog
    */
   showMemoryPreviewDialog(memory) {
+    console.log('🎯 PREVIEW: Showing memory preview dialog for:', memory);
+    
     const dialog = document.createElement('div');
     dialog.className = 'memory-preview-dialog';
     dialog.innerHTML = `
@@ -1756,7 +1762,9 @@ class EmmaChatExperience extends ExperiencePopup {
       </div>
     `;
     
+    console.log('🎯 PREVIEW: Adding dialog to DOM...');
     document.body.appendChild(dialog);
+    console.log('🎯 PREVIEW: Dialog added to DOM successfully');
     
     // Animate in
     requestAnimationFrame(() => {
@@ -1975,8 +1983,15 @@ class EmmaChatExperience extends ExperiencePopup {
    * Complete enrichment and show preview for final save
    */
   completeEnrichmentAndShowPreview(memoryId) {
+    console.log('🎯 ENRICHMENT: Starting completion for memory:', memoryId);
+    
     const state = this.enrichmentState.get(memoryId);
-    if (!state) return;
+    if (!state) {
+      console.error('🎯 ENRICHMENT: No state found for memory:', memoryId);
+      return;
+    }
+    
+    console.log('🎯 ENRICHMENT: State found:', state);
     
     // Build final enriched memory
     const enrichedMemory = {

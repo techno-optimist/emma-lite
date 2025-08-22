@@ -1,43 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emma - Your Intelligent Memory Companion</title>
-    
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma - Your Intelligent Memory Companion</title>
+  
     <!-- Emma Core Systems -->
-    <script src="js/emma-input-modal.js"></script>
-    <script src="js/clean-password-modal.js"></script>
-    <script src="js/emma-web-vault.js"></script>
-    
+  <script src="js/emma-input-modal.js"></script>
+  <script src="js/clean-password-modal.js"></script>
+  <script src="js/emma-web-vault.js"></script>
+  
     <!-- Emma Orb System -->
     <script src="js/base-orb.js"></script>
     <script src="js/emma-orb.js"></script>
-    
-    <style>
-        /* Emma Brand Variables */
-        :root {
+  
+  <style>
+    /* Emma Brand Variables */
+    :root {
             --emma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             --emma-purple: #8B5CF6;
             --emma-pink: #F093FB;
-            --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
-        }
+      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
+    body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--emma-gradient);
             color: white;
-            min-height: 100vh;
+      min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+      overflow: hidden;
         }
 
         .emma-container {
@@ -59,45 +59,45 @@
         }
 
         /* Clean Emma Orb */
-        .emma-orb-container {
-            position: relative;
-            width: 200px;
-            height: 200px;
+    .emma-orb-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
             margin: 0 auto 40px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
 
-        .emma-orb-container:hover {
-            transform: scale(1.05);
-        }
+    .emma-orb-container:hover {
+      transform: scale(1.05);
+    }
 
-        .emma-orb-webgl {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
+    .emma-orb-webgl {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
             background: radial-gradient(circle at 30% 30%, var(--emma-purple), #4f46e5, var(--emma-pink));
-            box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
+      box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
             animation: orb-pulse 4s ease-in-out infinite;
-            position: relative;
+      position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-        }
-        
-        .emma-orb-webgl canvas {
-            border-radius: 50%;
-            width: 100% !important;
-            height: 100% !important;
-        }
+      overflow: hidden;
+    }
+    
+    .emma-orb-webgl canvas {
+      border-radius: 50%;
+      width: 100% !important;
+      height: 100% !important;
+    }
 
-        @keyframes orb-pulse {
-            0%, 100% { 
-                transform: scale(1); 
+    @keyframes orb-pulse {
+      0%, 100% { 
+        transform: scale(1);
                 box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1); 
-            }
-            50% { 
+      }
+      50% { 
                 transform: scale(1.02); 
                 box-shadow: 0 0 60px rgba(134, 88, 255, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.2); 
             }
@@ -107,43 +107,43 @@
         .vault-locked .emma-orb::after {
             content: '🔒';
             font-size: 48px;
-            position: absolute;
+      position: absolute;
             top: 50%;
-            left: 50%;
+      left: 50%;
             transform: translate(-50%, -50%);
             text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
         }
 
         /* Clean Vault Controls */
         .vault-controls {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
             margin-top: 40px;
         }
 
         .vault-btn {
-            background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.1);
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: 16px 32px;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
             backdrop-filter: blur(10px);
         }
 
         .vault-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
+      transform: translateY(-2px);
         }
 
         .vault-btn.primary {
             background: rgba(139, 92, 246, 0.3);
-            border-color: var(--emma-purple);
+      border-color: var(--emma-purple);
         }
 
         .vault-btn.primary:hover {
@@ -161,36 +161,36 @@
 
         /* Drag Drop Zone */
         .drag-drop-zone {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
             background: rgba(139, 92, 246, 0.1);
             border: 4px dashed rgba(139, 92, 246, 0.5);
             display: none;
-            align-items: center;
-            justify-content: center;
+      align-items: center;
+      justify-content: center;
             z-index: 1000;
-            backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
         }
 
         .drag-drop-zone.active {
-            display: flex;
+      display: flex;
         }
 
         .drag-drop-message {
-            font-size: 32px;
-            font-weight: 600;
+      font-size: 32px;
+      font-weight: 600;
             text-align: center;
         }
 
         /* Vault Status */
         .vault-status {
             margin-top: 20px;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
             backdrop-filter: blur(10px);
         }
 
@@ -202,8 +202,8 @@
         /* Hidden file input */
         .hidden {
             display: none;
-        }
-    </style>
+    }
+  </style>
 </head>
 <body>
     <div class="emma-container">
@@ -213,13 +213,13 @@
         <!-- Emma Orb (using existing system) -->
         <div class="emma-orb-container" id="emmaOrbContainer">
             <div class="emma-orb-webgl" id="emmaOrb"></div>
-        </div>
-        
+  </div>
+
         <!-- Vault Status -->
         <div class="vault-status" id="vaultStatus">
             <div id="vaultStatusText">🔒 No vault loaded</div>
-        </div>
-        
+  </div>
+
         <!-- Clean Vault Controls -->
         <div class="vault-controls">
             <button class="vault-btn primary" id="openVaultBtn">
@@ -230,27 +230,27 @@
             </button>
             <button class="vault-btn success" id="goToDashboardBtn" style="display: none;">
                 🚀 Go to Dashboard
-            </button>
+              </button>
         </div>
         
         <!-- Drag & Drop Zone -->
         <div class="drag-drop-zone" id="dragDropZone">
             <div class="drag-drop-message">
                 🎯 Drop your .emma vault file here
+              </div>
             </div>
-        </div>
-        
+            
         <!-- Hidden file input -->
         <input type="file" id="vaultFileInput" accept=".emma" class="hidden">
-    </div>
+        </div>
 
-    <script>
+  <script>
         /**
          * Clean Emma Pure Web App
          * Perfect architecture for Debbe's demo
          */
         class CleanEmmaApp {
-            constructor() {
+      constructor() {
                 this.vaultStatus = 'locked';
                 this.currentVault = null;
                 
@@ -258,7 +258,7 @@
                 
                 this.initializeElements();
                 this.initializeEmmaOrb();
-                this.setupEventListeners();
+        this.setupEventListeners();
                 this.updateUI();
                 
                 console.log('✅ Clean Emma App ready');
@@ -283,16 +283,16 @@
                     if (window.EmmaOrb && this.orb) {
                         this.webglOrb = new window.EmmaOrb(this.orb, {
                             hue: 270, // Emma's purple
-                            hoverIntensity: 0.5,
+              hoverIntensity: 0.5,
                             rotateOnHover: true
-                        });
+            });
                         console.log('✅ Emma orb initialized successfully');
-                    } else {
+          } else {
                         console.warn('⚠️ Emma orb class not available, using CSS fallback');
                         this.orb.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
                         this.orb.style.animation = 'orb-pulse 4s ease-in-out infinite';
-                    }
-                } catch (error) {
+          }
+        } catch (error) {
                     console.error('❌ Failed to initialize Emma orb:', error);
                 }
             }
@@ -330,24 +330,24 @@
                     if (!window.showOpenFilePicker) {
                         // Fallback to file input
                         this.fileInput.click();
-                        return;
-                    }
-                    
-                    const [fileHandle] = await window.showOpenFilePicker({
-                        types: [{
-                            description: 'Emma Vault Files',
-                            accept: { 'application/emma-vault': ['.emma'] }
-                        }],
-                        excludeAcceptAllOption: true,
-                        multiple: false
-                    });
-                    
-                    const file = await fileHandle.getFile();
+          return;
+        }
+
+                const [fileHandle] = await window.showOpenFilePicker({
+                  types: [{
+                    description: 'Emma Vault Files',
+                    accept: { 'application/emma-vault': ['.emma'] }
+                  }],
+                  excludeAcceptAllOption: true,
+                  multiple: false
+                });
+                
+                const file = await fileHandle.getFile();
                     await this.processVaultFile(file, fileHandle);
-                    
-                } catch (error) {
+          
+        } catch (error) {
                     if (error.name !== 'AbortError') {
-                        console.error('❌ Failed to open vault:', error);
+          console.error('❌ Failed to open vault:', error);
                         this.showError('Failed to open vault: ' + error.message);
                     }
                 }
@@ -379,9 +379,9 @@
                         this.currentVault = { name: vaultName };
                         this.updateUI();
                         this.showSuccess(`Vault "${vaultName}" created successfully!`);
-                    }
-                    
-                } catch (error) {
+          }
+          
+        } catch (error) {
                     console.error('❌ Failed to create vault:', error);
                     this.showError('Failed to create vault: ' + error.message);
                 }
@@ -438,11 +438,11 @@
                     this.showSuccess(`Vault opened! ${this.currentVault.stats.memoryCount} memories loaded`);
                     
                     // Navigate to main dashboard after successful unlock (with mobile fallback)
-                    setTimeout(() => {
+        setTimeout(() => {
                         window.location.href = 'working-desktop-dashboard.html';
                     }, 2000);
-                    
-                } catch (error) {
+          
+        } catch (error) {
                     console.error('❌ Failed to process vault:', error);
                     this.showError('Failed to unlock vault: ' + error.message);
                 }
@@ -475,7 +475,7 @@
                     const file = files[0];
                     if (file.name.endsWith('.emma')) {
                         await this.processVaultFile(file);
-                    } else {
+          } else {
                         this.showError('Please drop a .emma vault file');
                     }
                 }
@@ -489,7 +489,7 @@
                     
                     // Show dashboard button for mobile users
                     this.goToDashboardBtn.style.display = 'block';
-                } else {
+        } else {
                     this.orbContainer.classList.add('vault-locked');
                     this.vaultStatusDiv.classList.remove('unlocked');
                     this.vaultStatusText.textContent = '🔒 No vault loaded';
@@ -515,14 +515,14 @@
             showToast(message, type = 'info') {
                 const toast = document.createElement('div');
                 toast.style.cssText = `
-                    position: fixed;
-                    top: 20px;
+          position: fixed;
+          top: 20px;
                     right: 20px;
                     background: ${type === 'success' ? 'rgba(16, 185, 129, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(59, 130, 246, 0.9)'};
-                    color: white;
+            color: white;
                     padding: 16px 24px;
-                    border-radius: 12px;
-                    font-weight: 600;
+          border-radius: 12px;
+            font-weight: 600;
                     z-index: 10000;
                     backdrop-filter: blur(10px);
                     border: 2px solid rgba(255, 255, 255, 0.2);
@@ -533,7 +533,7 @@
                 document.body.appendChild(toast);
                 
                 setTimeout(() => toast.style.transform = 'translateX(0)', 100);
-                setTimeout(() => {
+            setTimeout(() => {
                     toast.style.transform = 'translateX(100%)';
                     setTimeout(() => toast.remove(), 300);
                 }, 3000);
@@ -544,16 +544,16 @@
                 return new Promise((resolve, reject) => {
                     const modalOverlay = document.createElement('div');
                     modalOverlay.style.cssText = `
-                        position: fixed;
-                        top: 0;
-                        left: 0;
+          position: fixed;
+          top: 0;
+          left: 0;
                         width: 100%;
                         height: 100%;
-                        background: rgba(0, 0, 0, 0.8);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        z-index: 10000;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
                         backdrop-filter: blur(10px);
                     `;
                     
@@ -563,7 +563,7 @@
                         border-radius: 20px;
                         padding: 30px;
                         max-width: 400px;
-                        width: 90%;
+            width: 90%;
                         border: 2px solid rgba(134, 88, 255, 0.3);
                         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
                     `;
@@ -574,8 +574,8 @@
                             <p style="color: rgba(255,255,255,0.8); margin-bottom: 15px;">
                                 ${isCreate ? `Create a passphrase for "${fileName}":` : `Enter the passphrase for "${fileName}":`}
                             </p>
-                        </div>
-                        
+                </div>
+                
                         <form id="emmaPassphraseForm">
                             <div style="margin-bottom: 15px;">
                                 <input type="password" id="emmaPassphrase" placeholder="Enter passphrase" required autofocus style="
@@ -596,36 +596,36 @@
                                     border: 2px solid rgba(134, 88, 255, 0.3);
                                     border-radius: 10px;
                                     background: rgba(255, 255, 255, 0.1);
-                                    color: white;
+                                color: white;
                                     font-size: 16px;
                                     outline: none;
                                 ">
                                 <div id="passwordMatch" style="margin-top: 5px; font-size: 12px;"></div>
-                                ` : ''}
+                        ` : ''}
                                 <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px; display: block;">
                                     🔒 Your passphrase ${isCreate ? 'secures' : 'decrypts'} your precious memories locally
                                 </small>
-                            </div>
-                            
+                      </div>
+                  
                             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                                 <button type="button" id="cancelBtn" style="
-                                    background: rgba(255, 255, 255, 0.1);
+                    background: rgba(255, 255, 255, 0.1);
                                     border: 2px solid rgba(255, 255, 255, 0.3);
                                     color: white;
                                     padding: 10px 20px;
                                     border-radius: 8px;
-                                    cursor: pointer;
+                    cursor: pointer;
                                 ">Cancel</button>
                                 <button type="submit" style="
                                     background: linear-gradient(135deg, #8B5CF6, #F093FB);
-                                    border: none;
-                                    color: white;
+                border: none;
+                color: white;
                                     padding: 10px 20px;
                                     border-radius: 8px;
-                                    cursor: pointer;
+                cursor: pointer;
                                     font-weight: 600;
                                 ">${isCreate ? '🔒 Create Vault' : '🔓 Unlock Vault'}</button>
-                            </div>
+            </div>
                         </form>
                     `;
                     
@@ -685,11 +685,11 @@
                     });
                     
                     // Focus the input
-                    setTimeout(() => {
+          setTimeout(() => {
                         const input = document.getElementById('emmaPassphrase');
                         if (input) input.focus();
-                    }, 100);
-                });
+            }, 100);
+          });
             }
         }
 
@@ -699,7 +699,7 @@
             setTimeout(() => {
                 window.cleanEmmaApp = new CleanEmmaApp();
             }, 500);
-        });
-    </script>
+    });
+  </script>
 </body>
 </html>
