@@ -882,14 +882,33 @@ class EmmaWebVault {
       const mediaId = this.generateId('media');
       
       let mediaData;
+      console.log('🔥 MEDIA DATA TYPE CHECK:', {
+        hasFile: !!file,
+        hasData: !!data,
+        dataType: typeof data,
+        isArrayBuffer: data instanceof ArrayBuffer,
+        isString: typeof data === 'string',
+        dataConstructor: data?.constructor?.name,
+        dataPreview: typeof data === 'string' ? data.substring(0, 100) : 'not string'
+      });
+      
       if (file) {
+        console.log('📁 Using file parameter for media data');
         mediaData = await this.fileToArrayBuffer(file);
       } else if (data instanceof ArrayBuffer) {
+        console.log('📦 Using ArrayBuffer data');
         mediaData = data;
       } else if (typeof data === 'string') {
+        console.log('📝 Using string data (base64/dataURL)');
         // Base64 or data URL
         mediaData = this.dataURLToArrayBuffer(data);
       } else {
+        console.error('❌ INVALID DATA FORMAT:', {
+          hasFile: !!file,
+          hasData: !!data,
+          dataType: typeof data,
+          dataValue: data
+        });
         throw new Error('Invalid media data format');
       }
       
