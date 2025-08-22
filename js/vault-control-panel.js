@@ -238,6 +238,24 @@ class EmmaVaultControlPanel {
           ⚙️ Vault Controls
         </h3>
         <div style="display: grid; gap: 12px;">
+          <button id="openVaultBtn" style="
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: none;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+          " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+            📁 Open Different Vault
+          </button>
+          
           <button id="downloadVaultBtn" style="
             background: linear-gradient(135deg, #10b981, #059669);
             border: none;
@@ -292,6 +310,10 @@ class EmmaVaultControlPanel {
             📊 Vault Statistics
           </button>
         </div>
+        
+        <!-- Hidden file input for vault selection -->
+        <input type="file" id="vaultControlFileInput" accept=".emma" style="display: none;">
+      </div>
       </div>
       
       <!-- Close Button -->
@@ -317,6 +339,11 @@ class EmmaVaultControlPanel {
    * Set up modal event listeners
    */
   setupModalEventListeners(modalOverlay) {
+    // Open vault button
+    document.getElementById('openVaultBtn').addEventListener('click', () => {
+      this.openDifferentVault();
+    });
+    
     // Download vault button
     document.getElementById('downloadVaultBtn').addEventListener('click', () => {
       this.downloadUpdatedVault();
@@ -401,6 +428,121 @@ class EmmaVaultControlPanel {
       console.log('🔄 Sync status updated:', this.syncStatus);
     } catch (error) {
       console.warn('⚠️ Failed to update sync status:', error);
+    }
+  }
+
+  /**
+   * Open a different vault file (session recovery)
+   */
+  async openDifferentVault() {
+    try {
+      console.log('📁 Opening different vault for session recovery...');
+      
+      // Trigger file input
+      const fileInput = document.getElementById('vaultControlFileInput');
+      fileInput.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (file && file.name.endsWith('.emma')) {
+          await this.processVaultFile(file);
+        } else {
+          this.showToast('❌ Please select a valid .emma vault file', 'error');
+        }
+        fileInput.value = ''; // Reset for future use
+      };
+      
+      fileInput.click();
+      
+    } catch (error) {
+      console.error('❌ Failed to open vault file dialog:', error);
+      this.showToast('❌ Failed to open file dialog: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Process vault file with full encryption support (copied from index.html)
+   */
+  async processVaultFile(file, fileHandle = null) {
+    try {
+      console.log('🔓 Processing vault file:', file.name);
+      
+      // Show loading state
+      this.showToast('🔓 Processing vault file...', 'info');
+      
+      // Read file data
+      const fileData = await file.arrayBuffer();
+      console.log('📄 File data loaded, size:', fileData.byteLength);
+      
+      // Request passphrase using Emma's beautiful modal
+      let passphrase;
+      try {
+        if (window.cleanSecurePasswordModal) {
+          passphrase = await window.cleanSecurePasswordModal.show({
+            title: `Unlock ${file.name}`,
+            message: 'Enter your vault passphrase to unlock your memories:',
+            placeholder: 'Enter passphrase...'
+          });
+        } else {
+          // Fallback to simple prompt if modal not available
+          passphrase = prompt(`🔐 Enter passphrase for ${file.name}:`);
+        }
+      } catch (error) {
+        if (error.message === 'User cancelled') {
+          console.log('🔓 Vault unlock cancelled by user');
+          return;
+        }
+        throw error;
+      }
+      
+      if (!passphrase) {
+        console.log('🔓 Vault unlock cancelled - no passphrase provided');
+        return;
+      }
+      
+      this.showToast('🔐 Decrypting vault...', 'info');
+      
+      // Decrypt vault using Emma Web Vault's native crypto
+      const vaultData = await window.emmaWebVault.exactWorkingDecrypt(fileData, passphrase);
+      
+      if (!vaultData || !vaultData.content) {
+        throw new Error('Invalid vault data structure');
+      }
+      
+      console.log('✅ Vault decrypted successfully:', vaultData.metadata?.name);
+      
+      // Update Emma Web Vault with new data
+      window.emmaWebVault.vaultData = vaultData;
+      window.emmaWebVault.isOpen = true;
+      window.emmaWebVault.fileHandle = fileHandle;
+      
+      // Update session storage and localStorage
+      sessionStorage.setItem('emmaVaultActive', 'true');
+      sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+      localStorage.setItem('emmaVaultActive', 'true');
+      localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+      
+      // Save to IndexedDB for persistence
+      try {
+        await window.emmaWebVault.saveToIndexedDB();
+        console.log('✅ New vault saved to IndexedDB successfully');
+      } catch (idbError) {
+        console.warn('⚠️ IndexedDB save failed (non-critical):', idbError);
+      }
+      
+      // Update control panel display
+      this.updateSyncStatus();
+      
+      // Close control panel and show success
+      this.closeControlPanel();
+      this.showToast(`✅ Vault "${vaultData.metadata?.name || file.name}" loaded successfully!`, 'success');
+      
+      // Refresh page to show new vault data
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Failed to process vault:', error);
+      this.showToast('❌ Failed to unlock vault: ' + error.message, 'error');
     }
   }
 

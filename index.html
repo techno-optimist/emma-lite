@@ -150,6 +150,15 @@
             background: rgba(139, 92, 246, 0.5);
         }
 
+        .vault-btn.success {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: #10b981;
+        }
+
+        .vault-btn.success:hover {
+            background: rgba(16, 185, 129, 0.5);
+        }
+
         /* Drag Drop Zone */
         .drag-drop-zone {
             position: fixed;
@@ -219,6 +228,9 @@
             <button class="vault-btn" id="createVaultBtn">
                 ✨ Create New Vault
             </button>
+            <button class="vault-btn success" id="goToDashboardBtn" style="display: none;">
+                🚀 Go to Dashboard
+            </button>
         </div>
         
         <!-- Drag & Drop Zone -->
@@ -259,6 +271,7 @@
                 this.vaultStatusText = document.getElementById('vaultStatusText');
                 this.openVaultBtn = document.getElementById('openVaultBtn');
                 this.createVaultBtn = document.getElementById('createVaultBtn');
+                this.goToDashboardBtn = document.getElementById('goToDashboardBtn');
                 this.dragDropZone = document.getElementById('dragDropZone');
                 this.fileInput = document.getElementById('vaultFileInput');
             }
@@ -290,6 +303,9 @@
                 
                 // Create vault button  
                 this.createVaultBtn.addEventListener('click', () => this.createVault());
+                
+                // Go to dashboard button
+                this.goToDashboardBtn.addEventListener('click', () => this.goToDashboard());
                 
                 // File input change
                 this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
@@ -470,11 +486,22 @@
                     this.orbContainer.classList.remove('vault-locked');
                     this.vaultStatusDiv.classList.add('unlocked');
                     this.vaultStatusText.textContent = `🔓 ${this.currentVault.name} (${this.currentVault.stats?.memoryCount || 0} memories)`;
+                    
+                    // Show dashboard button for mobile users
+                    this.goToDashboardBtn.style.display = 'block';
                 } else {
                     this.orbContainer.classList.add('vault-locked');
                     this.vaultStatusDiv.classList.remove('unlocked');
                     this.vaultStatusText.textContent = '🔒 No vault loaded';
+                    
+                    // Hide dashboard button when locked
+                    this.goToDashboardBtn.style.display = 'none';
                 }
+            }
+
+            goToDashboard() {
+                console.log('🚀 Navigating to dashboard...');
+                window.location.href = 'working-desktop-dashboard.html';
             }
 
             showSuccess(message) {
