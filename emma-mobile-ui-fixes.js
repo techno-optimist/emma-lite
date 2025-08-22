@@ -231,18 +231,14 @@ class EmmaMobileUIFixes {
          ================================ */
       
       @media (max-width: 768px) {
-        /* Radial Menu Container */
+        /* Radial Menu Container - CRITICAL: Don't override pointer-events */
         .radial-menu {
           width: 100vw !important;
           height: 100vh !important;
-          position: fixed !important;
+          position: absolute !important; /* Use absolute, not fixed */
           top: 0 !important;
           left: 0 !important;
-          pointer-events: none !important; /* Container non-clickable */
-        }
-        
-        .radial-menu.active {
-          pointer-events: all !important; /* Allow clicks when active */
+          /* DON'T override pointer-events - let dashboard CSS handle it */
         }
         
         /* Radial Menu Items - Properly Anchored */
@@ -251,8 +247,8 @@ class EmmaMobileUIFixes {
           height: 70px !important;
           position: absolute !important;
           transform-origin: center center !important;
-          z-index: 1001 !important; /* Ensure clickable above other elements */
-          pointer-events: auto !important; /* Ensure clickable */
+          z-index: 11 !important; /* Higher than default but not too high */
+          /* DON'T override pointer-events - let dashboard handle activation */
         }
         
         .radial-item-icon {
@@ -363,6 +359,8 @@ class EmmaMobileUIFixes {
         /* Larger tap areas */
         .radial-item {
           padding: 8px !important;
+          cursor: pointer !important;
+          -webkit-tap-highlight-color: rgba(139, 92, 246, 0.3) !important;
         }
         
         /* Prevent text selection on touch */
@@ -372,6 +370,21 @@ class EmmaMobileUIFixes {
           -webkit-user-select: none !important;
           user-select: none !important;
           -webkit-touch-callout: none !important;
+          touch-action: manipulation !important;
+        }
+      }
+      
+      /* Mobile-specific touch enhancements */
+      @media (max-width: 768px) {
+        .radial-item {
+          cursor: pointer !important;
+          -webkit-tap-highlight-color: rgba(139, 92, 246, 0.3) !important;
+          touch-action: manipulation !important;
+        }
+        
+        .radial-item:active {
+          background: rgba(139, 92, 246, 0.5) !important;
+          transform: scale(0.95) !important;
         }
       }
       
@@ -512,8 +525,8 @@ class EmmaMobileUIFixes {
           item.style.left = (x - elementSize) + 'px';
           item.style.top = (y - elementSize) + 'px';
           item.style.transform = 'none'; // Remove any conflicting transforms
-          item.style.zIndex = '1001'; // Ensure clickable
-          item.style.pointerEvents = 'auto'; // Ensure clickable
+          item.style.zIndex = '11'; // Match the CSS
+          // DON'T override pointer-events - let dashboard handle activation
           
           console.log(`🎯 FIXED: Positioned radial item ${i} at center(${centerX}, ${centerY}) + radius(${radius}) = (${x}, ${y}) -> DOM(${x - elementSize}, ${y - elementSize})`);
           
@@ -591,13 +604,13 @@ class EmmaMobileUIFixes {
         // Get element size for proper centering
         const itemSize = this.isMobile ? 35 : 45; // Half of actual size
         
-        // Apply position relative to viewport
-        item.style.position = 'fixed';
+        // Apply position relative to viewport - but use absolute positioning
+        item.style.position = 'absolute';
         item.style.left = (x - itemSize) + 'px';
         item.style.top = (y - itemSize) + 'px';
         item.style.transform = 'none';
-        item.style.zIndex = '1001'; // Higher than menu container
-        item.style.pointerEvents = 'auto'; // Ensure clickable
+        item.style.zIndex = '11'; // Match the CSS
+        // DON'T override pointer-events - let dashboard handle activation
         
         console.log(`🎯 ANCHORED: Item ${i} to orb center(${centerX}, ${centerY}) at angle ${angle} -> position(${x - itemSize}, ${y - itemSize})`);
       });
@@ -742,6 +755,50 @@ class EmmaMobileUIFixes {
   }
   
   /**
+   * Debug radial menu click issues
+   */
+  debugRadialMenuClicks() {
+    console.log('🔍 DEBUGGING RADIAL MENU CLICKS ON MOBILE');
+    
+    const radialMenu = document.querySelector('.radial-menu');
+    const radialItems = document.querySelectorAll('.radial-item');
+    
+    console.log('📱 Radial Menu Debug Info:');
+    console.log('- Menu element:', radialMenu);
+    console.log('- Menu classes:', radialMenu?.className);
+    console.log('- Menu pointer-events:', getComputedStyle(radialMenu)?.pointerEvents);
+    console.log('- Menu z-index:', getComputedStyle(radialMenu)?.zIndex);
+    console.log('- Items count:', radialItems.length);
+    
+    radialItems.forEach((item, i) => {
+      const styles = getComputedStyle(item);
+      console.log(`- Item ${i}:`, {
+        pointerEvents: styles.pointerEvents,
+        zIndex: styles.zIndex,
+        position: styles.position,
+        display: styles.display,
+        visibility: styles.visibility
+      });
+    });
+    
+    // Add temporary click handlers for debugging
+    radialItems.forEach((item, i) => {
+      const testHandler = (e) => {
+        console.log(`🎯 CLICK DETECTED on item ${i}:`, e.target);
+        alert(`Menu item ${i} clicked successfully!`);
+      };
+      
+      item.addEventListener('click', testHandler);
+      item.addEventListener('touchstart', (e) => {
+        console.log(`👆 TOUCH START on item ${i}:`, e.target);
+      });
+      item.addEventListener('touchend', (e) => {
+        console.log(`👆 TOUCH END on item ${i}:`, e.target);
+      });
+    });
+  }
+  
+  /**
    * Get debug information
    */
   getDebugInfo() {
@@ -762,6 +819,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     window.emmaMobileUIFixes = new EmmaMobileUIFixes();
     console.log('📱 Emma Mobile UI Fixes ready:', window.emmaMobileUIFixes.getDebugInfo());
+    
+    // Add global debug function for mobile menu clicks
+    window.debugRadialClicks = () => window.emmaMobileUIFixes.debugRadialMenuClicks();
   }, 500);
 });
 

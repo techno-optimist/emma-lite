@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Mobile Menu Click Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      color: white;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .test-container {
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .instructions {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      backdrop-filter: blur(10px);
+    }
+    
+    .test-orb {
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle at 30% 30%, #8B5CF6, #764ba2, #F093FB);
+      border-radius: 50%;
+      margin: 40px auto;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      transition: transform 0.3s ease;
+    }
+    
+    .test-orb:hover, .test-orb:active {
+      transform: scale(1.05);
+    }
+    
+    .test-radial-menu {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .test-radial-menu.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .test-radial-item {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      background: rgba(139, 92, 246, 0.3);
+      border: 2px solid rgba(139, 92, 246, 0.5);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 20px;
+      z-index: 11;
+      -webkit-tap-highlight-color: rgba(139, 92, 246, 0.3);
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    .test-radial-item:hover, .test-radial-item:active {
+      background: rgba(139, 92, 246, 0.6);
+      transform: scale(1.1);
+    }
+    
+    .click-log {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .test-button {
+      background: linear-gradient(135deg, #8B5CF6, #F093FB);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 10px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>📱 Mobile Menu Click Test</h1>
+    
+    <div class="instructions">
+      <h3>🎯 Testing Radial Menu Clicks</h3>
+      <p>1. Click the orb below to open the radial menu</p>
+      <p>2. Try clicking each menu item</p>
+      <p>3. Check the click log for debugging info</p>
+    </div>
+    
+    <div class="test-orb" onclick="toggleTestMenu()">
+      CLICK ME
+    </div>
+    
+    <div class="test-radial-menu" id="testRadialMenu">
+      <div class="test-radial-item" data-action="memories" onclick="handleMenuClick('memories', 0)">
+        📝
+      </div>
+      <div class="test-radial-item" data-action="people" onclick="handleMenuClick('people', 1)">
+        👥
+      </div>
+      <div class="test-radial-item" data-action="chat" onclick="handleMenuClick('chat', 2)">
+        💬
+      </div>
+    </div>
+    
+    <div class="click-log" id="clickLog">
+      <strong>Click Log:</strong><br>
+      Waiting for interactions...
+    </div>
+    
+    <div>
+      <button class="test-button" onclick="debugMenuState()">🔍 Debug Menu State</button>
+      <button class="test-button" onclick="clearLog()">🗑️ Clear Log</button>
+      <button class="test-button" onclick="window.location.href='working-desktop-dashboard.html'">🔙 Back to Dashboard</button>
+    </div>
+  </div>
+
+  <script>
+    let menuOpen = false;
+    let clickLog = [];
+    
+    function log(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      clickLog.push(`[${timestamp}] ${message}`);
+      
+      const logElement = document.getElementById('clickLog');
+      logElement.innerHTML = '<strong>Click Log:</strong><br>' + 
+        clickLog.slice(-10).join('<br>'); // Show last 10 entries
+      
+      console.log('📱 CLICK LOG:', message);
+    }
+    
+    function toggleTestMenu() {
+      menuOpen = !menuOpen;
+      const menu = document.getElementById('testRadialMenu');
+      const items = menu.querySelectorAll('.test-radial-item');
+      
+      log(`🎯 Toggle menu: ${menuOpen ? 'OPENING' : 'CLOSING'}`);
+      
+      if (menuOpen) {
+        menu.classList.add('active');
+        positionMenuItems(items);
+        log(`✅ Menu opened, ${items.length} items positioned`);
+      } else {
+        menu.classList.remove('active');
+        log(`❌ Menu closed`);
+      }
+    }
+    
+    function positionMenuItems(items) {
+      const container = document.getElementById('testRadialMenu');
+      const containerRect = container.getBoundingClientRect();
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+      
+      const isMobile = window.innerWidth <= 768;
+      const radius = isMobile ? 100 : 120;
+      
+      log(`📐 Positioning ${items.length} items around center(${centerX}, ${centerY}) with radius ${radius}`);
+      
+      items.forEach((item, i) => {
+        const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        
+        const itemSize = 35; // Half of 70px
+        item.style.left = (x - itemSize) + 'px';
+        item.style.top = (y - itemSize) + 'px';
+        
+        log(`📍 Item ${i} positioned at (${x - itemSize}, ${y - itemSize})`);
+        
+        // Debug the computed styles
+        setTimeout(() => {
+          const styles = getComputedStyle(item);
+          log(`🔍 Item ${i} styles: pointer-events=${styles.pointerEvents}, z-index=${styles.zIndex}, position=${styles.position}`);
+        }, 100);
+      });
+    }
+    
+    function handleMenuClick(action, index) {
+      log(`🎯 MENU CLICK SUCCESS: ${action} (item ${index})`);
+      alert(`✅ Menu item clicked successfully!\nAction: ${action}\nIndex: ${index}`);
+      
+      // Close menu after click
+      setTimeout(() => {
+        toggleTestMenu();
+      }, 500);
+    }
+    
+    function debugMenuState() {
+      const menu = document.getElementById('testRadialMenu');
+      const items = menu.querySelectorAll('.test-radial-item');
+      
+      log('🔍 DEBUGGING MENU STATE:');
+      log(`- Menu active: ${menu.classList.contains('active')}`);
+      log(`- Menu pointer-events: ${getComputedStyle(menu).pointerEvents}`);
+      log(`- Items count: ${items.length}`);
+      
+      items.forEach((item, i) => {
+        const rect = item.getBoundingClientRect();
+        const styles = getComputedStyle(item);
+        log(`- Item ${i}: pos(${styles.left}, ${styles.top}) rect(${rect.left}, ${rect.top}) events=${styles.pointerEvents}`);
+      });
+    }
+    
+    function clearLog() {
+      clickLog = [];
+      document.getElementById('clickLog').innerHTML = '<strong>Click Log:</strong><br>Log cleared...';
+    }
+    
+    // Add touch event listeners for debugging
+    document.addEventListener('DOMContentLoaded', () => {
+      const items = document.querySelectorAll('.test-radial-item');
+      
+      items.forEach((item, i) => {
+        // Add multiple event types for debugging
+        item.addEventListener('touchstart', (e) => {
+          log(`👆 TOUCH START on item ${i}`);
+          e.preventDefault(); // Prevent default touch behavior
+        });
+        
+        item.addEventListener('touchend', (e) => {
+          log(`👆 TOUCH END on item ${i}`);
+          e.preventDefault();
+          // Manually trigger click
+          handleMenuClick(item.dataset.action, i);
+        });
+        
+        item.addEventListener('click', (e) => {
+          log(`🖱️ CLICK on item ${i}`);
+        });
+        
+        item.addEventListener('pointerdown', (e) => {
+          log(`👉 POINTER DOWN on item ${i} (type: ${e.pointerType})`);
+        });
+      });
+      
+      log('📱 Touch event listeners added to all menu items');
+    });
+  </script>
+</body>
+</html>
