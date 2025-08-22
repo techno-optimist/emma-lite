@@ -118,7 +118,13 @@ class EmmaChatExperience extends ExperiencePopup {
     `;
     
     contentElement.innerHTML = `
-      <!-- NO DUPLICATE Close Button - ExperiencePopup handles this -->
+      <!-- Settings Button - Top Right -->
+      <button class="chat-settings-btn" id="chat-settings-btn" title="Chat settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
 
       <!-- Chat Messages -->
       <div class="emma-chat-messages" id="chat-messages">
@@ -143,20 +149,12 @@ class EmmaChatExperience extends ExperiencePopup {
             rows="1"
             maxlength="2000"
           ></textarea>
-          <button class="settings-btn" id="chat-settings-btn" title="Chat settings">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
-            </svg>
-          </button>
+
           <button class="send-btn" id="send-btn" title="Send message">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
             </svg>
           </button>
-        </div>
-        <div class="input-hints">
-          <span>Press Enter to send • Click mic for voice • Shift+Enter for new line</span>
         </div>
       </div>
 
@@ -250,11 +248,15 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = document.getElementById('send-btn');
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
-    this.settingsButton = document.getElementById('chat-settings-btn');
+    this.settingsButton = document.getElementById('chat-settings-btn'); // Now in top-right
     
-    if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton || !this.settingsButton) {
-      console.error('💬 Chat interface elements not found');
+    if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
+      console.error('💬 Critical chat interface elements not found');
       return;
+    }
+    
+    if (!this.settingsButton) {
+      console.warn('💬 Settings button not found - settings will not be available');
     }
 
     // Setup input handling
@@ -262,7 +264,11 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
-    this.settingsButton.addEventListener('click', () => this.showChatSettings());
+    
+    // Settings button event listener (if button exists)
+    if (this.settingsButton) {
+      this.settingsButton.addEventListener('click', () => this.showChatSettings());
+    }
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
 
     // Auto-resize textarea

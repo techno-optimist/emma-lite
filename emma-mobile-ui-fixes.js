@@ -169,12 +169,38 @@ class EmmaMobileUIFixes {
           font-size: 14px !important;
         }
         
-        /* Close Button */
+        /* Top Right Buttons */
         .chat-close-btn {
+          position: absolute !important;
           top: 12px !important;
           right: 12px !important;
           width: 36px !important;
           height: 36px !important;
+          z-index: 10 !important;
+        }
+        
+        .chat-settings-btn {
+          position: absolute !important;
+          top: 12px !important;
+          right: 56px !important; /* 12px + 36px + 8px gap */
+          width: 36px !important;
+          height: 36px !important;
+          background: rgba(255, 255, 255, 0.1) !important;
+          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: 50% !important;
+          color: rgba(255, 255, 255, 0.8) !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 10 !important;
+        }
+        
+        .chat-settings-btn:hover {
+          background: rgba(255, 255, 255, 0.2) !important;
+          color: white !important;
+          transform: scale(1.05) !important;
         }
         
         /* Message Bubbles */
@@ -211,13 +237,7 @@ class EmmaMobileUIFixes {
           margin: 8px 0 !important;
         }
         
-        /* Input Hints */
-        .input-hints {
-          padding: 8px 12px !important;
-          margin-top: 8px !important;
-          font-size: 12px !important;
-          text-align: center !important;
-        }
+        /* Input hints removed for clean interface */
         
         /* Typing Indicator */
         .emma-typing {
@@ -434,11 +454,7 @@ class EmmaMobileUIFixes {
           padding: 0 12px !important;
         }
         
-        .input-hints {
-          padding: 10px 16px !important;
-          margin-top: 8px !important;
-          text-align: center !important;
-        }
+        /* Input hints removed for clean interface */
         
         .emma-typing {
           padding: 12px 16px !important;
@@ -450,9 +466,36 @@ class EmmaMobileUIFixes {
           margin-bottom: 12px !important;
         }
         
+        /* Top Right Buttons - Desktop */
         .chat-close-btn {
+          position: absolute !important;
           top: 16px !important;
           right: 16px !important;
+          z-index: 10 !important;
+        }
+        
+        .chat-settings-btn {
+          position: absolute !important;
+          top: 16px !important;
+          right: 64px !important; /* 16px + 40px + 8px gap */
+          width: 40px !important;
+          height: 40px !important;
+          background: rgba(255, 255, 255, 0.1) !important;
+          border: 2px solid rgba(255, 255, 255, 0.2) !important;
+          border-radius: 50% !important;
+          color: rgba(255, 255, 255, 0.8) !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          z-index: 10 !important;
+        }
+        
+        .chat-settings-btn:hover {
+          background: rgba(255, 255, 255, 0.2) !important;
+          color: white !important;
+          transform: scale(1.05) !important;
         }
         
         /* Settings Modal Desktop */

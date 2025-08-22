@@ -43,8 +43,7 @@ class ExperiencePopup {
     
     // Enable drag-to-move with header handle(s) after content is initialized
     this.setupDragHandles();
-    // Enable resize from bottom-left corner
-    this.setupResizeHandle();
+    // Resize handle removed - using built-in browser resize (bottom-right)
   }
 
   /**
@@ -489,73 +488,7 @@ class ExperiencePopup {
     handleElement.addEventListener('pointerdown', onPointerDown);
   }
 
-  /**
-   * Add a bottom-left resize grip so users can resize the popup height and width.
-   */
-  setupResizeHandle() {
-    if (!this.element) return;
-    const popup = this.element;
-    const grip = document.createElement('div');
-    grip.className = 'emma-popup-resize-grip';
-    grip.style.cssText = `
-      position: absolute;
-      left: 6px;
-      bottom: 6px;
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      background: rgba(255,255,255,0.25);
-      border: 1px solid rgba(255,255,255,0.4);
-      cursor: nwse-resize;
-      z-index: 2;
-    `;
-    popup.appendChild(grip);
-
-    let startX = 0;
-    let startY = 0;
-    let startWidth = 0;
-    let startHeight = 0;
-    let startLeft = 0;
-
-    const onMove = (e) => {
-      const dx = startX - e.clientX; // bottom-left grip: moving left increases width
-      const dy = e.clientY - startY; // moving down increases height
-      const newWidth = Math.max(380, startWidth + dx);
-      const newHeight = Math.max(420, startHeight + dy);
-
-      // Adjust left to keep right edge anchored while resizing from left
-      const deltaWidth = newWidth - startWidth;
-      const newLeft = Math.max(0, startLeft - deltaWidth);
-
-      popup.style.width = `${newWidth}px`;
-      popup.style.height = `${newHeight}px`;
-      popup.style.left = `${newLeft}px`;
-
-      // Persist
-      this.position.width = newWidth;
-      this.position.height = newHeight;
-      this.position.left = newLeft;
-    };
-
-    const end = () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', end, true);
-      document.removeEventListener('pointercancel', end, true);
-    };
-
-    grip.addEventListener('pointerdown', (e) => {
-      if (e.button !== undefined && e.button !== 0) return;
-      const rect = popup.getBoundingClientRect();
-      startX = e.clientX;
-      startY = e.clientY;
-      startWidth = rect.width;
-      startHeight = rect.height;
-      startLeft = rect.left;
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', end, true);
-      document.addEventListener('pointercancel', end, true);
-    });
-  }
+  // Removed setupResizeHandle - using browser's built-in resize (bottom-right corner)
 }
 
 // Export for use
