@@ -688,6 +688,26 @@ class EmmaChatExperience extends ExperiencePopup {
   generateDynamicEmmaResponse(userMessage) {
     console.log('🎭 GENERATING TRULY DYNAMIC RESPONSE for:', userMessage);
     
+    // FORCE DEBUG: Always log vault people when generating responses
+    try {
+      const vault = window.emmaWebVault?.vaultData?.content;
+      if (vault?.people) {
+        const people = Object.values(vault.people);
+        console.log('🔍 FORCED PEOPLE DEBUG:', {
+          vaultHasPeople: !!vault.people,
+          peopleCount: people.length,
+          peopleArray: people,
+          peopleNames: people.map(p => p.name).filter(Boolean),
+          markSearch: people.filter(p => p.name?.toLowerCase().includes('mark')),
+          allNames: people.map(p => ({ id: p.id, name: p.name }))
+        });
+      } else {
+        console.log('🔍 FORCED PEOPLE DEBUG: No people in vault or vault not available');
+      }
+    } catch (e) {
+      console.log('🔍 FORCED PEOPLE DEBUG ERROR:', e);
+    }
+    
     const lower = (userMessage || '').toLowerCase().trim();
     
     // Handle very short or unclear messages with gentle encouragement
