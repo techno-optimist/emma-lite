@@ -8,13 +8,14 @@
     <!-- Emma Core Systems -->
   <script src="js/emma-input-modal.js"></script>
   <script src="js/clean-password-modal.js"></script>
+  <script src="js/modal-helpers.js"></script>
   <script src="js/emma-web-vault.js"></script>
 
-  <!-- Browser Compatibility Layer -->
-  <script src="emma-browser-compatibility-fix.js"></script>
-
-  <!-- Mobile UI Fixes -->
-  <script src="emma-mobile-ui-fixes.js"></script>
+    <!-- Browser Compatibility Layer - PRODUCTION: Removed for clean deployment -->
+  <!-- <script src="emma-browser-compatibility-fix.js"></script> -->
+  
+  <!-- Mobile UI Fixes - PRODUCTION: Removed for clean deployment -->
+  <!-- <script src="emma-mobile-ui-fixes.js"></script> -->
 
     <!-- Emma Orb System -->
     <script src="js/base-orb.js"></script>
@@ -696,6 +697,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Wait for Emma systems to load (including compatibility layer)
             setTimeout(() => {
+                // CRITICAL FIX: Initialize Emma Web Vault first
+                if (typeof EmmaWebVault !== 'undefined') {
+                    window.emmaWebVault = new EmmaWebVault();
+                    console.log('✅ Emma Web Vault initialized');
+                } else {
+                    console.error('❌ EmmaWebVault class not found!');
+                }
+                
                 window.cleanEmmaApp = new CleanEmmaApp();
 
                 // Show browser compatibility status
