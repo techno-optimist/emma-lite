@@ -774,8 +774,46 @@ class EmmaChatExperience extends ExperiencePopup {
       return "I'm all ears. Take your time and share whatever feels important to you right now.";
     }
     
-    // For questions, try to be genuinely curious and personal
+    // For questions, check if they're asking about someone/something in the vault
     if (isQuestion) {
+      // Check if asking about a specific person in the vault
+      if (vaultInsights?.peopleNames?.length > 0) {
+        const askedAboutPerson = vaultInsights.peopleNames.find(name => 
+          lower.includes(name.toLowerCase()) || 
+          lower.includes(name.toLowerCase().split(' ')[0]) // First name match
+        );
+        
+        if (askedAboutPerson) {
+          // Find memories about this person
+          const vault = window.emmaWebVault?.vaultData?.content;
+          const memories = vault?.memories ? Object.values(vault.memories) : [];
+          const personMemories = memories.filter(m => 
+            m.people?.some(p => p.toLowerCase().includes(askedAboutPerson.toLowerCase())) ||
+            m.content?.toLowerCase().includes(askedAboutPerson.toLowerCase())
+          );
+          
+          if (personMemories.length > 0) {
+            const recentMemory = personMemories[personMemories.length - 1];
+            const memorySnippet = recentMemory.content.substring(0, 100);
+            const timeAgo = Math.floor((Date.now() - recentMemory.created) / (1000 * 60 * 60 * 24));
+            const timeContext = timeAgo === 0 ? 'today' : timeAgo === 1 ? 'yesterday' : `${timeAgo} days ago`;
+            
+            return `Oh, ${askedAboutPerson}! I have ${personMemories.length} ${personMemories.length === 1 ? 'memory' : 'memories'} about them in your vault. The most recent one was from ${timeContext}: "${memorySnippet}..." Would you like me to share more about what you've told me about ${askedAboutPerson}?`;
+          }
+        }
+      }
+      
+      // Check if asking about memories/vault content
+      const isAskingAboutMemories = /(memories|remember|story|stories|vault|past|childhood)/.test(lower);
+      if (isAskingAboutMemories && vaultInsights?.hasMemories) {
+        const oldestYear = new Date(vaultInsights.oldestMemory?.created).getFullYear();
+        const newestYear = new Date(vaultInsights.recentMemory?.created).getFullYear();
+        const timeSpan = oldestYear === newestYear ? `from ${oldestYear}` : `spanning ${oldestYear} to ${newestYear}`;
+        
+        return `You have ${vaultInsights.memoryCount} beautiful memories in your vault ${timeSpan}. They tell such a rich story of your life. What specifically would you like to explore?`;
+      }
+      
+      // Generic thoughtful question response
       if (vaultInsights?.themes?.length > 0) {
         const theme = vaultInsights.themes[0];
         return `That's such a thoughtful question. You know, it makes me think about ${theme} - something I've noticed comes up in your stories. What's behind your curiosity about this?`;
