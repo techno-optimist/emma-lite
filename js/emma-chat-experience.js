@@ -2533,6 +2533,9 @@ class EmmaChatExperience extends ExperiencePopup {
           <button class="emma-file-btn" onclick="document.getElementById('${uploadId}-input').click(); event.stopPropagation();">
             📷 Choose Photos & Videos
           </button>
+          <button class="emma-skip-btn" onclick="window.chatExperience.skipMediaUpload('${memoryId}')">
+            ⏭️ Continue Without Photos
+          </button>
           <div class="upload-formats">JPG, PNG, MP4, MOV, etc.</div>
         </div>
         
@@ -2540,13 +2543,8 @@ class EmmaChatExperience extends ExperiencePopup {
           <!-- File previews will appear here -->
         </div>
         
-        <div class="upload-actions" style="display: none;" id="${uploadId}-actions">
-          <button class="upload-action-btn" onclick="window.chatExperience.confirmMediaUpload('${memoryId}', '${uploadId}')">
-            ✅ Add to Memory
-          </button>
-          <button class="upload-action-btn secondary" onclick="window.chatExperience.skipMediaUpload('${memoryId}')">
-            ⏭️ Skip for Now
-          </button>
+        <div class="upload-status" id="${uploadId}-status" style="display: none;">
+          <div class="upload-success">✅ Files added to memory</div>
         </div>
       </div>
     `;
@@ -2662,10 +2660,32 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     }
 
-    // Show preview area and actions if files were added
+    // Show preview and auto-progress if files were added
     if (state.collectedData.media.length > 0) {
       previewArea.style.display = 'block';
-      actionsArea.style.display = 'flex';
+      
+      // Show status instead of manual buttons
+      const statusArea = document.getElementById(`${uploadId}-status`);
+      if (statusArea) {
+        statusArea.style.display = 'block';
+      }
+      
+      // Auto-progress after showing preview
+      setTimeout(() => {
+        const mediaCount = state.collectedData.media.length;
+        this.addMessage(`Perfect! I've added ${mediaCount} ${mediaCount === 1 ? 'file' : 'files'} to your memory. Let me put together a beautiful memory capsule for you to review.`, 'emma');
+        
+        // Mark media stage as completed and continue
+        state.stagesCompleted.push('media');
+        this.enrichmentState.set(memoryId, state);
+        
+        // Continue to completion
+        setTimeout(() => {
+          this.completeEnrichmentAndShowPreview(memoryId);
+        }, 1500);
+        
+      }, 1000); // Brief delay to show the files were added
+      
       setTimeout(() => this.scrollToBottom(), 300);
     }
   }

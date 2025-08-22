@@ -878,6 +878,38 @@
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
+.emma-skip-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.emma-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.upload-status {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.upload-success {
+  color: #10B981;
+  font-weight: 600;
+  padding: 8px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
 .emma-file-upload:hover {
   border-color: rgba(139, 92, 246, 0.6);
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(236, 72, 153, 0.12));
