@@ -225,6 +225,50 @@
       66% { transform: translateY(5px) scale(0.98); }
     }
 
+    /* Elegant add node glow animation */
+    @keyframes addNodeGlow {
+      0%, 100% { 
+        box-shadow: 
+          0 0 20px rgba(16, 185, 129, 0.4),
+          0 0 40px rgba(16, 185, 129, 0.2),
+          inset 0 0 20px rgba(16, 185, 129, 0.1);
+      }
+      50% { 
+        box-shadow: 
+          0 0 30px rgba(16, 185, 129, 0.6),
+          0 0 60px rgba(16, 185, 129, 0.3),
+          inset 0 0 30px rgba(16, 185, 129, 0.15);
+      }
+    }
+
+    /* Subtle heartbeat animation for people nodes */
+    @keyframes heartbeat {
+      0%, 100% { 
+        box-shadow: 
+          0 8px 32px rgba(139, 92, 246, 0.4),
+          0 0 20px rgba(239, 68, 68, 0.3),
+          0 0 40px rgba(239, 68, 68, 0.1);
+      }
+      25% { 
+        box-shadow: 
+          0 8px 32px rgba(139, 92, 246, 0.4),
+          0 0 25px rgba(239, 68, 68, 0.4),
+          0 0 50px rgba(239, 68, 68, 0.15);
+      }
+      50% { 
+        box-shadow: 
+          0 8px 32px rgba(139, 92, 246, 0.4),
+          0 0 20px rgba(239, 68, 68, 0.3),
+          0 0 40px rgba(239, 68, 68, 0.1);
+      }
+      75% { 
+        box-shadow: 
+          0 8px 32px rgba(139, 92, 246, 0.4),
+          0 0 25px rgba(239, 68, 68, 0.4),
+          0 0 50px rgba(239, 68, 68, 0.15);
+      }
+    }
+
     /* Memory Constellation Styles - Star-like nodes */
     .memory-node {
       font-size: 12px;
@@ -3956,65 +4000,97 @@
         return memoryElement;
       }
 
-      // Create the "Create New Memory" node element
+      // Create the "Create New Memory" node element with elegant SVG +
       createCreateMemoryNodeElement(x, y) {
         const createElement = document.createElement('div');
         createElement.className = 'memory-node create-memory-node';
-        // Safely create child elements
-        const thumbnail = document.createElement('div');
-        thumbnail.className = 'memory-thumbnail';
-        thumbnail.textContent = '➕';
+        
+        // Create elegant SVG + icon
+        const svgPlus = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgPlus.setAttribute('width', '24');
+        svgPlus.setAttribute('height', '24');
+        svgPlus.setAttribute('viewBox', '0 0 24 24');
+        svgPlus.style.cssText = `
+          filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+          transition: all 0.3s ease;
+        `;
+        
+        // Create + lines with elegant styling
+        const horizontalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        horizontalLine.setAttribute('x1', '6');
+        horizontalLine.setAttribute('y1', '12');
+        horizontalLine.setAttribute('x2', '18');
+        horizontalLine.setAttribute('y2', '12');
+        horizontalLine.setAttribute('stroke', 'rgba(16, 185, 129, 1)');
+        horizontalLine.setAttribute('stroke-width', '2');
+        horizontalLine.setAttribute('stroke-linecap', 'round');
+        
+        const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        verticalLine.setAttribute('x1', '12');
+        verticalLine.setAttribute('y1', '6');
+        verticalLine.setAttribute('x2', '12');
+        verticalLine.setAttribute('y2', '18');
+        verticalLine.setAttribute('stroke', 'rgba(16, 185, 129, 1)');
+        verticalLine.setAttribute('stroke-width', '2');
+        verticalLine.setAttribute('stroke-linecap', 'round');
+        
+        svgPlus.appendChild(horizontalLine);
+        svgPlus.appendChild(verticalLine);
+        createElement.appendChild(svgPlus);
 
-        const label = document.createElement('div');
-        label.className = 'memory-label';
-        label.textContent = 'New Memory';
-
-        createElement.appendChild(thumbnail);
-        createElement.appendChild(label);
-
-        // Style like radial menu items but with create memory styling
+        // Smaller, more elegant styling with compelling glow
         createElement.style.cssText = `
           position: fixed;
-          left: ${x - 45}px;
-          top: ${y - 45}px;
-          width: 90px;
-          height: 90px;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.2));
+          left: ${x - 30}px;
+          top: ${y - 30}px;
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(34, 197, 94, 0.15));
           backdrop-filter: blur(20px);
-          border: 2px solid rgba(16, 185, 129, 0.4);
+          border: 2px solid rgba(16, 185, 129, 0.5);
           border-radius: 50%;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           opacity: 0;
           transform: scale(0);
-          box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
-          animation: float 6s ease-in-out infinite;
+          box-shadow: 
+            0 0 20px rgba(16, 185, 129, 0.4),
+            0 0 40px rgba(16, 185, 129, 0.2),
+            inset 0 0 20px rgba(16, 185, 129, 0.1);
+          animation: addNodeGlow 3s ease-in-out infinite;
           z-index: 10;
-          color: white;
-          font-size: 12px;
         `;
 
-        // Add hover effect
+        // Add hover effect with enhanced SVG glow
         createElement.addEventListener('mouseenter', () => {
-          createElement.style.transform = 'scale(1.1)';
-          createElement.style.boxShadow = '0 0 40px rgba(16, 185, 129, 0.5)';
+          createElement.style.transform = 'scale(1.15)';
+          createElement.style.boxShadow = `
+            0 0 30px rgba(16, 185, 129, 0.6),
+            0 0 60px rgba(16, 185, 129, 0.4),
+            inset 0 0 30px rgba(16, 185, 129, 0.2)
+          `;
+          svgPlus.style.filter = 'drop-shadow(0 0 12px rgba(16, 185, 129, 1))';
         });
 
         createElement.addEventListener('mouseleave', () => {
           createElement.style.transform = 'scale(1)';
-          createElement.style.boxShadow = '0 0 30px rgba(16, 185, 129, 0.3)';
+          createElement.style.boxShadow = `
+            0 0 20px rgba(16, 185, 129, 0.4),
+            0 0 40px rgba(16, 185, 129, 0.2),
+            inset 0 0 20px rgba(16, 185, 129, 0.1)
+          `;
+          svgPlus.style.filter = 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.8))';
         });
 
-        // Add click handler to navigate to memory gallery for creation
+        // Add click handler to open Emma chat for memory creation
         createElement.addEventListener('click', (e) => {
           e.stopPropagation();
 
-          // Simple solution: Just go to the memory gallery where users can create memories
-          window.location.href = 'pages/memory-gallery-new.html';
+          // Open Emma chat experience for intelligent memory creation
+          this.startEmmaChatExperience();
         });
 
         document.body.appendChild(createElement);
@@ -4434,7 +4510,7 @@
         };
       }
 
-      // Create person node element for constellation
+      // Create person node element for constellation with heartbeat effect
       createPersonNodeElement(person, x, y) {
         const personElement = document.createElement('div');
         personElement.className = 'person-node';
@@ -4443,13 +4519,13 @@
         const avatar = person.name.charAt(0).toUpperCase();
         const relationColor = this.getRelationColor(person.relation);
 
-        // Create ONLY the avatar circle - NO TEXT LABELS
+        // Create BIGGER avatar circle with subtle heartbeat glow - NO TEXT LABELS
         personElement.style.cssText = `
           position: fixed;
           left: ${x}px;
           top: ${y}px;
-          width: 70px;
-          height: 70px;
+          width: 85px;
+          height: 85px;
           border-radius: 50%;
           background: ${relationColor.gradient};
           display: flex;
@@ -4457,14 +4533,18 @@
           justify-content: center;
           color: white;
           font-weight: 700;
-          font-size: 24px;
+          font-size: 28px;
           border: 3px solid ${relationColor.border};
-          box-shadow: 0 8px 32px ${relationColor.glow};
+          box-shadow: 
+            0 8px 32px ${relationColor.glow},
+            0 0 20px rgba(239, 68, 68, 0.3),
+            0 0 40px rgba(239, 68, 68, 0.1);
           overflow: hidden;
           cursor: pointer;
           transform: scale(0);
           opacity: 0;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: heartbeat 4s ease-in-out infinite;
           z-index: 1000;
         `;
 
