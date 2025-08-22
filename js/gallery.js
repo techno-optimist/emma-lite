@@ -1159,8 +1159,55 @@ function debounce(func, wait) {
   };
 }
 
+/**
+ * Create a new empty memory for editing
+ */
+async function createNewMemory() {
+  const newMemory = {
+    id: 'new_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    title: 'New Memory',
+    excerpt: 'A new memory to be filled with precious moments...',
+    content: 'This is a new memory. Add your thoughts, experiences, and photos here.',
+    category: 'family',
+    tags: ['memory'],
+    date: new Date(),
+    image: null,
+    favorite: false,
+    mediaItems: []
+  };
+
+  // Add to memories array
+  memories.unshift(newMemory);
+
+  // Re-render the grid
+  await renderMemories();
+
+  // Automatically open the new memory for editing
+  setTimeout(() => {
+    openMemoryDetail(newMemory);
+  }, 100);
+}
+
 // ==========================================
 // PRODUCTION READY - FILE COMPLETE
 // ==========================================
+
+// Initialize when DOM is ready - but delay to allow vault restoration
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    // Delay initialization to allow vault restoration to complete
+    setTimeout(initializeGallery, 500);
+  });
+} else {
+  // Delay initialization to allow vault restoration to complete
+  setTimeout(initializeGallery, 500);
+}
+
+// Global access
+window.memoryGallery = {
+  loadMemories,
+  renderMemories,
+  createNewMemory
+};
 
 console.log('💝 Beautiful Memory Gallery: Ready to honor precious moments');
