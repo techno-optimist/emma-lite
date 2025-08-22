@@ -656,10 +656,10 @@
       font-style: italic;
     }
 
-    /* Home Navigation Button */
+    /* Home Navigation Button - Top Left */
     .home-nav-button {
       position: fixed;
-      bottom: 24px;
+      top: 24px;
       left: 24px;
       width: 56px;
       height: 56px;
@@ -675,7 +675,7 @@
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       transition: all 0.3s ease;
-      z-index: 1000;
+      z-index: 9999;
     }
 
     .home-nav-button:hover {
@@ -803,11 +803,8 @@
             })();
           }
           
-          // Initialize Emma orb
-          if (window.UniversalEmmaOrb) {
-            window.UniversalEmmaOrb.initialize();
-            console.log('🌍 GALLERY: Emma orb initialized');
-          }
+          // Emma orb disabled on gallery page - using home button instead
+          console.log('🚫 GALLERY: Emma orb disabled - using home button for navigation');
         }, 100);
       });
     } else {
@@ -839,10 +836,8 @@
           })();
         }
         
-        if (window.UniversalEmmaOrb) {
-          window.UniversalEmmaOrb.initialize();
-          console.log('🌍 GALLERY: Emma orb initialized');
-        }
+        // Emma orb disabled on gallery page - using home button instead
+        console.log('🚫 GALLERY: Emma orb disabled - using home button for navigation');
       }, 100);
     }
   </script>
