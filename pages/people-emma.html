@@ -1600,9 +1600,9 @@
       title.textContent = '🔒 Vault Locked';
       title.style.cssText = 'margin-bottom: 10px; color: #f093fb;';
 
-      const message = document.createElement('p');
-      message.textContent = 'Your vault has been locked for security. Please unlock to continue.';
-      message.style.cssText = 'margin-bottom: 20px; line-height: 1.5;';
+      const messageElement = document.createElement('p');
+      messageElement.textContent = 'Your vault has been locked for security. Please unlock to continue.';
+      messageElement.style.cssText = 'margin-bottom: 20px; line-height: 1.5;';
 
       const unlockBtn = document.createElement('button');
       unlockBtn.textContent = 'Unlock Vault';
@@ -1610,7 +1610,7 @@
       unlockBtn.onclick = () => window.open('popup.html', '_blank');
 
       content.appendChild(title);
-      content.appendChild(message);
+      content.appendChild(messageElement);
       content.appendChild(unlockBtn);
       alertElement.appendChild(content);
       document.body.appendChild(alertElement);
