@@ -238,11 +238,22 @@ class ExperiencePopup {
     // Create content area
     const content = document.createElement('div');
     content.className = 'popup-content';
-    const contentPadding = (!titleText || titleText.trim() === '') ? '8px 20px 20px 20px' : '20px';
+    
+    // Enhanced padding for better spacing
+    let contentPadding;
+    if (!titleText || titleText.trim() === '') {
+      // No title - adjust padding accordingly
+      contentPadding = isMobile ? '8px 16px 16px 16px' : '12px 24px 24px 24px';
+    } else {
+      // With title - standard padding
+      contentPadding = isMobile ? '16px' : '24px';
+    }
+    
     content.style.cssText = `
       padding: ${contentPadding};
       height: auto;
       overflow: visible;
+      box-sizing: border-box;
     `;
 
     popup.appendChild(header);

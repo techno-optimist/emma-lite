@@ -389,6 +389,91 @@ class EmmaMobileUIFixes {
       }
       
       /* ================================
+         DESKTOP CHAT UI PADDING FIXES
+         ================================ */
+      
+      /* Desktop and Tablet Chat Improvements */
+      @media (min-width: 769px) {
+        .experience-popup-content {
+          padding: 24px !important;
+          box-sizing: border-box !important;
+        }
+        
+        .emma-chat-messages {
+          padding: 20px !important;
+          margin: 0 !important;
+        }
+        
+        .emma-chat-input {
+          padding: 16px !important;
+          margin: 0 !important;
+        }
+        
+        .input-wrapper {
+          padding: 12px !important;
+          gap: 10px !important;
+          border-radius: 12px !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+        }
+        
+        .chat-textarea {
+          padding: 12px 16px !important;
+          border-radius: 8px !important;
+          margin: 0 !important;
+        }
+        
+        .user-message .message-bubble,
+        .emma-message .message-content {
+          margin: 10px 16px !important;
+          padding: 14px 18px !important;
+        }
+        
+        .user-message,
+        .emma-message {
+          margin: 16px 0 !important;
+          padding: 0 12px !important;
+        }
+        
+        .input-hints {
+          padding: 10px 16px !important;
+          margin-top: 8px !important;
+          text-align: center !important;
+        }
+        
+        .emma-typing {
+          padding: 12px 16px !important;
+          margin: 8px 0 !important;
+        }
+        
+        .emma-chat-header {
+          padding: 20px 16px !important;
+          margin-bottom: 12px !important;
+        }
+        
+        .chat-close-btn {
+          top: 16px !important;
+          right: 16px !important;
+        }
+        
+        /* Settings Modal Desktop */
+        .emma-settings-modal .settings-content {
+          padding: 32px 28px !important;
+          margin: 20px !important;
+          border-radius: 20px !important;
+        }
+        
+        .settings-section {
+          margin: 24px 0 !important;
+          padding: 20px !important;
+        }
+        
+        .settings-input {
+          padding: 14px 18px !important;
+          margin: 10px 0 !important;
+        }
+      }
+      
+      /* ================================
          ACCESSIBILITY FIXES
          ================================ */
       
