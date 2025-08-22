@@ -1,6 +1,6 @@
 /**
  * Universal Emma Orb System
- * A single orb that persists across all pages, always in bottom-right
+ * A single orb that persists across all pages, centered at bottom
  * Like a universal navigation component
  */
 
@@ -67,11 +67,12 @@ class UniversalEmmaOrb {
     this.container.id = 'universal-emma-orb';
     this.container.className = 'universal-emma-orb';
     
-    // Position it in bottom-right, above EVERYTHING with maximum possible z-index
+    // Position it in bottom-center, above EVERYTHING with maximum possible z-index
     this.container.style.cssText = `
       position: fixed !important;
       bottom: 20px !important;
-      right: 20px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
       width: 80px !important;
       height: 80px !important;
       z-index: 2147483647 !important;
@@ -187,7 +188,7 @@ class UniversalEmmaOrb {
           if (key.includes('dementia.enabled')) this.settings[key] = false;
           if (key.includes('mirror.enabled')) this.settings[key] = false;
           if (key.includes('orb.size')) this.settings[key] = 'medium';
-          if (key.includes('orb.position')) this.settings[key] = { bottom: 20, right: 20 };
+          if (key.includes('orb.position')) this.settings[key] = 'bottom-center';
         });
       }
       
@@ -634,6 +635,7 @@ class UniversalEmmaOrb {
       { id: 'top-left', x: 20, y: 20 },
       { id: 'top-right', x: window.innerWidth - 100, y: 20 },
       { id: 'bottom-left', x: 20, y: window.innerHeight - 100 },
+      { id: 'bottom-center', x: window.innerWidth / 2 - 40, y: window.innerHeight - 100 },
       { id: 'bottom-right', x: window.innerWidth - 100, y: window.innerHeight - 100 },
       { id: 'center', x: window.innerWidth / 2 - 40, y: window.innerHeight / 2 - 40 }
     ];
@@ -739,10 +741,12 @@ class UniversalEmmaOrb {
         return { position: 'bottom-left', bottom: '20px', left: '20px' };
       case 'bottom-right':
         return { position: 'bottom-right', bottom: '20px', right: '20px' };
+      case 'bottom-center':
+        return { position: 'bottom-center', bottom: '20px', left: '50%', transform: 'translateX(-50%)' };
       case 'center':
         return { position: 'center', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
       default:
-        return { position: 'bottom-right', bottom: '20px', right: '20px' };
+        return { position: 'bottom-center', bottom: '20px', left: '50%', transform: 'translateX(-50%)' };
     }
   }
   
@@ -901,14 +905,24 @@ class UniversalEmmaOrb {
           this.container.style.bottom = '20px';
           this.container.style.left = '20px';
           break;
+        case 'bottom-center':
+          this.container.style.bottom = '20px';
+          this.container.style.left = '50%';
+          this.container.style.transform = 'translateX(-50%)';
+          this.container.style.right = 'auto';
+          this.container.style.top = 'auto';
+          break;
         case 'center':
           this.container.style.top = '50%';
           this.container.style.left = '50%';
           this.container.style.transform = 'translate(-50%, -50%)';
           break;
-        default: // bottom-right
+        default: // bottom-center (new default)
           this.container.style.bottom = '20px';
-          this.container.style.right = '20px';
+          this.container.style.left = '50%';
+          this.container.style.transform = 'translateX(-50%)';
+          this.container.style.right = 'auto';
+          this.container.style.top = 'auto';
       }
     }
   }
