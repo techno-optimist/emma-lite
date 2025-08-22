@@ -1052,13 +1052,65 @@ class EmmaChatExperience extends ExperiencePopup {
 
   /**
    * Add initial Emma welcome message (single clean bubble)
+   * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
   addInitialWelcomeMessage() {
     console.log('💬 Adding Emma welcome message...');
-    this.addMessage(
-      "Welcome! I'm Emma, and I love helping people with their precious memories. What would you like to explore?",
-      'emma'
-    );
+    
+    // Get time-based greeting
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    
+    // Check vault for personalization
+    const hasVault = window.emmaWebVault?.isOpen;
+    const memoryCount = window.emmaWebVault?.vaultData?.content?.memories?.length || 0;
+    const lastMemory = window.emmaWebVault?.vaultData?.content?.memories?.[memoryCount - 1];
+    
+    // Create dynamic welcome based on context
+    let welcomeMessage;
+    
+    if (!hasVault) {
+      // No vault - focus on getting started
+      const greetings = [
+        `${timeGreeting}! I'm Emma. I'd love to help you capture and explore your precious memories. Would you like to create your first memory capsule?`,
+        `Hi there! I'm Emma, your memory companion. Tell me about a moment that makes you smile - I'd love to help you preserve it.`,
+        `${timeGreeting}! I'm Emma. Every memory is a treasure waiting to be discovered. What story would you like to share today?`
+      ];
+      welcomeMessage = greetings[Math.floor(Math.random() * greetings.length)];
+    } else if (memoryCount === 0) {
+      // Empty vault - encourage first memory
+      welcomeMessage = `${timeGreeting}! I see you've created your vault - that's wonderful! Let's add your first memory. Tell me about something special that happened to you.`;
+    } else if (lastMemory && Date.now() - lastMemory.capturedAt < 86400000) {
+      // Recent activity - reference it
+      const recentPerson = lastMemory.people?.[0];
+      welcomeMessage = recentPerson 
+        ? `${timeGreeting}! I loved learning about ${recentPerson} in your last memory. What other stories would you like to share?`
+        : `${timeGreeting}! Your last memory was beautiful. What else has been on your mind?`;
+    } else {
+      // Established user - warm, personal
+      const topics = [
+        `${timeGreeting}! What memories have been floating through your mind today?`,
+        `Hello again! I've been thinking about all the wonderful stories you've shared. What would you like to explore today?`,
+        `${timeGreeting}! Your vault has ${memoryCount} beautiful memories. Would you like to add another or explore what you've captured?`,
+        `Welcome back! Sometimes old memories surface in unexpected ways. Has anything from your past come to mind recently?`
+      ];
+      welcomeMessage = topics[Math.floor(Math.random() * topics.length)];
+    }
+    
+    this.addMessage(welcomeMessage, 'emma');
+    
+    // Add a contextual follow-up hint after a brief pause
+    if (this.dementiaMode) {
+      setTimeout(() => {
+        const hints = [
+          "Take your time... there's no rush. 💜",
+          "I'm here whenever you're ready to share.",
+          "Even small moments can hold big meanings."
+        ];
+        const hint = hints[Math.floor(Math.random() * hints.length)];
+        this.addMessage(hint, 'emma', { subtle: true });
+      }, 3000);
+    }
   }
 
   /**

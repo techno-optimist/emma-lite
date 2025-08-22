@@ -35,9 +35,10 @@ class EmmaIntelligentCapture {
     };
 
     // Normalized decision thresholds for the new MemoryWorthinessEngine (0..1 scale)
+    // LOWERED for better sensitivity - Emma should catch more memories
     this.thresholdsNormalized = {
-      memoryWorthy: 0.40,   // begin enrichment
-      autoCapture: 0.70     // offer quick capture in addition to enrichment
+      memoryWorthy: 0.35,   // begin enrichment (lowered from 0.40)
+      autoCapture: 0.65     // offer quick capture in addition to enrichment (lowered from 0.70)
     };
     
     // Conversation state
@@ -416,8 +417,11 @@ class EmmaIntelligentCapture {
     const tokens = content.split(/\s+/).filter(Boolean);
 
     // First-person indicator (BOOSTED - critical for memories)
-    const firstPerson = /(\bI\b|\bI'm\b|\bI was\b|\bwe\b|\bwe're\b|\bwe were\b|\bmy\b|\bour\b)/i.test(content);
-    if (firstPerson) score += 0.35; // MAJOR BOOST
+    // Multiple matches = stronger signal
+    const firstPersonMatches = content.match(/(\bI\b|\bI'm\b|\bI was\b|\bwe\b|\bwe're\b|\bwe were\b|\bmy\b|\bour\b)/gi) || [];
+    if (firstPersonMatches.length > 0) {
+      score += Math.min(0.40, 0.35 + (firstPersonMatches.length - 1) * 0.05); // 0.35-0.40 based on frequency
+    }
 
     // Past-tense indicators (ENHANCED patterns)
     const pastTensePatterns = [
