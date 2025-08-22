@@ -93,24 +93,65 @@ class ExperiencePopup {
     const self = this;
     const popup = document.createElement('div');
     popup.className = 'emma-experience-popup';
+    
+    // MOBILE RESPONSIVENESS: Detect mobile and adjust positioning
+    const isMobile = window.innerWidth <= 768;
+    const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+    
+    let finalPosition = { ...this.position };
+    
+    if (isMobile) {
+      // Mobile: Full screen with minimal padding
+      finalPosition = {
+        left: 10,
+        top: 20,
+        width: window.innerWidth - 20,
+        height: window.innerHeight - 40
+      };
+    } else if (isTablet) {
+      // Tablet: Larger but not full screen
+      finalPosition = {
+        left: Math.max(20, (window.innerWidth - Math.min(this.position.width, 700)) / 2),
+        top: Math.max(20, (window.innerHeight - Math.min(this.position.height, 600)) / 2),
+        width: Math.min(this.position.width, 700),
+        height: Math.min(this.position.height, 600)
+      };
+    } else {
+      // Desktop: Ensure it fits within viewport
+      finalPosition = {
+        left: Math.max(8, Math.min(window.innerWidth - this.position.width - 8, this.position.left)),
+        top: Math.max(8, Math.min(window.innerHeight - this.position.height - 8, this.position.top)),
+        width: this.position.width,
+        height: this.position.height
+      };
+    }
+    
+    // Store the final position for reference
+    this.finalPosition = finalPosition;
+    
     popup.style.cssText = `
       position: fixed;
-      left: ${Math.max(8, Math.min(window.innerWidth - this.position.width - 8, this.position.left))}px;
-      top: ${Math.max(8, Math.min(window.innerHeight - this.position.height - 8, this.position.top))}px;
-      width: ${this.position.width}px;
-      height: ${this.position.height}px;
-      background: linear-gradient(135deg, rgba(147, 112, 219, 0.95), rgba(123, 104, 238, 0.95));
+      left: ${finalPosition.left}px;
+      top: ${finalPosition.top}px;
+      width: ${finalPosition.width}px;
+      height: ${finalPosition.height}px;
+      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      border-radius: ${isMobile ? '16px' : '24px'};
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      z-index: 2147483647;
+      box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
+      z-index: 10000;
       opacity: 0;
       transform: translateY(-10px) scale(0.95);
-      transition: all 0.2s ease-out;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: white;
       overflow: hidden;
+      ${isMobile ? '' : 'resize: both;'}
+      min-width: ${isMobile ? 'auto' : '400px'};
+      min-height: ${isMobile ? 'auto' : '300px'};
+      max-width: calc(100vw - ${isMobile ? '20px' : '16px'});
+      max-height: calc(100vh - ${isMobile ? '40px' : '16px'});
     `;
 
     // Create header
