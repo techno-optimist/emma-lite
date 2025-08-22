@@ -945,34 +945,61 @@ class EmmaChatExperience extends ExperiencePopup {
    * Add vectorless message with memory citations and suggestions
    */
   addVectorlessMessage(content, memories, citations, suggestions) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message emma-message vectorless-message';
-    
-    const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    let citationsHtml = '';
-    if (citations && citations.length > 0) {
-      citationsHtml = `
-        <div class="message-citations">
-          <h5>📚 Referenced Memories:</h5>
-          ${citations.map(c => `
-            <div class="citation-item">
-              <span class="citation-title">${c.title}</span>
-              ${c.relevance ? `<span class="citation-relevance">${c.relevance}/10</span>` : ''}
+    // Build beautiful Emma-branded memory results
+    let memoriesHtml = '';
+    if (memories && memories.length > 0) {
+      memoriesHtml = `
+        <div class="emma-memory-results">
+          <div class="memory-results-header">
+            <span class="results-icon">💝</span>
+            <span class="results-title">I found ${memories.length} relevant ${memories.length === 1 ? 'memory' : 'memories'}</span>
+          </div>
+          <div class="memory-grid">
+            ${memories.slice(0, 3).map(memory => `
+              <div class="memory-card" onclick="window.chatExperience.openMemoryDetail('${memory.id}')">
+                ${memory.attachments && memory.attachments.length > 0 ? `
+                  <div class="memory-thumbnail">
+                    <img src="${memory.attachments[0].url || memory.attachments[0].dataUrl}" alt="${memory.title}" />
+                    ${memory.attachments.length > 1 ? `<div class="media-count">+${memory.attachments.length - 1}</div>` : ''}
+                  </div>
+                ` : `
+                  <div class="memory-thumbnail no-media">
+                    <div class="memory-icon">💭</div>
+                  </div>
+                `}
+                <div class="memory-info">
+                  <div class="memory-title">${memory.title || 'Untitled Memory'}</div>
+                  <div class="memory-snippet">${(memory.content || '').substring(0, 80)}${memory.content?.length > 80 ? '...' : ''}</div>
+                  ${memory.people && memory.people.length > 0 ? `
+                    <div class="memory-people">👥 ${memory.people.slice(0, 2).join(', ')}${memory.people.length > 2 ? ` +${memory.people.length - 2}` : ''}</div>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          ${memories.length > 3 ? `
+            <div class="more-memories">
+              <button class="show-more-btn" onclick="window.chatExperience.showAllMemories()">
+                View all ${memories.length} memories
+              </button>
             </div>
-          `).join('')}
+          ` : ''}
         </div>
       `;
     }
     
+    // Build elegant Emma suggestions
     let suggestionsHtml = '';
     if (suggestions && suggestions.length > 0) {
       suggestionsHtml = `
-        <div class="message-suggestions">
-          <div class="suggestions-label">💡 Try asking:</div>
-          <div class="suggestion-buttons">
+        <div class="emma-suggestions">
+          <div class="suggestions-header">
+            <span class="suggestions-icon">💡</span>
+            <span class="suggestions-title">You might also ask:</span>
+          </div>
+          <div class="suggestion-grid">
             ${suggestions.map(s => `
-              <button class="suggestion-button" onclick="document.getElementById('chat-input').value='${s}'; document.getElementById('chat-input').focus();">
+              <button class="emma-suggestion-btn" onclick="document.getElementById('chat-input').value='${s.replace(/'/g, '\\\')}'; document.getElementById('chat-input').focus();">
                 ${s}
               </button>
             `).join('')}
@@ -981,45 +1008,49 @@ class EmmaChatExperience extends ExperiencePopup {
       `;
     }
     
-    messageDiv.innerHTML = `
-      <div class="message-avatar">
-        <div class="emma-avatar-mini vectorless-avatar"></div>
-      </div>
-      <div class="message-content">
-        <div class="message-text">${this.formatMessageContent(content)}</div>
-        ${citationsHtml}
+    // Create beautiful Emma response
+    const messageContent = `
+      <div class="emma-intelligent-response">
+        <p class="response-text">${this.formatMessageContent(content)}</p>
+        ${memoriesHtml}
         ${suggestionsHtml}
-        <div class="message-time">
-          ${messageTime} 
-          <span class="vectorless-badge">🧠 Vectorless AI</span>
-        </div>
       </div>
     `;
-
-    // Animate message in
-    messageDiv.style.opacity = '0';
-    messageDiv.style.transform = 'translateY(10px)';
-    this.messageContainer.appendChild(messageDiv);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-      messageDiv.style.transition = 'all 0.3s ease';
-      messageDiv.style.opacity = '1';
-      messageDiv.style.transform = 'translateY(0)';
+    
+    // Add as Emma message with beautiful styling
+    this.addMessage(messageContent, 'emma', { 
+      isHtml: true,
+      type: 'intelligent-response',
+      memories,
+      suggestions
     });
 
-    // Store message
+    // Store message data
     this.messages.push({
       content,
       sender: 'emma',
       timestamp: Date.now(),
-      vectorless: true,
+      type: 'intelligent',
+      memories,
       citations,
       suggestions
     });
+  }
 
-    // Auto-scroll to bottom (with delay for DOM update)
-    setTimeout(() => this.scrollToBottom(), 200);
+  /**
+   * Open memory detail (placeholder)
+   */
+  openMemoryDetail(memoryId) {
+    console.log('📖 Opening memory detail for:', memoryId);
+    this.showToast('📖 Memory details coming soon!', 'info');
+  }
+
+  /**
+   * Show all memories (placeholder)
+   */
+  showAllMemories() {
+    console.log('📚 Showing all memories...');
+    this.addMessage("Would you like me to open the memory gallery to explore all your memories?", 'emma');
   }
 
   /**
