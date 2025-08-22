@@ -169,7 +169,7 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      z-index: 8;
+      z-index: 1; /* CRITICAL FIX: Lower z-index so nodes appear above connections */
     }
 
     .neural-canvas {
@@ -2232,6 +2232,15 @@
           this.resizeTimeout = setTimeout(() => {
             if (this.isMenuOpen || this.isConstellationMode) {
               this.repositionNodesOnResize();
+              
+              // CRITICAL FIX: Resize canvas and redraw connections after repositioning
+              if (this.neuralCanvas) {
+                this.neuralCanvas.width = window.innerWidth;
+                this.neuralCanvas.height = window.innerHeight;
+              }
+              
+              // Force immediate redraw of connections with new positions
+              this.render();
             }
           }, 250);
         });
@@ -3947,7 +3956,7 @@
           opacity: 0;
           transform: scale(0);
           box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
-          z-index: 1000;
+          z-index: 1500; /* CRITICAL FIX: Higher z-index to appear above all connections */
           overflow: hidden;
           display: flex;
           align-items: center;
@@ -4061,7 +4070,7 @@
             0 0 40px rgba(16, 185, 129, 0.2),
             inset 0 0 20px rgba(16, 185, 129, 0.1);
           animation: addNodeGlow 3s ease-in-out infinite;
-          z-index: 10;
+          z-index: 1500; /* CRITICAL FIX: Higher z-index to appear above all connections */
         `;
 
         // Add hover effect with enhanced SVG glow
@@ -4475,13 +4484,13 @@
 
           memoryElement.style.transform = 'scale(1.3)';
           memoryElement.style.boxShadow = `0 0 60px ${themeColors[theme] || 'rgba(134, 88, 255, 0.8)'}, 0 0 100px ${themeColors[theme] || 'rgba(134, 88, 255, 0.4)'}`;
-          memoryElement.style.zIndex = '1100';
+          memoryElement.style.zIndex = '1600'; /* CRITICAL FIX: Even higher on hover to stay above everything */
         });
 
         memoryElement.addEventListener('mouseleave', () => {
           memoryElement.style.transform = 'scale(1)';
           memoryElement.style.boxShadow = '';
-          memoryElement.style.zIndex = '1000';
+          memoryElement.style.zIndex = '1500'; /* CRITICAL FIX: Maintain high z-index even when not hovering */
         });
 
         // Append to a container that's below the canvas
@@ -4545,7 +4554,7 @@
           opacity: 0;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           animation: heartbeat 4s ease-in-out infinite;
-          z-index: 1000;
+          z-index: 1500; /* CRITICAL FIX: Higher z-index to appear above all connections */
         `;
 
         // Start with letter, then try to load avatar image
@@ -4566,13 +4575,13 @@
         personElement.addEventListener('mouseenter', () => {
           personElement.style.transform = 'scale(1.2)';
           personElement.style.boxShadow = `0 0 40px ${relationColor.glow}, 0 0 80px ${relationColor.glow}`;
-          personElement.style.zIndex = '1100';
+          personElement.style.zIndex = '1600'; /* CRITICAL FIX: Even higher on hover to stay above everything */
         });
 
         personElement.addEventListener('mouseleave', () => {
           personElement.style.transform = 'scale(1)';
           personElement.style.boxShadow = '';
-          personElement.style.zIndex = '1000';
+          personElement.style.zIndex = '1500'; /* CRITICAL FIX: Maintain high z-index even when not hovering */
         });
 
         // Append to container
