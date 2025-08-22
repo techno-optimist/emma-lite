@@ -191,3 +191,4 @@ window.capturePhotosViaScreenshot = capturePhotosViaScreenshot;
 
 
 
+

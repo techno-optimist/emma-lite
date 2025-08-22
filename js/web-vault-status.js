@@ -96,7 +96,7 @@ class WebVaultStatus {
       }
     });
     
-    // EMERGENCY DEBUGGING: Log browser focus/blur events
+    // Monitor browser focus/blur events for vault security
     window.addEventListener('focus', () => {
       console.log('🔍 FOCUS EVENT: Browser tab gained focus');
       this.logVaultState('window-focus');

@@ -84,3 +84,4 @@ Important: Client-side hard-coding an API key is not secure (anyone can read bun
 - Dementia Mode remains first-class: short, validating prompts; no corrections; paced delivery.
 
 
+

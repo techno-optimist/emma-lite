@@ -12,18 +12,16 @@ async function initializeCrypto() {
     const cryptoModule = await import('./vault/identity-crypto.js');
     generateIdentity = cryptoModule.generateIdentity;
     generateIdentityCard = cryptoModule.generateIdentityCard;
-    console.log('✅ Identity crypto module loaded successfully');
-    
+
     // Initialize P2P manager
     const p2pModule = await import('./p2p/p2p-manager.js');
     p2pManager = p2pModule.p2pManager;
-    
+
     // Get my identity for P2P
     const myIdentity = await getMyIdentity();
     if (myIdentity) {
       await p2pManager.initialize(myIdentity);
-      console.log('✅ HML Sync manager initialized');
-      
+
       // Set up P2P event listeners
       setupP2PListeners();
     }
@@ -52,22 +50,20 @@ async function getMyIdentity() {
 // Set up P2P event listeners
 function setupP2PListeners() {
   if (!p2pManager) return;
-  
+
   p2pManager.addEventListener('invitationreceived', async (event) => {
     const invitation = event.detail;
-    console.log('📨 Received vault share invitation:', invitation);
-    
+
     // Show notification
     showShareInvitationModal(invitation);
   });
-  
+
   p2pManager.addEventListener('shareconnected', (event) => {
     const { shareId, vaultId } = event.detail;
-    console.log('🔗 HML Sync share connected:', shareId, vaultId);
-    
+
     showNotification('HML Sync: Vault share connected successfully!', 'success');
   });
-  
+
   p2pManager.addEventListener('error', (event) => {
     console.error('❌ HML Sync error:', event.detail);
     showNotification('HML Sync connection error: ' + event.detail.error, 'error');
@@ -79,11 +75,11 @@ function showShareInvitationModal(invitation) {
   // Remove any existing modals
   const existingModal = document.querySelector('.share-invitation-modal');
   if (existingModal) existingModal.remove();
-  
+
   // Find person info
   const person = allPeople.find(p => p.keyFingerprint === invitation.issuerFingerprint);
   const personName = person?.name || 'Unknown Person';
-  
+
   const modal = document.createElement('div');
   modal.className = 'share-invitation-modal';
   modal.style.cssText = `
@@ -99,7 +95,7 @@ function showShareInvitationModal(invitation) {
     justify-content: center;
     animation: fadeIn 0.3s ease;
   `;
-  
+
   const modalContent = document.createElement('div');
   modalContent.style.cssText = `
     background: linear-gradient(135deg, rgba(40, 30, 60, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
@@ -111,7 +107,7 @@ function showShareInvitationModal(invitation) {
     border: 1px solid rgba(134, 88, 255, 0.3);
     animation: slideUp 0.3s ease;
   `;
-  
+
   const permissionList = Object.entries(invitation.permissions || {})
     .filter(([key, value]) => value)
     .map(([key, value]) => {
@@ -125,7 +121,7 @@ function showShareInvitationModal(invitation) {
       return icons[key] || key;
     })
     .join(', ');
-  
+
   modalContent.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
       <h2 style="margin: 0; color: #ffffff; font-size: 24px;">
@@ -133,25 +129,25 @@ function showShareInvitationModal(invitation) {
       </h2>
       <button class="close-invitation-modal" style="background: none; border: none; color: #cccccc; font-size: 24px; cursor: pointer;">✕</button>
     </div>
-    
+
     <div style="margin-bottom: 24px;">
       <p style="color: #cccccc; line-height: 1.6; margin-bottom: 16px;">
         <strong style="color: #ffffff;">${escapeHtml(personName)}</strong> wants to share their vault
         <strong style="color: #8658ff;">"${escapeHtml(invitation.vaultName || 'Memory Vault')}"</strong> with you.
       </p>
-      
+
       <div style="background: rgba(134, 88, 255, 0.1); border: 1px solid rgba(134, 88, 255, 0.3); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
         <h4 style="margin: 0 0 8px 0; color: #8658ff;">Permissions:</h4>
         <p style="margin: 0; color: #ffffff;">${permissionList}</p>
       </div>
-      
+
       <div style="color: #cccccc; font-size: 12px;">
         <p style="margin: 4px 0;">🔒 End-to-end encrypted</p>
         <p style="margin: 4px 0;">📅 Expires: ${new Date(invitation.expires).toLocaleDateString()}</p>
         <p style="margin: 4px 0;">🆔 From: ${escapeHtml(invitation.issuerFingerprint.substring(0, 16))}...</p>
       </div>
     </div>
-    
+
     <div style="display: flex; gap: 12px; justify-content: flex-end;">
       <button class="decline-invitation" style="
         background: rgba(255, 255, 255, 0.1);
@@ -163,7 +159,7 @@ function showShareInvitationModal(invitation) {
         font-size: 16px;
         transition: all 0.3s;
       ">Decline</button>
-      
+
       <button class="accept-invitation" style="
         background: linear-gradient(135deg, #8658ff 0%, #6843cc 100%);
         border: none;
@@ -177,36 +173,36 @@ function showShareInvitationModal(invitation) {
       ">Accept & Connect</button>
     </div>
   `;
-  
+
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
-  
+
   // Event listeners
   modal.querySelector('.close-invitation-modal').addEventListener('click', () => modal.remove());
   modal.querySelector('.decline-invitation').addEventListener('click', () => modal.remove());
-  
+
   modal.querySelector('.accept-invitation').addEventListener('click', async () => {
     try {
       const acceptBtn = modal.querySelector('.accept-invitation');
       acceptBtn.textContent = 'Connecting...';
       acceptBtn.disabled = true;
-      
+
       // Accept the share via P2P
       await p2pManager.acceptShare(invitation);
-      
+
       showNotification(`Successfully connected to ${personName}'s vault!`, 'success');
       modal.remove();
-      
+
       // Refresh the page to show new shared vault
       setTimeout(() => location.reload(), 1000);
-      
+
     } catch (error) {
       console.error('Failed to accept share:', error);
       showNotification('Failed to accept share: ' + error.message, 'error');
       modal.remove();
     }
   });
-  
+
   // Click outside to close
   modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.remove();
@@ -219,7 +215,7 @@ let filteredPeople = [];
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🚀 DOM loaded, initializing...');
+
   await initializeCrypto();
   loadPeople();
   handleUrlParameters();
@@ -228,49 +224,48 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Setup all event listeners
 function setupEventListeners() {
-  console.log('🔧 Setting up event listeners...');
-  
+
   // Add person buttons
   const addPersonBtn = document.getElementById('addPersonBtn');
   const addPersonBtnEmpty = document.getElementById('addPersonBtnEmpty');
-  
+
   if (addPersonBtn) {
     addPersonBtn.addEventListener('click', openAddPersonModal);
   }
-  
+
   if (addPersonBtnEmpty) {
     addPersonBtnEmpty.addEventListener('click', openAddPersonModal);
   }
-  
+
   // Search functionality
   const searchInput = document.getElementById('searchInput');
   const relationshipFilter = document.getElementById('relationshipFilter');
-  
+
   if (searchInput) {
     searchInput.addEventListener('input', searchPeople);
   }
-  
+
   if (relationshipFilter) {
     relationshipFilter.addEventListener('change', searchPeople);
   }
-  
+
   // Modal controls
   const closeModalBtn = document.getElementById('closeModalBtn');
   const cancelBtn = document.getElementById('cancelBtn');
   const addPersonForm = document.getElementById('addPersonForm');
-  
+
   if (closeModalBtn) {
     closeModalBtn.addEventListener('click', closeAddPersonModal);
   }
-  
+
   if (cancelBtn) {
     cancelBtn.addEventListener('click', closeAddPersonModal);
   }
-  
+
   if (addPersonForm) {
     addPersonForm.addEventListener('submit', addPerson);
   }
-  
+
   // Close modal when clicking outside
   const modalOverlay = document.getElementById('addPersonModal');
   if (modalOverlay) {
@@ -280,7 +275,7 @@ function setupEventListeners() {
       }
     });
   }
-  
+
   // Event delegation for person cards (since they're dynamically created)
   const peopleGrid = document.getElementById('peopleGrid');
   if (peopleGrid) {
@@ -289,7 +284,7 @@ function setupEventListeners() {
       const personCard = e.target.closest('.person-card');
       if (personCard) {
         const personId = parseInt(personCard.dataset.personId);
-        
+
         // Check if it's a share button click
         if (e.target.classList.contains('share-vault-btn') || e.target.closest('.share-vault-btn')) {
           e.stopPropagation();
@@ -301,7 +296,7 @@ function setupEventListeners() {
       }
     });
   }
-  
+
   // Event delegation for identity modal buttons (dynamically created)
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('identity-export-btn')) {
@@ -310,21 +305,21 @@ function setupEventListeners() {
         exportIdentity(personId);
       }
     }
-    
+
     if (e.target.classList.contains('identity-copy-btn')) {
       const fingerprint = e.target.dataset.fingerprint;
       if (fingerprint) {
         copyFingerprint(fingerprint);
       }
     }
-    
+
     if (e.target.classList.contains('identity-share-btn')) {
       const fingerprint = e.target.dataset.fingerprint;
       if (fingerprint) {
         shareIdentity(fingerprint);
       }
     }
-    
+
     // Edit person button
     if (e.target.classList.contains('edit-person-btn')) {
       const personId = e.target.dataset.personId;
@@ -332,7 +327,7 @@ function setupEventListeners() {
         enablePersonEdit(personId);
       }
     }
-    
+
     // Save person button
     if (e.target.classList.contains('save-person-btn')) {
       const personId = e.target.dataset.personId;
@@ -340,12 +335,12 @@ function setupEventListeners() {
         savePersonEdit(personId);
       }
     }
-    
+
     // Cancel edit button
     if (e.target.classList.contains('cancel-edit-btn')) {
       cancelPersonEdit();
     }
-    
+
     // Share vault button in modal
     if (e.target.classList.contains('share-vault-btn-modal')) {
       const personId = e.target.dataset.personId;
@@ -353,16 +348,16 @@ function setupEventListeners() {
         showShareVaultModal(parseInt(personId));
       }
     }
-    
+
     // Add person modal buttons
     if (e.target.classList.contains('close-add-person-modal')) {
       closeAddPersonModal();
     }
-    
+
     if (e.target.classList.contains('cancel-add-person-btn')) {
       closeAddPersonModal();
     }
-    
+
     // Person detail modal close button
     if (e.target.classList.contains('close-person-detail-modal')) {
       const modal = e.target.closest('.modal-overlay');
@@ -370,7 +365,7 @@ function setupEventListeners() {
         modal.remove();
       }
     }
-    
+
     if (e.target.classList.contains('submit-add-person-btn')) {
       const form = e.target.closest('form');
       if (form) {
@@ -379,40 +374,39 @@ function setupEventListeners() {
       }
     }
   });
-  
+
   // Event listener for form submission in add person modal
   document.addEventListener('submit', function(e) {
     if (e.target.id === 'addPersonFormModal') {
       addPerson(e);
     }
   });
-  
-  console.log('✅ Event listeners set up successfully');
+
 }
 
 // Load people data
 async function loadPeople() {
   try {
     showLoading(true);
-    
+
     // Get people from storage (try chrome.storage first, fallback to localStorage)
     let people = [];
     try {
       const result = await chrome.storage.local.get(['emma_people']);
       people = result.emma_people || [];
-      console.log('📦 Loaded from chrome.storage:', people.length, 'people');
+
     } catch (error) {
       console.warn('⚠️ Chrome storage failed, trying localStorage:', error);
       people = JSON.parse(localStorage.getItem('emma_people') || '[]');
-      console.log('📦 Loaded from localStorage:', people.length, 'people');
+
     }
-    
+
     // Also check old format for migration
     if (people.length === 0) {
       const oldPeople = localStorage.getItem('emma-people');
       if (oldPeople) {
         people = JSON.parse(oldPeople);
-        console.log('🔄 Migrated', people.length, 'people from old format');
+
         // Save in new format
         try {
           await chrome.storage.local.set({ emma_people: people });
@@ -423,9 +417,9 @@ async function loadPeople() {
         localStorage.removeItem('emma-people');
       }
     }
-    
+
     allPeople = people;
-    
+
     // If no people, create some sample data
     if (allPeople.length === 0) {
       allPeople = createSamplePeople();
@@ -436,11 +430,11 @@ async function loadPeople() {
         localStorage.setItem('emma_people', JSON.stringify(allPeople));
       }
     }
-    
+
     filteredPeople = [...allPeople];
     displayPeople();
     updateStats();
-    
+
   } catch (error) {
     console.error('Failed to load people:', error);
   } finally {
@@ -485,14 +479,14 @@ function createSamplePeople() {
 function displayPeople() {
   const peopleGrid = document.getElementById('peopleGrid');
   const emptyState = document.getElementById('emptyState');
-  
+
   if (filteredPeople.length === 0) {
     peopleGrid.style.display = 'none';
     emptyState.style.display = 'block';
-    
+
     const searchTerm = document.getElementById('searchInput').value;
     const relationshipFilter = document.getElementById('relationshipFilter').value;
-    
+
     if (searchTerm || relationshipFilter !== 'all') {
       document.getElementById('emptyStateMessage').textContent = 'No people match your current filters. Try adjusting your search or filters.';
     } else {
@@ -500,10 +494,10 @@ function displayPeople() {
     }
     return;
   }
-  
+
   peopleGrid.style.display = 'grid';
   emptyState.style.display = 'none';
-  
+
   peopleGrid.innerHTML = filteredPeople.map(person => createPersonCard(person)).join('');
 }
 
@@ -512,12 +506,12 @@ function createPersonCard(person) {
   const initials = person.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const relationshipEmoji = getRelationshipEmoji(person.relationship);
   const relationshipLabel = getRelationshipLabel(person.relationship);
-  
+
   // Create avatar (profile picture or initials)
-  const avatarContent = person.profilePicture 
+  const avatarContent = person.profilePicture
     ? `<img src="${person.profilePicture}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="${escapeHtml(person.name)}">`
     : initials;
-  
+
   return `
     <div class="person-card" data-person-id="${person.id}">
       <div class="person-avatar">${avatarContent}</div>
@@ -533,8 +527,8 @@ function createPersonCard(person) {
               <span style="color: #8658ff;">🔐</span>
               <span style="color: #ffffff;">Identity: </span>
               <code style="font-family: monospace; color: #ffffff;">${person.keyFingerprint.substring(0, 16)}...</code>
-              ${person.verificationStatus === 'verified' ? '<span style="color: #28a745; margin-left: auto;">✓</span>' : 
-                person.verificationStatus === 'trusted' ? '<span style="color: #ffc107; margin-left: auto;">⭐</span>' : 
+              ${person.verificationStatus === 'verified' ? '<span style="color: #28a745; margin-left: auto;">✓</span>' :
+                person.verificationStatus === 'trusted' ? '<span style="color: #ffc107; margin-left: auto;">⭐</span>' :
                 '<span style="color: #999; margin-left: auto;">○</span>'}
             </div>
           </div>
@@ -579,19 +573,19 @@ function getRelationshipLabel(relationship) {
 function searchPeople() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const relationshipFilter = document.getElementById('relationshipFilter').value;
-  
+
   filteredPeople = allPeople.filter(person => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       person.name.toLowerCase().includes(searchTerm) ||
       person.email.toLowerCase().includes(searchTerm) ||
       person.notes.toLowerCase().includes(searchTerm);
-    
-    const matchesRelationship = relationshipFilter === 'all' || 
+
+    const matchesRelationship = relationshipFilter === 'all' ||
       person.relationship === relationshipFilter;
-    
+
     return matchesSearch && matchesRelationship;
   });
-  
+
   displayPeople();
 }
 
@@ -600,7 +594,7 @@ function updateStats() {
   const totalCount = allPeople.length;
   const familyCount = allPeople.filter(p => p.relationship === 'family').length;
   const colleagueCount = allPeople.filter(p => p.relationship === 'colleague').length;
-  
+
   document.getElementById('totalCount').textContent = totalCount;
   document.getElementById('familyCount').textContent = familyCount;
   document.getElementById('colleagueCount').textContent = colleagueCount;
@@ -618,7 +612,7 @@ function showLoading(show) {
 function handleUrlParameters() {
   const urlParams = new URLSearchParams(window.location.search);
   const shouldAdd = urlParams.get('add');
-  
+
   if (shouldAdd === 'true') {
     setTimeout(() => {
       openAddPersonModal();
@@ -628,14 +622,13 @@ function handleUrlParameters() {
 
 // Modal functions - open beautiful add person modal
 function openAddPersonModal() {
-  console.log('📝 Opening add person modal');
-  
+
   // Remove existing modal if it exists
   const existingModal = document.querySelector('.add-person-modal-overlay');
   if (existingModal) {
     existingModal.remove();
   }
-  
+
   // Create new modal with the beautiful design
   const modal = document.createElement('div');
   modal.className = 'modal-overlay active add-person-modal-overlay';
@@ -645,14 +638,14 @@ function openAddPersonModal() {
         <h2 style="color: #ffffff; margin: 0;">Add New Person</h2>
         <button class="close-btn close-add-person-modal" style="color: #cccccc;">×</button>
       </div>
-      
+
       <div style="padding: 0 32px 32px 32px;">
         <p style="color: #cccccc; margin-bottom: 24px; text-align: center;">Add someone to your network of family, friends, and connections</p>
-        
+
         <div class="success-message" id="addPersonSuccessMessage" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); color: #10b981; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; display: none;">
           Person added successfully!
         </div>
-        
+
         <form id="addPersonFormModal">
           <div class="form-group">
             <label class="form-label" for="modalPersonProfilePic" style="color: #ffffff;">Profile Picture</label>
@@ -713,13 +706,13 @@ function openAddPersonModal() {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   // Add profile picture preview functionality
   const profilePicInput = modal.querySelector('#modalPersonProfilePic');
   const profilePicPreview = modal.querySelector('.profile-pic-preview');
-  
+
   if (profilePicInput && profilePicPreview) {
     profilePicInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -730,14 +723,14 @@ function openAddPersonModal() {
           e.target.value = '';
           return;
         }
-        
+
         // Validate file type
         if (!file.type.startsWith('image/')) {
           showNotification('Please select an image file', 'error');
           e.target.value = '';
           return;
         }
-        
+
         // Preview the image
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -750,7 +743,7 @@ function openAddPersonModal() {
       }
     });
   }
-  
+
   // Focus on first input
   setTimeout(() => {
     const firstInput = modal.querySelector('#modalPersonName');
@@ -767,15 +760,15 @@ function closeAddPersonModal() {
 
 // Add person - updated for new modal
 async function addPerson(event) {
-  console.log('🔍 addPerson called with event:', event);
+
   event.preventDefault();
-  
+
   const modal = document.querySelector('.add-person-modal-overlay');
   if (!modal) {
     console.error('❌ Add person modal not found');
     return;
   }
-  
+
   try {
     // Show loading state
     const submitButton = modal.querySelector('.submit-add-person-btn');
@@ -784,7 +777,7 @@ async function addPerson(event) {
       submitButton.textContent = 'Generating identity...';
       submitButton.disabled = true;
     }
-    
+
     // Handle profile picture
     let profilePicture = null;
     const profilePicInput = modal.querySelector('#modalPersonProfilePic');
@@ -807,7 +800,7 @@ async function addPerson(event) {
       profilePicture: profilePicture,
       dateAdded: new Date().toISOString()
     };
-    
+
     if (!newPerson.name || !newPerson.relationship) {
       showNotification('Please fill in all required fields.', 'error');
       if (submitButton) {
@@ -816,21 +809,21 @@ async function addPerson(event) {
       }
       return;
     }
-    
+
     // Generate cryptographic identity
-    console.log('🔐 Generating identity...');
+
     let identity = null;
     try {
       identity = await generateIdentity();
       console.log('✅ Identity generated:', identity?.fingerprint?.substring(0, 20) + '...');
-      
+
       // Add crypto fields to person
       newPerson.publicSigningKey = identity.signing.publicKey;
       newPerson.publicEncryptionKey = identity.encryption.publicKey;
       newPerson.keyFingerprint = identity.fingerprint;
       newPerson.keyCreatedAt = identity.createdAt;
       newPerson.verificationStatus = 'unverified';
-      
+
       // Store private keys for self
       if (newPerson.relationship === 'self') {
         await storeOwnIdentity(newPerson.id, identity);
@@ -838,7 +831,7 @@ async function addPerson(event) {
     } catch (identityError) {
       console.warn('⚠️ Identity generation failed, continuing without crypto:', identityError);
     }
-    
+
     // Get existing people
     let people = [];
     try {
@@ -847,20 +840,20 @@ async function addPerson(event) {
     } catch (error) {
       people = JSON.parse(localStorage.getItem('emma_people') || '[]');
     }
-    
+
     // Add new person
     people.push(newPerson);
-    
+
     // Save to storage
     try {
       await chrome.storage.local.set({ emma_people: people });
     } catch (error) {
       localStorage.setItem('emma_people', JSON.stringify(people));
     }
-    
+
     // Update global variable
     allPeople = people;
-    
+
     // Show success message in modal
     const successMessage = modal.querySelector('#addPersonSuccessMessage');
     if (successMessage) {
@@ -875,37 +868,36 @@ async function addPerson(event) {
       `;
       successMessage.style.display = 'block';
     }
-    
+
     // Reset form
     const form = modal.querySelector('#addPersonFormModal');
     if (form) form.reset();
-    
+
     // Restore button
     if (submitButton) {
       submitButton.textContent = originalText;
       submitButton.disabled = false;
     }
-    
+
     // Refresh display
     displayPeople();
-    
+
     // Close modal after delay
     setTimeout(() => {
       closeAddPersonModal();
     }, 2000);
-    
+
     // Show identity card for self
     if (newPerson.relationship === 'self' && identity) {
       setTimeout(() => {
         showIdentityCard(newPerson, identity);
       }, 2500);
     }
-    
-    console.log('✅ Person added successfully:', newPerson);
+
   } catch (error) {
     console.error('❌ Failed to add person:', error);
     showNotification('Failed to add person: ' + error.message, 'error');
-    
+
     // Restore button
     const submitButton = modal.querySelector('.submit-add-person-btn');
     if (submitButton) {
@@ -944,7 +936,7 @@ async function storeOwnIdentity(personId, identity) {
 // Show identity card for the user's own identity
 function showIdentityCard(person, identity) {
   const card = generateIdentityCard(person, identity);
-  
+
   // Create a modal to show the identity card
   const modal = document.createElement('div');
   modal.className = 'modal-overlay active';
@@ -961,12 +953,12 @@ function showIdentityCard(person, identity) {
         <div class="identity-card">
           <h3 style="color: #ffffff; margin-bottom: 8px;">${escapeHtml(person.name)}</h3>
           <p style="color: #cccccc; margin-bottom: 20px;">${escapeHtml(person.email || 'No email')}</p>
-          
+
           <div class="fingerprint-section" style="background: rgba(40, 40, 50, 0.8); border: 1px solid rgba(134, 88, 255, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <h4 style="margin: 0 0 10px 0; color: #ffffff;">Key Fingerprint</h4>
             <code style="font-size: 12px; word-break: break-all; color: #8658ff; background: rgba(134, 88, 255, 0.1); padding: 8px; border-radius: 4px; display: block;">${escapeHtml(identity.fingerprint)}</code>
           </div>
-          
+
           <div style="display: grid; gap: 10px;">
             <button class="identity-export-btn" data-person-id="${person.id}" style="padding: 12px 20px; background: #8658ff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
               📥 Export Identity Keys
@@ -984,8 +976,7 @@ function showIdentityCard(person, identity) {
 
 // Show person detail modal with edit capability
 async function showPersonDetailModal(person, identity) {
-  console.log('👤 Showing person details for:', person.name);
-  
+
   // Load existing sharing records for this person (to display shared memories)
   const sharingRecords = await getSharingRecordsForPerson(person.id);
   let sharedMemories = [];
@@ -1047,7 +1038,7 @@ async function showPersonDetailModal(person, identity) {
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="person-avatar" style="width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #8658ff, #b794f6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 16px; overflow: hidden;">
-            ${person.profilePicture 
+            ${person.profilePicture
               ? `<img src="${person.profilePicture}" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHtml(person.name)}">`
               : escapeHtml(person.name.split(' ').map(n => n[0]).join('').toUpperCase())
             }
@@ -1061,7 +1052,7 @@ async function showPersonDetailModal(person, identity) {
           <button class="close-btn close-person-detail-modal" style="color: #cccccc;">×</button>
         </div>
       </div>
-      
+
       <div style="padding: 0 32px 32px 32px;">
         <!-- Person Info Form -->
         <div class="person-info-form">
@@ -1069,7 +1060,7 @@ async function showPersonDetailModal(person, identity) {
             <label class="form-label">Profile Picture</label>
             <div style="display: flex; align-items: center; gap: 12px;">
               <div class="edit-profile-pic-preview" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #8658ff, #b794f6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 20px; border: 2px solid rgba(134, 88, 255, 0.3); overflow: hidden;">
-                ${person.profilePicture 
+                ${person.profilePicture
                   ? `<img src="${person.profilePicture}" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHtml(person.name)}">`
                   : escapeHtml(person.name.split(' ').map(n => n[0]).join('').toUpperCase())
                 }
@@ -1080,22 +1071,22 @@ async function showPersonDetailModal(person, identity) {
               </div>
             </div>
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="edit-name">Name</label>
             <input type="text" id="edit-name" class="form-input" value="${escapeHtml(person.name)}" readonly>
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="edit-email">Email</label>
             <input type="email" id="edit-email" class="form-input" value="${escapeHtml(person.email || '')}" readonly placeholder="No email provided">
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="edit-phone">Phone</label>
             <input type="tel" id="edit-phone" class="form-input" value="${escapeHtml(person.phone || '')}" readonly placeholder="No phone provided">
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="edit-relationship">Relationship</label>
             <select id="edit-relationship" class="form-input" disabled>
@@ -1108,7 +1099,7 @@ async function showPersonDetailModal(person, identity) {
               <option value="self" ${person.relationship === 'self' ? 'selected' : ''}>🧑 Myself</option>
             </select>
           </div>
-          
+
           <div class="form-group">
             <label class="form-label" for="edit-notes">Notes</label>
             <textarea id="edit-notes" class="form-input form-textarea" readonly placeholder="No notes added yet">${escapeHtml(person.notes || '')}</textarea>
@@ -1123,7 +1114,7 @@ async function showPersonDetailModal(person, identity) {
               </button>
             </div>
           </div>
-          
+
           ${identity ? `
           <div class="form-group">
             <label class="form-label">Cryptographic Identity</label>
@@ -1133,7 +1124,7 @@ async function showPersonDetailModal(person, identity) {
                 <span style="color: #ffffff; font-size: 14px; font-weight: 500;">Verified Identity</span>
                 <span style="color: #cccccc; font-size: 12px; margin-left: auto;">Created ${new Date(identity.createdAt || person.keyCreatedAt).toLocaleDateString()}</span>
               </div>
-              
+
               <div style="margin-bottom: 12px;">
                 <div style="color: #cccccc; font-size: 12px; margin-bottom: 4px;">Key Fingerprint:</div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -1144,7 +1135,7 @@ async function showPersonDetailModal(person, identity) {
                   </button>
                 </div>
               </div>
-              
+
               <div style="display: flex; gap: 8px;">
                 <button class="identity-export-btn" data-person-id="${person.id}" style="padding: 8px 12px; background: rgba(134, 88, 255, 0.2); color: #8658ff; border: 1px solid rgba(134, 88, 255, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px; flex: 1;">
                   📥 Export Keys
@@ -1164,7 +1155,7 @@ async function showPersonDetailModal(person, identity) {
                 <span style="color: #ffffff; font-size: 14px; font-weight: 500;">Public Identity</span>
                 <span style="color: #cccccc; font-size: 12px; margin-left: auto;">Added ${new Date(person.keyCreatedAt || person.dateAdded).toLocaleDateString()}</span>
               </div>
-              
+
               <div style="margin-bottom: 12px;">
                 <div style="color: #cccccc; font-size: 12px; margin-bottom: 4px;">Key Fingerprint:</div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -1179,7 +1170,7 @@ async function showPersonDetailModal(person, identity) {
           </div>
           ` : '')}
         </div>
-        
+
         <!-- Action Buttons -->
         <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(134, 88, 255, 0.2);">
           <button class="save-person-btn" data-person-id="${person.id}" style="padding: 12px 24px; background: #00ff88; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; flex: 1; display: none;">
@@ -1197,7 +1188,7 @@ async function showPersonDetailModal(person, identity) {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
 }
 
@@ -1229,11 +1220,10 @@ function resolveMemoryById(allCapsules, memoryId) {
 
 // Enable editing mode for person details
 function enablePersonEdit(personId) {
-  console.log('✏️ Enabling edit mode for person:', personId);
-  
+
   const modal = document.querySelector('.person-detail-modal');
   if (!modal) return;
-  
+
   // Enable all form inputs
   const nameInput = modal.querySelector('#edit-name');
   const emailInput = modal.querySelector('#edit-email');
@@ -1242,7 +1232,7 @@ function enablePersonEdit(personId) {
   const notesTextarea = modal.querySelector('#edit-notes');
   const profilePicInput = modal.querySelector('#edit-profile-pic');
   const identityFingerprintInput = modal.querySelector('#edit-identity-fingerprint');
-  
+
   [nameInput, emailInput, phoneInput, notesTextarea].forEach(input => {
     if (input) {
       input.removeAttribute('readonly');
@@ -1250,12 +1240,12 @@ function enablePersonEdit(personId) {
       input.style.border = '2px solid rgba(134, 88, 255, 0.4)';
     }
   });
-  
+
   if (profilePicInput) {
     profilePicInput.removeAttribute('disabled');
     profilePicInput.style.background = 'rgba(255, 255, 255, 0.98)';
     profilePicInput.style.border = '2px solid rgba(134, 88, 255, 0.4)';
-    
+
     // Add preview functionality for edit mode
     profilePicInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -1266,13 +1256,13 @@ function enablePersonEdit(personId) {
           e.target.value = '';
           return;
         }
-        
+
         if (!file.type.startsWith('image/')) {
           showNotification('Please select an image file', 'error');
           e.target.value = '';
           return;
         }
-        
+
         const reader = new FileReader();
         reader.onload = function(e) {
           preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview">`;
@@ -1281,43 +1271,43 @@ function enablePersonEdit(personId) {
       }
     });
   }
-  
+
   if (relationshipSelect) {
     relationshipSelect.removeAttribute('disabled');
     relationshipSelect.style.background = 'rgba(255, 255, 255, 0.98)';
     relationshipSelect.style.border = '2px solid rgba(134, 88, 255, 0.4)';
   }
-  
+
   // Enable identity fingerprint editing
   if (identityFingerprintInput) {
     identityFingerprintInput.removeAttribute('readonly');
     identityFingerprintInput.style.background = 'rgba(134, 88, 255, 0.15)';
     identityFingerprintInput.style.border = '2px solid rgba(134, 88, 255, 0.4)';
   }
-  
+
   // Toggle display between read-only and editable identity fingerprint
   const fingerprintDisplay = modal.querySelectorAll('.identity-fingerprint-display');
   const fingerprintEdit = modal.querySelectorAll('.identity-fingerprint-edit');
-  
+
   fingerprintDisplay.forEach(display => {
     if (display) display.style.display = 'none';
   });
-  
+
   fingerprintEdit.forEach(edit => {
     if (edit) edit.style.display = 'block';
   });
-  
+
   // Show/hide buttons
   const editBtn = modal.querySelector('.edit-person-btn');
   const saveBtn = modal.querySelector('.save-person-btn');
   const cancelBtn = modal.querySelector('.cancel-edit-btn');
-  
+
   if (editBtn) {
     editBtn.style.display = 'none'; // Hide edit icon in header
   }
   if (saveBtn) saveBtn.style.display = 'block';
   if (cancelBtn) cancelBtn.style.display = 'block';
-  
+
   // Store original values for cancel functionality
   modal.dataset.originalName = nameInput?.value || '';
   modal.dataset.originalEmail = emailInput?.value || '';
@@ -1325,17 +1315,16 @@ function enablePersonEdit(personId) {
   modal.dataset.originalRelationship = relationshipSelect?.value || '';
   modal.dataset.originalNotes = notesTextarea?.value || '';
   modal.dataset.originalIdentityFingerprint = identityFingerprintInput?.value || '';
-  
+
   showNotification('Edit mode enabled. Make your changes and click Save.', 'info');
 }
 
 // Save person edit changes
 async function savePersonEdit(personId) {
-  console.log('💾 Saving person edit:', personId);
-  
+
   const modal = document.querySelector('.person-detail-modal');
   if (!modal) return;
-  
+
   try {
     // Get form values
     const name = modal.querySelector('#edit-name')?.value?.trim();
@@ -1344,13 +1333,13 @@ async function savePersonEdit(personId) {
     const relationship = modal.querySelector('#edit-relationship')?.value;
     const notes = modal.querySelector('#edit-notes')?.value?.trim();
     const identityFingerprint = modal.querySelector('#edit-identity-fingerprint')?.value?.trim();
-    
+
     // Validate required fields
     if (!name) {
       showNotification('Name is required', 'error');
       return;
     }
-    
+
     // Validate identity fingerprint format if provided
     if (identityFingerprint && identityFingerprint.length > 0) {
       if (identityFingerprint.length < 20) {
@@ -1363,7 +1352,7 @@ async function savePersonEdit(personId) {
         return;
       }
     }
-    
+
     // Get current people data
     let people = [];
     try {
@@ -1372,15 +1361,15 @@ async function savePersonEdit(personId) {
     } catch (error) {
       people = JSON.parse(localStorage.getItem('emma_people') || '[]');
     }
-    
+
     // Find and update the person
     const personIndex = people.findIndex(p => p.id === parseInt(personId));
-    
+
     if (personIndex === -1) {
       showNotification('Person not found', 'error');
       return;
     }
-    
+
     // Handle profile picture update
     let profilePicture = people[personIndex].profilePicture; // Keep existing by default
     const profilePicInput = modal.querySelector('#edit-profile-pic');
@@ -1392,7 +1381,7 @@ async function savePersonEdit(personId) {
         reader.readAsDataURL(file);
       });
     }
-    
+
     // Update person data
     people[personIndex] = {
       ...people[personIndex],
@@ -1404,35 +1393,34 @@ async function savePersonEdit(personId) {
       profilePicture: profilePicture,
       lastModified: new Date().toISOString()
     };
-    
+
     // Check if identity fingerprint is being updated
     const hasIdentityUpdate = identityFingerprint && identityFingerprint !== people[personIndex].keyFingerprint;
-    
+
     // Update identity fingerprint if provided and different
     if (hasIdentityUpdate) {
       people[personIndex].keyFingerprint = identityFingerprint;
       people[personIndex].keyUpdatedAt = Date.now();
-      console.log('🔑 Updated identity fingerprint for person:', personId);
+
     }
-    
+
     // Save to storage
     try {
       await chrome.storage.local.set({ emma_people: people });
     } catch (error) {
       localStorage.setItem('emma_people', JSON.stringify(people));
     }
-    
+
     // Update allPeople global variable
     allPeople = people;
-    
+
     // Refresh the display
     displayPeople();
-    
+
     // Close modal and show success
     modal.remove();
     showNotification(`Person updated successfully!${hasIdentityUpdate ? ' Identity fingerprint also updated.' : ''}`, 'success');
-    
-    console.log('✅ Person saved successfully');
+
   } catch (error) {
     console.error('❌ Failed to save person:', error);
     showNotification('Failed to save changes: ' + error.message, 'error');
@@ -1441,11 +1429,10 @@ async function savePersonEdit(personId) {
 
 // Cancel person edit changes
 function cancelPersonEdit() {
-  console.log('❌ Cancelling person edit');
-  
+
   const modal = document.querySelector('.person-detail-modal');
   if (!modal) return;
-  
+
   // Restore original values
   const nameInput = modal.querySelector('#edit-name');
   const emailInput = modal.querySelector('#edit-email');
@@ -1453,14 +1440,14 @@ function cancelPersonEdit() {
   const relationshipSelect = modal.querySelector('#edit-relationship');
   const notesTextarea = modal.querySelector('#edit-notes');
   const identityFingerprintInput = modal.querySelector('#edit-identity-fingerprint');
-  
+
   if (nameInput) nameInput.value = modal.dataset.originalName || '';
   if (emailInput) emailInput.value = modal.dataset.originalEmail || '';
   if (phoneInput) phoneInput.value = modal.dataset.originalPhone || '';
   if (relationshipSelect) relationshipSelect.value = modal.dataset.originalRelationship || '';
   if (notesTextarea) notesTextarea.value = modal.dataset.originalNotes || '';
   if (identityFingerprintInput) identityFingerprintInput.value = modal.dataset.originalIdentityFingerprint || '';
-  
+
   // Disable editing
   [nameInput, emailInput, phoneInput, notesTextarea, identityFingerprintInput].forEach(input => {
     if (input) {
@@ -1469,25 +1456,25 @@ function cancelPersonEdit() {
       input.style.border = '1px solid rgba(134, 88, 255, 0.2)';
     }
   });
-  
+
   // Restore identity fingerprint display/edit toggle
   const fingerprintDisplay = modal.querySelectorAll('.identity-fingerprint-display');
   const fingerprintEdit = modal.querySelectorAll('.identity-fingerprint-edit');
-  
+
   fingerprintDisplay.forEach(display => {
     if (display) display.style.display = 'block';
   });
-  
+
   fingerprintEdit.forEach(edit => {
     if (edit) edit.style.display = 'none';
   });
-  
+
   if (relationshipSelect) {
     relationshipSelect.setAttribute('disabled', 'disabled');
     relationshipSelect.style.background = 'rgba(255, 255, 255, 0.95)';
     relationshipSelect.style.border = '1px solid rgba(134, 88, 255, 0.2)';
   }
-  
+
   const profilePicInput = modal.querySelector('#edit-profile-pic');
   if (profilePicInput) {
     profilePicInput.setAttribute('disabled', 'disabled');
@@ -1495,54 +1482,53 @@ function cancelPersonEdit() {
     profilePicInput.style.border = '1px solid rgba(134, 88, 255, 0.2)';
     profilePicInput.value = ''; // Clear file input
   }
-  
+
   // Show/hide buttons
   const editBtn = modal.querySelector('.edit-person-btn');
   const saveBtn = modal.querySelector('.save-person-btn');
   const cancelBtn = modal.querySelector('.cancel-edit-btn');
-  
+
   if (editBtn) editBtn.style.display = 'flex'; // Show edit icon in header again
   if (saveBtn) saveBtn.style.display = 'none';
   if (cancelBtn) cancelBtn.style.display = 'none';
-  
+
   showNotification('Changes cancelled', 'info');
 }
 
 // Export identity for backup
 async function exportIdentity(personId) {
   try {
-    console.log('🔍 Exporting identity for person:', personId);
-    
+
     let identity = null;
-    
+
     // Try chrome.storage first
     try {
       const result = await chrome.storage.local.get([`emma_identity_${personId}`]);
       identity = result[`emma_identity_${personId}`];
-      console.log('📦 Chrome storage result:', identity ? 'found' : 'not found');
+
     } catch (chromeError) {
       console.warn('⚠️ Chrome storage failed, trying localStorage:', chromeError);
     }
-    
+
     // Fallback to localStorage
     if (!identity) {
       try {
         const stored = localStorage.getItem(`emma_identity_${personId}`);
         if (stored) {
           identity = JSON.parse(stored);
-          console.log('📦 LocalStorage result:', identity ? 'found' : 'not found');
+
         }
       } catch (localError) {
         console.warn('⚠️ LocalStorage failed:', localError);
       }
     }
-    
+
     if (!identity) {
       console.error('❌ No identity found for person:', personId);
       showNotification('Identity not found. Make sure this is your own identity.', 'error');
       return;
     }
-    
+
     const backup = {
       version: '1.0',
       type: 'emma-identity-backup',
@@ -1550,8 +1536,7 @@ async function exportIdentity(personId) {
       createdAt: new Date().toISOString(),
       identity
     };
-    
-    console.log('📄 Creating backup file...');
+
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1562,8 +1547,7 @@ async function exportIdentity(personId) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    console.log('✅ Identity exported successfully');
+
     showNotification('Identity exported successfully!', 'success');
   } catch (error) {
     console.error('❌ Failed to export identity:', error);
@@ -1583,7 +1567,7 @@ function copyFingerprint(fingerprint) {
 // Share identity fingerprint
 function shareIdentity(fingerprint) {
   const shareText = `Emma Identity Fingerprint:\n${fingerprint}\n\nThis cryptographic fingerprint can be used to verify my identity in secure communications.`;
-  
+
   if (navigator.share) {
     navigator.share({
       title: 'Emma Identity Fingerprint',
@@ -1591,7 +1575,7 @@ function shareIdentity(fingerprint) {
     }).then(() => {
       showNotification('Identity shared successfully', 'success');
     }).catch((error) => {
-      console.log('Error sharing:', error);
+
       // Fallback to copy
       copyToClipboard(shareText);
     });
@@ -1614,9 +1598,7 @@ function copyToClipboard(text) {
 async function showShareVaultModal(personId) {
   const person = allPeople.find(p => p.id === personId);
   if (!person) return;
-  
-  console.log('🔐 Opening share vault modal for:', person.name);
-  
+
   // Load memory capsules
   let memories = [];
   try {
@@ -1626,7 +1608,7 @@ async function showShareVaultModal(personId) {
     showNotification('Failed to load memory capsules', 'error');
     return;
   }
-  
+
   // Create share vault modal
   const modal = document.createElement('div');
   modal.className = 'modal-overlay active share-vault-modal';
@@ -1635,7 +1617,7 @@ async function showShareVaultModal(personId) {
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 12px;">
           <div class="person-avatar" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #8658ff, #b794f6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px; overflow: hidden;">
-            ${person.profilePicture 
+            ${person.profilePicture
               ? `<img src="${person.profilePicture}" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHtml(person.name)}">`
               : escapeHtml(person.name.split(' ').map(n => n[0]).join('').toUpperCase())
             }
@@ -1647,7 +1629,7 @@ async function showShareVaultModal(personId) {
         </div>
         <button class="close-btn close-share-vault-modal" style="color: #cccccc;">×</button>
       </div>
-      
+
       <div style="padding: 0 32px 32px 32px;">
         <!-- Permission Level Selection -->
         <div class="form-group" style="margin-bottom: 24px;">
@@ -1675,7 +1657,7 @@ async function showShareVaultModal(personId) {
             </div>
           </div>
         </div>
-        
+
         <!-- Memory Capsule Selection -->
         <div class="form-group">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -1689,7 +1671,7 @@ async function showShareVaultModal(personId) {
               </button>
             </div>
           </div>
-          
+
           <div class="memory-list" style="max-height: 300px; overflow-y: auto; border: 1px solid rgba(134, 88, 255, 0.2); border-radius: 8px; background: rgba(40, 40, 50, 0.5);">
             ${memories.length === 0 ? `
               <div style="padding: 40px; text-align: center; color: #cccccc;">
@@ -1700,7 +1682,7 @@ async function showShareVaultModal(personId) {
             ` : memories.map(memory => createMemorySelectionItem(memory)).join('')}
           </div>
         </div>
-        
+
         <!-- Action Buttons -->
         <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(134, 88, 255, 0.2);">
           <button class="cancel-share-vault" style="flex: 1; padding: 12px 24px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
@@ -1713,17 +1695,16 @@ async function showShareVaultModal(personId) {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   // Add event listeners for the modal
   setupShareVaultModalListeners(modal, personId);
 }
 
 // Load memory capsules from storage - use the same logic as memories.js
 async function loadMemoryCapsules() {
-  console.log('📝 Loading memory capsules...');
-  
+
   try {
     // Try vault first (same as memories.js)
     try {
@@ -1737,7 +1718,7 @@ async function loadMemoryCapsules() {
           source: h.source || 'unknown',
           type: 'vault'
         }));
-        console.log('📦 Loaded from vault:', memories.length, 'memories');
+
         return memories;
       }
     } catch {}
@@ -1746,17 +1727,17 @@ async function loadMemoryCapsules() {
     try {
       const response = await chrome.runtime.sendMessage({ action: 'getAllMemories', limit: 1000, offset: 0 });
       if (response && response.success && response.memories && response.memories.length > 0) {
-        console.log('📦 Loaded from background:', response.memories.length, 'memories');
+
         return response.memories;
       }
     } catch {}
-    
+
     // Fallback to chrome storage (same as memories.js)
     const result = await chrome.storage.local.get(['emma_memories']);
     const memories = result.emma_memories || [];
-    console.log('📦 Loaded from chrome storage:', memories.length, 'memories');
+
     return memories;
-    
+
   } catch (error) {
     console.error('❌ Failed to load memory capsules:', error);
     return [];
@@ -1769,7 +1750,7 @@ function createMemorySelectionItem(memory) {
   const memoryType = getMemoryType(memory);
   const memoryDate = getMemoryDate(memory);
   const memoryPreview = getMemoryPreview(memory);
-  
+
   return `
     <div class="memory-item" data-memory-id="${escapeHtml(memory.id || memory.header?.id)}" style="padding: 12px; border-bottom: 1px solid rgba(134, 88, 255, 0.1); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.3s;">
       <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1;">
@@ -1865,28 +1846,28 @@ function setupShareVaultModalListeners(modal, personId) {
         opt.style.background = 'rgba(255, 255, 255, 0.05)';
         opt.style.border = '2px solid rgba(255, 255, 255, 0.1)';
       });
-      
+
       // Add active state to clicked option
       this.style.background = 'rgba(134, 88, 255, 0.1)';
       this.style.border = '2px solid rgba(134, 88, 255, 0.3)';
-      
+
       // Update all memory items to this permission
       const permission = this.dataset.permission;
       updateAllMemoryPermissions(permission);
     });
   });
-  
+
   // Select all/none buttons
   modal.querySelector('.select-all-memories')?.addEventListener('click', function() {
     const checkboxes = modal.querySelectorAll('.memory-checkbox');
     checkboxes.forEach(cb => cb.checked = true);
   });
-  
+
   modal.querySelector('.select-none-memories')?.addEventListener('click', function() {
     const checkboxes = modal.querySelectorAll('.memory-checkbox');
     checkboxes.forEach(cb => cb.checked = false);
   });
-  
+
   // Individual memory permission buttons
   modal.addEventListener('click', function(e) {
     if (e.target.classList.contains('permission-mini')) {
@@ -1895,16 +1876,16 @@ function setupShareVaultModalListeners(modal, personId) {
       updateMemoryPermission(memoryItem, permission);
     }
   });
-  
+
   // Close modal
   modal.querySelector('.close-share-vault-modal')?.addEventListener('click', function() {
     modal.remove();
   });
-  
+
   modal.querySelector('.cancel-share-vault')?.addEventListener('click', function() {
     modal.remove();
   });
-  
+
   // Confirm sharing
   modal.querySelector('.confirm-share-vault')?.addEventListener('click', function() {
     confirmVaultSharing(personId, modal);
@@ -1915,7 +1896,7 @@ function setupShareVaultModalListeners(modal, personId) {
 function updateAllMemoryPermissions(permission) {
   const modal = document.querySelector('.share-vault-modal');
   if (!modal) return;
-  
+
   const memoryItems = modal.querySelectorAll('.memory-item');
   memoryItems.forEach(item => updateMemoryPermission(item, permission));
 }
@@ -1923,14 +1904,14 @@ function updateAllMemoryPermissions(permission) {
 // Update permission for a specific memory
 function updateMemoryPermission(memoryItem, permission) {
   const permissionButtons = memoryItem.querySelectorAll('.permission-mini');
-  
+
   // Reset all buttons
   permissionButtons.forEach(btn => {
     btn.style.background = 'rgba(255, 255, 255, 0.05)';
     btn.style.border = '1px solid rgba(255, 255, 255, 0.2)';
     btn.style.color = '#cccccc';
   });
-  
+
   // Highlight selected permission
   const selectedBtn = memoryItem.querySelector(`[data-permission="${permission}"]`);
   if (selectedBtn) {
@@ -1943,44 +1924,43 @@ function updateMemoryPermission(memoryItem, permission) {
 // Confirm and process vault sharing
 async function confirmVaultSharing(personId, modal) {
   try {
-    console.log('🔐 Processing vault sharing for person:', personId);
-    
+
     // Get selected memories and their permissions
     const selectedMemories = [];
     const memoryItems = modal.querySelectorAll('.memory-item');
-    
+
     memoryItems.forEach(item => {
       const checkbox = item.querySelector('.memory-checkbox');
       if (checkbox?.checked) {
         const memoryId = item.dataset.memoryId;
         const activePermission = item.querySelector('.permission-mini[style*="rgb(134, 88, 255)"]');
         const permission = activePermission?.dataset.permission || 'view';
-        
+
         selectedMemories.push({
           memoryId,
           permission
         });
       }
     });
-    
+
     if (selectedMemories.length === 0) {
       showNotification('Please select at least one memory to share', 'error');
       return;
     }
-    
+
     // Get person details
     const person = allPeople.find(p => p.id === parseInt(personId));
     if (!person) {
       showNotification('Person not found', 'error');
       return;
     }
-    
+
     // Check if person has crypto identity
     if (!person.keyFingerprint) {
       showNotification('This person does not have a cryptographic identity yet', 'error');
       return;
     }
-    
+
     // Create sharing record
     const sharingRecord = {
       id: `share_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -1991,13 +1971,13 @@ async function confirmVaultSharing(personId, modal) {
       createdAt: new Date().toISOString(),
       status: 'active'
     };
-    
+
     // Store sharing record locally
     await storeVaultSharingRecord(sharingRecord);
-    
+
     // Get vault ID (for now, use default vault)
     const vaultId = await getCurrentVaultId();
-    
+
     // Determine overall permissions (highest permission level)
     const permissions = {
       read: true,
@@ -2006,25 +1986,23 @@ async function confirmVaultSharing(personId, modal) {
       share: false, // For now, don't allow re-sharing
       admin: false
     };
-    
+
     // Initiate P2P sharing if available
     if (p2pManager && person.keyFingerprint) {
       try {
-        console.log('🌐 Initiating HML Sync vault share...');
-        
+
         // Add person to monitoring for incoming shares
         await p2pManager.addPeerToMonitor(person.keyFingerprint);
-        
+
         // Share vault via P2P
         const shareId = await p2pManager.shareVault(
           vaultId,
           person.keyFingerprint,
           permissions
         );
-        
-        console.log('✅ HML Sync share initiated:', shareId);
+
         showNotification(`HML Sync: Vault sharing initiated with ${person.name}! They will receive a notification when online.`, 'success');
-        
+
       } catch (p2pError) {
         console.error('⚠️ HML Sync sharing failed, but local record saved:', p2pError);
         showNotification(`Vault access recorded locally. HML Sync will retry when ${person.name} is online.`, 'info');
@@ -2033,11 +2011,9 @@ async function confirmVaultSharing(personId, modal) {
       // Fallback: local only
       showNotification(`Vault access shared with ${person.name}! ${selectedMemories.length} memories shared locally.`, 'success');
     }
-    
+
     modal.remove();
-    
-    console.log('✅ Vault sharing completed:', sharingRecord);
-    
+
   } catch (error) {
     console.error('❌ Failed to share vault:', error);
     showNotification('Failed to share vault access: ' + error.message, 'error');
@@ -2065,19 +2041,17 @@ async function storeVaultSharingRecord(sharingRecord) {
     } catch (error) {
       sharingRecords = JSON.parse(localStorage.getItem('emma_vault_sharing') || '[]');
     }
-    
+
     // Add new record
     sharingRecords.push(sharingRecord);
-    
+
     // Save back to storage
     try {
       await chrome.storage.local.set({ emma_vault_sharing: sharingRecords });
     } catch (error) {
       localStorage.setItem('emma_vault_sharing', JSON.stringify(sharingRecords));
     }
-    
-    console.log('💾 Vault sharing record stored:', sharingRecord.id);
-    
+
   } catch (error) {
     console.error('❌ Failed to store sharing record:', error);
     throw error;
@@ -2086,8 +2060,7 @@ async function storeVaultSharingRecord(sharingRecord) {
 
 // View person details
 async function viewPerson(personId) {
-  console.log('📋 Viewing person:', personId);
-  
+
   try {
     // Get person data
     let people = [];
@@ -2097,13 +2070,13 @@ async function viewPerson(personId) {
     } catch (error) {
       people = JSON.parse(localStorage.getItem('emma_people') || '[]');
     }
-    
+
     const person = people.find(p => p.id === personId);
     if (!person) {
       showNotification('Person not found', 'error');
       return;
     }
-    
+
     // Get identity data if it exists
     let identity = null;
     try {
@@ -2112,7 +2085,7 @@ async function viewPerson(personId) {
     } catch (error) {
       identity = JSON.parse(localStorage.getItem(`emma_identity_${personId}`) || 'null');
     }
-    
+
     showPersonDetailModal(person, identity);
   } catch (error) {
     console.error('❌ Failed to load person details:', error);
@@ -2124,10 +2097,10 @@ async function viewPerson(personId) {
 async function savePeople() {
   try {
     await chrome.storage.local.set({ emma_people: allPeople });
-    console.log('💾 Saved to chrome.storage:', allPeople.length, 'people');
+
   } catch (error) {
     localStorage.setItem('emma_people', JSON.stringify(allPeople));
-    console.log('💾 Saved to localStorage:', allPeople.length, 'people');
+
   }
 }
 
@@ -2155,9 +2128,9 @@ function showNotification(message, type = 'info') {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
   `;
-  
+
   document.body.appendChild(notification);
-  
+
   // Remove after 3 seconds
   setTimeout(() => {
     if (notification.parentNode) {
@@ -2177,38 +2150,35 @@ window.exportIdentity = exportIdentity;
 window.copyFingerprint = copyFingerprint;
 
 // Test that the function is properly exposed
-console.log('🔍 addPerson exposed to window:', typeof window.addPerson);
 
 // Add universal navigation handler
 function setupUniversalNavigation() {
   const backBtn = document.getElementById('people-back-btn');
   if (backBtn) {
-    console.log('🔥 PEOPLE: Setting up back navigation');
-    
-    // FORCE EMERGENCY BUTTON VISIBILITY AND INTERACTION
+
     backBtn.style.pointerEvents = 'auto';
     backBtn.style.position = 'relative';
     backBtn.style.zIndex = '9999999';
     backBtn.style.border = '2px solid red'; // Red debug border
-    
+
     backBtn.addEventListener('click', (e) => {
-      console.log('🔥 PEOPLE: Back button clicked');
+
       e.preventDefault();
       e.stopPropagation();
-      
+
       try {
         if (window.location && window.location.href.includes('people.html')) {
-          console.log('🔥 PEOPLE: Navigating to welcome.html');
+
           window.location.href = 'welcome.html';
         } else {
-          console.log('🔥 PEOPLE: Going back in history');
+
           window.history.back();
         }
       } catch (error) {
         console.error('🔥 PEOPLE: Navigation error:', error);
-        try { 
-          console.log('🔥 PEOPLE: Emergency fallback to welcome.html');
-          window.location.href = 'welcome.html'; 
+        try {
+
+          window.location.href = 'welcome.html';
         } catch {}
       }
     });

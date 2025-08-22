@@ -102,7 +102,7 @@ class AssistantExperience extends ExperiencePopup {
                    <button class="suggestion-chip" onclick="window.assistantInstance?.addSuggestion('Family meals')">Family meals</button>
                  </div>
                </div>
- 
+
                <!-- Voice Capture -->
                <div class="voice-capture">
                  <div class="voice-button-container">
@@ -119,7 +119,7 @@ class AssistantExperience extends ExperiencePopup {
                  </div>
                  <div class="voice-status" id="voiceStatus">Tap to start recording</div>
                </div>
- 
+
                <!-- Transcription -->
                <div class="transcription">
                  <div class="transcription-label">Your Story</div>
@@ -127,7 +127,7 @@ class AssistantExperience extends ExperiencePopup {
                    <span class="transcription-placeholder">Your words will appear here as you speak...</span>
                  </div>
                </div>
- 
+
                <!-- Progress -->
                <div class="wizard-progress">
                  <div class="progress-bar">
@@ -137,7 +137,7 @@ class AssistantExperience extends ExperiencePopup {
                    <span id="currentStep">1</span> of <span id="totalSteps">5</span> questions
                  </div>
                </div>
- 
+
                <!-- Actions -->
                <div class="wizard-actions">
                  <button class="wizard-btn wizard-btn-secondary" onclick="window.assistantInstance?.skipQuestion()">Skip</button>
@@ -166,7 +166,7 @@ class AssistantExperience extends ExperiencePopup {
               </div>
             </div>
           </div>
-          
+
           <!-- Input Area -->
           <div class="chat-input-area">
             <input type="text" id="chat-input" placeholder="Ask me anything..." class="chat-input">
@@ -221,7 +221,7 @@ class AssistantExperience extends ExperiencePopup {
       .emma-experience-popup {
         padding: 0 !important;
       }
-      
+
              .assistant-experience {
          position: absolute;
          top: 0;
@@ -257,11 +257,7 @@ class AssistantExperience extends ExperiencePopup {
         display: flex;
         align-items: center;
         gap: 8px;
-      }
-
-
-
-      .vault-btn, .settings-btn {
+      }      .vault-btn, .settings-btn {
         background: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: white;
@@ -300,11 +296,7 @@ class AssistantExperience extends ExperiencePopup {
         color: white;
         background: rgba(255, 255, 255, 0.1);
         border-radius: 4px;
-      }
-
-
-
-      /* Message Avatar Styles */
+      }      /* Message Avatar Styles */
       .message-avatar {
         width: 28px;
         height: 28px;
@@ -1110,51 +1102,48 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   async initialize() {
-    console.log('💜 AssistantExperience: Initializing assistant interface');
-    
+
     // Store global reference for onclick handlers
     window.assistantInstance = this;
-    
+
     // Hide the base popup header since we're creating our own
     const baseHeader = this.element.querySelector('.popup-header');
     if (baseHeader) {
       baseHeader.style.display = 'none';
     }
-    
+
     // Add direct event listener for settings button as backup
     setTimeout(() => {
       const settingsBtn = this.element.querySelector('#settings-btn');
       if (settingsBtn) {
-        console.log('🔧 Found settings button, adding direct event listener');
-        console.log('🔧 Settings button element:', settingsBtn);
+
         console.log('🔧 Settings button styles:', getComputedStyle(settingsBtn));
-        
+
         // Add multiple event listeners for debugging
         settingsBtn.addEventListener('click', (e) => {
-          console.log('🔧 Settings button clicked via direct event listener');
-          console.log('🔧 Event:', e);
+
           e.preventDefault();
           e.stopPropagation();
           this.navigateToSettings();
         });
-        
+
         settingsBtn.addEventListener('mousedown', (e) => {
-          console.log('🔧 Settings button mousedown detected');
+
         });
-        
+
         settingsBtn.addEventListener('mouseup', (e) => {
-          console.log('🔧 Settings button mouseup detected');
+
         });
-        
+
         // Button is confirmed working - remove debug styling
         // settingsBtn.style.border = '2px solid red';
         // settingsBtn.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        
+
       } else {
-        console.log('❌ Settings button not found in DOM');
+
       }
     }, 100);
-    
+
     // Ensure content area uses natural document flow (so height can be measured)
     const contentElement = this.element.querySelector('.popup-content');
     if (contentElement) {
@@ -1163,7 +1152,7 @@ class AssistantExperience extends ExperiencePopup {
       contentElement.style.margin = '0';
       contentElement.style.overflow = 'visible';
     }
-    
+
     // Setup chat input
     const chatInput = this.element.querySelector('#chat-input');
     if (chatInput) {
@@ -1176,22 +1165,21 @@ class AssistantExperience extends ExperiencePopup {
 
     // Load status info
     await this.loadStatusInfo();
-    
+
     // Initialize voice wizard
     this.initializeVoiceWizard();
-    
+
     // Resize popup to fit content exactly (no internal scroll)
     setTimeout(() => { this.resizeToContent({ minHeight: 700 }); this.ensureOnScreen(); }, 0);
     // Safety re-clamp after render settles
     setTimeout(() => this.ensureOnScreen(), 50);
-    
+
     // Load initial data for home dashboard
     await this.loadHomeDashboardData();
   }
 
   initializeVoiceWizard() {
-    console.log('🎤 AssistantExperience: Initializing voice wizard');
-    
+
     // Voice wizard state
     this.isRecording = false;
     this.recognition = null;
@@ -1236,8 +1224,7 @@ class AssistantExperience extends ExperiencePopup {
       this.recognition.onend = () => {
         this.stopRecording();
       };
-      
-      console.log('🎤 Speech recognition initialized successfully');
+
     } else {
       console.warn('🎤 Speech recognition not supported in this browser');
     }
@@ -1247,16 +1234,15 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   setupSafeHeight() {
-    console.log('📏 AssistantExperience: Setting up safe height adjustment');
-    
+
     // Simple one-time height calculation after content loads
     setTimeout(() => {
       this.calculateOptimalHeight();
     }, 200);
-    
+
     // Additional recalculation after a bit more time to catch any delayed rendering
     setTimeout(() => {
-      console.log('📏 Second height calculation for safety');
+
       this.calculateOptimalHeight();
     }, 500);
   }
@@ -1276,44 +1262,33 @@ class AssistantExperience extends ExperiencePopup {
 
       // Calculate content height - use total scrollHeight for accuracy
       let contentHeight = activeTab.scrollHeight;
-      
-      console.log('📏 Tab content details:', {
-        tab: activeTab.dataset.tab,
-        scrollHeight: activeTab.scrollHeight,
-        offsetHeight: activeTab.offsetHeight,
-        clientHeight: activeTab.clientHeight
-      });
-      
+
       // Add extra padding to ensure nothing gets cut off
       contentHeight += 60; // Extra padding for safety
-      
+
              // For voice wizard, ensure we account for all sections with extra padding
        if (activeTab.dataset.tab === 'home') {
          const sections = [
            '.emma-section',
-           '.voice-capture', 
+           '.voice-capture',
            '.transcription',
            '.wizard-progress',
            '.wizard-actions'
          ];
-         
+
          let sectionTotal = 0;
          sections.forEach(selector => {
            const section = activeTab.querySelector(selector);
            if (section) {
              sectionTotal += section.scrollHeight;
-             console.log(`📏 Section ${selector}:`, section.scrollHeight);
+
            }
          });
-         
+
          // Add substantial extra space for voice wizard to prevent cutoff
          const voiceWizardPadding = 120; // Extra space for buttons
          contentHeight = Math.max(contentHeight, sectionTotal + voiceWizardPadding);
-         console.log('📏 Voice wizard height comparison:', {
-           tabScrollHeight: activeTab.scrollHeight + 60,
-           sectionsTotal: sectionTotal + voiceWizardPadding,
-           using: contentHeight
-         });
+
        }
 
        // Calculate optimal height with generous minimums for voice wizard
@@ -1324,23 +1299,16 @@ class AssistantExperience extends ExperiencePopup {
          maxHeight
        );
 
-      console.log('📏 Safe height calculation:', {
-        headerHeight,
-        contentHeight,
-        optimalHeight
-      });
-
       // Apply height to parent container (which positions relative to orb)
       if (this.element) {
         const currentTop = parseInt(this.element.style.top) || 0;
         const currentHeight = parseInt(this.element.style.height) || 400;
         const heightDifference = optimalHeight - currentHeight;
         const newTop = Math.max(20, currentTop - heightDifference);
-        
+
         this.element.style.height = optimalHeight + 'px';
         this.element.style.top = newTop + 'px';
-        
-        console.log('📏 Applied safe height:', { optimalHeight, newTop });
+
       }
 
     } catch (error) {
@@ -1350,7 +1318,7 @@ class AssistantExperience extends ExperiencePopup {
 
   setupDynamicHeight() {
     console.log('📏 AssistantExperience: Setting up dynamic height (DISABLED)');
-    
+
     // Function to calculate and apply optimal height
     const adjustHeight = () => {
       try {
@@ -1363,14 +1331,14 @@ class AssistantExperience extends ExperiencePopup {
 
         // Reset any previous height constraints
         assistantElement.style.height = 'auto';
-        
+
         // Calculate content height
         const header = this.element.querySelector('.custom-header');
         const headerHeight = header ? header.offsetHeight : 0;
-        
+
         // Get content height by measuring the actual content
         let contentHeight = 0;
-        
+
         if (activeTabContent.dataset.tab === 'home') {
           // Voice wizard content
           const wizardContainer = activeTabContent.querySelector('.voice-wizard-container');
@@ -1380,62 +1348,48 @@ class AssistantExperience extends ExperiencePopup {
             const transcription = wizardContainer.querySelector('.transcription');
             const progress = wizardContainer.querySelector('.wizard-progress');
             const actions = wizardContainer.querySelector('.wizard-actions');
-            
-            contentHeight = (emmaSection?.offsetHeight || 0) + 
-                          (voiceCapture?.offsetHeight || 0) + 
-                          (transcription?.offsetHeight || 0) + 
-                          (progress?.offsetHeight || 0) + 
-                          (actions?.offsetHeight || 0) + 
+
+            contentHeight = (emmaSection?.offsetHeight || 0) +
+                          (voiceCapture?.offsetHeight || 0) +
+                          (transcription?.offsetHeight || 0) +
+                          (progress?.offsetHeight || 0) +
+                          (actions?.offsetHeight || 0) +
                           40; // padding
           }
         } else {
           // Other tabs - measure their content
           contentHeight = activeTabContent.scrollHeight;
         }
-        
+
         // Calculate total height needed
         const totalHeight = headerHeight + contentHeight;
-        
+
         // Apply constraints
         const minHeight = 400;
         const maxHeight = window.innerHeight - 40; // Leave 40px margin
         const optimalHeight = Math.max(minHeight, Math.min(totalHeight, maxHeight));
-        
-        console.log('📏 Height calculation:', {
-          headerHeight,
-          contentHeight,
-          totalHeight,
-          optimalHeight,
-          windowHeight: window.innerHeight
-        });
-        
+
         // Apply the height while maintaining orb-anchored positioning
         assistantElement.style.height = optimalHeight + 'px';
-        
+
         // Update the parent popup container height while preserving its fixed positioning
         if (this.element) {
           // Keep the existing position but update height
           const currentTop = parseInt(this.element.style.top) || 0;
           const currentHeight = parseInt(this.element.style.height) || 400;
-          
+
           // Calculate new top position to maintain bottom anchor
           // (grow upward from the bottom edge)
           const heightDifference = optimalHeight - currentHeight;
           const newTop = currentTop - heightDifference;
-          
+
           // Apply the new positioning
           this.element.style.height = optimalHeight + 'px';
           this.element.style.top = Math.max(20, newTop) + 'px'; // Ensure it doesn't go off-screen
-          
-          console.log('📏 Position adjustment:', {
-            currentTop,
-            currentHeight,
-            optimalHeight,
-            heightDifference,
-            newTop: Math.max(20, newTop)
+
           });
         }
-        
+
       } catch (error) {
         console.error('📏 Error adjusting height:', error);
       }
@@ -1443,16 +1397,16 @@ class AssistantExperience extends ExperiencePopup {
 
     // Initial adjustment
     setTimeout(() => adjustHeight(), 100);
-    
+
     // Store the function for later use
     this.adjustHeight = adjustHeight;
-    
+
     // Set up mutation observer to watch for content changes
     if (window.MutationObserver) {
       this.heightObserver = new MutationObserver(() => {
         setTimeout(() => adjustHeight(), 50);
       });
-      
+
       const assistantElement = this.element.querySelector('.assistant-experience');
       if (assistantElement) {
         this.heightObserver.observe(assistantElement, {
@@ -1463,13 +1417,13 @@ class AssistantExperience extends ExperiencePopup {
         });
       }
     }
-    
+
     // Adjust on window resize
     this.resizeHandler = () => {
       setTimeout(() => adjustHeight(), 100);
     };
     window.addEventListener('resize', this.resizeHandler);
-    
+
     // DISABLED: Dynamic height adjustments that were causing loops
     // this.originalSwitchTab = this.switchTab;
     // this.switchTab = (tabName) => {
@@ -1483,7 +1437,7 @@ class AssistantExperience extends ExperiencePopup {
       // TODO: Load actual memory count and activity
       const memoryCountEl = this.element.querySelector('#memory-count');
       const lastActivityEl = this.element.querySelector('#last-activity');
-      
+
       if (memoryCountEl) memoryCountEl.textContent = '157';
       if (lastActivityEl) lastActivityEl.textContent = '2 hours ago';
     } catch (error) {
@@ -1500,11 +1454,10 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   sendMessage(message) {
-    console.log('💜 AssistantExperience: Sending message:', message);
-    
+
     // Add user message to chat
     this.addMessageToChat(message, 'user');
-    
+
     // Simulate Emma response
     setTimeout(() => {
       this.respondToMessage(message);
@@ -1517,16 +1470,16 @@ class AssistantExperience extends ExperiencePopup {
 
     const messageEl = document.createElement('div');
     messageEl.className = sender === 'user' ? 'user-message' : 'emma-message';
-    
+
     const avatar = sender === 'user' ? '👤' : '👩‍💼';
-    
+
     messageEl.innerHTML = `
       <div class="message-avatar">${avatar}</div>
       <div class="message-content">
         <p>${message}</p>
       </div>
     `;
-    
+
     messagesContainer.appendChild(messageEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
@@ -1534,7 +1487,7 @@ class AssistantExperience extends ExperiencePopup {
   respondToMessage(userMessage) {
     const lowerMessage = userMessage.toLowerCase();
     let response = "I understand you'd like help with that. Let me assist you!";
-    
+
     if (lowerMessage.includes('memory') || lowerMessage.includes('remember')) {
       response = "I can help you with your memories! Would you like me to show you recent memories or help you create a new one?";
     } else if (lowerMessage.includes('photo') || lowerMessage.includes('picture')) {
@@ -1544,27 +1497,27 @@ class AssistantExperience extends ExperiencePopup {
     } else if (lowerMessage.includes('organize')) {
       response = "Great idea! I can help organize your memories by date, people, or topics. Which would you prefer?";
     }
-    
+
     this.addMessageToChat(response, 'emma');
   }
 
   captureMemory() {
-    console.log('💜 AssistantExperience: Capture memory clicked');
+
     this.showNotification('Memory capture feature coming soon!');
   }
 
   searchMemories() {
-    console.log('💜 AssistantExperience: Search memories clicked');
+
     this.sendMessage('Help me search my memories');
   }
 
   exportData() {
-    console.log('💜 AssistantExperience: Export data clicked');
+
     this.showNotification('Export feature coming soon!');
   }
 
   openSettings() {
-    console.log('💜 AssistantExperience: Settings clicked');
+
     this.showNotification('Opening settings...');
   }
 
@@ -1589,27 +1542,26 @@ class AssistantExperience extends ExperiencePopup {
 
   // DYNAMIC HEIGHT CALCULATION FOR EACH TAB
   calculateAndSetTabHeights() {
-    console.log('📏 CALCULATING EXACT TAB HEIGHTS...');
-    
+
     const popup = document.querySelector('.assistant-experience');
     const header = document.querySelector('.custom-header');
     const tabContainer = document.querySelector('.tab-content-container');
-    
+
     if (!popup || !header || !tabContainer) {
-      console.log('❌ Missing popup elements for height calculation');
+
       return;
     }
-    
+
     // Safety check - ensure popup is visible
     if (popup.offsetHeight === 0 || !popup.parentElement) {
-      console.log('❌ Popup not visible or not in DOM, skipping height calculation');
+
       return;
     }
-    
+
     // Get all tabs
     const tabs = ['home', 'chat', 'memories', 'actions'];
     const tabHeights = {};
-    
+
     tabs.forEach(tabName => {
       const tabContent = document.querySelector(`[data-tab="${tabName}"]`);
       if (tabContent) {
@@ -1618,13 +1570,11 @@ class AssistantExperience extends ExperiencePopup {
         tabContent.classList.add('active');
         tabContent.style.opacity = '1';
         tabContent.style.pointerEvents = 'auto';
-        
+
         // Calculate total content height
         const contentHeight = this.measureTabContent(tabContent, tabName);
         tabHeights[tabName] = contentHeight;
-        
-        console.log(`📐 Tab "${tabName}": ${contentHeight}px`);
-        
+
         // Restore original state
         if (!wasActive) {
           tabContent.classList.remove('active');
@@ -1633,28 +1583,27 @@ class AssistantExperience extends ExperiencePopup {
         }
       }
     });
-    
+
     // Set height for current active tab
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab) {
       const activeTabName = activeTab.getAttribute('data-tab');
       const requiredHeight = Math.max(tabHeights[activeTabName], 400); // Minimum 400px
       this.setPopupHeight(requiredHeight);
-      console.log(`🎯 Set popup height to ${requiredHeight}px for active tab "${activeTabName}"`);
+
     }
-    
+
     // Store heights for tab switching
     this.tabHeights = tabHeights;
   }
-  
+
   measureTabContent(tabElement, tabName) {
-    console.log(`📏 Measuring content for tab: ${tabName}`);
-    
+
     // Base measurements
     const header = document.querySelector('.custom-header');
     const headerHeight = header ? header.offsetHeight : 60;
     const padding = 40; // Container padding
-    
+
     if (tabName === 'home') {
       // Measure voice wizard sections
       const question = tabElement.querySelector('.emma-section');
@@ -1662,54 +1611,51 @@ class AssistantExperience extends ExperiencePopup {
       const transcription = tabElement.querySelector('.transcription');
       const progress = tabElement.querySelector('.wizard-progress');
       const actions = tabElement.querySelector('.wizard-actions');
-      
+
       let totalHeight = headerHeight + padding;
-      
+
       if (question) totalHeight += question.offsetHeight;
       if (voiceCapture) totalHeight += voiceCapture.offsetHeight;
       if (transcription) totalHeight += transcription.offsetHeight;
       if (progress) totalHeight += progress.offsetHeight;
       if (actions) totalHeight += actions.offsetHeight;
-      
+
       // Add gaps (20px between sections, 5 sections = 4 gaps)
       totalHeight += (4 * 20);
-      
-      console.log(`🎤 Voice wizard sections: question=${question?.offsetHeight}, voice=${voiceCapture?.offsetHeight}, transcription=${transcription?.offsetHeight}, progress=${progress?.offsetHeight}, actions=${actions?.offsetHeight}`);
-      
+
       return totalHeight;
     }
-    
+
     // For other tabs, measure all children
     let contentHeight = headerHeight + padding;
     const children = Array.from(tabElement.children);
     children.forEach(child => {
       contentHeight += child.offsetHeight;
     });
-    
+
     return contentHeight + 60; // Extra buffer
   }
-  
+
   setPopupHeight(height) {
     const popup = document.querySelector('.assistant-experience');
     const container = popup?.parentElement;
-    
+
     if (popup && container) {
-      console.log(`📏 BEFORE: container height=${container.style.height}, top=${container.style.top}`);
-      
+
       // Set the popup height
       popup.style.height = `${height}px`;
       popup.style.minHeight = `${height}px`;
-      
+
       // Ensure popup stays visible - don't change container positioning
       // The popup should already be positioned correctly by the orb system
       console.log(`📏 SET POPUP HEIGHT: ${height}px (keeping existing position)`);
-      console.log(`📏 AFTER: container height=${container.style.height}, top=${container.style.top}`);
+
     }
   }
 
   // Navigation Methods
   navigateToWelcome() {
-    console.log('🏠 AssistantExperience: Navigating to welcome page');
+
     this.close();
     setTimeout(() => {
       window.location.href = 'welcome.html';
@@ -1717,59 +1663,50 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   navigateToSettings() {
-    console.log('⚙️ AssistantExperience: Navigating to settings page');
-    console.log('⚙️ Current window.location.href:', window.location.href);
-    
+
     // NEW THEORY: Maybe this.close() is breaking the navigation context
-    console.log('🔍 NEW THEORY: Try navigation WITHOUT closing popup first...');
-    
+
     // Try navigation BEFORE closing
-    console.log('🔍 NEW THEORY: Navigating BEFORE close...');
+
     window.location.href = 'options.html';
-    
+
     // Close after a delay
     setTimeout(() => {
-      console.log('🔍 NEW THEORY: Closing popup after navigation...');
+
       this.close();
     }, 100);
   }
 
   navigateHome() {
-    console.log('🏠 AssistantExperience: Navigating to dashboard home');
-    console.log('🏠 Current window.location.href:', window.location.href);
-    
+
     // Navigate to the new dashboard
-    console.log('🏠 Navigating to dashboard-new.html...');
+
     window.location.href = 'dashboard-new.html';
-    
+
     // Close after a delay
     setTimeout(() => {
-      console.log('🏠 Closing popup after navigation...');
+
       this.close();
     }, 100);
   }
 
   // Test function for direct calling
   testSettingsNavigation() {
-    console.log('🧪 TEST: Direct settings navigation test');
-    console.log('🧪 Current location before test:', window.location.href);
-    
+
     // Test 1: Try navigating to welcome.html (should work)
-    console.log('🧪 TEST 1: Trying welcome.html...');
+
     window.location.href = 'welcome.html';
-    
+
     setTimeout(() => {
-      console.log('🧪 Location after welcome navigation:', window.location.href);
-      
+
       // Test 2: Try navigating to options.html from welcome
-      console.log('🧪 TEST 2: Now trying options.html from welcome...');
+
       window.location.href = 'options.html';
     }, 1000);
   }
 
   async openVaultDialog() {
-    console.log('🔒 AssistantExperience: Opening vault dialog');
-    
+
     try {
       // First check vault status
       let vaultStatus;
@@ -1778,8 +1715,6 @@ class AssistantExperience extends ExperiencePopup {
       } else if (window.emmaAPI?.vault?.status) {
         vaultStatus = await window.emmaAPI.vault.status();
       }
-
-      console.log('🔒 AssistantExperience: Vault status:', vaultStatus);
 
       // If vault is not initialized, show setup wizard
       if (!vaultStatus?.initialized) {
@@ -1803,13 +1738,12 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   showVaultSetupDialog() {
-    console.log('🔧 AssistantExperience: Showing vault setup dialog');
-    
+
     // Use the existing openVaultSetupWizard function if available
     if (typeof openVaultSetupWizard === 'function') {
       openVaultSetupWizard({
         onSuccess: (result) => {
-          console.log('✅ AssistantExperience: Vault setup completed', result);
+
           this.showVaultNotification('Vault setup completed successfully!');
         }
       });
@@ -1823,13 +1757,12 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   async showVaultUnlockDialog() {
-    console.log('🔓 AssistantExperience: Showing vault unlock dialog');
-    
+
     try {
       const passphrase = await this.showPasswordModal('Unlock Vault');
-      
+
       this.showVaultNotification('Unlocking vault...');
-      
+
       let result;
       if (window.emma?.vault) {
         const st = await window.emma.vault.status();
@@ -1840,7 +1773,7 @@ class AssistantExperience extends ExperiencePopup {
         this.showVaultNotification('Vault unlock not available in current mode');
         return;
       }
-      
+
       if (result && result.success) {
         this.showVaultNotification('Vault unlocked successfully! 🔓');
       } else {
@@ -1855,11 +1788,10 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   async showVaultLockDialog() {
-    console.log('🔒 AssistantExperience: Showing vault lock dialog');
-    
+
     const confirmed = confirm('Are you sure you want to lock the vault? You\'ll need to enter your passphrase to unlock it again.');
     if (!confirmed) return;
-    
+
     try {
       let result;
       if (window.emma?.vault?.lock) {
@@ -1870,7 +1802,7 @@ class AssistantExperience extends ExperiencePopup {
         this.showVaultNotification('Vault lock not available in current mode');
         return;
       }
-      
+
       if (result && result.success) {
         this.showVaultNotification('Vault locked successfully 🔒');
       } else {
@@ -1971,25 +1903,25 @@ class AssistantExperience extends ExperiencePopup {
           </div>
         </div>
       `;
-      
+
       const modalElement = document.createElement('div');
       modalElement.innerHTML = modalHTML;
       const modal = modalElement.firstElementChild;
       document.body.appendChild(modal);
-      
+
       const input = modal.querySelector('input[type="password"]');
       const cancelBtn = modal.querySelector('.cancel-btn');
       const confirmBtn = modal.querySelector('.confirm-btn');
-      
+
       // Focus the input
       setTimeout(() => input.focus(), 100);
-      
+
       const cleanup = () => {
         if (modal.parentNode) {
           modal.parentNode.removeChild(modal);
         }
       };
-      
+
       const handleSubmit = () => {
         const value = input.value.trim();
         if (value) {
@@ -1997,12 +1929,12 @@ class AssistantExperience extends ExperiencePopup {
           resolve(value);
         }
       };
-      
+
       const handleCancel = () => {
         cleanup();
         reject(new Error('User cancelled'));
       };
-      
+
       // Add hover effects
       cancelBtn.addEventListener('mouseenter', () => {
         cancelBtn.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -2012,7 +1944,7 @@ class AssistantExperience extends ExperiencePopup {
         cancelBtn.style.background = 'rgba(255, 255, 255, 0.1)';
         cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.3)';
       });
-      
+
       confirmBtn.addEventListener('mouseenter', () => {
         confirmBtn.style.background = 'white';
         confirmBtn.style.transform = 'translateY(-1px)';
@@ -2029,7 +1961,7 @@ class AssistantExperience extends ExperiencePopup {
         if (e.key === 'Enter') handleSubmit();
         if (e.key === 'Escape') handleCancel();
       });
-      
+
       // Click outside to cancel
       modal.addEventListener('click', (e) => {
         if (e.target === modal) handleCancel();
@@ -2039,15 +1971,14 @@ class AssistantExperience extends ExperiencePopup {
 
      showVaultNotification(message) {
      // TEMPORARY DEBUG: Also show browser alert for visibility testing
-     console.log('🔔 NOTIFICATION:', message);
-     
+
      // Create a temporary notification with Emma branding
      const notification = document.createElement('div');
-    
+
     // Determine notification type and icon
     let icon = '🔐';
     let bgColor = 'linear-gradient(135deg, rgba(147, 112, 219, 0.95), rgba(123, 104, 238, 0.95))';
-    
+
     if (message.includes('successfully') || message.includes('completed')) {
       icon = '✅';
       bgColor = 'linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.95))';
@@ -2057,14 +1988,14 @@ class AssistantExperience extends ExperiencePopup {
     } else if (message.includes('Redirecting') || message.includes('Unlocking')) {
       icon = '🔄';
     }
-    
+
     notification.innerHTML = `
       <div style="display: flex; align-items: center; gap: 12px;">
         <span style="font-size: 16px;">${icon}</span>
         <span>${message}</span>
       </div>
     `;
-    
+
          notification.style.cssText = `
        position: fixed !important;
        top: 24px !important;
@@ -2084,7 +2015,7 @@ class AssistantExperience extends ExperiencePopup {
        max-width: 350px !important;
        pointer-events: none !important;
      `;
-    
+
     // Add slideInOut animation
     const style = document.createElement('style');
     style.textContent = `
@@ -2095,21 +2026,14 @@ class AssistantExperience extends ExperiencePopup {
       }
     `;
     document.head.appendChild(style);
-    
+
          // Force append to the highest level DOM to escape any stacking contexts
      const topLevelContainer = document.documentElement || document.body;
      topLevelContainer.appendChild(notification);
-     
+
      // Force the notification to the front immediately
      notification.style.zIndex = '2147483647';
-     
-     console.log('🔔 Notification added to DOM:', {
-       parent: topLevelContainer.tagName,
-       zIndex: notification.style.zIndex,
-       position: notification.style.position,
-       element: notification
-     });
-    
+
     // Remove after animation
     setTimeout(() => {
       if (notification.parentNode) {
@@ -2122,13 +2046,13 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   navigateToMemoryGallery() {
-    console.log('📸 AssistantExperience: Navigating to memory gallery');
+
     // Simple direct navigation like the dashboard
     window.location.href = 'memory-gallery-new.html';
   }
 
   createNewMemory() {
-    console.log('➕ AssistantExperience: Opening memory creation wizard');
+
     this.showCreateMemoryModal();
   }
 
@@ -2164,7 +2088,7 @@ class AssistantExperience extends ExperiencePopup {
               <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
             </svg>
           </div>
-          
+
           <h2 style="
             margin: 0 0 24px 0;
             font-size: 28px;
@@ -2175,7 +2099,7 @@ class AssistantExperience extends ExperiencePopup {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             text-align: center;
           ">Create New Memory</h2>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="
               display: block;
@@ -2197,7 +2121,7 @@ class AssistantExperience extends ExperiencePopup {
               transition: all 0.2s ease;
             ">
           </div>
-          
+
           <div style="margin-bottom: 32px;">
             <label style="
               display: block;
@@ -2221,7 +2145,7 @@ class AssistantExperience extends ExperiencePopup {
               min-height: 80px;
             "></textarea>
           </div>
-          
+
           <div style="
             display: flex;
             gap: 12px;
@@ -2255,34 +2179,34 @@ class AssistantExperience extends ExperiencePopup {
         </div>
       </div>
     `;
-    
+
     // Create modal element
     const modalElement = document.createElement('div');
     modalElement.innerHTML = modalHTML;
     const modal = modalElement.firstElementChild;
     document.body.appendChild(modal);
-    
+
     // Focus on title input
     setTimeout(() => {
       const titleInput = modal.querySelector('#memory-title-input');
       titleInput.focus();
     }, 100);
-    
+
     // Add event listeners
     const createBtn = modal.querySelector('.create-memory-btn');
     const cancelBtn = modal.querySelector('.cancel-create-btn');
     const titleInput = modal.querySelector('#memory-title-input');
     const descriptionInput = modal.querySelector('#memory-description-input');
-    
+
     createBtn.addEventListener('click', async () => {
       const title = titleInput.value.trim();
       if (!title) {
         titleInput.style.borderColor = 'rgba(255, 99, 71, 0.8)';
         return;
       }
-      
+
       const description = descriptionInput.value.trim();
-      
+
       try {
         // Create the memory using Emma's API
         const memoryData = {
@@ -2292,39 +2216,39 @@ class AssistantExperience extends ExperiencePopup {
           type: 'manual',
           tags: []
         };
-        
+
         if (window.emmaAPI && window.emmaAPI.memories && window.emmaAPI.memories.save) {
           await window.emmaAPI.memories.save(memoryData);
           this.showVaultNotification('✅ Memory created successfully!');
         } else {
-          console.log('📝 Memory would be created:', memoryData);
+
           this.showVaultNotification('📝 Memory created (demo mode)');
         }
-        
+
         modal.remove();
-        
+
         // Navigate to memory gallery to see the new memory
         setTimeout(() => {
           this.navigateToMemoryGallery();
         }, 1000);
-        
+
       } catch (error) {
         console.error('Failed to create memory:', error);
         this.showVaultNotification('❌ Failed to create memory');
       }
     });
-    
+
     cancelBtn.addEventListener('click', () => {
       modal.remove();
     });
-    
+
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-    
+
     // Handle Enter key in title input
     titleInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -2332,28 +2256,28 @@ class AssistantExperience extends ExperiencePopup {
         createBtn.click();
       }
     });
-    
+
     // Reset border color on input
     titleInput.addEventListener('input', () => {
       titleInput.style.borderColor = 'rgba(255, 255, 255, 0.2)';
     });
-    
+
     // Add hover effects
     createBtn.addEventListener('mouseenter', () => {
       createBtn.style.background = 'rgba(255, 255, 255, 1)';
       createBtn.style.transform = 'translateY(-1px)';
     });
-    
+
     createBtn.addEventListener('mouseleave', () => {
       createBtn.style.background = 'rgba(255, 255, 255, 0.9)';
       createBtn.style.transform = 'translateY(0)';
     });
-    
+
     cancelBtn.addEventListener('mouseenter', () => {
       cancelBtn.style.background = 'rgba(255, 255, 255, 0.2)';
       cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.5)';
     });
-    
+
     cancelBtn.addEventListener('mouseleave', () => {
       cancelBtn.style.background = 'rgba(255, 255, 255, 0.1)';
       cancelBtn.style.borderColor = 'rgba(255, 255, 255, 0.3)';
@@ -2366,8 +2290,7 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   showRememberDialog() {
-    console.log('🧠 AssistantExperience: Opening Remember dialog');
-    
+
     // Create and show the Remember dialog
     const modalHTML = `
       <div class="remember-modal" style="
@@ -2400,7 +2323,7 @@ class AssistantExperience extends ExperiencePopup {
               <path d="M9.5,13A1.5,1.5 0 0,0 8,14.5A1.5,1.5 0 0,0 9.5,16A1.5,1.5 0 0,0 11,14.5A1.5,1.5 0 0,0 9.5,13M14.5,13A1.5,1.5 0 0,0 13,14.5A1.5,1.5 0 0,0 14.5,16A1.5,1.5 0 0,0 16,14.5A1.5,1.5 0 0,0 14.5,13M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7H15L13.5,7.5C13.1,7.4 12.6,7.5 12.1,7.8L7,10.24V12L11.5,9.5L12.5,9.5H21M7,18A4,4 0 0,0 11,22A4,4 0 0,0 15,18A4,4 0 0,0 11,14A4,4 0 0,0 7,18Z"/>
             </svg>
           </div>
-          
+
           <h2 style="
             margin: 0 0 16px 0;
             font-size: 28px;
@@ -2410,7 +2333,7 @@ class AssistantExperience extends ExperiencePopup {
             -webkit-text-fill-color: transparent;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           ">Emma's Memory</h2>
-          
+
           <p style="
             margin: 0 0 24px 0;
             font-size: 16px;
@@ -2420,7 +2343,7 @@ class AssistantExperience extends ExperiencePopup {
           ">
             I'm here to help you remember. Wherever you are, whatever you're doing, I can capture moments, recall details, and connect memories across time.
           </p>
-          
+
           <div style="
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -2448,7 +2371,7 @@ class AssistantExperience extends ExperiencePopup {
               <li>🎤 <strong>Voice Activation</strong> - Just say "Emma, remember this" anywhere</li>
             </ul>
           </div>
-          
+
           <div style="
             display: flex;
             gap: 12px;
@@ -2483,50 +2406,50 @@ class AssistantExperience extends ExperiencePopup {
         </div>
       </div>
     `;
-    
+
     // Create modal element
     const modalElement = document.createElement('div');
     modalElement.innerHTML = modalHTML;
     const modal = modalElement.firstElementChild;
     document.body.appendChild(modal);
-    
+
     // Add event listeners
     const tryBtn = modal.querySelector('.try-remember-btn');
     const closeBtn = modal.querySelector('.close-remember-btn');
-    
+
     tryBtn.addEventListener('click', () => {
       modal.remove();
       // TODO: Implement "Try It Now" functionality
       this.showVoiceActivationDemo();
     });
-    
+
     closeBtn.addEventListener('click', () => {
       modal.remove();
     });
-    
+
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-    
+
     // Add hover effects
     tryBtn.addEventListener('mouseenter', () => {
       tryBtn.style.background = 'rgba(255, 255, 255, 1)';
       tryBtn.style.transform = 'translateY(-1px)';
     });
-    
+
     tryBtn.addEventListener('mouseleave', () => {
       tryBtn.style.background = 'rgba(255, 255, 255, 0.9)';
       tryBtn.style.transform = 'translateY(0)';
     });
-    
+
     closeBtn.addEventListener('mouseenter', () => {
       closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
       closeBtn.style.borderColor = 'rgba(255, 255, 255, 0.5)';
     });
-    
+
     closeBtn.addEventListener('mouseleave', () => {
       closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
       closeBtn.style.borderColor = 'rgba(255, 255, 255, 0.3)';
@@ -2535,7 +2458,7 @@ class AssistantExperience extends ExperiencePopup {
 
   showVoiceActivationDemo() {
     // TODO: Implement voice activation demo
-    console.log('🎤 Voice activation demo - to be implemented');
+
     // For now, just show a simple notification
     this.showVaultNotification('🎤 Voice activation coming soon! Say "Emma, remember this" to capture moments.');
   }
@@ -2553,8 +2476,7 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   switchTab(tabName) {
-    console.log(`🔄 AssistantExperience: Switching to ${tabName} tab`);
-    
+
     // Update nav buttons
     const navBtns = this.element.querySelectorAll('.nav-btn');
     navBtns.forEach(btn => {
@@ -2574,7 +2496,7 @@ class AssistantExperience extends ExperiencePopup {
         content.classList.remove('active');
       }
     });
-    
+
     // Resize to natural content height on tab switch
     setTimeout(() => this.resizeToContent({ minHeight: 520 }), 0);
 
@@ -2587,14 +2509,13 @@ class AssistantExperience extends ExperiencePopup {
   updateMemoriesStats() {
     const memoriesCount = this.element.querySelector('#memories-count');
     const lastActivity = this.element.querySelector('#last-activity');
-    
+
     if (memoriesCount) memoriesCount.textContent = '157';
     if (lastActivity) lastActivity.textContent = '2 hours ago';
   }
 
   async loadHomeDashboardData() {
     try {
-      console.log('📊 AssistantExperience: Loading home dashboard data');
 
       // Try to get actual memory count
       let memoryCount = '--';
@@ -2604,7 +2525,7 @@ class AssistantExperience extends ExperiencePopup {
         try {
           const memories = await window.emmaAPI.vault.getAll();
           memoryCount = Array.isArray(memories) ? memories.length.toString() : '--';
-          
+
           // Find the most recent memory for last activity
           if (memories && memories.length > 0) {
             const sortedMemories = memories.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
@@ -2615,7 +2536,7 @@ class AssistantExperience extends ExperiencePopup {
                 const now = new Date();
                 const diffMs = now - lastDate;
                 const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                
+
                 if (diffHours < 1) {
                   lastActivity = 'Just now';
                 } else if (diffHours < 24) {
@@ -2639,14 +2560,12 @@ class AssistantExperience extends ExperiencePopup {
       if (totalMemoriesEl) totalMemoriesEl.textContent = memoryCount;
       if (lastActivityEl) lastActivityEl.textContent = lastActivity;
 
-      console.log('✅ AssistantExperience: Home dashboard data loaded', { memoryCount, lastActivity });
-
       // Load mini galleries
       await this.loadMiniGalleries();
 
     } catch (error) {
       console.error('❌ AssistantExperience: Failed to load home dashboard data', error);
-      
+
       // Load sample mini galleries even on error
       await this.loadMiniGalleries();
     }
@@ -2654,20 +2573,19 @@ class AssistantExperience extends ExperiencePopup {
 
   async loadMiniGalleries() {
     try {
-      console.log('🖼️ AssistantExperience: Loading mini galleries');
-      
+
       // Try to get actual memories
       let memories = [];
-      
+
       if (window.emmaAPI?.vault?.getAll) {
         try {
           memories = await window.emmaAPI.vault.getAll();
-          console.log('📊 Loaded memories for mini gallery:', memories?.length || 0);
+
         } catch (error) {
-          console.log('📊 Vault API failed for mini gallery, using sample data...');
+
         }
       }
-      
+
       // Use sample data if no real memories
       const sampleMemories = [
         {
@@ -2678,7 +2596,7 @@ class AssistantExperience extends ExperiencePopup {
           emoji: '❤️'
         },
         {
-          id: '2', 
+          id: '2',
           title: 'Morning Garden Walk',
           date: 'Aug 11, 2024',
           image: null,
@@ -2686,7 +2604,7 @@ class AssistantExperience extends ExperiencePopup {
         },
         {
           id: '3',
-          title: 'Sarah\'s Birthday Celebration', 
+          title: 'Sarah\'s Birthday Celebration',
           date: 'Aug 4, 2024',
           image: null,
           emoji: '🎂'
@@ -2694,21 +2612,21 @@ class AssistantExperience extends ExperiencePopup {
         {
           id: '4',
           title: 'Coffee with Emma',
-          date: 'Aug 7, 2024', 
+          date: 'Aug 7, 2024',
           image: null,
           emoji: '☕'
         }
       ];
-      
+
       const memoriesToShow = memories?.length ? memories.slice(-4).reverse() : sampleMemories;
-      
+
       // Store current memories for modal access
       this.currentMemories = memoriesToShow;
-      
+
       // Render both mini galleries
       this.renderMiniGallery('mini-gallery-grid', memoriesToShow);
       this.renderMiniGallery('memories-mini-gallery-grid', memoriesToShow);
-      
+
     } catch (error) {
       console.error('❌ Failed to load mini galleries:', error);
     }
@@ -2720,7 +2638,7 @@ class AssistantExperience extends ExperiencePopup {
       console.warn(`⚠️ Mini gallery container not found: ${containerId}`);
       return;
     }
-    
+
     if (!memories || memories.length === 0) {
       container.innerHTML = `
         <div class="mini-memory-placeholder">
@@ -2733,11 +2651,11 @@ class AssistantExperience extends ExperiencePopup {
       `;
       return;
     }
-    
+
     container.innerHTML = memories.map(memory => `
       <div class="mini-memory-card" data-memory-id="${memory.id}">
         <div class="mini-memory-image">
-          ${memory.image ? 
+          ${memory.image ?
             `<img src="${memory.image}" alt="${memory.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
              <div style="display:none; width:100%; height:100%; align-items:center; justify-content:center; font-size:24px;">${memory.emoji || '💝'}</div>` :
             `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:24px;">${memory.emoji || '💝'}</div>`
@@ -2752,11 +2670,11 @@ class AssistantExperience extends ExperiencePopup {
     const cards = container.querySelectorAll('.mini-memory-card');
     cards.forEach(card => {
       card.addEventListener('click', (e) => {
-        console.log('🖱️ Memory card clicked!');
+
         const memoryId = card.dataset.memoryId;
-        console.log('🔍 Memory ID:', memoryId);
+
         if (window.assistantInstance) {
-          console.log('✅ Assistant instance found, opening memory detail');
+
           window.assistantInstance.openMemoryDetail(memoryId);
         } else {
           console.error('❌ No assistant instance found');
@@ -2766,15 +2684,14 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   async openMemoryDetail(memoryId) {
-    console.log('🔍 Opening memory detail for:', memoryId);
-    
+
     // Find the memory in our loaded data
     let memory = null;
     try {
       // Try to get the actual memory from our current data or API
       const memories = this.currentMemories || [];
       memory = memories.find(m => m.id === memoryId);
-      
+
       if (!memory) {
         // Fallback: try to load from API
         if (window.emmaAPI?.vault?.getAll) {
@@ -2782,7 +2699,7 @@ class AssistantExperience extends ExperiencePopup {
           memory = allMemories?.find(m => m.id === memoryId);
         }
       }
-      
+
       if (!memory) {
         console.warn('Memory not found, using sample data');
         // Fallback to sample memory
@@ -2798,10 +2715,10 @@ class AssistantExperience extends ExperiencePopup {
       console.error('Error loading memory:', error);
       return;
     }
-    
+
     // Close the assistant popup first
     this.close();
-    
+
     // Wait a moment for popup to close, then open memory detail
     setTimeout(() => {
       this.showMemoryDetailModal(memory);
@@ -2809,8 +2726,7 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   showMemoryDetailModal(memory) {
-    console.log(`💝 Opening memory detail modal for: ${memory.title}`);
-    
+
     // Create modal overlay
     const modal = document.createElement('div');
     modal.style.cssText = `
@@ -2828,7 +2744,7 @@ class AssistantExperience extends ExperiencePopup {
       padding: 20px !important;
       animation: fadeIn 0.3s ease !important;
     `;
-    
+
     // Create modal content
     const modalContent = document.createElement('div');
     modalContent.style.cssText = `
@@ -2844,67 +2760,67 @@ class AssistantExperience extends ExperiencePopup {
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
       color: white !important;
     `;
-    
+
     modalContent.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin: 0; font-size: 24px; font-weight: 600;">${memory.title || 'Memory Details'}</h2>
         <button id="close-memory-modal" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
       </div>
-      
+
       <div style="margin-bottom: 15px;">
         <div style="width: 100%; height: 200px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; margin-bottom: 15px;">
           ${memory.emoji || '💝'}
         </div>
       </div>
-      
+
       <div style="margin-bottom: 15px;">
         <strong style="color: rgba(255, 255, 255, 0.8);">Date:</strong>
         <span style="margin-left: 10px;">${memory.date || 'Recently'}</span>
       </div>
-      
+
       <div style="margin-bottom: 20px;">
         <strong style="color: rgba(255, 255, 255, 0.8);">Content:</strong>
         <p style="margin: 10px 0; line-height: 1.6; color: rgba(255, 255, 255, 0.9);">
           ${memory.content || memory.description || 'This is a beautiful memory waiting to be filled with details...'}
         </p>
       </div>
-      
+
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button id="edit-memory" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Edit</button>
         <button id="view-full-gallery" style="background: rgba(255, 255, 255, 0.9); border: none; color: #6b46c1; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">View in Gallery</button>
       </div>
     `;
-    
+
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
-    
+
     // Add event listeners
     const closeBtn = modalContent.querySelector('#close-memory-modal');
     const editBtn = modalContent.querySelector('#edit-memory');
     const galleryBtn = modalContent.querySelector('#view-full-gallery');
-    
+
     closeBtn.addEventListener('click', () => {
       modal.remove();
     });
-    
+
     editBtn.addEventListener('click', () => {
       modal.remove();
       // Navigate to full gallery for editing
       window.location.href = `memory-gallery-new.html#${memory.id}`;
     });
-    
+
     galleryBtn.addEventListener('click', () => {
       modal.remove();
       window.location.href = `memory-gallery-new.html#${memory.id}`;
     });
-    
+
     // Close on background click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-    
+
     // Add fade in animation CSS
     if (!document.getElementById('memory-modal-styles')) {
       const style = document.createElement('style');
@@ -2920,28 +2836,28 @@ class AssistantExperience extends ExperiencePopup {
       `;
       document.head.appendChild(style);
     }
-    
+
     // Apply animation class
     modal.classList.add('memory-modal-animation');
   }
 
   formatDate(dateStr) {
     if (!dateStr) return 'Recently';
-    
+
     try {
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return 'Recently';
-      
+
       const now = new Date();
       const diffMs = now - date;
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays === 0) return 'Today';
       if (diffDays === 1) return 'Yesterday';
       if (diffDays < 7) return `${diffDays} days ago`;
-      
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
+
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric'
       });
     } catch (error) {
@@ -2950,7 +2866,7 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   toggleRecording() {
-    console.log('🎤 Toggle recording, current state:', this.isRecording);
+
     if (this.isRecording) {
       this.stopRecording();
     } else {
@@ -2964,9 +2880,8 @@ class AssistantExperience extends ExperiencePopup {
       return;
     }
 
-    console.log('🎤 Starting recording...');
     this.isRecording = true;
-    
+
     try {
       this.recognition.start();
     } catch (error) {
@@ -2974,11 +2889,11 @@ class AssistantExperience extends ExperiencePopup {
       this.isRecording = false;
       return;
     }
-    
+
     const voiceBtn = this.element.querySelector('#voiceBtn');
     const voiceIcon = this.element.querySelector('#voiceIcon');
     const voiceStatus = this.element.querySelector('#voiceStatus');
-    
+
     if (voiceBtn) voiceBtn.classList.add('recording');
     if (voiceIcon) {
       voiceIcon.innerHTML = `
@@ -2993,10 +2908,9 @@ class AssistantExperience extends ExperiencePopup {
 
   stopRecording() {
     if (!this.isRecording) return;
-    
-    console.log('🎤 Stopping recording...');
+
     this.isRecording = false;
-    
+
     if (this.recognition) {
       try {
         this.recognition.stop();
@@ -3004,11 +2918,11 @@ class AssistantExperience extends ExperiencePopup {
         console.error('🎤 Error stopping recognition:', error);
       }
     }
-    
+
     const voiceBtn = this.element.querySelector('#voiceBtn');
     const voiceIcon = this.element.querySelector('#voiceIcon');
     const voiceStatus = this.element.querySelector('#voiceStatus');
-    
+
     if (voiceBtn) voiceBtn.classList.remove('recording');
     if (voiceIcon) {
       voiceIcon.innerHTML = `
@@ -3035,25 +2949,24 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   addSuggestion(text) {
-    console.log('💡 Adding suggestion:', text);
+
     this.transcript = this.transcript ? this.transcript + ' ' + text : text;
     this.updateTranscription(this.transcript);
   }
 
   nextQuestion() {
-    console.log('➡️ Moving to next question, current step:', this.currentStep);
-    
+
     if (this.currentStep < this.totalSteps) {
       // Store the current transcript before moving to next question
       if (this.transcript && this.transcript.trim()) {
-        console.log('💾 TRANSCRIPTS: Storing transcript for question', this.currentStep, ':', this.transcript);
+
         this.transcripts.push({
           question: this.questions[this.currentStep - 1],
           answer: this.transcript.trim(),
           questionNumber: this.currentStep
         });
       }
-      
+
       this.currentStep++;
       this.updateProgress();
       const questionElement = this.element.querySelector('#questionText');
@@ -3065,20 +2978,19 @@ class AssistantExperience extends ExperiencePopup {
     } else {
       // Store the final transcript before saving
       if (this.transcript && this.transcript.trim()) {
-        console.log('💾 TRANSCRIPTS: Storing final transcript for question', this.currentStep, ':', this.transcript);
+
         this.transcripts.push({
           question: this.questions[this.currentStep - 1],
           answer: this.transcript.trim(),
           questionNumber: this.currentStep
         });
       }
-      
+
       // Wizard complete - save the memory!
-      console.log('🎉 Voice wizard complete! Saving memory...');
-      console.log('📊 TRANSCRIPTS: Total transcripts collected:', this.transcripts.length);
+
       this.saveVoiceMemory();
     }
-    
+
     // TEMPORARILY DISABLED: Height adjustment causing infinite loop
     // if (this.adjustHeight) {
     //   setTimeout(() => this.adjustHeight(), 100);
@@ -3086,15 +2998,13 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   skipQuestion() {
-    console.log('⏭️ Skipping question');
+
     this.nextQuestion();
   }
 
   async saveVoiceMemory() {
     try {
-      console.log('💾 VOICE: Starting memory save process');
-      console.log('💾 VOICE: Transcripts collected:', this.transcripts);
-      
+
       // Combine all transcript Q&As into a formatted story
       let fullContent = '';
       if (this.transcripts && this.transcripts.length > 0) {
@@ -3102,19 +3012,19 @@ class AssistantExperience extends ExperiencePopup {
           return `**${transcript.question}**\n\n${transcript.answer}`;
         }).join('\n\n---\n\n');
       }
-      
+
       if (!fullContent.trim()) {
         console.warn('💾 VOICE: No content to save');
         this.showVaultNotification('⚠️ No voice content captured to save');
         this.resetWizard();
         return;
       }
-      
+
       // Use the first question as title context or a generic title
-      const titleContext = this.transcripts.length > 0 ? 
+      const titleContext = this.transcripts.length > 0 ?
         this.transcripts[0].question.split('?')[0].replace("What's your favorite memory", "Memory") :
         "Voice Memory";
-      
+
       // Create memory data
       const memoryData = {
         id: 'voice_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -3132,36 +3042,27 @@ class AssistantExperience extends ExperiencePopup {
           capturedAt: new Date().toISOString()
         }
       };
-      
-      console.log('💾 VOICE: Attempting to save memory:', memoryData);
-      
+
       // Enhanced debugging and API checking
-      console.log('💾 VOICE: Available APIs:', {
-        emmaAPI: !!window.emmaAPI,
-        memories: !!window.emmaAPI?.memories,
-        memoriesSave: !!window.emmaAPI?.memories?.save,
-        legacyEmmaVault: !!window.emma?.vault,
-        legacyVaultStoreMemory: !!window.emma?.vault?.storeMemory
-      });
-      
+
       // Try multiple API methods based on the documentation
       let result = null;
       let apiUsed = '';
-      
+
       if (window.emmaAPI?.memories?.save) {
-        console.log('💾 VOICE: Trying emmaAPI.memories.save');
+
         apiUsed = 'memories.save';
         try {
           result = await window.emmaAPI.memories.save(memoryData);
-          console.log('💾 VOICE: memories.save result:', result);
+
         } catch (error) {
           console.error('💾 VOICE: memories.save error:', error);
         }
       }
-      
+
       // Fallback to legacy window.emma.vault.storeMemory with MTAP shape
       if (!result?.success && window.emma?.vault?.storeMemory) {
-        console.log('💾 VOICE: Trying fallback legacy emma.vault.storeMemory');
+
         apiUsed = 'legacy.vault.storeMemory';
         try {
           const mtapMemory = {
@@ -3173,45 +3074,45 @@ class AssistantExperience extends ExperiencePopup {
             relations: {}
           };
           result = await window.emma.vault.storeMemory({ mtapMemory });
-          console.log('💾 VOICE: legacy vault.storeMemory result:', result);
+
         } catch (error) {
           console.error('💾 VOICE: legacy vault.storeMemory error:', error);
         }
       }
-      
+
       if (result && result.success) {
-        console.log(`💾 VOICE: Memory saved successfully via ${apiUsed}!`, result);
+
         this.showVaultNotification('✅ Memory captured and saved to vault!');
         // Quick sanity check: fetch latest memories and log count
         try {
           const after = await window.emmaAPI?.memories?.getAll?.({ limit: 5, offset: 0 });
-          console.log('💾 VOICE: Post-save memories sample:', after);
+
         } catch (e) {
           console.warn('💾 VOICE: Post-save getAll check failed', e);
         }
-        
+
         // Navigate to memory gallery to show the new memory
         setTimeout(() => {
-          console.log('🔄 VOICE: Navigating to memory gallery');
+
           window.location.href = 'memory-gallery-new.html';
         }, 2000);
-        
+
       } else if (result) {
         console.error(`💾 VOICE: Save failed via ${apiUsed}:`, result);
         this.showVaultNotification(`❌ Failed to save memory: ${result.error || 'Unknown error'}`);
         this.resetWizard();
       } else {
         console.warn('💾 VOICE: No API available - demo mode');
-        console.log('💾 VOICE: Would save memory:', memoryData);
+
         this.showVaultNotification('📝 Memory captured (demo mode)');
-        
+
         // Still navigate to gallery in demo mode
         setTimeout(() => {
           console.log('🔄 VOICE: Navigating to memory gallery (demo)');
           window.location.href = 'memory-gallery-new.html';
         }, 2000);
       }
-      
+
     } catch (error) {
       console.error('💾 VOICE: Error saving memory:', error);
       this.showVaultNotification('❌ Error saving memory: ' + error.message);
@@ -3220,7 +3121,7 @@ class AssistantExperience extends ExperiencePopup {
   }
 
   resetWizard() {
-    console.log('🔄 VOICE: Resetting wizard');
+
     this.currentStep = 1;
     this.updateProgress();
     const questionElement = this.element.querySelector('#questionText');
@@ -3237,9 +3138,9 @@ class AssistantExperience extends ExperiencePopup {
     const progressBar = this.element.querySelector('#progressBar');
     const currentStepElement = this.element.querySelector('#currentStep');
     const totalStepsElement = this.element.querySelector('#totalSteps');
-    
+
     console.log('📊 Updating progress:', progress + '%', `(${this.currentStep}/${this.totalSteps})`);
-    
+
     if (progressBar) progressBar.style.width = progress + '%';
     if (currentStepElement) currentStepElement.textContent = this.currentStep;
     if (totalStepsElement) totalStepsElement.textContent = this.totalSteps;
@@ -3250,23 +3151,23 @@ class AssistantExperience extends ExperiencePopup {
     if (this.isRecording) {
       this.stopRecording();
     }
-    
+
     // Clean up dynamic height listeners
     if (this.heightObserver) {
       this.heightObserver.disconnect();
       this.heightObserver = null;
     }
-    
+
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = null;
     }
-    
+
     // Remove global reference
     if (window.assistantInstance === this) {
       window.assistantInstance = null;
     }
-    
+
     // Call parent close method
     try { super.close(); } catch (e) { console.error('Popup close error:', e); }
   }

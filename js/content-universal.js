@@ -39,19 +39,19 @@ function updateStatus(message, isVisible = true) {
 function generateConversationId() {
   // Try to detect conversation ID from URL or page
   const url = window.location.href;
-  
+
   // ChatGPT conversation ID
   if (url.includes('chatgpt.com') && url.includes('/c/')) {
     const match = url.match(/\/c\/([a-f0-9-]+)/);
     if (match) return `chatgpt_${match[1]}`;
   }
-  
-  // Claude conversation ID  
+
+  // Claude conversation ID
   if (url.includes('claude.ai') && url.includes('/chat/')) {
     const match = url.match(/\/chat\/([a-f0-9-]+)/);
     if (match) return `claude_${match[1]}`;
   }
-  
+
   // Fallback: use domain + timestamp (for sessions without clear IDs)
   const domain = window.location.hostname.replace('www.', '');
   const sessionStart = Math.floor(Date.now() / (30 * 60 * 1000)) * (30 * 60 * 1000); // 30-minute windows
@@ -76,10 +76,9 @@ function detectPlatform() {
 
 // Prevent multiple injections
 if (window.emmaUniversalInjected) {
-  console.log('Emma: Universal content script already injected');
+
 } else {
   window.emmaUniversalInjected = true;
-  console.log('Emma: Universal content script initializing...');
 
   // Minimal logger with quiet default; set localStorage.emma_log = 'debug'|'info'|'warn'|'error'|'none'
   const EmmaLog = (() => {
@@ -160,14 +159,14 @@ if (window.emmaUniversalInjected) {
    */
   async function initializeEmma() {
     if (isInitialized) return;
-    
+
     try {
       // Initialization
       emmaEngine = createMinimalEngine();
-      
+
       // Get user settings with timeout fallback
       let settings = null;
-      
+
       try {
         settings = await Promise.race([
           chrome.runtime.sendMessage({ action: 'getSettings' }),
@@ -178,7 +177,7 @@ if (window.emmaUniversalInjected) {
         // Use defaults silently on timeout
         settings = { success: false };
       }
-      
+
       // Set up based on settings with timeout
       try {
         if (settings && settings.success) {
@@ -201,20 +200,20 @@ if (window.emmaUniversalInjected) {
       } catch (setupError) {
         EmmaLog.warn('Emma: setup timed out; continuing minimal');
       }
-      
+
       isInitialized = true;
       EmmaLog.info('Emma: ready');
-      
+
       // Notify that we're ready
       try {
-        chrome.runtime.sendMessage({ 
+        chrome.runtime.sendMessage({
           action: 'contentScriptReady',
-          url: window.location.href 
+          url: window.location.href
         });
       } catch (msgError) {
         EmmaLog.debug('Emma: notify background failed');
       }
-      
+
     } catch (error) {
       EmmaLog.error('Emma: init failed', error);
       EmmaLog.debug('Emma: init details', {
@@ -222,12 +221,12 @@ if (window.emmaUniversalInjected) {
         stack: error.stack,
         name: error.name
       });
-      
+
       // Try to initialize in minimal mode
       try {
-        console.log('Emma Universal: Attempting minimal initialization...');
+
         isInitialized = true; // Mark as initialized so we can at least respond to ping
-        console.log('Emma Universal: ⚠️ Minimal initialization complete');
+
       } catch (minimalError) {
         console.error('Emma Universal: Even minimal initialization failed:', minimalError);
       }
@@ -238,7 +237,7 @@ if (window.emmaUniversalInjected) {
   let currentCollection = null; // Will hold staging capsule ID
   let existingCapsule = null; // Track any existing conversation capsules
   let manualModeActive = false; // Track if user is manually collecting media
-  
+
   try {
     const collectionCss = `
       .emma-media-btn{position:absolute;top:8px;right:8px;z-index:999999;border-radius:20px;padding:6px 12px;font-size:11px;font-weight:600;color:#fff;background:linear-gradient(135deg,#667eea,#764ba2);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;display:none;transition:all 0.2s ease;}
@@ -251,7 +250,7 @@ if (window.emmaUniversalInjected) {
     const style = document.createElement('style');
     style.textContent = collectionCss;
     document.documentElement.appendChild(style);
-    
+
     const observer = new MutationObserver(debounce(() => bindMediaButtons(), 200));
     bindMediaButtons();
     observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -260,129 +259,123 @@ if (window.emmaUniversalInjected) {
       const elements = Array.from(document.querySelectorAll('img, video'));
       elements.forEach(el => {
         if (el._emmaBound) return; el._emmaBound = true;
-        
+
         try {
           const r = el.getBoundingClientRect();
           if (r.width < 60 || r.height < 60) return; // skip small elements
         } catch {}
-        
+
         const parent = el.parentElement || el;
         if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
-        
+
         const btn = document.createElement('div');
         btn.className = 'emma-media-btn';
         btn.textContent = '+ Emma';
         parent.appendChild(btn);
-        
+
         el.addEventListener('mouseenter', () => btn.style.display = 'block');
         el.addEventListener('mouseleave', () => btn.style.display = 'none');
-        
+
         btn.addEventListener('click', async (e) => {
-          e.stopPropagation(); 
+          e.stopPropagation();
           e.preventDefault();
           await addToCollection(el, btn);
         });
       });
     }
-    
+
     async function addToCollection(element, button) {
       const srcUrl = element.currentSrc || element.src;
-      console.log('📎 Content: Adding to collection, URL:', srcUrl);
+
       if (!srcUrl) {
         console.warn('📎 Content: No URL found for element');
         return;
       }
-      
+
       try {
         // Activate manual mode to prevent autonomous capture conflicts
         manualModeActive = true;
-        console.log('📋 Content: Manual collection mode activated');
-        
+
         // Check for existing conversation capsule first
         if (!currentCollection && !existingCapsule) {
-          console.log('📡 Content: Checking for existing conversation capsules...');
+
           const stagingResponse = await chrome.runtime.sendMessage({ action: 'ephemeral.list' });
           if (stagingResponse?.success && Array.isArray(stagingResponse.items)) {
             // Look for recent conversation capsules from this page
             const pageUrl = location.href;
-            const recentCapsule = stagingResponse.items.find(item => 
-              item.data?.source === 'conversation' && 
+            const recentCapsule = stagingResponse.items.find(item =>
+              item.data?.source === 'conversation' &&
               item.data?.metadata?.url === pageUrl &&
               Date.now() - (item.createdAt || 0) < 300000 // Within 5 minutes
             );
-            
+
             if (recentCapsule) {
-              console.log('📂 Content: Found existing conversation capsule:', recentCapsule.id);
+
               existingCapsule = recentCapsule.id;
               currentCollection = recentCapsule.id;
             }
           }
         }
-        
+
         // Create or get current collection
         if (!currentCollection) {
-          console.log('📂 Content: Creating new collection...');
-          const response = await chrome.runtime.sendMessage({ 
+
+          const response = await chrome.runtime.sendMessage({
             action: 'collection.create',
             pageUrl: location.href,
             pageTitle: document.title
           });
-          console.log('📂 Content: Collection creation response:', response);
-          
+
           if (response?.success) {
             currentCollection = response.collectionId;
-            console.log('📂 Content: Collection created:', currentCollection);
+
           } else {
             throw new Error('Failed to create collection: ' + (response?.error || 'Unknown error'));
           }
         }
-        
+
         if (!currentCollection) {
           throw new Error('No collection ID available');
         }
-        
-        console.log('📎 Content: Adding media to collection:', currentCollection);
-        
+
         // Add media to collection
-        const result = await chrome.runtime.sendMessage({ 
+        const result = await chrome.runtime.sendMessage({
           action: 'collection.addMedia',
           collectionId: currentCollection,
-          url: srcUrl, 
-          pageUrl: location.href, 
+          url: srcUrl,
+          pageUrl: location.href,
           mediaType: element.tagName.toLowerCase(),
           alt: element.alt || '',
           width: element.naturalWidth || element.videoWidth || 0,
           height: element.naturalHeight || element.videoHeight || 0
         });
-        
-        console.log('📎 Content: Add media result:', result);
-        
+
         if (result?.success) {
           // Visual feedback
           button.textContent = '✓ Added';
           button.classList.add('added');
-          
+
           // Show collection toast
           showCollectionToast(result.totalItems);
-          
-          setTimeout(() => { 
-            button.textContent = '+ Emma'; 
+
+          setTimeout(() => {
+            button.textContent = '+ Emma';
             button.classList.remove('added');
           }, 2000);
         } else {
           throw new Error('Failed to add media: ' + (result?.error || 'Unknown error'));
         }
-      } catch (err) { 
+      } catch (err) {
         console.error('📎 Content: Failed to add to collection:', err);
         button.textContent = '✗ Error';
         button.style.background = 'linear-gradient(135deg, #EF4444, #DC2626)';
-        setTimeout(() => { 
-          button.textContent = '+ Emma'; 
+        setTimeout(() => {
+          button.textContent = '+ Emma';
           button.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
         }, 2000);
       }
     }
-    
+
     function showCollectionToast(count) {
       let toast = document.querySelector('.emma-collection-toast');
       if (!toast) {
@@ -390,16 +383,16 @@ if (window.emmaUniversalInjected) {
         toast.className = 'emma-collection-toast';
         document.body.appendChild(toast);
       }
-      
+
       toast.innerHTML = `<span class="count">${count}</span> item${count !== 1 ? 's' : ''} in collection`;
       toast.classList.add('show');
-      
+
       clearTimeout(toast.hideTimer);
       toast.hideTimer = setTimeout(() => {
         toast.classList.remove('show');
       }, 3000);
     }
-    
+
   } catch (error) {
     console.warn('Emma Universal: Media collection setup failed:', error);
   }
@@ -408,17 +401,17 @@ if (window.emmaUniversalInjected) {
   const originalOnError = window.onerror;
   window.onerror = function(message, source, lineno, colno, error) {
     // Filter out AdEmbed and other third-party errors that don't affect Emma
-    if (message && typeof message === 'string' && 
+    if (message && typeof message === 'string' &&
         (message.includes('AdEmbed') || message.includes('addEmbed'))) {
       console.warn('Emma: Filtered third-party AdEmbed error:', message);
       return true; // Prevent the error from propagating
     }
-    
+
     // Call original error handler if it exists
     if (originalOnError) {
       return originalOnError.call(this, message, source, lineno, colno, error);
     }
-    
+
     return false; // Let other errors propagate normally
   };
 
@@ -426,13 +419,13 @@ if (window.emmaUniversalInjected) {
   const originalOnUnhandledRejection = window.onunhandledpromiserejection;
   window.onunhandledpromiserejection = function(event) {
     // Filter out AdEmbed and other third-party promise rejections
-    if (event.reason && typeof event.reason === 'object' && 
+    if (event.reason && typeof event.reason === 'object' &&
         (event.reason.message?.includes('AdEmbed') || event.reason.message?.includes('addEmbed'))) {
       console.warn('Emma: Filtered third-party AdEmbed promise rejection:', event.reason);
       event.preventDefault(); // Prevent the unhandled rejection
       return;
     }
-    
+
     // Call original handler if it exists
     if (originalOnUnhandledRejection) {
       return originalOnUnhandledRejection.call(this, event);
@@ -456,7 +449,7 @@ if (window.emmaUniversalInjected) {
       `;
       notification.innerHTML = '🔄 Emma: Extension updated - refresh page to restore functionality';
       document.body.appendChild(notification);
-      
+
       setTimeout(() => notification.remove(), 5000);
       return true;
     }
@@ -469,11 +462,11 @@ if (window.emmaUniversalInjected) {
         const url = window.location.href;
         const domain = new URL(url).hostname;
         const meta = extractPageMetadata();
-        
+
         // Detect content type based on URL and DOM
         let type = 'universal';
         let confidence = 0.5;
-        
+
         if (domain.includes('chatgpt.com') || domain.includes('chat.openai.com')) {
           type = 'conversation';
           confidence = 0.9;
@@ -505,17 +498,17 @@ if (window.emmaUniversalInjected) {
           type = 'article';
           confidence = 0.7;
         }
-        
+
         return { type, confidence };
       },
-      
+
       async capture(options = {}) {
         const analysis = await this.analyze();
         const meta = extractPageMetadata();
         const memories = [];
         let attachmentsAdded = 0;
         let capsuleIdOut = '';
-        
+
         try {
           if (analysis.type === 'conversation') {
             // Extract conversation messages
@@ -621,7 +614,7 @@ if (window.emmaUniversalInjected) {
               }
             }
           }
-          
+
           // Also collect representative media to attach alongside text
           let topMedia = [];
           try {
@@ -629,10 +622,9 @@ if (window.emmaUniversalInjected) {
           } catch (e) {
             console.warn('Emma Universal: Unable to collect top media:', e);
           }
-          
+
           // Save memories (storage-first, with background attachment import)
-          console.log(`Emma Universal: Saving ${memories.length} memories...`);
-          
+
           // Dedupe near-duplicate messages by normalized text (hashed)
           const seen = new Set();
           const uniqueMemories = [];
@@ -651,18 +643,18 @@ if (window.emmaUniversalInjected) {
           if (!storage.emma_vault_initialized) {
             throw new Error('Vault not set up. Please create your vault in the dashboard first.');
           }
-          
+
           // Create or update conversation capsule
           const conversationId = generateConversationId();
           const existingMemories = storage.emma_memories || [];
-          
+
           // Find existing capsule for this conversation/session
-          const existingCapsuleIndex = existingMemories.findIndex(cap => 
-            cap.conversationId === conversationId || 
-            (cap.url === window.location.href && cap.type === 'conversation' && 
+          const existingCapsuleIndex = existingMemories.findIndex(cap =>
+            cap.conversationId === conversationId ||
+            (cap.url === window.location.href && cap.type === 'conversation' &&
              Date.now() - cap.lastUpdated < 30 * 60 * 1000) // Same page within 30 minutes
           );
-          
+
           if (existingCapsuleIndex >= 0) {
             // Update existing capsule
             const existingCapsule = existingMemories[existingCapsuleIndex];
@@ -686,13 +678,12 @@ if (window.emmaUniversalInjected) {
               existingCapsule.attachments = [...(existingCapsule.attachments || []), ...newAttachments];
               existingCapsule.attachmentCount = existingCapsule.attachments.length;
             } catch {}
-            
+
             // Move to top of list
             existingMemories.splice(existingCapsuleIndex, 1);
             existingMemories.unshift(existingCapsule);
             capsuleIdOut = existingCapsule.id || conversationId;
-            
-            console.log(`Emma Universal: Updated existing capsule with ${uniqueMemories.length} new messages`);
+
             // Import media into background attachments store for persistence
             try {
               await Promise.all((topMedia || []).map(async (m) => {
@@ -741,11 +732,11 @@ if (window.emmaUniversalInjected) {
               attachments: topMedia || [],
               attachmentCount: (topMedia || []).length
             };
-            
+
             existingMemories.unshift(newCapsule);
             capsuleIdOut = newCapsule.id;
             attachmentsAdded = (topMedia || []).length;
-            console.log(`Emma Universal: Created new conversation capsule with ${uniqueMemories.length} messages`);
+
             // Import media into background attachments store for persistence
             try {
               await Promise.all((topMedia || []).map(async (m) => {
@@ -762,36 +753,36 @@ if (window.emmaUniversalInjected) {
               }));
             } catch {}
           }
-          
+
           // Keep only last 50 capsules to avoid storage limits
           if (existingMemories.length > 50) {
             existingMemories.splice(50);
           }
-          
+
           // Save via background service to ensure proper MTAP storage
           try {
             // Clean up the capsule before saving - remove attachments that don't have data
             const capsuleToSave = {...existingMemories[0]};
             if (capsuleToSave.attachments && Array.isArray(capsuleToSave.attachments)) {
               // Filter out attachments without actual data
-              capsuleToSave.attachments = capsuleToSave.attachments.filter(att => 
+              capsuleToSave.attachments = capsuleToSave.attachments.filter(att =>
                 att && att.data && typeof att.data === 'string'
               );
               capsuleToSave.attachmentCount = capsuleToSave.attachments.length;
             }
-            
+
             const saveResult = await chrome.runtime.sendMessage({
               action: 'ephemeral.add',
               data: capsuleToSave
             });
-            
+
             if (saveResult && saveResult.success) {
-              console.log(`Emma Universal: Conversation capsule saved successfully via background`);
+
               // Trigger refresh of memories.html if it's open
               try {
                 chrome.runtime.sendMessage({ action: 'memories.refresh' });
               } catch {}
-              
+
           let countOut = uniqueMemories.length;
           if (countOut === 0 && attachmentsAdded > 0) countOut = 1;
           const success = countOut > 0 || attachmentsAdded > 0;
@@ -804,7 +795,7 @@ if (window.emmaUniversalInjected) {
                 errorValue: saveResult?.error,
                 fullResponse: saveResult
               });
-              
+
               // Vault-first UX: guide unlock instead of local fallback
               const err = (saveResult && saveResult.error) ? saveResult.error : '';
               if (/vault is locked/i.test(err) || /unlock/i.test(err)) {
@@ -820,23 +811,23 @@ if (window.emmaUniversalInjected) {
             updateStatus('❌ Save failed');
             return { success: false, error: saveError?.message || 'save_failed' };
           }
-          
+
         } catch (error) {
           console.error('Emma Universal: Capture error:', error);
           return [];
         }
       },
-      
+
       extractConversationMessages() {
         const messages = [];
-        
+
         // ChatGPT selectors
         if (window.location.hostname.includes('chatgpt.com') || window.location.hostname.includes('chat.openai.com')) {
           const messageElements = document.querySelectorAll('[data-testid^="conversation-turn-"]');
           messageElements.forEach((element, index) => {
             const isUser = element.querySelector('[data-message-author-role="user"]');
             const isAssistant = element.querySelector('[data-message-author-role="assistant"]');
-            
+
             if (isUser || isAssistant) {
               const content = element.textContent.trim();
               if (content.length > 10) {
@@ -849,19 +840,19 @@ if (window.emmaUniversalInjected) {
             }
           });
         }
-        
+
         // Claude selectors
         else if (window.location.hostname.includes('claude.ai')) {
           const possibleMessages = document.querySelectorAll('div[class*="message"], article, section');
           let lastRole = null;
-          
+
           possibleMessages.forEach((element, index) => {
             const text = element.textContent.trim();
             if (text.length > 20) {
               // Alternate between user and assistant for Claude
               const role = lastRole === 'user' ? 'assistant' : 'user';
               lastRole = role;
-              
+
               messages.push({
                 content: text,
                 role,
@@ -870,10 +861,10 @@ if (window.emmaUniversalInjected) {
             }
           });
         }
-        
+
         return messages;
       },
-      
+
       extractMainContent() {
         // Multi-strategy: 1) semantic containers 2) largest block 3) visible selection fallback
         const candidates = [];
@@ -920,7 +911,7 @@ if (window.emmaUniversalInjected) {
         const text = clone.textContent.replace(/\s+/g, ' ').trim();
         return text;
       },
-      
+
       async saveToLocalStorage(memory) {
         // Final fallback: use domain-specific localStorage
         const memoryId = `emma_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -930,24 +921,23 @@ if (window.emmaUniversalInjected) {
           savedAt: new Date().toISOString(),
           source: 'localStorage_fallback'
         };
-        
+
         try {
           // Get existing memories from localStorage
           const existing = localStorage.getItem('emma_memories');
           const memories = existing ? JSON.parse(existing) : [];
-          
+
           // Add new memory
           memories.push(enrichedMemory);
-          
+
           // Keep only last 100 memories to avoid storage issues
           if (memories.length > 100) {
             memories.splice(0, memories.length - 100);
           }
-          
+
           // Save back to localStorage
           localStorage.setItem('emma_memories', JSON.stringify(memories));
-          
-          console.log('Emma Universal: Saved to localStorage, total memories:', memories.length);
+
           return memoryId;
         } catch (error) {
           console.error('Emma Universal: localStorage failed:', error);
@@ -1034,7 +1024,7 @@ if (window.emmaUniversalInjected) {
       const title = composeTitle(meta, mainText) || document.title || new URL(location.href).hostname;
       const textPreview = (mainText || '').replace(/\s+/g, ' ').trim().slice(0, 280);
       const media = await collectTopMedia(3);
-      const entities = extractEntitiesFromText((mainText || '')); 
+      const entities = extractEntitiesFromText((mainText || ''));
       const hasContent = (textPreview && textPreview.length > 60) || (media && media.length > 0);
       return {
         success: true,
@@ -1071,7 +1061,7 @@ if (window.emmaUniversalInjected) {
 
   function composeTitle(meta, mainText) {
     const domain = location.hostname;
-    
+
     // Enhanced Twitter/X title generation
     if (/(^|\.)x\.com$|twitter\.com$/.test(domain)) {
       // Try to get tweet text directly
@@ -1080,27 +1070,27 @@ if (window.emmaUniversalInjected) {
         const truncated = tweetText.length > 60 ? tweetText.substring(0, 60) + '...' : tweetText;
         return `Tweet: ${truncated}`;
       }
-      
+
       // Fallback to author + "post"
       const author = meta.author || document.querySelector('[data-testid="User-Names"] a')?.textContent?.trim();
       if (author) {
         const authorClean = author.replace(/^@/, '');
         return `${authorClean}'s post on X`;
       }
-      
+
       // Final fallback for Twitter
       if (mainText && mainText.trim()) {
         const truncated = mainText.trim().length > 60 ? mainText.trim().substring(0, 60) + '...' : mainText.trim();
         return `X post: ${truncated}`;
       }
     }
-    
+
     // Enhanced general title logic
     const base = meta.ogTitle || meta.title || '';
     if (base && base !== 'X' && base !== 'Twitter' && !base.includes('Sign up') && !base.includes('Login')) {
       return base;
     }
-    
+
     // Extract meaningful content for title
     if (mainText && mainText.trim()) {
       const cleaned = mainText.trim().replace(/\s+/g, ' ');
@@ -1108,7 +1098,7 @@ if (window.emmaUniversalInjected) {
       const title = words.join(' ');
       return title.length > 80 ? title.substring(0, 80) + '...' : title;
     }
-    
+
     return new URL(location.href).hostname;
   }
 
@@ -1267,19 +1257,17 @@ if (window.emmaUniversalInjected) {
    * Set up Emma based on user settings
    */
   async function setupEmma(settings) {
-    console.log('Emma Universal: Setting up with settings:', settings);
-    
+
     // Add Emma UI
     if (settings.showFloatingButton !== false) {
-      console.log('Emma Universal: Adding UI...');
+
       addEmmaUI();
-      
+
       // Verify UI was added
       setTimeout(() => {
         const floatingBtn = document.getElementById('emma-float-btn');
         if (floatingBtn) {
-          console.log('✅ Emma floating button confirmed in DOM');
-          
+
           // Force visibility to debug CSS issues
           floatingBtn.style.cssText = `
             position: fixed !important;
@@ -1301,29 +1289,27 @@ if (window.emmaUniversalInjected) {
             opacity: 1 !important;
             visibility: visible !important;
           `;
-          
-          console.log('🔧 Emma floating button visibility forced with inline styles');
+
         } else {
           console.error('❌ Emma floating button NOT found in DOM');
         }
       }, 100);
     } else {
-      console.log('Emma Universal: Floating button disabled in settings');
+
     }
-    
+
     // Set up auto-capture if enabled
     if (settings.autoCapture) {
-      console.log('Emma Universal: Setting up auto-capture...');
+
       await setupAutoCapture();
     }
-    
+
     // Set up keyboard shortcuts
     if (settings.enableShortcuts) {
-      console.log('Emma Universal: Setting up keyboard shortcuts...');
+
       setupKeyboardShortcuts();
     }
-    
-    console.log('Emma Universal: Setup complete');
+
   }
 
   /**
@@ -1332,14 +1318,12 @@ if (window.emmaUniversalInjected) {
   async function setupAutoCapture() {
     // Analyze current page
     const analysis = await emmaEngine.analyze();
-    
-    console.log(`Emma: Page analysis - Type: ${analysis.type}, Confidence: ${analysis.confidence}`);
-    
+
     // Only auto-capture high confidence content
     if (analysis.confidence > 0.7) {
       // Set up observer for dynamic content
       observePageChanges();
-      
+
       // Initial capture after page settles
       setTimeout(() => {
         captureContent({ auto: true });
@@ -1352,7 +1336,7 @@ if (window.emmaUniversalInjected) {
    */
   function observePageChanges() {
     let captureTimeout = null;
-    
+
     const observer = new MutationObserver((mutations) => {
       // Debounce captures
       clearTimeout(captureTimeout);
@@ -1360,7 +1344,7 @@ if (window.emmaUniversalInjected) {
         captureContent({ auto: true, incremental: true });
       }, 1500);
     });
-    
+
     observer.observe(document.body, {
       childList: true,
       subtree: true,
@@ -1373,35 +1357,33 @@ if (window.emmaUniversalInjected) {
    */
   async function captureContent(options = {}) {
     try {
-      console.log('Emma: Starting content capture...', options);
-      
+
       // Check if engine is available
       if (!emmaEngine) {
-        console.log('Emma: Engine not available, performing fallback capture...');
+
         return await performFallbackCapture(options);
       }
-      
+
       const result = await emmaEngine.capture(options);
       const capturedCount = result && typeof result.count === 'number' ? result.count : (Array.isArray(result) ? result.length : 0);
-      
+
       if (capturedCount > 0) {
-        console.log(`Emma: Captured ${capturedCount} memories`, result);
-        
+
         // Show notification if not auto-capture
         if (!options.auto) {
           const attText = result && result.attachmentsAdded ? ` (+${result.attachmentsAdded} media)` : '';
           showNotification(`Captured ${capturedCount} item(s)${attText}`);
         }
-        
+
         return { success: true, count: capturedCount, attachmentsAdded: result.attachmentsAdded || 0, capsuleId: result.capsuleId };
       } else {
-        console.log('Emma: No content to capture');
+
         return { success: false, message: 'No content found' };
       }
-      
+
     } catch (error) {
       console.error('Emma: Capture failed:', error);
-      console.log('Emma: Attempting fallback capture...');
+
       return await performFallbackCapture(options);
     }
   }
@@ -1411,25 +1393,24 @@ if (window.emmaUniversalInjected) {
    */
   async function performFallbackCapture(options = {}) {
     try {
-      console.log('Emma: Performing fallback capture...');
-      
+
       // Try to capture selected text or page content
       const selection = window.getSelection().toString();
       let content = '';
       let type = 'page';
-      
+
       if (selection && selection.length > 10) {
         content = selection;
         type = 'selection';
-        console.log('Emma: Capturing selected text');
+
       } else {
         // Capture page title and some content
         const title = document.title;
         const bodyText = document.body.textContent.substring(0, 500).trim();
         content = `${title}\n\n${bodyText}`;
-        console.log('Emma: Capturing page content');
+
       }
-      
+
       if (content && content.length > 20) {
         const memory = {
           content,
@@ -1441,8 +1422,7 @@ if (window.emmaUniversalInjected) {
             timestamp: Date.now()
           }
         };
-        
-        console.log('Emma: Saving fallback memory via background service:', memory);
+
         try {
           // Save via background service to ensure proper storage
           const saveResult = await chrome.runtime.sendMessage({
@@ -1455,9 +1435,9 @@ if (window.emmaUniversalInjected) {
             fallback: true
             }
           });
-          
+
           if (saveResult && saveResult.success) {
-            console.log('Emma: Fallback memory saved successfully via background');
+
             // Trigger refresh of memories.html if it's open
             try {
               chrome.runtime.sendMessage({ action: 'memories.refresh' });
@@ -1479,13 +1459,13 @@ if (window.emmaUniversalInjected) {
           return { success: false, error: msg || 'Unknown error while saving' };
         }
       }
-      
+
       return {
         success: false,
         count: 0,
         message: 'No content available to capture'
       };
-      
+
     } catch (error) {
       console.error('Emma: Fallback capture failed:', error);
       return {
@@ -1499,34 +1479,31 @@ if (window.emmaUniversalInjected) {
    * Handle messages from extension
    */
   function handleMessage(request, sender, sendResponse) {
-    console.log('Emma Universal: Received message:', request.action, 'initialized:', isInitialized);
-    
+
     try {
       switch (request.action) {
         case 'ping':
-          sendResponse({ 
-            success: true, 
+          sendResponse({
+            success: true,
             initialized: isInitialized,
             message: 'Emma Universal content script is active',
             timestamp: Date.now()
           });
           break;
-          
+
         case 'captureNow':
           if (!isInitialized) {
             sendResponse({ success: false, error: 'Emma not initialized yet' });
             break;
           }
-          
-          console.log('Emma Universal: Starting capture...');
-          
+
           // Add timeout to prevent hanging
           Promise.race([
             captureContent({ userTriggered: true, force: true }),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Content capture timeout')), 8000))
           ])
             .then(result => {
-              console.log('Emma Universal: Capture result:', result);
+
               sendResponse(result);
             })
             .catch(error => {
@@ -1534,44 +1511,43 @@ if (window.emmaUniversalInjected) {
               sendResponse({ success: false, error: error.message });
             });
           return true; // Async response
-          
+
         case 'getPageAnalysis':
           if (!isInitialized || !emmaEngine) {
             sendResponse({ success: false, error: 'Emma engine not available' });
             break;
           }
-          
+
           emmaEngine.analyze()
             .then(analysis => sendResponse({ success: true, analysis }))
             .catch(error => sendResponse({ success: false, error: error.message }));
           return true; // Async response
-          
+
         case 'captureSelection':
           captureSelection()
             .then(result => sendResponse(result))
             .catch(error => sendResponse({ success: false, error: error.message }));
           return true; // Async response
-          
+
         case 'media.scanPage':
           (async () => {
             try {
-              console.log('🔍 CONTENT: Starting enhanced media capture...');
-              
+
               // Try Universal Capture first, but don't block on loading issues
               let useUniversal = false;
               try {
                 if (!window.UniversalMediaCapture) {
-                  console.log('🔍 CONTENT: Attempting to load UniversalMediaCapture...');
+
                   const script = document.createElement('script');
                   script.src = chrome.runtime.getURL('js/universal-media-capture.js');
                   document.head.appendChild(script);
-                  
+
                   // Quick attempt to load (max 2 seconds)
                   await Promise.race([
                     new Promise((resolve, reject) => {
                       script.onload = () => {
                         if (window.UniversalMediaCapture && typeof window.UniversalMediaCapture === 'function') {
-                          console.log('🔍 CONTENT: UniversalMediaCapture loaded successfully');
+
                           resolve();
                         } else {
                           reject(new Error('Class not available'));
@@ -1584,57 +1560,55 @@ if (window.emmaUniversalInjected) {
                   useUniversal = true;
                 } else if (typeof window.UniversalMediaCapture === 'function') {
                   useUniversal = true;
-                  console.log('🔍 CONTENT: UniversalMediaCapture already available');
+
                 }
               } catch (error) {
-                console.log('🔍 CONTENT: Universal capture not available, using enhanced fallback:', error.message);
+
                 useUniversal = false;
               }
-              
+
               let result;
-              
+
               if (useUniversal) {
                 try {
                   if (!window.universalCapture) {
                     window.universalCapture = new window.UniversalMediaCapture();
                   }
-                  
-                  console.log('🔍 CONTENT: Using Universal Media Capture');
+
                   result = await window.universalCapture.capturePageMedia({
                     includeVideos: true,
                     qualityThreshold: request.qualityThreshold || 1, // Lower default threshold
                     maxElements: request.maxElements || 100,
                     scrollToLoad: request.scrollToLoad !== false
                   });
-                  
-                  console.log('🔍 CONTENT: Universal capture successful:', result.summary);
+
                 } catch (error) {
                   console.error('🔍 CONTENT: Universal capture failed, falling back:', error);
                   useUniversal = false;
                 }
               }
-              
+
               if (!useUniversal) {
-                console.log('🔍 CONTENT: Using enhanced scanPageForMedia fallback');
+
                 const elements = scanPageForMedia('img, video');
-                
+
                 // Apply quality filtering similar to universal capture
                 const filteredElements = elements.filter(el => {
                   const area = el.rect.width * el.rect.height;
                   const aspectRatio = el.rect.width / el.rect.height;
-                  
+
                   // Basic quality heuristics
                   if (area >= 160000) return true; // >= 400x400 (high quality)
                   if (area >= 40000 && aspectRatio >= 0.2 && aspectRatio <= 5) return true; // >= 200x200 with reasonable aspect ratio
                   if (area < 10000) return false; // < 100x100 (likely thumbnail)
-                  
+
                   // Check for obvious thumbnail patterns in URL
                   const src = (el.src || '').toLowerCase();
                   if (src.includes('thumbnail') || src.includes('thumb') || src.includes('icon')) return false;
-                  
+
                   return true;
                 });
-                
+
                 result = {
                   success: true,
                   elements: filteredElements,
@@ -1644,19 +1618,18 @@ if (window.emmaUniversalInjected) {
                     method: 'enhanced_fallback'
                   }
                 };
-                
-                console.log('🔍 CONTENT: Enhanced fallback found', result.elements.length, 'quality elements');
+
               }
-              
+
               // Check for Chrome message size limit
               const responseSize = JSON.stringify(result).length;
               if (responseSize > 50000000) { // 50MB limit
                 console.warn('🔍 CONTENT: Response too large, truncating...');
-                sendResponse({ 
-                  ...result, 
-                  elements: result.elements.slice(0, 50), 
-                  truncated: true, 
-                  originalCount: result.elements.length 
+                sendResponse({
+                  ...result,
+                  elements: result.elements.slice(0, 50),
+                  truncated: true,
+                  originalCount: result.elements.length
                 });
               } else {
                 sendResponse(result);
@@ -1688,15 +1661,14 @@ if (window.emmaUniversalInjected) {
         case 'clever.captureElement':
           (async () => {
             try {
-              console.log('🧠 CONTENT: Clever capture request received:', request);
-              
+
               // Load clever bypass system if not already loaded
               if (!window.emmaCleverBypass) {
-                console.log('🧠 CONTENT: Loading clever bypass system...');
+
                 const script = document.createElement('script');
                 script.src = chrome.runtime.getURL('js/clever-capture-bypass.js');
                 document.head.appendChild(script);
-                
+
                 // Wait for it to load
                 await new Promise((resolve, reject) => {
                   script.onload = resolve;
@@ -1704,7 +1676,7 @@ if (window.emmaUniversalInjected) {
                   setTimeout(reject, 3000); // 3 second timeout
                 });
               }
-              
+
               // Find the element to capture
               let element;
               if (request.elementSelector) {
@@ -1713,21 +1685,19 @@ if (window.emmaUniversalInjected) {
                 const allImages = document.querySelectorAll('img');
                 element = allImages[request.elementIndex];
               }
-              
+
               if (!element) {
                 sendResponse({ success: false, error: 'Element not found' });
                 return;
               }
-              
+
               console.log('🧠 CONTENT: Attempting clever capture on element:', element.src?.substring(0, 100));
-              
+
               // Use clever bypass to capture the element
               const result = await window.emmaCleverBypass.captureElementClever(element);
-              
-              console.log('🧠 CONTENT: Clever capture result:', result.success ? 'SUCCESS' : 'FAILED');
-              
+
               sendResponse(result);
-              
+
             } catch (error) {
               console.error('🧠 CONTENT: Clever capture error:', error);
               sendResponse({ success: false, error: error.message });
@@ -1739,15 +1709,14 @@ if (window.emmaUniversalInjected) {
         case 'clever.batchCapture':
           (async () => {
             try {
-              console.log('🧠 CONTENT: Clever batch capture request received:', request);
-              
+
               // Load clever bypass system if not already loaded
               if (!window.emmaCleverBypass) {
-                console.log('🧠 CONTENT: Loading clever bypass system...');
+
                 const script = document.createElement('script');
                 script.src = chrome.runtime.getURL('js/clever-capture-bypass.js');
                 document.head.appendChild(script);
-                
+
                 // Wait for it to load
                 await new Promise((resolve, reject) => {
                   script.onload = resolve;
@@ -1755,9 +1724,7 @@ if (window.emmaUniversalInjected) {
                   setTimeout(reject, 3000); // 3 second timeout
                 });
               }
-              
-              console.log('🧠 CONTENT: Starting comprehensive batch capture...');
-              
+
               // Use clever bypass to capture all images (tolerant to different exports)
               let result;
               if (window.emmaCleverBypass && typeof window.emmaCleverBypass.batchCleverCapture === 'function') {
@@ -1767,11 +1734,11 @@ if (window.emmaUniversalInjected) {
               } else {
                 throw new Error('Clever bypass not initialized');
               }
-              
+
               console.log('🧠 CONTENT: Batch capture result:', result.success ? `SUCCESS (${result.captured?.length} items)` : 'FAILED');
-              
+
               sendResponse(result);
-              
+
             } catch (error) {
               console.error('🧠 CONTENT: Clever batch capture error:', error);
               sendResponse({ success: false, error: error.message });
@@ -1779,7 +1746,7 @@ if (window.emmaUniversalInjected) {
           })();
           return true; // async
           break;
-          
+
         default:
           sendResponse({ success: false, error: 'Unknown action: ' + request.action });
       }
@@ -1795,11 +1762,11 @@ if (window.emmaUniversalInjected) {
   async function captureSelection() {
     const selection = window.getSelection();
     const text = selection.toString().trim();
-    
+
     if (text.length < 10) {
       return { success: false, message: 'No text selected' };
     }
-    
+
     try {
       // Check vault setup using simplified approach
       const storage = await chrome.storage.local.get(['emma_vault_initialized']);
@@ -1818,15 +1785,15 @@ if (window.emmaUniversalInjected) {
         created: new Date().toISOString(),
         selection: true
       };
-      
+
       const existingStorage = await chrome.storage.local.get(['emma_memories']);
       const existingMemories = existingStorage.emma_memories || [];
       const allMemories = [selectionMemory, ...existingMemories];
-      
+
       if (allMemories.length > 100) {
         allMemories.splice(100);
       }
-      
+
       await chrome.storage.local.set({ emma_memories: allMemories });
       showNotification('Selection saved to memory storage');
       return { success: true };
@@ -1843,7 +1810,7 @@ if (window.emmaUniversalInjected) {
       this.options = { hue: 0, hoverIntensity: 0.2, rotateOnHover: true, forceHoverState: false, ...options };
       this.init();
     }
-    
+
     init() {
       if (!this.container) return;
       this.setupWebGL();
@@ -1852,15 +1819,15 @@ if (window.emmaUniversalInjected) {
       this.setupEventListeners();
       this.startRenderLoop();
     }
-    
+
     setupWebGL() {
       this.canvas = document.createElement('canvas');
       this.canvas.style.cssText = 'width: 100%; height: 100%; display: block;';
       this.container.appendChild(this.canvas);
-      
+
       // Enhanced WebGL context with better quality settings
-      this.gl = this.canvas.getContext('webgl', { 
-        alpha: true, 
+      this.gl = this.canvas.getContext('webgl', {
+        alpha: true,
         premultipliedAlpha: false,
         antialias: true,
         depth: false,
@@ -1868,40 +1835,40 @@ if (window.emmaUniversalInjected) {
         preserveDrawingBuffer: false,
         powerPreference: 'high-performance'
       });
-      
+
       if (!this.gl) { this.useFallback(); return; }
-      
+
       // Enable high-quality rendering extensions if available
       const ext = this.gl.getExtension('OES_standard_derivatives');
       if (ext) {
         this.hasDerivatives = true;
       }
-      
+
       this.gl.clearColor(0, 0, 0, 0);
       this.gl.disable(this.gl.DEPTH_TEST);
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-      
+
       this.resize();
     }
-    
+
     setupShaders() {
       const vert = 'precision highp float; attribute vec2 position; attribute vec2 uv; varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 0.0, 1.0); }';
-      
+
       // Original shader design with anti-aliasing for crisp edges
       const frag = 'precision highp float; uniform float iTime; uniform vec3 iResolution; uniform float hue; uniform float hover; uniform float rot; uniform float hoverIntensity; varying vec2 vUv; vec3 rgb2yiq(vec3 c) { float y = dot(c, vec3(0.299, 0.587, 0.114)); float i = dot(c, vec3(0.596, -0.274, -0.322)); float q = dot(c, vec3(0.211, -0.523, 0.312)); return vec3(y, i, q); } vec3 yiq2rgb(vec3 c) { float r = c.x + 0.956 * c.y + 0.621 * c.z; float g = c.x - 0.272 * c.y - 0.647 * c.z; float b = c.x - 1.106 * c.y + 1.703 * c.z; return vec3(r, g, b); } vec3 adjustHue(vec3 color, float hueDeg) { float hueRad = hueDeg * 3.14159265 / 180.0; vec3 yiq = rgb2yiq(color); float cosA = cos(hueRad); float sinA = sin(hueRad); float i = yiq.y * cosA - yiq.z * sinA; float q = yiq.y * sinA + yiq.z * cosA; yiq.y = i; yiq.z = q; return yiq2rgb(yiq); } vec3 hash33(vec3 p3) { p3 = fract(p3 * vec3(0.1031, 0.11369, 0.13787)); p3 += dot(p3, p3.yxz + 19.19); return -1.0 + 2.0 * fract(vec3(p3.x + p3.y, p3.x + p3.z, p3.y + p3.z) * p3.zyx); } float snoise3(vec3 p) { const float K1 = 0.333333333; const float K2 = 0.166666667; vec3 i = floor(p + (p.x + p.y + p.z) * K1); vec3 d0 = p - (i - (i.x + i.y + i.z) * K2); vec3 e = step(vec3(0.0), d0 - d0.yzx); vec3 i1 = e * (1.0 - e.zxy); vec3 i2 = 1.0 - e.zxy * (1.0 - e); vec3 d1 = d0 - (i1 - K2); vec3 d2 = d0 - (i2 - K1); vec3 d3 = d0 - 0.5; vec4 h = max(0.6 - vec4(dot(d0, d0), dot(d1, d1), dot(d2, d2), dot(d3, d3)), 0.0); vec4 n = h * h * h * h * vec4(dot(d0, hash33(i)), dot(d1, hash33(i + i1)), dot(d2, hash33(i + i2)), dot(d3, hash33(i + 1.0))); return dot(vec4(31.316), n); } vec4 extractAlpha(vec3 colorIn) { float a = max(max(colorIn.r, colorIn.g), colorIn.b); return vec4(colorIn.rgb / (a + 1e-5), a); } const vec3 baseColor1 = vec3(0.611765, 0.262745, 0.996078); const vec3 baseColor2 = vec3(0.298039, 0.760784, 0.913725); const vec3 baseColor3 = vec3(0.062745, 0.078431, 0.600000); const float innerRadius = 0.6; const float noiseScale = 0.65; float light1(float intensity, float attenuation, float dist) { return intensity / (1.0 + dist * attenuation); } float light2(float intensity, float attenuation, float dist) { return intensity / (1.0 + dist * dist * attenuation); } vec4 draw(vec2 uv) { vec3 color1 = adjustHue(baseColor1, hue); vec3 color2 = adjustHue(baseColor2, hue); vec3 color3 = adjustHue(baseColor3, hue); float ang = atan(uv.y, uv.x); float len = length(uv); float invLen = len > 0.0 ? 1.0 / len : 0.0; float n0 = snoise3(vec3(uv * noiseScale, iTime * 0.5)) * 0.5 + 0.5; float r0 = mix(mix(innerRadius, 1.0, 0.4), mix(innerRadius, 1.0, 0.6), n0); float d0 = distance(uv, (r0 * invLen) * uv); float v0 = light1(1.0, 10.0, d0); v0 *= smoothstep(r0 * 1.05, r0, len); float cl = cos(ang + iTime * 2.0) * 0.5 + 0.5; float a = iTime * -1.0; vec2 pos = vec2(cos(a), sin(a)) * r0; float d = distance(uv, pos); float v1 = light2(1.5, 5.0, d); v1 *= light1(1.0, 50.0, d0); float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len); float v3 = smoothstep(innerRadius, mix(innerRadius, 1.0, 0.5), len); vec3 col = mix(color1, color2, cl); col = mix(color3, col, v0); col = (col + v1) * v2 * v3; col = clamp(col, 0.0, 1.0); return extractAlpha(col); } vec4 mainImage(vec2 fragCoord) { vec2 center = iResolution.xy * 0.5; float size = min(iResolution.x, iResolution.y); vec2 uv = (fragCoord - center) / size * 2.0; float angle = rot; float s = sin(angle); float c = cos(angle); uv = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y); uv.x += hover * hoverIntensity * 0.1 * sin(uv.y * 10.0 + iTime); uv.y += hover * hoverIntensity * 0.1 * sin(uv.x * 10.0 + iTime); return draw(uv); } void main() { vec2 fragCoord = vUv * iResolution.xy; vec4 col = mainImage(fragCoord); gl_FragColor = vec4(col.rgb * col.a, col.a); }';
-      
+
       this.program = this.createProgram(vert, frag);
       if (!this.program) { this.useFallback(); return; }
       this.uniforms = { iTime: this.gl.getUniformLocation(this.program, 'iTime'), iResolution: this.gl.getUniformLocation(this.program, 'iResolution'), hue: this.gl.getUniformLocation(this.program, 'hue'), hover: this.gl.getUniformLocation(this.program, 'hover'), rot: this.gl.getUniformLocation(this.program, 'rot'), hoverIntensity: this.gl.getUniformLocation(this.program, 'hoverIntensity') };
       this.attributes = { position: this.gl.getAttribLocation(this.program, 'position'), uv: this.gl.getAttribLocation(this.program, 'uv') };
     }
-    
+
     setupGeometry() {
       this.positionBuffer = this.gl.createBuffer(); this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer); this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), this.gl.STATIC_DRAW);
       this.uvBuffer = this.gl.createBuffer(); this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.uvBuffer); this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([0, 0, 2, 0, 0, 2]), this.gl.STATIC_DRAW);
     }
-    
+
     setupEventListeners() {
       this.targetHover = 0; this.currentRot = 0;
       this.container.addEventListener('mousemove', (e) => {
@@ -1911,7 +1878,7 @@ if (window.emmaUniversalInjected) {
       this.container.addEventListener('mouseleave', () => { this.targetHover = 0; });
       window.addEventListener('resize', () => this.resize());
     }
-    
+
     startRenderLoop() {
       this.currentHover = 0; this.currentRot = 0;
       const render = (time) => {
@@ -1928,36 +1895,36 @@ if (window.emmaUniversalInjected) {
       };
       requestAnimationFrame(render);
     }
-    
+
     resize() {
       if (!this.canvas || !this.container) return;
-      
+
       // Enhanced high-DPI rendering
       const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x for performance
       const rect = this.container.getBoundingClientRect();
       const width = rect.width;
       const height = rect.height;
-      
+
       // Set canvas size with pixel ratio for crisp rendering
       const canvasWidth = Math.floor(width * dpr);
       const canvasHeight = Math.floor(height * dpr);
-      
+
       if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
         this.canvas.style.width = width + 'px';
         this.canvas.style.height = height + 'px';
-        
+
         if (this.gl) {
           this.gl.viewport(0, 0, canvasWidth, canvasHeight);
         }
       }
     }
-    
+
     createShader(type, source) { const shader = this.gl.createShader(type); this.gl.shaderSource(shader, source); this.gl.compileShader(shader); if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) { console.error('Shader compile error:', this.gl.getShaderInfoLog(shader)); this.gl.deleteShader(shader); return null; } return shader; }
     createProgram(vertexSource, fragmentSource) { const vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexSource); const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentSource); if (!vertexShader || !fragmentShader) return null; const program = this.gl.createProgram(); this.gl.attachShader(program, vertexShader); this.gl.attachShader(program, fragmentShader); this.gl.linkProgram(program); if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) { console.error('Program link error:', this.gl.getProgramInfoLog(program)); this.gl.deleteProgram(program); return null; } return program; }
-    useFallback() { 
-      this.container.innerHTML = '<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; animation: float 3s ease-in-out infinite;"></div>'; 
+    useFallback() {
+      this.container.innerHTML = '<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; animation: float 3s ease-in-out infinite;"></div>';
     }
   }
 
@@ -1975,14 +1942,13 @@ if (window.emmaUniversalInjected) {
    * Add Emma UI elements
    */
   function addEmmaUI() {
-    console.log('🔧 addEmmaUI: Starting to add Emma UI elements...');
-    
+
     // Check if UI already exists
     if (document.getElementById('emma-float-btn')) {
-      console.log('🔧 addEmmaUI: Emma UI already exists, skipping...');
+
       return;
     }
-    
+
     // Floating button with orb
     const button = document.createElement('div');
     button.id = 'emma-float-btn';
@@ -1995,15 +1961,13 @@ if (window.emmaUniversalInjected) {
     `;
     button.addEventListener('click', toggleEmmaPanel);
     document.body.appendChild(button);
-    
-    console.log('🔧 addEmmaUI: Floating button added to DOM');
-    
+
     // Defer orb initialization until user interacts with the button
     try {
       button.addEventListener('mouseenter', initializeOrbsLazy, { once: true });
       button.addEventListener('click', initializeOrbsLazy, { once: true });
     } catch {}
-    
+
     // Main panel with modern design
     const panel = document.createElement('div');
     panel.id = 'emma-panel';
@@ -2062,10 +2026,10 @@ if (window.emmaUniversalInjected) {
       </div>
     `;
     document.body.appendChild(panel);
-    
+
     // Defer panel orb; initialize on first open or hover
     try { panel.addEventListener('mouseenter', initializeOrbsLazy, { once: true }); } catch {}
-    
+
     // Add event listeners
     panel.querySelector('.emma-close').addEventListener('click', hideEmmaPanel);
     panel.querySelectorAll('.emma-action-card').forEach(btn => { btn.addEventListener('click', handleActionButton); });
@@ -2096,10 +2060,10 @@ if (window.emmaUniversalInjected) {
     const chatInput = panel.querySelector('#emma-chat-input');
     sendBtn && sendBtn.addEventListener('click', () => sendChatMessage());
     chatInput && chatInput.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendChatMessage(); } });
-    
+
     // Add styles
     addEmmaStyles();
-    
+
     // Update page analysis
     updatePageAnalysis();
     refreshVaultAndAutomationStatus();
@@ -2118,7 +2082,7 @@ if (window.emmaUniversalInjected) {
         --emma-pink: #f093fb;
         --emma-blue: #667eea;
       }
-      
+
       /* Floating Emma Memory Interface */
       /* Floating Button with Orb */
               .emma-float-btn {
@@ -2135,11 +2099,11 @@ if (window.emmaUniversalInjected) {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           overflow: visible;
         }
-      
+
               .emma-float-btn:hover {
           transform: translateY(-4px) scale(1.05);
         }
-      
+
       .emma-btn-inner {
         display: flex;
         align-items: center;
@@ -2149,7 +2113,7 @@ if (window.emmaUniversalInjected) {
         font-size: 24px;
         position: relative;
       }
-      
+
       .emma-orb-container-small {
         width: 40px;
         height: 40px;
@@ -2157,7 +2121,7 @@ if (window.emmaUniversalInjected) {
         filter: drop-shadow(0 4px 16px rgba(118, 75, 162, 0.3));
         background: none !important;
       }
-      
+
       .emma-orb-container-header {
         width: 56px;
         height: 56px;
@@ -2166,17 +2130,17 @@ if (window.emmaUniversalInjected) {
         filter: drop-shadow(0 4px 16px rgba(118, 75, 162, 0.3));
         background: none !important;
       }
-      
+
       .emma-orb-container-small canvas,
       .emma-orb-container-header canvas {
         width: 100% !important;
         height: 100% !important;
       }
-      
+
       .emma-label {
         display: none;
       }
-      
+
       /* Modern Panel Design */
       .emma-panel {
         position: fixed;
@@ -2193,13 +2157,13 @@ if (window.emmaUniversalInjected) {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         color: white;
       }
-      
+
       .emma-panel-hidden {
         opacity: 0;
         transform: translateY(20px) scale(0.95);
         pointer-events: none;
       }
-      
+
       /* Header with Orb */
       .emma-panel-header {
         padding: 20px;
@@ -2211,20 +2175,20 @@ if (window.emmaUniversalInjected) {
         position: relative;
         overflow: hidden;
       }
-      
+
       .emma-header-content {
         display: flex;
         align-items: center;
         gap: 16px;
         flex: 1;
       }
-      
+
       .emma-title-section {
         display: flex;
         flex-direction: column;
         gap: 2px;
       }
-      
+
       .emma-panel-header h3 {
         margin: 0;
         font-size: 20px;
@@ -2232,7 +2196,7 @@ if (window.emmaUniversalInjected) {
         color: white;
         line-height: 1.2;
       }
-      
+
       .emma-subtitle {
         font-size: 12px;
         color: rgba(255, 255, 255, 0.8);
@@ -2240,7 +2204,7 @@ if (window.emmaUniversalInjected) {
         text-transform: lowercase;
         letter-spacing: 0.5px;
       }
-      
+
       .emma-close {
         background: rgba(255, 255, 255, 0.1);
         border: none;
@@ -2256,12 +2220,12 @@ if (window.emmaUniversalInjected) {
         justify-content: center;
         transition: all 0.2s ease;
       }
-      
+
       .emma-close:hover {
         background: rgba(255, 255, 255, 0.2);
         transform: scale(1.1);
       }
-      
+
       /* Panel Body */
       .emma-panel-body {
         padding: 20px;
@@ -2290,7 +2254,7 @@ if (window.emmaUniversalInjected) {
       .emma-chat-input { display:flex; gap:8px; margin-top:8px; }
       .emma-chat-input textarea { flex:1; min-height:36px; max-height:120px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.3); color:#fff; resize: vertical; }
       .emma-chat-send { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; color:#fff; background: var(--emma-gradient-1); }
-      
+
       /* Modern Action Cards */
       .emma-actions-modern {
         display: flex;
@@ -2298,7 +2262,7 @@ if (window.emmaUniversalInjected) {
         gap: 12px;
         margin-bottom: 20px;
       }
-      
+
       .emma-action-card {
         display: flex;
         align-items: center;
@@ -2315,14 +2279,14 @@ if (window.emmaUniversalInjected) {
         font-family: inherit;
         font-size: 14px;
       }
-      
+
       .emma-action-card:hover {
         transform: translateY(-2px);
         background: rgba(255, 255, 255, 0.08);
         border-color: rgba(240, 147, 251, 0.3);
         box-shadow: 0 8px 24px rgba(118, 75, 162, 0.2);
       }
-      
+
       .action-icon {
         font-size: 24px;
         min-width: 32px;
@@ -2333,27 +2297,27 @@ if (window.emmaUniversalInjected) {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
       }
-      
+
       .action-content {
         flex: 1;
         display: flex;
         flex-direction: column;
         gap: 2px;
       }
-      
+
       .action-title {
         font-size: 14px;
         font-weight: 600;
         color: white;
         line-height: 1.2;
       }
-      
+
       .action-subtitle {
         font-size: 12px;
         color: rgba(255, 255, 255, 0.7);
         line-height: 1.3;
       }
-      
+
       /* Page Analysis Section */
       .emma-page-analysis {
         background: rgba(255, 255, 255, 0.05);
@@ -2362,42 +2326,42 @@ if (window.emmaUniversalInjected) {
         padding: 16px;
         margin-top: 8px;
       }
-      
+
       .analysis-header {
         display: flex;
         align-items: center;
         gap: 8px;
         margin-bottom: 12px;
       }
-      
+
       .analysis-icon {
         font-size: 16px;
       }
-      
+
       .analysis-title {
         font-size: 14px;
         font-weight: 600;
         color: white;
       }
-      
+
       .analysis-content {
         display: flex;
         flex-direction: column;
         gap: 8px;
       }
-      
+
       .analysis-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
-      
+
       .analysis-label {
         font-size: 12px;
         color: rgba(255, 255, 255, 0.7);
         font-weight: 500;
       }
-      
+
       .analysis-value {
         font-size: 12px;
         color: rgba(240, 147, 251, 0.9);
@@ -2406,7 +2370,7 @@ if (window.emmaUniversalInjected) {
         padding: 4px 8px;
         border-radius: 6px;
       }
-      
+
       /* Notifications */
       .emma-notification {
         position: fixed;
@@ -2423,32 +2387,32 @@ if (window.emmaUniversalInjected) {
         animation: slideIn 0.3s ease;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
-      
+
       /* Scrollbar Styling */
       .emma-panel-body::-webkit-scrollbar {
         width: 6px;
       }
-      
+
       .emma-panel-body::-webkit-scrollbar-track {
         background: rgba(255, 255, 255, 0.05);
         border-radius: 3px;
       }
-      
+
       .emma-panel-body::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.2);
         border-radius: 3px;
       }
-      
+
       .emma-panel-body::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.3);
       }
-      
+
       /* Status element styling */
       .emma-status.show {
         display: block !important;
         animation: statusFadeIn 0.3s ease;
       }
-      
+
       @keyframes statusFadeIn {
         from {
           opacity: 0;
@@ -2459,7 +2423,7 @@ if (window.emmaUniversalInjected) {
           transform: translateY(0);
         }
       }
-      
+
       @keyframes slideIn {
         from {
           transform: translateX(100%);
@@ -2470,14 +2434,14 @@ if (window.emmaUniversalInjected) {
           opacity: 1;
         }
       }
-      
+
       @keyframes float {
-        0%, 100% { 
-          transform: translateY(0px) rotate(0deg); 
+        0%, 100% {
+          transform: translateY(0px) rotate(0deg);
           filter: hue-rotate(0deg);
         }
-        50% { 
-          transform: translateY(-4px) rotate(180deg); 
+        50% {
+          transform: translateY(-4px) rotate(180deg);
           filter: hue-rotate(30deg);
         }
       }
@@ -2881,69 +2845,50 @@ if (window.emmaUniversalInjected) {
   }
 
   // YOUR ORB IS NOW EMBEDDED ABOVE - NO LOADING NEEDED!
-  
+
   /**
    * Force beautiful gradient fallback (no brain emoji!)
    */
   function forceOrbFallback() {
     const floatingOrb = document.getElementById('emma-float-orb');
     const panelOrb = document.getElementById('emma-panel-orb');
-    
+
     if (floatingOrb) {
       floatingOrb.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
     }
-    
+
     if (panelOrb) {
       panelOrb.innerHTML = '<div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
     }
-    
-    console.log('🎨 Beautiful gradient orb fallback applied');
+
   }
 
   /**
    * Initialize floating orb - EXACT copy of dashboard orb
    */
   function initializeFloatingOrb() {
-    console.log('🔥 INITIALIZING FLOATING ORB...');
-    const orbContainer = document.getElementById('emma-float-orb');
-    
-    console.log('🔍 orbContainer:', orbContainer);
-    console.log('🔍 window.EmmaOrb:', window.EmmaOrb);
-    
-    if (!orbContainer) {
+
+    const orbContainer = document.getElementById('emma-float-orb');    if (!orbContainer) {
       console.error('❌ NO ORB CONTAINER FOUND!');
       return;
     }
-    
+
     if (!window.EmmaOrb) {
       console.error('❌ NO EMMA ORB CLASS FOUND! Using fallback.');
       orbContainer.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
       return;
     }
-    
+
     try {
       // CLEAR any existing content first!
       orbContainer.innerHTML = '';
-      console.log('🧹 Cleared floating container contents');
-      
-      console.log('🚀 CREATING YOUR EXACT ORB with settings:', {
-        hue: 0,
-        hoverIntensity: 0.5,
-        rotateOnHover: true,
-        forceHoverState: false
-      });
-      
+
       window.emmaFloatingOrbInstance = new EmmaOrb(orbContainer, {
         hue: 0,
         hoverIntensity: 0.5,
         rotateOnHover: true,
         forceHoverState: false
-      });
-      
-      console.log('✅ YOUR EXACT ORB CREATED SUCCESSFULLY!');
-      console.log('🎯 Orb instance:', window.emmaFloatingOrbInstance);
-      
-    } catch (error) {
+      });    } catch (error) {
       console.error('💥 FAILED TO CREATE YOUR ORB:', error);
       console.error('Error stack:', error.stack);
       // Beautiful gradient fallback
@@ -2952,19 +2897,16 @@ if (window.emmaUniversalInjected) {
   }
 
   /**
-   * Initialize panel header orb - EXACT copy of dashboard orb  
+   * Initialize panel header orb - EXACT copy of dashboard orb
    */
   function initializePanelOrb() {
     const orbContainer = document.getElementById('emma-panel-orb');
-    console.log('🔍 Panel orb container:', orbContainer);
-    console.log('🔍 Current container contents:', orbContainer ? orbContainer.innerHTML : 'No container');
-    
+
     if (orbContainer && window.EmmaOrb) {
       try {
         // CLEAR any existing content first!
         orbContainer.innerHTML = '';
-        console.log('🧹 Cleared container contents');
-        
+
         // Use YOUR EXACT orb settings!
         window.emmaPanelOrbInstance = new EmmaOrb(orbContainer, {
           hue: 0,
@@ -2972,11 +2914,10 @@ if (window.emmaUniversalInjected) {
           rotateOnHover: true,
           forceHoverState: false
         });
-        console.log('✨ Panel orb initialized - EXACT dashboard copy');
-        console.log('🔍 Final container contents:', orbContainer.innerHTML);
+
       } catch (error) {
         console.warn('Failed to initialize panel orb:', error);
-        // Beautiful gradient fallback (NO BRAIN EMOJI!)  
+        // Beautiful gradient fallback (NO BRAIN EMOJI!)
         orbContainer.innerHTML = '<div style="width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
       }
     } else if (orbContainer) {
@@ -2994,7 +2935,7 @@ if (window.emmaUniversalInjected) {
         const analysis = await emmaEngine.analyze();
         const typeElement = document.getElementById('page-type');
         const confidenceElement = document.getElementById('page-confidence');
-        
+
         if (typeElement) {
           typeElement.textContent = analysis.type || 'webpage';
         }
@@ -3026,28 +2967,28 @@ if (window.emmaUniversalInjected) {
     const url = window.location.href;
     const hostname = window.location.hostname;
     const title = document.title.toLowerCase();
-    
+
     // Google Photos detection
     if (hostname.includes('photos.google.com')) {
       // More comprehensive selectors for Google Photos, excluding small thumbnails and UI elements
       // Use UNIFIED function to ensure exact same behavior as collection
       const sizedPhotos = getGooglePhotosElements();
-      
+
       console.log('🔍 DETECTION: Using UNIFIED getGooglePhotosElements() function');
-      
+
       console.log('🔍 DETECTION: Emma Context Detection (UNIFIED):', {
         sizedPhotos: sizedPhotos.length,
         sampleUrls: Array.from(sizedPhotos).slice(0, 3).map(img => img.src?.substring(0, 80) + '...')
       });
-      
+
       const videos = document.querySelectorAll('video, [data-video-id]');
-      
+
       // Also check for lazy-loaded images that might not be visible yet
       const lazyImages = document.querySelectorAll('[data-src*="googleusercontent.com"], [data-src*="photos.google.com"]');
-      
+
       // For Google Photos, also try more general selectors as fallback
       const fallbackPhotos = document.querySelectorAll(`
-        img[src*="googleusercontent.com"], 
+        img[src*="googleusercontent.com"],
         img[src*="photos.google.com"],
         img[src*="ggpht.com"],
         img[role="img"],
@@ -3056,26 +2997,26 @@ if (window.emmaUniversalInjected) {
         .photo img,
         .item img
       `);
-      
+
       // Also try to detect from elements that might contain photo data
       const photoContainers = document.querySelectorAll('[data-photo-url], [data-item-url], [style*="background-image"]');
-      
+
       console.log('Emma Fallback Detection:', {
         fallbackCount: fallbackPhotos.length,
         photoContainers: photoContainers.length,
         fallbackSample: Array.from(fallbackPhotos).slice(0, 3).map(img => img.src?.substring(0, 80) + '...')
       });
-      
+
       const totalMediaCount = Math.max(
-        sizedPhotos.length + videos.length, 
+        sizedPhotos.length + videos.length,
         fallbackPhotos.length,
         photoContainers.length
       );
-      
+
       // Try to get a more accurate count from Google Photos UI elements
       const photoCounterElements = document.querySelectorAll('[aria-label*="photo"], [aria-label*="item"], .photo-count, .item-count');
       let detectedCount = totalMediaCount;
-      
+
       // Look for any element that might indicate the total count
       photoCounterElements.forEach(el => {
         const text = el.textContent || el.getAttribute('aria-label') || '';
@@ -3084,7 +3025,7 @@ if (window.emmaUniversalInjected) {
           detectedCount = parseInt(match[1]);
         }
       });
-      
+
       return {
         type: 'photo_gallery',
         platform: 'google_photos',
@@ -3104,7 +3045,7 @@ if (window.emmaUniversalInjected) {
         isPhotoView: url.includes('/photo/') || document.querySelector('[data-photo-id]')
       };
     }
-    
+
     // Instagram detection
     if (hostname.includes('instagram.com')) {
       const images = document.querySelectorAll('img[alt]');
@@ -3116,7 +3057,7 @@ if (window.emmaUniversalInjected) {
         isPost: url.includes('/p/')
       };
     }
-    
+
     // Twitter/X detection
     if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
       const images = document.querySelectorAll('[data-testid="tweetPhoto"], img[alt*="Image"]');
@@ -3127,7 +3068,7 @@ if (window.emmaUniversalInjected) {
         isTweet: url.includes('/status/')
       };
     }
-    
+
     // Facebook detection
     if (hostname.includes('facebook.com')) {
       const images = document.querySelectorAll('[role="img"], img[src*="fbcdn"]');
@@ -3137,12 +3078,12 @@ if (window.emmaUniversalInjected) {
         mediaCount: images.length
       };
     }
-    
+
     // Generic image gallery detection
     const allImages = document.querySelectorAll('img');
     const allVideos = document.querySelectorAll('video');
     const mediaCount = allImages.length + allVideos.length;
-    
+
     if (mediaCount > 5) {
       return {
         type: 'media_rich',
@@ -3151,7 +3092,7 @@ if (window.emmaUniversalInjected) {
         hasGallery: !!document.querySelector('[class*="gallery"], [class*="slideshow"], [class*="carousel"]')
       };
     }
-    
+
     return {
       type: 'general',
       platform: 'generic',
@@ -3164,7 +3105,7 @@ if (window.emmaUniversalInjected) {
    */
   function generateDynamicActions(context) {
     const actions = [];
-    
+
     if (context.type === 'photo_gallery' && context.platform === 'google_photos') {
       // Google Photos specific actions
       // Show "Save All Photos" if it's an album OR if we detect any photos (including fallback detection)
@@ -3178,7 +3119,7 @@ if (window.emmaUniversalInjected) {
           action: 'batch-save-photos'
         });
       }
-      
+
       actions.push({
         id: 'select-photos',
         icon: '🎯',
@@ -3186,7 +3127,7 @@ if (window.emmaUniversalInjected) {
         subtitle: 'Choose specific photos to save',
         action: 'individual-select'
       });
-      
+
       if (context.isPhotoView) {
         actions.push({
           id: 'save-current-photo',
@@ -3204,7 +3145,7 @@ if (window.emmaUniversalInjected) {
         subtitle: `Save this ${context.platform} post`,
         action: 'save-social-post'
       });
-      
+
       if (context.mediaCount > 1) {
         actions.push({
           id: 'save-all-media',
@@ -3223,7 +3164,7 @@ if (window.emmaUniversalInjected) {
         action: 'batch-import-all'
       });
     }
-    
+
     // Always include these universal actions
     actions.push({
       id: 'capture-page',
@@ -3232,7 +3173,7 @@ if (window.emmaUniversalInjected) {
       subtitle: 'Save entire page content',
       action: 'capture'
     });
-    
+
     actions.push({
       id: 'save-selection',
       icon: '✂️',
@@ -3240,7 +3181,7 @@ if (window.emmaUniversalInjected) {
       subtitle: 'Capture selected content',
       action: 'selection'
     });
-    
+
     actions.push({
       id: 'search-memories',
       icon: '🔍',
@@ -3248,7 +3189,7 @@ if (window.emmaUniversalInjected) {
       subtitle: 'Find your saved content',
       action: 'search'
     });
-    
+
     return actions;
   }
 
@@ -3261,7 +3202,7 @@ if (window.emmaUniversalInjected) {
       console.warn('Emma: Actions container not found');
       return;
     }
-    
+
     actionsContainer.innerHTML = actions.map(action => `
       <button class="emma-action-card" data-action="${action.action}">
         <div class="action-icon">${action.icon}</div>
@@ -3271,36 +3212,32 @@ if (window.emmaUniversalInjected) {
         </div>
       </button>
     `).join('');
-    
+
     // Remove any existing event listeners to prevent duplicates
     actionsContainer.removeEventListener('click', handleDynamicActionClick);
-    
+
     // Add event listener with proper delegation
     actionsContainer.addEventListener('click', handleDynamicActionClick);
-    
-    console.log('Emma: Added event listeners to', actions.length, 'action buttons');
+
   }
 
   /**
    * Handle clicks on dynamic action buttons with proper event delegation
    */
   function handleDynamicActionClick(event) {
-    console.log('Emma: Action button clicked', event.target);
-    
+
     // Find the button element (event might be on a child element)
     let button = event.target;
     while (button && !button.dataset.action) {
       button = button.parentElement;
       if (button === event.currentTarget) break; // Don't go beyond the container
     }
-    
+
     if (!button || !button.dataset.action) {
       console.warn('Emma: No action found for clicked element');
       return;
     }
-    
-    console.log('Emma: Executing action:', button.dataset.action);
-    
+
     // Create a synthetic event that handleActionButton expects
     const syntheticEvent = {
       currentTarget: button,
@@ -3308,7 +3245,7 @@ if (window.emmaUniversalInjected) {
       preventDefault: () => {},
       stopPropagation: () => {}
     };
-    
+
     handleActionButton(syntheticEvent);
   }
 
@@ -3322,19 +3259,19 @@ if (window.emmaUniversalInjected) {
       return;
     }
     panel.classList.remove('emma-panel-hidden');
-    
+
     // Detect page context and populate dynamic actions
     const context = detectPageContext();
     const actions = generateDynamicActions(context);
     populateDynamicActions(actions);
-    
+
     // Show page analysis
     const analysisDiv = panel.querySelector('#emma-analysis-section .analysis-content');
     if (!analysisDiv) {
       console.warn('Emma: Analysis section not found in panel');
       return;
     }
-    
+
     try {
       const analysis = await emmaEngine.analyze();
       analysisDiv.innerHTML = `
@@ -3380,20 +3317,20 @@ if (window.emmaUniversalInjected) {
   async function handleActionButton(event) {
     const action = event.currentTarget.dataset.action;
     const statusDiv = document.querySelector('.emma-status');
-    
+
     switch (action) {
       case 'capture':
         updateStatus('Capturing page content...');
-        
+
         try {
           const result = await captureContent({ userTriggered: true, force: true });
-          
+
           if (result.success) {
             updateStatus(`✅ Captured ${result.count} memories`);
           } else {
             updateStatus('❌ ' + (result.message || 'Capture failed'));
           }
-          
+
           // Hide status after 3 seconds
           setTimeout(() => {
             if (statusDiv) {
@@ -3416,7 +3353,7 @@ if (window.emmaUniversalInjected) {
           }, 3000);
         }
         break;
-        
+
       case 'selection':
         const selection = window.getSelection().toString();
         if (selection.length > 10) {
@@ -3449,7 +3386,7 @@ if (window.emmaUniversalInjected) {
           }, 2000);
         }
         break;
-        
+
       case 'search':
         updateStatus('Opening memory gallery...');
         try {
@@ -3468,7 +3405,7 @@ if (window.emmaUniversalInjected) {
           }, 2000);
         }
         break;
-        
+
       case 'batch-save-photos':
         updateStatus('🎨 Preparing to capture all visual content...');
         try {
@@ -3490,11 +3427,9 @@ if (window.emmaUniversalInjected) {
             break;
           }
 
-          console.log('🎨 BATCH-SAVE: Starting render-level capture...');
-          
           // Load the render capture engine
           if (!window.RenderCaptureEngine) {
-            console.log('🎨 Loading render capture engine...');
+
             const script = document.createElement('script');
             script.src = chrome.runtime.getURL('js/render-capture-engine.js');
             document.head.appendChild(script);
@@ -3503,43 +3438,42 @@ if (window.emmaUniversalInjected) {
               setTimeout(resolve, 1000);
             });
           }
-          
+
           if (window.RenderCaptureEngine) {
             const engine = new window.RenderCaptureEngine();
             const media = await engine.captureAllVisualMedia();
-            
+
             if (media.length > 0) {
-              console.log(`🎨 Captured ${media.length} visual elements`);
+
               updateStatus(`🎨 Processing ${media.length} items...`);
-              
+
               // Create contextual memory
               const memory = await engine.createContextualMemory(media);
-              
+
               // Save to vault
               const saveResult = await chrome.runtime.sendMessage({
                 action: 'ephemeral.add',
                 data: memory
               });
-              
+
               if (saveResult.success) {
                 updateStatus(`✅ Saved ${media.length} visual items to memory vault!`);
                 showNotification(`Successfully captured ${media.length} items! Check your memories.`, 4000);
                 setTimeout(() => { if (statusDiv) statusDiv.style.display = 'none'; }, 4000);
-                
+
                 // Refresh memories page if open
                 try {
                   chrome.runtime.sendMessage({ action: 'memories.refresh' });
                 } catch {}
-                
+
                 break;
               } else {
                 // Vault save failed - prompt user to unlock vault
-                console.log('🔒 Vault save failed:', saveResult.error);
-                
+
                 if (saveResult.error && saveResult.error.includes('vault is locked')) {
                   updateStatus('🔒 Vault is locked');
                   showNotification('Please unlock your vault to save memories', 3000);
-                  
+
                   // Open Emma popup to unlock vault
                   setTimeout(() => {
                     chrome.runtime.sendMessage({ action: 'open.popup' });
@@ -3548,35 +3482,33 @@ if (window.emmaUniversalInjected) {
                   updateStatus(`❌ Failed to save: ${saveResult.error || 'Unknown error'}`);
                   showNotification(`Failed to save: ${saveResult.error || 'Unknown error'}`, 4000);
                 }
-                
+
                 setTimeout(() => { if (statusDiv) statusDiv.style.display = 'none'; }, 4000);
                 break;
               }
             }
           }
-          
+
           // Fallback to previous screenshot-based method
-          console.log('🎨 Render capture not available, falling back to screenshot method...');
-          
+
           // Use direct implementation instead of loading external script
           updateStatus('📸 Finding photos on page...');
-          
+
           // Find all photos on the page
           const photos = [];
           let images;
-          
+
           // For Google Photos, use specific selectors
           if (window.location.hostname.includes('photos.google.com')) {
             // First, get ALL images on the page
             const allImages = document.querySelectorAll('img');
-            console.log(`📸 Google Photos: Total img elements: ${allImages.length}`);
-            
+
             // Filter for actual photos
             const photoImages = [];
             allImages.forEach(img => {
               const src = img.src || img.dataset.src || '';
               const rect = img.getBoundingClientRect();
-              
+
               // Check if it's a Google Photos image
               if (src && (
                 src.includes('googleusercontent.com') ||
@@ -3590,32 +3522,32 @@ if (window.emmaUniversalInjected) {
                 }
               }
             });
-            
+
             images = photoImages;
-            console.log(`📸 Google Photos: Found ${images.length} actual photos after filtering`);
+
           } else {
             images = document.querySelectorAll('img');
           }
-          
+
           const minSize = 100;
           const seenSources = new Set(); // Avoid duplicates
-          
+
           images.forEach((img, index) => {
             const rect = img.getBoundingClientRect();
             const src = img.src || img.dataset.src || '';
-            
+
             // Skip if already processed this source
             if (seenSources.has(src)) return;
-            
+
             // Filter criteria
             if (rect.width < minSize || rect.height < minSize) return;
             if (rect.width === 0 || rect.height === 0) return;
-            
+
             // For now, capture all photos regardless of viewport position
             // We'll handle scrolling later
-            
+
             // Check if likely a photo (especially for Google Photos)
-            const isLikelyPhoto = 
+            const isLikelyPhoto =
               src.includes('googleusercontent.com') ||
               src.includes('gstatic.com') ||
               src.includes('photos.google.com') ||
@@ -3636,29 +3568,27 @@ if (window.emmaUniversalInjected) {
               console.log(`📸 Found photo ${photos.length}:`, src.substring(0, 80) + '...');
             }
           });
-          
-          console.log(`📸 Found ${photos.length} photos on page`);
-          
+
           if (photos.length === 0) {
-            console.log('📸 No photos found with standard detection, will try fallback methods...');
+
             // Don't throw here, let it continue to try other methods
           } else {
             updateStatus(`📸 Capturing ${photos.length} photos...`);
-            
+
             // Group photos by viewport for efficient capture
           const viewportHeight = window.innerHeight;
           const photoGroups = [];
           let currentGroup = null;
-          
+
           // Sort by vertical position
-          const sorted = [...photos].sort((a, b) => 
+          const sorted = [...photos].sort((a, b) =>
             (a.rect.y + window.scrollY) - (b.rect.y + window.scrollY)
           );
-          
+
           sorted.forEach(photo => {
             const photoTop = photo.rect.y + window.scrollY;
-            
-            if (!currentGroup || 
+
+            if (!currentGroup ||
                 photoTop - currentGroup.scrollTop > viewportHeight * 0.8) {
               currentGroup = {
                 scrollTop: Math.max(0, photoTop - 100),
@@ -3666,27 +3596,25 @@ if (window.emmaUniversalInjected) {
               };
               photoGroups.push(currentGroup);
             }
-            
+
             currentGroup.photos.push(photo);
           });
-          
-          console.log(`📸 Organized into ${photoGroups.length} viewport groups`);
-          
+
           const capturedPhotos = [];
           let captureCount = 0;
-          
+
           // Process each group
           for (const group of photoGroups) {
             if (capturedPhotos.length >= 50) break;
-            
+
             // Scroll to position
             if (group.scrollTop !== window.scrollY) {
               window.scrollTo(0, group.scrollTop);
               await new Promise(resolve => setTimeout(resolve, 800));
             }
-            
+
             // Request screenshot from background
-            console.log(`📸 Requesting screenshot for group with ${group.photos.length} photos`);
+
             const screenshotResponse = await chrome.runtime.sendMessage({
               action: 'captureAndProcessPhotos',
               photos: group.photos.map(p => ({
@@ -3699,22 +3627,20 @@ if (window.emmaUniversalInjected) {
                 src: p.src
               }))
             });
-            
-            console.log('📸 Screenshot response:', screenshotResponse);
-            
+
             if (screenshotResponse && screenshotResponse.success && screenshotResponse.photos && screenshotResponse.photos.length > 0) {
               capturedPhotos.push(...screenshotResponse.photos);
               captureCount += screenshotResponse.photos.length;
-              console.log(`📸 Captured ${captureCount} photos so far...`);
+
               updateStatus(`📸 Captured ${captureCount} photos...`);
             } else {
-              console.log('📸 No photos in screenshot response');
+
             }
           }
-          
+
           if (capturedPhotos.length > 0) {
             updateStatus(`💾 Saving ${capturedPhotos.length} photos to vault...`);
-            
+
             // Create memory capsule with photos
             const saveResponse = await chrome.runtime.sendMessage({
               action: 'savePhotoMemory',
@@ -3725,29 +3651,27 @@ if (window.emmaUniversalInjected) {
                 photoCount: capturedPhotos.length
               }
             });
-            
+
             const captureResult = {
               success: true,
               count: capturedPhotos.length,
               capsuleId: saveResponse?.memoryId
             };
-            
-            console.log('📸 BATCH-SAVE: Screenshot capture result:', captureResult);
+
             updateStatus(`✅ Saved ${captureResult.count} photos to your memory vault!`);
-            
+
             // Show success notification
             showNotification(`Successfully captured ${captureResult.count} photos! Check your memories.`, 4000);
             setTimeout(() => { if (statusDiv) statusDiv.style.display = 'none'; }, 4000);
             break;
           } else {
-            console.log('📸 No photos captured with screenshot method');
+
           }
           } // Close the else block for photos.length > 0
-          
+
           // If no photos found with screenshot method, try Google Photos specific capture
           if (window.location.hostname.includes('photos.google.com')) {
-            console.log('📸 Using Google Photos specific capture...');
-            
+
             // Load Google Photos capture module
             if (!window.GooglePhotosCapture) {
               const script = document.createElement('script');
@@ -3758,15 +3682,15 @@ if (window.emmaUniversalInjected) {
                 setTimeout(resolve, 1000);
               });
             }
-            
+
             if (window.GooglePhotosCapture) {
               const gpc = new window.GooglePhotosCapture();
               const photos = gpc.findAllPhotos();
-              
+
               if (photos.length > 0) {
-                console.log(`📸 Found ${photos.length} photos with Google Photos capture`);
+
                 updateStatus(`📸 Processing ${photos.length} photos...`);
-                
+
                 // Convert to Emma format and send to background
                 const emmaFormat = gpc.toEmmaFormat(photos);
                 const result = await chrome.runtime.sendMessage({
@@ -3774,9 +3698,7 @@ if (window.emmaUniversalInjected) {
                   pageUrl: window.location.href,
                   elements: emmaFormat
                 });
-                
-                console.log('📸 Google Photos batch import result:', result);
-                
+
                 if (result.success) {
                   updateStatus(`✅ Saved ${result.imported || photos.length} photos!`);
                   showNotification(`Successfully saved ${result.imported || photos.length} photos!`, 4000);
@@ -3786,9 +3708,9 @@ if (window.emmaUniversalInjected) {
               }
             }
           }
-          
+
           // Use universal media capture for all sites
-          const result = await chrome.runtime.sendMessage({ 
+          const result = await chrome.runtime.sendMessage({
             action: 'media.batchImport',
             pageUrl: window.location.href,
             source: 'universal_page_media',
@@ -3796,15 +3718,13 @@ if (window.emmaUniversalInjected) {
             qualityThreshold: 1, // Lower threshold to capture more media
             maxElements: 100
           });
-          
-          console.log('🔍 BATCH-SAVE: Universal batch import result:', result);
-          
+
           if (result && result.success) {
             const count = result.importCount || result.count || (result.elements && result.elements.length) || 0;
             if (count > 0) {
               updateStatus(`✅ Saved ${count} high-quality media items to memory vault`);
               if (result.summary) {
-                console.log('🔍 BATCH-SAVE: Capture summary:', result.summary);
+
               }
             } else {
               updateStatus('⚠️ No high-quality media found on this page');
@@ -3813,7 +3733,7 @@ if (window.emmaUniversalInjected) {
             const errorMsg = result?.error || result?.message || 'Unknown error';
             updateStatus('❌ Failed to save media: ' + errorMsg);
             console.error('🔍 BATCH-SAVE: Universal save failed:', result);
-            
+
             // Show partial success if any imports worked
             if (result?.results && result.results.length > 0) {
               const successCount = result.results.filter(r => r.success).length;
@@ -3837,7 +3757,7 @@ if (window.emmaUniversalInjected) {
           }, 2000);
         }
         break;
-        
+
       case 'individual-select':
         updateStatus('Activating photo selection mode...');
         activatePhotoSelectionMode();
@@ -3847,7 +3767,7 @@ if (window.emmaUniversalInjected) {
           }
         }, 2000);
         break;
-        
+
       case 'save-current':
         updateStatus('Saving current photo...');
         try {
@@ -3915,7 +3835,7 @@ if (window.emmaUniversalInjected) {
           setTimeout(() => { if (statusDiv) statusDiv.style.display = 'none'; }, 2000);
         }
         break;
-        
+
         case 'save-social-post':
           updateStatus('Saving social media post...');
           try {
@@ -3933,7 +3853,7 @@ if (window.emmaUniversalInjected) {
             setTimeout(() => { if (statusDiv) statusDiv.style.display = 'none'; }, 2000);
           }
           break;
-        
+
       case 'batch-save-media':
       case 'batch-import-all':
         updateStatus('🔍 Scanning page for media...');
@@ -3944,7 +3864,7 @@ if (window.emmaUniversalInjected) {
               try {
                 const rect = el.getBoundingClientRect();
                 const src = el.currentSrc || el.src;
-                
+
                 // Quality filters
                 return (
                   src && src.startsWith('http') && // Has valid URL
@@ -3969,8 +3889,6 @@ if (window.emmaUniversalInjected) {
               };
             });
 
-          console.log(`🔍 Content: Found ${mediaElements.length} media elements for batch import`);
-          
           if (mediaElements.length === 0) {
             updateStatus('❌ No suitable media found on this page');
             setTimeout(() => { if (statusDiv) statusDiv.style.display = 'none'; }, 3000);
@@ -3979,17 +3897,15 @@ if (window.emmaUniversalInjected) {
 
           // Step 2: Send to background for processing
           updateStatus(`📥 Importing ${mediaElements.length} media items...`);
-          
-          const result = await chrome.runtime.sendMessage({ 
+
+          const result = await chrome.runtime.sendMessage({
             action: 'media.batchImport',
             pageUrl: window.location.href,
             elements: mediaElements,
             qualityThreshold: 0.5,
             maxElements: 50
           });
-          
-          console.log('🔍 Content: Batch import result:', result);
-          
+
           if (result.success) {
             updateStatus(`✅ Imported ${result.processed || result.attachments || mediaElements.length} media items`);
           } else {
@@ -4002,7 +3918,7 @@ if (window.emmaUniversalInjected) {
           }, 3000);
         } catch (error) {
           console.error('Emma: Batch import failed:', error);
-          
+
           // Handle specific error types
           let errorMessage = 'Failed to import media';
           if (error.message?.includes('Extension context invalidated')) {
@@ -4012,7 +3928,7 @@ if (window.emmaUniversalInjected) {
           } else if (error.message) {
             errorMessage = `Failed: ${error.message}`;
           }
-          
+
           updateStatus(`❌ ${errorMessage}`);
           setTimeout(() => {
             if (statusDiv) {
@@ -4034,7 +3950,7 @@ if (window.emmaUniversalInjected) {
       const maxScrollAttempts = 30; // Aggressive to load big albums
       let scrollAttempts = 0;
       const limiter = createRateLimiter(400); // avoid too-frequent scrolls
-      
+
       const checkAndScroll = () => {
         if (!limiter.canCall()) { setTimeout(checkAndScroll, 100); return; }
         // Check both Google Photos URLs and any visible images
@@ -4043,24 +3959,24 @@ if (window.emmaUniversalInjected) {
           const rect = img.getBoundingClientRect();
           return rect.width > 32 && rect.height > 32;
         });
-        
+
         const currentImageCount = Math.max(googleImages.length, visibleImages.length);
         EmmaLog.debug(`Emma: scroll attempt ${scrollAttempts + 1} (GP:${googleImages.length}/vis:${visibleImages.length})`);
-        
+
         if (currentImageCount === previousImageCount) {
           stableCount++;
         } else {
           stableCount = 0;
           previousImageCount = currentImageCount;
         }
-        
+
         // If count is stable for 3 iterations or we've tried enough times, we're done
         if (stableCount >= 3 || scrollAttempts >= maxScrollAttempts) {
           EmmaLog.debug(`Emma: scroll complete (${scrollAttempts}) final:${currentImageCount}`);
           resolve();
           return;
         }
-        
+
         // Try multiple scroll strategies
         if (scrollAttempts % 3 === 0) {
           // Scroll to bottom
@@ -4072,13 +3988,13 @@ if (window.emmaUniversalInjected) {
           // Scroll to specific position
           window.scrollTo(0, scrollAttempts * window.innerHeight);
         }
-        
+
         scrollAttempts++;
-        
+
         // Wait a bit for images to load, then check again
         setTimeout(checkAndScroll, 600); // Faster polling
       };
-      
+
       checkAndScroll();
     });
   }
@@ -4172,7 +4088,7 @@ if (window.emmaUniversalInjected) {
       `;
       document.head.appendChild(styles);
     }
-    
+
     // Find all photos on the page using comprehensive selectors that exclude small thumbnails
     const allPhotos = document.querySelectorAll(`
       img[src*="googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
@@ -4182,21 +4098,21 @@ if (window.emmaUniversalInjected) {
       img[src*="lh5.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
       img[src*="lh6.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"])
     `);
-    
+
     // Filter photos by size to exclude small UI elements (more lenient for Google Photos)
     const photos = Array.from(allPhotos).filter(img => {
       const rect = img.getBoundingClientRect();
       return rect.width >= 50 && rect.height >= 50; // Google Photos uses smaller preview images
     });
     const selectedPhotos = new Set();
-    
+
     // Make photos selectable
     photos.forEach(photo => {
       photo.classList.add('emma-photo-selectable');
       photo.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (selectedPhotos.has(photo)) {
           selectedPhotos.delete(photo);
           photo.classList.remove('emma-photo-selected');
@@ -4204,11 +4120,11 @@ if (window.emmaUniversalInjected) {
           selectedPhotos.add(photo);
           photo.classList.add('emma-photo-selected');
         }
-        
+
         updateSelectionCounter();
       });
     });
-    
+
     // Create selection panel
     const selectionPanel = document.createElement('div');
     selectionPanel.className = 'emma-selection-panel';
@@ -4220,23 +4136,23 @@ if (window.emmaUniversalInjected) {
       </div>
     `;
     document.body.appendChild(selectionPanel);
-    
+
     function updateSelectionCounter() {
       const counter = selectionPanel.querySelector('.emma-selection-counter');
       counter.textContent = `${selectedPhotos.size} photo${selectedPhotos.size !== 1 ? 's' : ''} selected`;
     }
-    
+
     // Handle save selected photos
     selectionPanel.querySelector('.emma-selection-save').addEventListener('click', async () => {
       if (selectedPhotos.size === 0) {
         showNotification('Please select at least one photo');
         return;
       }
-      
+
       const statusDiv = document.querySelector('.emma-status');
       statusDiv.style.display = 'block';
       statusDiv.textContent = `Saving ${selectedPhotos.size} selected photos...`;
-      
+
       try {
         let savedCount = 0;
         for (const photo of selectedPhotos) {
@@ -4253,10 +4169,10 @@ if (window.emmaUniversalInjected) {
           });
           if (result.success) savedCount++;
         }
-        
+
         statusDiv.textContent = `✅ Saved ${savedCount} of ${selectedPhotos.size} photos`;
         deactivatePhotoSelectionMode();
-        
+
         setTimeout(() => {
           if (statusDiv) {
             statusDiv.style.display = 'none';
@@ -4272,26 +4188,26 @@ if (window.emmaUniversalInjected) {
         }, 3000);
       }
     });
-    
+
     // Handle cancel
     selectionPanel.querySelector('.emma-selection-cancel').addEventListener('click', () => {
       deactivatePhotoSelectionMode();
     });
-    
+
     function deactivatePhotoSelectionMode() {
       // Remove selectable class and event listeners
       photos.forEach(photo => {
         photo.classList.remove('emma-photo-selectable', 'emma-photo-selected');
       });
-      
+
       // Remove selection panel
       if (selectionPanel && selectionPanel.parentNode) {
         selectionPanel.parentNode.removeChild(selectionPanel);
       }
-      
+
       selectedPhotos.clear();
     }
-    
+
     showNotification('Click on photos to select them, then click "Save Selected"');
   }
 
@@ -4303,7 +4219,7 @@ if (window.emmaUniversalInjected) {
     notification.className = 'emma-notification';
     notification.textContent = message;
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       notification.style.animation = 'slideIn 0.3s ease reverse';
       setTimeout(() => notification.remove(), 300);
@@ -4320,7 +4236,7 @@ if (window.emmaUniversalInjected) {
         e.preventDefault();
         toggleEmmaPanel();
       }
-      
+
       // Ctrl/Cmd + Shift + S = Save selection
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
         const selection = window.getSelection().toString();
@@ -4336,7 +4252,6 @@ if (window.emmaUniversalInjected) {
    * Set up message listener immediately (before initialization)
    */
   chrome.runtime.onMessage.addListener(handleMessage);
-  console.log('Emma Universal: Message listener attached');
 
   async function ensureBackgroundAwake(retries = 3) {
     for (let i = 0; i < retries; i++) {
@@ -4357,30 +4272,26 @@ if (window.emmaUniversalInjected) {
   // Try to show suggestion popup based on page content
   async function tryShowSuggestionPopup() {
     try {
-      console.log('🔍 SUGGESTION TRIGGER: Checking if we should show suggestion popup...');
-      console.log('🔍 SUGGESTION TRIGGER: Current URL:', location.href);
-      
+
       // Only show on http/https pages
       if (!location.href.startsWith('http')) {
-        console.log('❌ SUGGESTION TRIGGER: Not http/https page, skipping');
+
         return;
       }
-      
+
       // Don't show on Emma's own pages
       if (location.href.includes('extension://') || location.href.includes('emma')) {
-        console.log('❌ SUGGESTION TRIGGER: Emma extension page, skipping');
+
         return;
       }
-      
-      console.log('🔍 SUGGESTION TRIGGER: Getting capture suggestion...');
+
       const suggestion = await getCaptureSuggestion();
-      console.log('🔍 SUGGESTION TRIGGER: Suggestion result:', suggestion);
-      
+
       if (suggestion && suggestion.success && suggestion.suggested) {
-        console.log('✅ SUGGESTION TRIGGER: Showing suggestion popup!');
+
         showContentScriptSuggestionPopup(suggestion);
       } else {
-        console.log('❌ SUGGESTION TRIGGER: No valid suggestion to show');
+
       }
     } catch (error) {
       console.error('❌ SUGGESTION TRIGGER: Error getting suggestion:', error);
@@ -4392,16 +4303,16 @@ if (window.emmaUniversalInjected) {
     // Remove any existing suggestion popup
     const existing = document.querySelector('.emma-suggestion-popup-content');
     if (existing) existing.remove();
-    
+
     // Create suggestion popup
     const popup = document.createElement('div');
     popup.className = 'emma-suggestion-popup-content';
-    
+
     // Build content
     const titleText = suggestion.title || 'Save this page as a memory';
     const preview = suggestion.textPreview ? suggestion.textPreview.slice(0, 100) + (suggestion.textPreview.length > 100 ? '…' : '') : '';
     const mediaHint = suggestion.media && suggestion.media.length ? ` (+${suggestion.media.length} media)` : '';
-    
+
     popup.innerHTML = `
       <div class="suggestion-header">
         <div class="suggestion-icon">💡</div>
@@ -4413,7 +4324,7 @@ if (window.emmaUniversalInjected) {
         <button class="suggestion-btn suggestion-save">Save now</button>
       </div>
     `;
-    
+
     // Style the popup to appear above Emma orb
     Object.assign(popup.style, {
       position: 'fixed',
@@ -4433,7 +4344,7 @@ if (window.emmaUniversalInjected) {
       opacity: '0',
       transition: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
     });
-    
+
     // Add internal styles for suggestion popup elements
     const style = document.createElement('style');
     style.textContent = `
@@ -4500,78 +4411,71 @@ if (window.emmaUniversalInjected) {
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       }
     `;
-    
+
     popup.appendChild(style);
     document.body.appendChild(popup);
-    
+
     // Animate in
     requestAnimationFrame(() => {
       popup.style.transform = 'translateX(0) scale(1)';
       popup.style.opacity = '1';
     });
-    
+
     // Wire up event handlers
     const closeBtn = popup.querySelector('.suggestion-close');
     const saveBtn = popup.querySelector('.suggestion-save');
-    
+
     const handleClose = () => {
       popup.style.transform = 'translateX(350px) scale(0.9)';
       popup.style.opacity = '0';
       setTimeout(() => popup.remove(), 400);
     };
-    
+
     closeBtn.addEventListener('click', handleClose);
-    
+
     saveBtn.addEventListener('click', async () => {
-      console.log('🎯 SUGGESTION POPUP: Save button clicked!');
-      
+
       // Trigger the same capture as the main capture button
       try {
         showNotification('🔍 Starting page capture...', 3000);
-        console.log('🔍 SUGGESTION POPUP: Starting capture process...');
-        
+
         // Check vault status (allow proceeding if vault not set up)
         let vaultAvailable = false;
         try {
-          console.log('🔍 SUGGESTION POPUP: Checking vault status...');
+
           const vs = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
-          console.log('🔍 SUGGESTION POPUP: Vault status response:', vs);
-          
+
           if (vs && vs.success && vs.isUnlocked) {
-            console.log('✅ SUGGESTION POPUP: Vault is unlocked, proceeding with vault storage...');
+
             vaultAvailable = true;
           } else if (vs && vs.success && !vs.isUnlocked) {
-            console.log('⚠️ SUGGESTION POPUP: Vault locked, proceeding with fallback storage...');
+
             showNotification('⚠️ Vault locked - saving to temporary storage. Unlock vault for secure storage.', 3000);
           } else {
-            console.log('ℹ️ SUGGESTION POPUP: Vault not configured, proceeding with fallback storage...');
+
             showNotification('ℹ️ Saving to temporary storage. Set up vault for secure storage.', 3000);
           }
         } catch (vaultError) {
-          console.log('ℹ️ SUGGESTION POPUP: Vault check failed, proceeding with fallback:', vaultError.message);
+
           showNotification('ℹ️ Saving to temporary storage.', 3000);
         }
-        
+
         // Check if captureContent function exists
         if (typeof captureContent !== 'function') {
           console.error('❌ SUGGESTION POPUP: captureContent function not found!');
           showNotification('❌ Capture function not available. Please refresh the page.', 4000);
           return;
         }
-        
-        console.log('🔍 SUGGESTION POPUP: Calling captureContent function...');
-        
+
         // Use the same capture function that captureNow uses
         const result = await Promise.race([
           captureContent({ userTriggered: true, force: true }),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Content capture timeout')), 8000))
         ]);
-        
-        console.log('🔍 SUGGESTION POPUP: Capture result:', result);
-        
+
         if (result && result.success) {
           const count = result.count || 'some';
-          console.log('✅ SUGGESTION POPUP: Capture successful, count:', count);
+
           showNotification(`🎉 Successfully captured ${count} memories from this page!`, 4000);
           handleClose();
         } else {
@@ -4584,7 +4488,7 @@ if (window.emmaUniversalInjected) {
         showNotification('❌ Failed to save memory: ' + error.message, 4000);
       }
     });
-    
+
     // Auto-hide after 10 seconds
     setTimeout(() => {
       if (popup.parentNode) {
@@ -4597,13 +4501,13 @@ if (window.emmaUniversalInjected) {
    * Initialize when ready
    */
   if (document.readyState === 'loading') {
-    console.log('Emma Universal: DOM loading, waiting for DOMContentLoaded...');
+
     document.addEventListener('DOMContentLoaded', () => {
-        
+
       initializeEmma();
       // Try to show suggestion popup after page loads
       setTimeout(() => {
-        console.log('⏰ SUGGESTION TIMER: 2 seconds elapsed, checking for suggestions...');
+
         tryShowSuggestionPopup();
       }, 2000);
     });
@@ -4618,7 +4522,7 @@ if (window.emmaUniversalInjected) {
       }, 2000);
     }, 500);
   }
-  
+
   // Initialize media overlay system
   // Media overlays now handled by collection system above
 }
@@ -4632,16 +4536,14 @@ function scanPageForMedia(selector = 'img, video') {
   const elements = [];
   const mediaNodes = document.querySelectorAll(selector);
   const isGooglePhotos = window.location.hostname.includes('photos.google.com');
-  
-  console.log(`Emma: Scanning ${mediaNodes.length} media elements with selector: ${selector}`);
+
   EmmaLog.debug(`Emma: photos domain: ${isGooglePhotos}`);
-  console.log(`Emma: Page URL: ${window.location.href}`);
-  
+
   mediaNodes.forEach((element, index) => {
     try {
       // Skip tiny images (likely tracking pixels or UI elements)
       const rect = element.getBoundingClientRect();
-      
+
       // For Google Photos, be very permissive with size filtering to capture thumbnails for screenshot
       if (isGooglePhotos) {
         // Include any image 24x24 or larger for Google Photos (thumbnails can be screenshotted)
@@ -4653,11 +4555,11 @@ function scanPageForMedia(selector = 'img, video') {
       } else {
         // For other sites, use standard 10px minimum
         if (rect.width < 10 || rect.height < 10) {
-          console.log(`Emma: Skipping small element ${index}: ${rect.width}x${rect.height}`);
+
           return;
         }
       }
-      
+
       // Get source URL
       let src = element.src || element.currentSrc;
       // Attempt to upgrade Google Photos thumbnails to HQ variants
@@ -4691,43 +4593,43 @@ function scanPageForMedia(selector = 'img, video') {
         const source = element.querySelector('source');
         if (source && source.src) src = source.src;
       }
-      
+
       if (!src || src.startsWith('data:')) {
-        console.log(`Emma: Skipping element ${index}: no valid src`);
+
         return; // Skip data URLs and empty sources
       }
-      
+
       // Additional Google Photos filtering
       if (isGooglePhotos) {
         // Skip profile pictures and UI avatars
-        if (element.closest('[data-person-id]') || 
-            element.closest('.profile') || 
+        if (element.closest('[data-person-id]') ||
+            element.closest('.profile') ||
             element.closest('[aria-label*="profile"]') ||
             element.closest('[data-testid*="profile"]')) {
           console.log(`Emma: Skipping profile image ${index}: ${src.substring(0, 50)}...`);
           return;
         }
-        
+
         // Skip very small thumbnails based on URL patterns, but be more lenient
-        if (src.includes('=s32') || src.includes('=s40') || src.includes('=s48') || 
+        if (src.includes('=s32') || src.includes('=s40') || src.includes('=s48') ||
             src.includes('=s64') || src.includes('=s80') || src.includes('=s96')) {
           console.log(`Emma: Skipping thumbnail ${index}: ${src.substring(0, 50)}...`);
           return;
         }
-        
+
         // Prefer larger image versions - look for =s parameter but be more lenient for slideshow views
         const sizeMatch = src.match(/=s(\d+)/);
         if (sizeMatch && parseInt(sizeMatch[1]) < 150) { // Reduced from 200 to 150
-          console.log(`Emma: Skipping small sized image ${index}: size=${sizeMatch[1]}`);
+
           return;
         }
-        
+
         // Special handling for Google Photos without size parameter (slideshow view)
         if (!sizeMatch && src.includes('googleusercontent.com')) {
           EmmaLog.debug(`Emma: GP include w/o size param`);
         }
       }
-      
+
       // Build element metadata
       const elementData = {
         tagName: element.tagName.toLowerCase(),
@@ -4744,15 +4646,14 @@ function scanPageForMedia(selector = 'img, video') {
         title: element.title || '',
         index
       };
-      
+
       console.log(`Emma: Including element ${index}: ${rect.width}x${rect.height}, src: ${src.substring(0, 50)}...`);
       elements.push(elementData);
     } catch (error) {
       console.warn('Error scanning media element:', error);
     }
   });
-  
-  console.log(`Emma: Final scan result: ${elements.length} valid media elements`);
+
   if (elements.length > 0) {
     console.log(`Emma: Valid elements summary:`, elements.map(e => `${e.tagName} ${e.rect.width}x${e.rect.height}`));
   }
@@ -4773,86 +4674,74 @@ function getGooglePhotosElements() {
     img[src*="lh5.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"]),
     img[src*="lh6.googleusercontent.com"]:not([src*="=s32"]):not([src*="=s40"]):not([src*="=s48"]):not([src*="=s64"]):not([src*="=s80"]):not([src*="=s96"]):not([src*="=s128"]):not([src*="thumbnail"]):not([width="32"]):not([width="40"]):not([width="48"])
   `.replace(/\s+/g, ' ').trim();
-  
+
   const allPhotos = document.querySelectorAll(unifiedSelector);
-  
+
   // Use EXACT same size filtering as detectPageContext for consistency
   const sizedPhotos = Array.from(allPhotos).filter(img => {
     const rect = img.getBoundingClientRect();
     return rect.width >= 50 && rect.height >= 50; // SAME as detectPageContext
   });
-  
-  console.log('🔍 UNIFIED getGooglePhotosElements:', {
-    totalFound: allPhotos.length,
-    afterSizeFilter: sizedPhotos.length,
-    selector: 'UNIFIED_COMPLEX_SELECTOR'
-  });
-  
+
   return sizedPhotos;
 }
 
 // Google Photos: Aggressively collect all media by repeatedly scanning the grid while scrolling
 async function collectAllGooglePhotos() {
-  console.log('🔍 COLLECTION: Starting unified collection using SAME selector as detection...');
-  
+
   const seen = new Set();
   const collected = [];
-  
+
   // Try to find the main scroll container; fallback to window
-  let container = document.querySelector('[jscontroller][jsaction*="scroll"]') || 
-                  document.querySelector('[role="main"] [jscontroller]') || 
-                  document.querySelector('[data-ved] [jscontroller]') || 
-                  document.querySelector('[role="main"]') || 
-                  document.querySelector('[data-view-type]') || 
-                  document.scrollingElement || 
+  let container = document.querySelector('[jscontroller][jsaction*="scroll"]') ||
+                  document.querySelector('[role="main"] [jscontroller]') ||
+                  document.querySelector('[data-ved] [jscontroller]') ||
+                  document.querySelector('[role="main"]') ||
+                  document.querySelector('[data-view-type]') ||
+                  document.scrollingElement ||
                   document.body;
-  
+
   console.log('Emma: Using scroll container:', container?.tagName, container?.className?.slice(0, 50));
 
   // Use a timed loop to scroll and accumulate; stop when no new items after a few passes
   let iterations = 0;
   let lastCount = 0;
   let stableCount = 0; // Count consecutive iterations with no new items
-  
+
                  EmmaLog.debug('Emma: GP unified collection start');
-  
+
   while (iterations < 30) {
     iterations++;
-    console.log(`🔍 COLLECTION: === Iteration ${iterations} ===`);
-    
+
     // Use the UNIFIED function that matches detectPageContext exactly
     const nodes = getGooglePhotosElements();
-    
-    console.log(`🔍 COLLECTION: Iteration ${iterations}: UNIFIED function found ${nodes.length} elements`);
-    
+
     // If we're not finding any elements in early iterations, try a more aggressive approach
     if (iterations <= 3 && nodes.length === 0) {
-      console.log('🔍 COLLECTION: No elements found with unified selector, trying fallback approaches...');
-      
+
       // Try simpler selectors as fallback
       const fallbackSelectors = [
         'img[src*="googleusercontent.com"]',
-        'img[src*="photos.google.com"]', 
+        'img[src*="photos.google.com"]',
         'img[src*="lh3.googleusercontent.com"]',
         'img[src*="lh4.googleusercontent.com"]',
         'img[src*="lh5.googleusercontent.com"]',
         'img[src*="lh6.googleusercontent.com"]'
       ];
-      
+
       for (const selector of fallbackSelectors) {
         const fallbackElements = document.querySelectorAll(selector);
-        console.log(`🔍 COLLECTION: Fallback selector "${selector}" found: ${fallbackElements.length} elements`);
+
         if (fallbackElements.length > 0) {
           // Use fallback elements but still apply size filtering
           const filteredFallback = Array.from(fallbackElements).filter(img => {
             const rect = img.getBoundingClientRect();
             return rect.width >= 32 && rect.height >= 32; // More permissive for fallback
           });
-          console.log(`🔍 COLLECTION: After size filtering fallback: ${filteredFallback.length} elements`);
-          
+
           // If we found usable elements with fallback, break out to use them
           if (filteredFallback.length > 0) {
-            console.log('🔍 COLLECTION: Using fallback elements as nodes');
+
             nodes.length = 0;
             nodes.push(...filteredFallback);
             break;
@@ -4860,7 +4749,7 @@ async function collectAllGooglePhotos() {
         }
       }
     }
-    
+
     // Debug: log first few elements found
     if (iterations <= 3 && nodes.length > 0) {
       console.log(`🔍 COLLECTION: First few elements found:`, nodes.slice(0, 3).map(el => ({
@@ -4871,19 +4760,19 @@ async function collectAllGooglePhotos() {
         classes: el.className.slice(0, 50)
       })));
     }
-    
+
     const before = collected.length;
     let addedThisIteration = 0;
-    
+
     for (const element of nodes) {
       const rect = element.getBoundingClientRect();
       const elementSrc = element.currentSrc || element.src || '';
-      
+
       // Debug: log each element being examined
       if (iterations <= 3) { // Only log for first few iterations to avoid spam
         console.log(`🔍 COLLECTION: Examining element: ${rect.width}x${rect.height} at (${rect.left},${rect.top}) src=${elementSrc.slice(0,50)}...`);
       }
-      
+
       // Check for duplicates using same key as seen set
       const key = element.currentSrc || element.src || element.srcset || `${rect.left},${rect.top},${rect.width},${rect.height}`;
       if (seen.has(key)) {
@@ -4892,9 +4781,9 @@ async function collectAllGooglePhotos() {
       }
       seen.add(key);
       addedThisIteration++;
-      
+
       if (iterations <= 3) console.log(`🔍 COLLECTION: ✅ Adding element: ${rect.width}x${rect.height} src=${key.slice(0,50)}...`);
-      
+
       // Build one media entry similar to scanPageForMedia path
       let src = element.currentSrc || element.src || '';
       if (!src && element.srcset) {
@@ -4906,22 +4795,21 @@ async function collectAllGooglePhotos() {
       const upgraded = (function(s){ try { const u=new URL(s, location.href); if(!/googleusercontent\.com|photos\.google\.com/.test(u.hostname)) return s; let out=s.replace(/=s(\d+)(?=[^0-9]|$)/g,'=s4096'); out=out.replace(/w\d+-h\d+/g,'w4096-h4096'); out=out.replace(/=w\d+-h\d+-no/g,'=w4096-h4096-no'); return out; } catch { return s; } }) (src);
       collected.push({ tagName: 'img', src: upgraded, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, dpr: window.devicePixelRatio || 1, selector: generateElementSelector(element) });
     }
-    
+
     const after = collected.length;
     const newItemsFound = after - before;
-    
+
     console.log(`🔍 COLLECTION: Iteration ${iterations}: Added ${addedThisIteration} new items (before: ${before}, after: ${after})`);
-    console.log(`🔍 COLLECTION: Current collected count: ${collected.length}, seen set size: ${seen.size}`);
-    
+
     if (newItemsFound === 0) {
       stableCount++;
-      console.log(`🔍 COLLECTION: No new items found. Stable count: ${stableCount}`);
+
       // Be less aggressive about breaking early - ensure we actually find some items
       if (stableCount >= 3 && collected.length === 0) {
-        console.log('🔍 COLLECTION: Breaking early - found nothing after 3 stable iterations');
+
         break;
       } else if (stableCount >= 5 && (collected.length > 10 || iterations > 15)) {
-        console.log('🔍 COLLECTION: Breaking due to stable count reached with items collected');
+
         break;
       }
     } else {
@@ -4931,28 +4819,26 @@ async function collectAllGooglePhotos() {
 
     // Scroll further down to load more
     const step = Math.max(window.innerHeight, 800);
-    console.log(`Emma: Scrolling down ${step}px...`);
-    
+
     // Try multiple scrolling approaches for Google Photos
     let scrolled = false;
-    
+
     // Try container scroll first
     if (container && container !== document.body && container !== document.scrollingElement) {
       if (container.scrollBy) {
         container.scrollBy(0, step);
         scrolled = true;
-        console.log('Emma: Scrolled container');
+
       } else if (container.scrollTop !== undefined) {
         container.scrollTop += step;
         scrolled = true;
-        console.log('Emma: Scrolled container via scrollTop');
+
       }
     }
-    
+
     // Also try window scroll for Google Photos (it often uses both)
     window.scrollBy(0, step);
-    console.log('Emma: Also scrolled window');
-    
+
     await new Promise(r => setTimeout(r, 800)); // Increased wait time for loading
   }
 
@@ -4963,13 +4849,12 @@ async function collectAllGooglePhotos() {
     const key = item.src || `${item.rect.x},${item.rect.y}`;
     if (seenSrc.has(key)) continue; seenSrc.add(key); uniq.push(item);
   }
-  
+
   EmmaLog.debug('Emma: GP collection summary');
-  console.log('🔍 CONTENT: - Total collected before dedup:', collected.length);
-  console.log('🔍 CONTENT: - Unique items after dedup:', uniq.length);
+
   console.log('🔍 CONTENT: - Final unique sources:', uniq.map(u => u.src?.substring(0, 100)));
   console.log('🔍 CONTENT: - All collected items details:', uniq.slice(0, 10));
-  
+
   return uniq;
 }
 
@@ -5014,7 +4899,7 @@ function generateElementSelector(element) {
 
 // Global function for testing suggestion popup
 window.testSuggestionPopup = function() {
-  console.log('🧪 Testing suggestion popup...');
+
   const testSuggestion = {
     success: true,
     suggested: true,
@@ -5027,24 +4912,16 @@ window.testSuggestionPopup = function() {
 
 // Debug Emma orb status
 window.debugEmmaOrb = function() {
-  console.log('🔍 EMMA ORB DEBUG:');
+
   const floatingBtn = document.getElementById('emma-float-btn');
   const floatingOrb = document.getElementById('emma-float-orb');
   const panelOrb = document.getElementById('emma-panel-orb');
-  
-  console.log('Floating button element:', floatingBtn);
-  console.log('Floating button styles:', floatingBtn ? window.getComputedStyle(floatingBtn) : 'N/A');
-  console.log('Floating orb element:', floatingOrb);
-  console.log('Panel orb element:', panelOrb);
-  console.log('EmmaOrb class available:', !!window.EmmaOrb);
-  console.log('Orbs initialized:', typeof orbsInitialized !== 'undefined' ? orbsInitialized : 'undefined');
-  
-  if (floatingBtn) {
+
+  console.log('Floating button styles:', floatingBtn ? window.getComputedStyle(floatingBtn) : 'N/A');  if (floatingBtn) {
     const rect = floatingBtn.getBoundingClientRect();
-    console.log('Floating button position:', rect);
-    console.log('Is visible:', rect.width > 0 && rect.height > 0 && floatingBtn.style.display !== 'none');
+
   }
-  
+
   return {
     floatingBtn: !!floatingBtn,
     floatingOrb: !!floatingOrb,
@@ -5056,17 +4933,16 @@ window.debugEmmaOrb = function() {
 
 // Global function to manually trigger suggestion flow
 window.testSuggestionTrigger = function() {
-  console.log('🧪 Testing suggestion trigger flow...');
+
   tryShowSuggestionPopup();
 };
 
 // Force Emma UI to appear (debugging function)
 window.forceEmmaUI = function() {
-  console.log('🔧 Force adding Emma UI...');
+
   try {
     addEmmaUI();
-    console.log('✅ Emma UI forced');
-    
+
     setTimeout(() => {
       const btn = document.getElementById('emma-float-btn');
       if (btn) {
@@ -5091,7 +4967,7 @@ window.forceEmmaUI = function() {
           visibility: visible !important;
         `;
         btn.innerHTML = '<span style="font-size: 24px;">🧠</span>';
-        console.log('🔧 Emma button forced visible with brain emoji');
+
       }
     }, 100);
   } catch (error) {
@@ -5117,10 +4993,10 @@ async function initializeImageDetector() {
         return null;
       }
     }
-    
+
     emmaImageDetector = new window.EmmaImageDetector();
   }
-  
+
   return emmaImageDetector;
 }
 
@@ -5142,17 +5018,14 @@ function loadImageDetectorModule() {
  */
 async function handleImageDetectionRequest() {
   try {
-    console.log('🖼️ Starting image detection for popup...');
-    
+
     const detector = await initializeImageDetector();
     if (!detector) {
       throw new Error('Failed to initialize image detector');
     }
-    
+
     const images = await detector.startDetection();
-    
-    console.log(`🖼️ Detected ${images.length} images for popup`);
-    
+
     // Send results back to popup
     chrome.runtime.sendMessage({
       action: 'IMAGE_DETECTION_COMPLETE',
@@ -5166,12 +5039,12 @@ async function handleImageDetectionRequest() {
         }
       }
     });
-    
+
     return images;
-    
+
   } catch (error) {
     console.error('🖼️ Image detection failed:', error);
-    
+
     // Send error back to popup
     chrome.runtime.sendMessage({
       action: 'IMAGE_DETECTION_ERROR',
@@ -5184,7 +5057,7 @@ async function handleImageDetectionRequest() {
         }
       }
     });
-    
+
     return [];
   }
 }
@@ -5201,7 +5074,7 @@ if (typeof handleMessage !== 'undefined') {
       });
       return true; // Indicates async response
     }
-    
+
     // Call original handler for other messages
     return originalHandleMessage(message, sender, sendResponse);
   };
@@ -5221,7 +5094,7 @@ if (typeof handleMessage !== 'undefined') {
 
 // Simple popup test that bypasses all suggestion logic
 window.testSimplePopup = function() {
-  console.log('🧪 Testing simple popup display...');
+
   const popup = document.createElement('div');
   popup.style.cssText = `
     position: fixed;

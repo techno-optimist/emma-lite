@@ -26,18 +26,18 @@ function populateElements() {
     storageUsed: document.getElementById('storage-used'),
     todayCount: document.getElementById('today-count'),
     galleryMemoryCount: document.getElementById('gallery-memory-count'),
-    
+
     // Memory management buttons
     memoriesGalleryBtn: document.getElementById('memories-gallery-btn'),
     createMemoryBtn: document.getElementById('create-memory-btn'),
     peopleBtn: document.getElementById('people-btn'),
     relationshipsBtn: document.getElementById('relationships-btn'),
-    
+
     // Core action buttons
     captureBtn: document.getElementById('capture-btn'),
     saveSelectionBtn: document.getElementById('save-selection-btn'),
     batchImportBtn: document.getElementById('batch-import-btn'),
-    
+
     // Tool buttons
     searchQuickBtn: document.getElementById('search-quick-btn'),
     chatBtn: document.getElementById('chat-btn'),
@@ -47,7 +47,7 @@ function populateElements() {
     importBtn: document.getElementById('import-btn'),
     settingsBtn: document.getElementById('settings-btn'),
     personaBtn: document.getElementById('persona-btn'),
-    
+
     // Automation elements
     automationStatus: document.getElementById('automation-status'),
     automationStatusDot: document.getElementById('automation-status-dot'),
@@ -58,19 +58,19 @@ function populateElements() {
     autoCaptureResults: document.getElementById('auto-capture-results'),
     stagingList: document.getElementById('staging-list'),
     stagingContainer: document.getElementById('staging-container'),
-    
+
     // Header buttons
     headerCloudBtn: document.getElementById('header-cloud-btn'),
     headerVaultBtn: document.getElementById('header-vault-btn'),
     headerSettingsBtn: document.getElementById('header-settings-btn'),
-    
+
     // Search panel
     searchPanel: document.getElementById('search-panel'),
     searchInput: document.getElementById('search-input'),
     searchBtn: document.getElementById('search-btn'),
     closeSearch: document.getElementById('close-search'),
     searchResults: document.getElementById('search-results'),
-    
+
     // Chat panel
     chatPanel: document.getElementById('chat-panel'),
     closeChatBtn: document.getElementById('close-chat'),
@@ -89,40 +89,33 @@ function populateElements() {
     personaCopyOpenAI: document.getElementById('persona-copy-openai'),
     personaCopyClaude: document.getElementById('persona-copy-claude')
   };
-  
+
   console.log('📋 Elements populated:', Object.keys(elements).length, 'elements found');
 }
 
 // Initialize popup
 async function init() {
-  console.log('🚀 Universal Emma Popup: Initializing...');
-  
-  // First populate DOM elements
-  populateElements();
-  
 
-  
-  try {
+  // First populate DOM elements
+  populateElements();  try {
     // Check vault status and determine if setup is needed
     const vaultStatus = await checkVaultSetupStatus();
-    
+
     if (!vaultStatus.initialized) {
       // Show vault setup, hide dashboard
       showVaultSetup();
     } else {
       // Hide vault setup, show dashboard
       hideVaultSetup();
-      
+
       // Check vault status and auto-unlock if needed
       await checkAndAutoUnlockVault();
-      
+
       // Update stats
       await updateStats();
       await updateVaultStatusUI();
     }
-    
-    console.log('✅ Universal Emma Popup: Initialization complete');
-    
+
     // Export debug functions
     window.emmaDebug = {
       elements,
@@ -130,7 +123,7 @@ async function init() {
       updateStats,
       testUniversalCapture: () => captureCurrentPage()
     };
-    
+
     } catch (error) {
     console.error('❌ Universal Emma Popup: Initialization failed:', error);
   }
@@ -138,7 +131,7 @@ async function init() {
   // Always attach event listeners, even if initialization had issues
   try {
     attachEventListeners();
-    console.log('✅ Event listeners attached');
+
   } catch (e) {
     console.error('❌ Failed to attach event listeners:', e);
   }
@@ -156,7 +149,7 @@ async function init() {
 // Check vault status using unified API
 async function checkAndAutoUnlockVault() {
   try {
-    console.log('🔐 Popup: Checking vault status...');
+
     let response;
     try {
       response = await window.emma.vault.status();
@@ -164,7 +157,7 @@ async function checkAndAutoUnlockVault() {
     } catch {
       response = { success: false };
     }
-    
+
     if (response && response.success) {
       console.log('🔐 Popup: Vault status received:', {
         initialized: response.initialized,
@@ -172,7 +165,7 @@ async function checkAndAutoUnlockVault() {
         hasValidSession: response.hasValidSession,
         sessionExpiry: response.sessionExpiresAt ? new Date(response.sessionExpiresAt).toLocaleString() : null
       });
-      
+
       if (!response.initialized) {
         // Vault not initialized, show setup prompt
         showNotification('Please complete vault setup to start capturing memories', 'info');
@@ -180,10 +173,10 @@ async function checkAndAutoUnlockVault() {
         try { window.location.href = 'welcome.html#vault-setup'; } catch {}
         return;
       }
-      
+
       // Update UI based on vault status
       updateVaultStatusUI(response.isUnlocked);
-      
+
       // Show session info if available
       if (response.hasValidSession) {
         console.log('🔐 Popup: Valid session found, expires:', new Date(response.sessionExpiresAt).toLocaleString());
@@ -216,39 +209,38 @@ function updateVaultStatusUI(isUnlocked) {
 
 // Attach event listeners
 function attachEventListeners() {
-  console.log('🔧 POPUP: Attaching event listeners...');
-  
+
   // Listen for staging refresh messages from background
   if (chrome && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((message) => {
       if (message.action === 'staging.refresh') {
-        console.log('📬 Popup: Received staging refresh signal');
+
         renderStaging();
       }
     });
   }
-  
+
   if (elements.captureBtn) {
-    console.log('🔧 POPUP: Capture button found, attaching listener');
+
     elements.captureBtn.addEventListener('click', () => {
-      console.log('🎯 CAPTURE BUTTON CLICKED! PointerEvent');
+
       captureCurrentPage();
     });
   } else {
     console.error('🔧 POPUP: Capture button NOT FOUND!');
   }
-  
+
   // Save Selection button
   if (elements.saveSelectionBtn) {
-    console.log('🔧 POPUP: Save Selection button found, attaching listener');
+
     elements.saveSelectionBtn.addEventListener('click', () => {
-      console.log('✂️ SAVE SELECTION BUTTON CLICKED!');
+
       saveSelection();
     });
   } else {
     console.error('🔧 POPUP: Save Selection button NOT FOUND!');
   }
-  
+
   if (elements.settingsBtn) {
     elements.settingsBtn.addEventListener('click', () => {
       try { openSettings(); } catch { try { window.location.href = 'options.html'; } catch {} }
@@ -261,15 +253,15 @@ function attachEventListeners() {
       try { openCreateMemory(); } catch { try { window.location.href = 'memories.html?create=true'; } catch {} }
     });
   }
-  
+
   if (elements.peopleBtn) {
     elements.peopleBtn.addEventListener('click', () => { try { openPeople(); } catch { try { window.location.href='people.html'; } catch {} } });
   }
-  
+
   if (elements.relationshipsBtn) {
     elements.relationshipsBtn.addEventListener('click', () => { try { openRelationships(); } catch { try { window.location.href='relationships.html'; } catch {} } });
   }
-  
+
   // Tool Buttons
   if (elements.batchImportBtn) {
     elements.batchImportBtn.addEventListener('click', openBatchImport);
@@ -278,11 +270,11 @@ function attachEventListeners() {
   if (elements.addMediaOnlyBtn) {
     elements.addMediaOnlyBtn.addEventListener('click', addMediaOnPageToCapsule);
   }
-  
+
   if (elements.chatBtn) {
     elements.chatBtn.addEventListener('click', toggleChat);
   }
-  
+
   if (elements.constellationBtn) {
     elements.constellationBtn.addEventListener('click', openConstellation);
   }
@@ -290,26 +282,26 @@ function attachEventListeners() {
   if (elements.personaBtn) {
     elements.personaBtn.addEventListener('click', openPersonaModal);
   }
-  
+
   // Automation handlers
   if (elements.startAutoCaptureBtn) {
     elements.startAutoCaptureBtn.addEventListener('click', startAutonomousCapture);
   }
-  
+
   // Check automation service status on load
   checkAutomationStatus();
 
   // Load staging on popup open (non-blocking)
   renderStaging().catch(e => console.warn('Staging render failed:', e));
-  
+
   if (elements.exportBtn) {
     elements.exportBtn.addEventListener('click', openExport);
   }
-  
+
   if (elements.importBtn) {
     elements.importBtn.addEventListener('click', openImport);
   }
-  
+
   // Chat Panel
   if (elements.closeChatBtn) {
     elements.closeChatBtn.addEventListener('click', closeChat);
@@ -318,11 +310,11 @@ function attachEventListeners() {
   if (elements.closePersonaBtn) {
     elements.closePersonaBtn.addEventListener('click', closePersonaInline);
   }
-  
+
   if (elements.chatSendInline) {
     elements.chatSendInline.addEventListener('click', sendChatMessage);
   }
-  
+
   if (elements.chatInputInline) {
     elements.chatInputInline.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -385,11 +377,11 @@ function attachEventListeners() {
           try {
             const passphrase = await showSimplePasswordPrompt('🔐 Enter passphrase to encrypt and lock vault');
             if (!passphrase) return;
-            
-            const r = window.emma?.vault ? 
-              await window.emma.vault.lock({ passphrase }) : 
+
+            const r = window.emma?.vault ?
+              await window.emma.vault.lock({ passphrase }) :
               await chrome.runtime.sendMessage({ action: 'vault.lock', passphrase });
-              
+
             if (r && r.success) {
               showNotification('✅ Vault locked and encrypted successfully', 'success');
               await updateStats();
@@ -428,29 +420,29 @@ function attachEventListeners() {
       }
     });
   }
-  
+
   if (elements.viewAllBtn) {
     elements.viewAllBtn.addEventListener('click', viewAllMemories);
   }
-  
+
   if (elements.memoriesGalleryBtn) {
     elements.memoriesGalleryBtn.addEventListener('click', () => { try { viewMemoriesGallery(); } catch { try { window.location.href='memory-gallery-new.html'; } catch {} } });
   }
-  
+
   if (elements.searchQuickBtn) {
     elements.searchQuickBtn.addEventListener('click', toggleSearch);
   }
 
   // Proactive suggestion will now be handled directly by content script
-  
+
   if (elements.searchBtn) {
     elements.searchBtn.addEventListener('click', performSearch);
   }
-  
+
   if (elements.closeSearch) {
     elements.closeSearch.addEventListener('click', hideSearchResults);
   }
-  
+
   if (elements.searchInput) {
     elements.searchInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') performSearch();
@@ -487,7 +479,7 @@ function attachEventListeners() {
   if (createVaultBtn) {
     createVaultBtn.addEventListener('click', createVaultFromPopup);
   }
-  
+
   // Dashboard stat items - navigate to memories page
   const statItems = document.querySelectorAll('.stat-clickable');
   statItems.forEach(item => {
@@ -555,11 +547,7 @@ async function initializeHmlSyncIndicator() {
     });
     p2pManager.addEventListener('syncstarted', refresh);
     p2pManager.addEventListener('syncstopped', refresh);
-    p2pManager.addEventListener('error', refresh);
-
-    // EMERGENCY DISABLE: Stop HML polling storm
-    console.log('🚨 POPUP: HML polling setInterval DISABLED to stop vault.status polling storm');
-    if (hmlSync.pollHandle) clearInterval(hmlSync.pollHandle);
+    p2pManager.addEventListener('error', refresh);    if (hmlSync.pollHandle) clearInterval(hmlSync.pollHandle);
     // hmlSync.pollHandle = setInterval(refresh, 5000); // DISABLED
 
     // Initial paint
@@ -613,16 +601,16 @@ function showSuggestionPopup(suggestion) {
   // Remove any existing suggestion
   const existing = document.querySelector('.emma-suggestion-popup');
   if (existing) existing.remove();
-  
+
   // Create suggestion popup
   const popup = document.createElement('div');
   popup.className = 'emma-suggestion-popup';
-  
+
   // Build content
   const titleText = suggestion.title || 'Save this page as a memory';
   const preview = suggestion.textPreview ? suggestion.textPreview.slice(0, 100) + (suggestion.textPreview.length > 100 ? '…' : '') : '';
   const mediaHint = suggestion.media && suggestion.media.length ? ` (+${suggestion.media.length} media)` : '';
-  
+
   popup.innerHTML = `
     <div class="suggestion-header">
       <div class="suggestion-icon">💡</div>
@@ -634,7 +622,7 @@ function showSuggestionPopup(suggestion) {
       <button class="suggestion-btn suggestion-save">Save now</button>
     </div>
   `;
-  
+
   // Style the popup
   Object.assign(popup.style, {
     position: 'fixed',
@@ -654,22 +642,22 @@ function showSuggestionPopup(suggestion) {
     opacity: '0',
     transition: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
   });
-  
+
   document.body.appendChild(popup);
-  
+
   // Animate in
   requestAnimationFrame(() => {
     popup.style.transform = 'translateX(0) scale(1)';
     popup.style.opacity = '1';
   });
-  
+
   // Add event handlers
   const saveBtn = popup.querySelector('.suggestion-save');
   saveBtn.onclick = async () => {
     popup.remove();
     await captureCurrentPage();
   };
-  
+
   // Auto-hide after 10 seconds
   setTimeout(() => {
     if (popup.parentElement) {
@@ -678,7 +666,7 @@ function showSuggestionPopup(suggestion) {
       setTimeout(() => popup.remove(), 400);
     }
   }, 10000);
-  
+
   return popup;
 }
 
@@ -693,33 +681,28 @@ async function trySuggestionAfterInit() {
       new Promise((_, reject) => setTimeout(() => reject(new Error('suggest timeout')), 2000))
     ]);
     if (!suggestion || !suggestion.success || !suggestion.suggested) return;
-    
+
     showSuggestionPopup(suggestion);
   } catch {}
 }
 
 // Universal capture function - works with any site
 async function captureCurrentPage() {
-  console.log('🚀 CAPTURE FUNCTION CALLED - Starting universal capture...');
-  
+
   // Show immediate feedback to user
   showNotification('🔍 Starting page capture...', 'info', 2000);
-  
+
   try {
     // No longer require vault unlock - captures go to staging first
-    console.log('🎯 Capturing to staging area - vault unlock not required');
-    
-    console.log('🔍 Getting active tab...');
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
     if (!tab) {
       console.error('❌ No active tab found');
       showNotification('No active tab found', 'error');
       return;
     }
-    
-    console.log('🎯 Universal Capture: Starting for', tab.url);
-    
+
     // Check if it's a valid URL
     if (!tab.url || (!tab.url.startsWith('http://') && !tab.url.startsWith('https://'))) {
       showNotification('❌ Cannot capture from this type of page', 'error');
@@ -731,27 +714,19 @@ async function captureCurrentPage() {
 
     // Test if universal content script is active
     try {
-      console.log('🔍 Testing universal content script...');
+
       const pingResponse = await Promise.race([
         chrome.tabs.sendMessage(tab.id, { action: 'ping' }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Ping timeout')), 2000))
       ]);
-      
-      console.log('✅ Universal content script active:', pingResponse);
-      
+
       // Content script is active, send capture request
       showNotification('🔍 Analyzing page content...', 'info', 4000);
 
       const captureResponse = await Promise.race([
         chrome.tabs.sendMessage(tab.id, { action: 'captureNow' }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Capture timeout after 10 seconds')), 10000))
-      ]);
-      
-      console.log('📸 Capture response received:', captureResponse);
-      
-      console.log('📸 Capture response:', captureResponse);
-      
-      if (captureResponse && captureResponse.success) {
+      ]);      if (captureResponse && captureResponse.success) {
         const count = captureResponse.count || 'some';
         showNotification(`🎉 Successfully captured ${count} memories from this page!`, 'success', 6000);
       } else {
@@ -759,26 +734,24 @@ async function captureCurrentPage() {
         console.error('❌ Capture failed with response:', captureResponse);
         showNotification(`❌ Capture failed: ${errorMsg}`, 'error', 6000);
       }
-      
+
     } catch (pingError) {
-      console.log('⚠️ Universal content script not responding, will inject...', pingError.message);
-      
+
       // Content script not active, inject it
       try {
-        console.log('💉 Injecting universal content script...');
+
         showNotification('🔧 Setting up Emma on this page...', 'info', 4000);
-        
+
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['js/content-universal.js']
         });
-        
-        console.log('✅ Universal content script injected');
+
         showNotification('⏳ Initializing Emma on this page...', 'info', 4000);
-        
+
         // Wait for initialization
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         // Try ping again to confirm it's ready
         let scriptReady = false;
         for (let i = 0; i < 5; i++) {
@@ -787,7 +760,7 @@ async function captureCurrentPage() {
               chrome.tabs.sendMessage(tab.id, { action: 'ping' }),
               new Promise((_, reject) => setTimeout(() => reject(new Error('Test ping timeout')), 1000))
             ]);
-            
+
             console.log(`✅ Universal script ready (attempt ${i + 1}):`, testPing);
             scriptReady = true;
             break;
@@ -796,18 +769,16 @@ async function captureCurrentPage() {
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
-        
+
         if (scriptReady) {
           // Now try capture
           showNotification('📸 Capturing page content...', 'info', 4000);
-          
+
           const finalCaptureResponse = await Promise.race([
             chrome.tabs.sendMessage(tab.id, { action: 'captureNow' }),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Final capture timeout')), 10000))
           ]);
-          
-          console.log('🎯 Final capture response:', finalCaptureResponse);
-          
+
           if (finalCaptureResponse && finalCaptureResponse.success) {
             const count = finalCaptureResponse.count || 'some';
             showNotification(`🎉 Successfully captured ${count} memories from this page!`, 'success', 6000);
@@ -817,22 +788,22 @@ async function captureCurrentPage() {
         } else {
           showNotification('❌ Failed to initialize Emma on this page', 'error', 5000);
         }
-        
+
       } catch (injectionError) {
         console.error('💥 Failed to inject universal content script:', injectionError);
         showNotification('❌ Failed to inject Emma: ' + injectionError.message, 'error', 6000);
       }
     }
-    
+
     // Refresh stats after capture attempt
     setTimeout(async () => {
       try {
       await updateStats();
       } catch (updateError) {
-        console.log('📊 Stats update after capture failed:', updateError);
+
     }
     }, 1000);
-    
+
   } catch (error) {
     console.error('💥 Universal Capture failed:', error);
     showNotification('❌ Failed to capture: ' + error.message, 'error', 5000);
@@ -842,75 +813,72 @@ async function captureCurrentPage() {
 // Update statistics
 async function updateStats() {
   try {
-    console.log('📊 Updating stats...');
-    
+
     // Get memories directly from storage (since this approach works for today count)
     let totalMemoriesCount = 0;
     let todayMemoriesCount = 0;
     let storageUsed = 0;
-    
+
     try {
       const result = await chrome.storage.local.get(['emma_memories']);
       const memories = result.emma_memories || [];
       totalMemoriesCount = memories.length;
-      console.log('📊 Found memories in storage:', totalMemoriesCount);
-      
+
       // Calculate today's memories
       const today = new Date().setHours(0, 0, 0, 0);
       const todayMemories = memories.filter(m => new Date(m.savedAt || m.timestamp).setHours(0,0,0,0) === today);
       todayMemoriesCount = todayMemories.length;
-      console.log('📊 Today memories:', todayMemoriesCount);
-      
+
       // Estimate storage used (rough calculation)
       const memoriesJson = JSON.stringify(memories);
       storageUsed = new Blob([memoriesJson]).size;
-      console.log('📊 Storage used:', storageUsed, 'bytes');
+
     } catch (storageError) {
       console.error('📊 Error accessing storage:', storageError);
     }
-    
+
     // Try to get additional stats from vault/background for supplementary data
     try {
       const vaultResponse = await Promise.race([
         chrome.runtime.sendMessage({ action: 'vault.stats' }),
         new Promise((_, r) => setTimeout(() => r(new Error('vault timeout')), 2000))
       ]);
-      
+
       if (vaultResponse && vaultResponse.success && vaultResponse.stats) {
-        console.log('📊 Vault stats received:', vaultResponse.stats);
+
         // Use vault storage data if available and larger
         if (vaultResponse.stats.storageUsed) {
           storageUsed = vaultResponse.stats.storageUsed;
         }
         if (vaultResponse.stats.totalMemories && vaultResponse.stats.totalMemories > totalMemoriesCount) {
           totalMemoriesCount = vaultResponse.stats.totalMemories;
-          console.log('📊 Using vault total count:', totalMemoriesCount);
+
         }
       }
     } catch (vaultError) {
-      console.log('📊 Vault stats not available:', vaultError.message);
+
     }
-    
+
     // Update UI elements
     if (elements.totalMemories) {
       elements.totalMemories.textContent = formatNumber(totalMemoriesCount);
-      console.log('📊 Updated total memories display:', totalMemoriesCount);
+
     }
-    
+
     if (elements.galleryMemoryCount) {
       elements.galleryMemoryCount.textContent = formatNumber(totalMemoriesCount);
     }
-    
+
     if (elements.todayCount) {
       elements.todayCount.textContent = formatNumber(todayMemoriesCount);
-      console.log('📊 Updated today count display:', todayMemoriesCount);
+
     }
-    
+
     if (elements.storageUsed) {
       elements.storageUsed.textContent = formatBytes(storageUsed);
       console.log('📊 Updated storage display:', formatBytes(storageUsed));
     }
-    
+
   } catch (error) {
     console.error('📊 Failed to update stats:', error);
     if (elements.totalMemories) elements.totalMemories.textContent = 'Error';
@@ -935,14 +903,14 @@ function toggleSearch() {
 
 async function performSearch() {
   if (!elements.searchInput?.value.trim()) return;
-  
+
   try {
     const query = elements.searchInput.value.trim();
     const response = await chrome.runtime.sendMessage({
       action: 'searchMemories',
       query
     });
-    
+
     if (response.success && elements.searchResults) {
       displaySearchResults(response.results);
     }
@@ -953,12 +921,12 @@ async function performSearch() {
 
 function displaySearchResults(results) {
   if (!elements.searchResults) return;
-  
+
   if (results.length === 0) {
     elements.searchResults.innerHTML = '<div class="empty-state">No memories found</div>';
     return;
   }
-  
+
   elements.searchResults.innerHTML = results.map(memory => `
     <div class="memory-item" data-id="${memory.id}">
       <div class="memory-content">
@@ -995,7 +963,7 @@ function viewAllMemories() {
     window.location.href = 'memory-gallery-new.html';
     return;
   }
-  
+
   // For browser extension environment
   chrome.tabs.create({
     url: chrome.runtime.getURL('memory-gallery-new.html')
@@ -1008,7 +976,7 @@ function viewMemoriesGallery() {
     window.location.href = 'memory-gallery-new.html';
     return;
   }
-  
+
   // For browser extension environment
   chrome.tabs.create({
     url: chrome.runtime.getURL('memory-gallery-new.html')
@@ -1142,7 +1110,7 @@ function openHmlModal() {
   const closeBtn = document.getElementById('hml-close');
   if (!overlay || !closeBtn) return openEmmaCloud();
   overlay.style.display = 'flex';
-  
+
   // Initialize tabs - load enhanced functions
   import('./hml-modal-enhanced.js').then(module => {
     // Pass the HML manager reference to the enhanced module
@@ -1152,7 +1120,7 @@ function openHmlModal() {
   }).catch(err => {
     console.error('Failed to load HML modal enhancements:', err);
   });
-  
+
   const onClose = () => { overlay.style.display = 'none'; cleanup(); };
   function onKey(e){ if (e.key === 'Escape') onClose(); }
   function onOverlay(e){ if (e.target === overlay) onClose(); }
@@ -1164,7 +1132,7 @@ function openHmlModal() {
   closeBtn.addEventListener('click', onClose);
   document.addEventListener('keydown', onKey);
   overlay.addEventListener('click', onOverlay);
-  
+
   // Wire modal actions
   const cloudBtn = document.getElementById('hml-cloud-btn');
   if (cloudBtn) cloudBtn.onclick = openEmmaCloud;
@@ -1215,41 +1183,41 @@ function openHmlModal() {
       const fp = input?.value.trim();
       const me = await getMyIdentityForHml();
       if (!fp || !me) return;
-      
+
       appendHmlBoardLog('=== Connection Diagnostics ===');
-      
+
       // Check rendezvous channel
       const mod = await import('./vault/crypto-utils.js');
       const channel = await mod.calculateRendezvousId(me.fingerprint, fp);
       appendHmlBoardLog('Rendezvous channel: ' + channel);
-      
+
       // Check messages
       const msgs = await hmlSync.manager?.bulletinBoard?.get?.(channel, { limit: 10 });
       appendHmlBoardLog(`Channel has ${msgs?.length || 0} recent messages`);
-      
+
       // Show message types
       if (msgs && msgs.length > 0) {
         const types = msgs.map(m => m.data?.type || 'unknown');
         appendHmlBoardLog('Message types: ' + [...new Set(types)].join(', '));
-        
+
         // Show ICE candidates
         const iceCandidates = msgs.filter(m => m.data?.type === 'ice-candidate');
         if (iceCandidates.length > 0) {
           appendHmlBoardLog(`Found ${iceCandidates.length} ICE candidates`);
         }
       }
-      
+
       // Check peer connection status
       const conn = hmlSync.manager?.connectionManager?.getConnection?.(fp);
       if (conn) {
         appendHmlBoardLog(`Connection state: ${conn.state}`);
         appendHmlBoardLog(`ICE state: ${conn.pc?.iceConnectionState || 'no pc'}`);
         appendHmlBoardLog(`DC state: ${conn.dataChannel?.readyState || 'no dc'}`);
-        
+
         // Get ICE gathering state
         if (conn.pc) {
           appendHmlBoardLog(`ICE gathering: ${conn.pc.iceGatheringState}`);
-          
+
           // Get connection stats
           try {
             const stats = await conn.pc.getStats();
@@ -1267,14 +1235,14 @@ function openHmlModal() {
       } else {
         appendHmlBoardLog('No active connection to peer');
       }
-      
+
       // Check TURN servers
       const iceServers = await chrome.storage.local.get(['emma_ice_servers']);
       const turnServers = (iceServers.emma_ice_servers || []).filter(s => s.urls?.includes('turn:'));
       appendHmlBoardLog(`TURN servers configured: ${turnServers.length}`);
-      
-    } catch (e) { 
-      appendHmlBoardLog('Diagnostic check failed: ' + e.message); 
+
+    } catch (e) {
+      appendHmlBoardLog('Diagnostic check failed: ' + e.message);
     }
   };
   const inviteBtn = document.getElementById('hml-invite-btn');
@@ -1330,41 +1298,41 @@ function openHmlModal() {
       showNotification('Signaling provider set to ' + mode, 'success');
     };
   }
-  
+
   // TURN server management
   const turnContainer = document.getElementById('hml-turn-servers');
   const addTurnBtn = document.getElementById('hml-add-turn');
-  
+
   async function loadTurnServers() {
     if (!turnContainer) return;
-    
+
     try {
       const result = await chrome.storage.local.get(['emma_ice_servers']);
       const servers = result.emma_ice_servers || [];
-      
+
       turnContainer.innerHTML = '';
-      
+
       // Show only TURN servers
       const turnServers = servers.filter(s => s.urls && s.urls.includes('turn:'));
-      
+
       if (turnServers.length === 0) {
         turnContainer.innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 11px;">No TURN servers configured</div>';
       } else {
         turnServers.forEach((server, index) => {
           const item = document.createElement('div');
           item.className = 'hml-turn-item';
-          
+
           const urlInput = document.createElement('input');
           urlInput.type = 'text';
           urlInput.value = server.urls;
           urlInput.placeholder = 'turn:example.com:3478';
           urlInput.disabled = true;
-          
+
           const removeBtn = document.createElement('button');
           removeBtn.className = 'remove-turn';
           removeBtn.innerHTML = '×';
           removeBtn.onclick = () => removeTurnServer(index);
-          
+
           item.appendChild(urlInput);
           if (server.username) {
             const userSpan = document.createElement('span');
@@ -1374,7 +1342,7 @@ function openHmlModal() {
             item.appendChild(userSpan);
           }
           item.appendChild(removeBtn);
-          
+
           turnContainer.appendChild(item);
         });
       }
@@ -1382,13 +1350,13 @@ function openHmlModal() {
       console.error('Failed to load TURN servers:', e);
     }
   }
-  
+
   async function removeTurnServer(index) {
     try {
       const result = await chrome.storage.local.get(['emma_ice_servers']);
       const servers = result.emma_ice_servers || [];
       const turnServers = servers.filter(s => s.urls && s.urls.includes('turn:'));
-      
+
       if (index >= 0 && index < turnServers.length) {
         const turnUrl = turnServers[index].urls;
         const newServers = servers.filter(s => s.urls !== turnUrl);
@@ -1401,7 +1369,7 @@ function openHmlModal() {
       showNotification('Failed to remove TURN server', 'error');
     }
   }
-  
+
   if (addTurnBtn) {
     addTurnBtn.onclick = async () => {
       const url = prompt('Enter TURN server URL:\n(e.g., turn:example.com:3478)');
@@ -1409,10 +1377,10 @@ function openHmlModal() {
         if (url) showNotification('Invalid TURN URL format', 'error');
         return;
       }
-      
+
       const username = prompt('Username (optional):');
       const credential = username ? prompt('Password:') : null;
-      
+
       try {
         const result = await chrome.storage.local.get(['emma_ice_servers']);
         const servers = result.emma_ice_servers || [
@@ -1421,13 +1389,13 @@ function openHmlModal() {
           { urls: 'stun:stun.services.mozilla.com' },
           { urls: 'stun:stun.stunprotocol.org:3478' }
         ];
-        
+
         const newServer = { urls: url };
         if (username) {
           newServer.username = username;
           newServer.credential = credential;
         }
-        
+
         servers.push(newServer);
         await chrome.storage.local.set({ emma_ice_servers: servers });
         await loadTurnServers();
@@ -1438,10 +1406,10 @@ function openHmlModal() {
       }
     };
   }
-  
+
   // Load TURN servers when modal opens
   loadTurnServers();
-  
+
   const testPost = document.getElementById('hml-test-post');
   const testCheck = document.getElementById('hml-test-check');
   if (testPost) testPost.onclick = async () => {
@@ -1515,7 +1483,7 @@ async function renderHmlPanel() {
           const iceState = p.pc?.iceConnectionState || 'unknown';
           const dcState = p.dataChannel?.readyState || 'closed';
           const stats = p.stats || {};
-          
+
           return `
             <div class="hml-peer-item">
               <div class="hml-peer-header">
@@ -1634,7 +1602,7 @@ async function checkAutomationStatus() {
     const response = await chrome.runtime.sendMessage({
       action: 'checkAutomationStatus'
     });
-    
+
     if (response.success && response.available) {
       updateAutomationStatus('connected', 'Service connected');
     } else {
@@ -1656,28 +1624,28 @@ function updateAutomationStatus(status, message) {
 
 async function startAutonomousCapture() {
   const query = elements.autoCaptureQuery?.value?.trim();
-  
+
   if (!query) {
     showNotification('Please enter a capture query', 'error');
     return;
   }
-  
+
   if (query.length < 10) {
     showNotification('Please provide a more detailed query', 'error');
     return;
   }
-  
+
   // Disable button and show progress
   if (elements.startAutoCaptureBtn) {
     elements.startAutoCaptureBtn.disabled = true;
     elements.startAutoCaptureBtn.textContent = 'Starting...';
   }
-  
+
   if (elements.autoCaptureProgress) {
     elements.autoCaptureProgress.classList.remove('hidden');
     updateProgress('Initializing autonomous capture...', 10);
   }
-  
+
   try {
     const result = await chrome.runtime.sendMessage({
       action: 'startAutonomousCapture',
@@ -1686,17 +1654,17 @@ async function startAutonomousCapture() {
         headless: false // Show browser for demo
       }
     });
-    
+
     if (result.success) {
       updateProgress(`Captured ${result.count} memories!`, 100);
       showNotification(`✅ Successfully captured ${result.count} memories from ${result.platform}`, 'success', 5000);
       renderAutoCaptureResults(result);
-      
+
       // Clear the query input
       if (elements.autoCaptureQuery) {
         elements.autoCaptureQuery.value = '';
       }
-      
+
       // Hide progress after delay
       setTimeout(() => {
         if (elements.autoCaptureProgress) {
@@ -1722,11 +1690,11 @@ async function startAutonomousCapture() {
 function updateProgress(message, percentage) {
   const progressMessage = elements.autoCaptureProgress?.querySelector('.progress-message');
   const progressFill = elements.autoCaptureProgress?.querySelector('.progress-fill');
-  
+
   if (progressMessage) {
     progressMessage.textContent = message;
   }
-  
+
   if (progressFill) {
     progressFill.style.width = `${percentage}%`;
   }
@@ -1761,18 +1729,18 @@ async function openMemoryFromPopup(memoryId) {
 
 // ---------- Staging (Ephemeral) ----------
 async function renderStaging() {
-  console.log('📋 Popup: renderStaging called');
+
   if (!elements.stagingList) {
-    console.log('❌ Popup: stagingList element not found');
+
     return;
   }
-  console.log('📡 Popup: Requesting ephemeral.list...');
+
   const resp = { success: true, items: [] }; // Desktop: staging disabled for now
-  console.log('📦 Popup: ephemeral.list response:', resp);
+
   const list = (resp && resp.success && Array.isArray(resp.items)) ? resp.items : [];
-  console.log('📋 Popup: staging list items:', list.length);
+
   if (!list.length) {
-    console.log('📭 Popup: No staging items, showing empty state');
+
     const empty = document.getElementById('staging-empty');
     if (empty) empty.style.display = 'block';
     elements.stagingList.innerHTML = '';
@@ -1798,16 +1766,14 @@ async function renderStaging() {
   // Attach event listeners with debugging
   const approveButtons = elements.stagingList.querySelectorAll('.btn-approve');
   const rejectButtons = elements.stagingList.querySelectorAll('.btn-reject');
-  
-  console.log(`🔧 Popup: Attaching listeners to ${approveButtons.length} approve buttons and ${rejectButtons.length} reject buttons`);
-  
+
   approveButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       console.log('✅ Approve button clicked for ID:', btn.getAttribute('data-id'));
       approveStaged(btn.getAttribute('data-id'));
     });
   });
-  
+
   rejectButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       console.log('🗑️ Reject button clicked for ID:', btn.getAttribute('data-id'));
@@ -1831,10 +1797,10 @@ async function approveStaged(id) {
 }
 
 async function rejectStaged(id) {
-  console.log('🗑️ Popup: Dismiss clicked for ID:', id);
+
   try {
     const res = { success: false, error: 'Staging not available in desktop yet' };
-    console.log('🗑️ Popup: Delete response:', res);
+
     if (res?.success) {
       showNotification('✅ Dismissed', 'success', 1500);
       await renderStaging();
@@ -1843,7 +1809,7 @@ async function rejectStaged(id) {
     }
   } catch (e) {
     console.error('🗑️ Popup: Delete error:', e);
-    
+
     // Handle extension context invalidated error
     if (e.message?.includes('Extension context invalidated') || e.message?.includes('message port closed')) {
       showNotification('🔄 Extension reloaded - please refresh the page', 'warning', 5000);
@@ -1908,55 +1874,55 @@ async function generatePersonaPrompt() {
 
 async function sendChatMessage() {
   if (!elements.chatInputInline || !elements.chatMessagesInline) return;
-  
+
   const message = elements.chatInputInline.value.trim();
   if (!message) return;
-  
+
   // Clear input
   elements.chatInputInline.value = '';
-  
+
   // Add user message to chat
   const userMsgDiv = document.createElement('div');
   userMsgDiv.className = 'chat-message user';
   userMsgDiv.textContent = message;
   elements.chatMessagesInline.appendChild(userMsgDiv);
-  
+
   // Add thinking indicator
   const thinkingDiv = document.createElement('div');
   thinkingDiv.className = 'chat-message emma thinking';
   thinkingDiv.textContent = 'Emma is thinking...';
   elements.chatMessagesInline.appendChild(thinkingDiv);
-  
+
   // Scroll to bottom
   elements.chatMessagesInline.scrollTop = elements.chatMessagesInline.scrollHeight;
-  
+
   try {
     // Send to Emma chat system
     const response = await chrome.runtime.sendMessage({
       action: 'chat',
       message: message
     });
-    
+
     // Remove thinking indicator
     thinkingDiv.remove();
-    
+
     // Add Emma's response
     const emmaMsgDiv = document.createElement('div');
     emmaMsgDiv.className = 'chat-message emma';
     emmaMsgDiv.textContent = response?.message || 'I understand your request. Emma chat functionality is coming soon!';
     elements.chatMessagesInline.appendChild(emmaMsgDiv);
-    
+
   } catch (error) {
     // Remove thinking indicator
     thinkingDiv.remove();
-    
+
     // Add error message
     const errorMsgDiv = document.createElement('div');
     errorMsgDiv.className = 'chat-message emma error';
     errorMsgDiv.textContent = 'Emma chat is coming soon! For now, I can help you search and organize your memories.';
     elements.chatMessagesInline.appendChild(errorMsgDiv);
   }
-  
+
   // Scroll to bottom
   elements.chatMessagesInline.scrollTop = elements.chatMessagesInline.scrollHeight;
 }
@@ -1964,27 +1930,27 @@ async function sendChatMessage() {
 // Enhanced notification system with better visibility
 function showNotification(message, type = 'info', duration = 4000) {
   console.log(`📢 ${type.toUpperCase()}: ${message}`);
-  
+
   // Remove any existing notifications to avoid overlap
   const existingNotifications = document.querySelectorAll('.emma-popup-notification');
   existingNotifications.forEach(notif => notif.remove());
-  
+
   // Create notification element
   const notification = document.createElement('div');
   notification.className = `emma-popup-notification notification-${type}`;
-  
+
   // Add icon
   const icon = document.createElement('span');
   icon.style.marginRight = '8px';
   icon.style.fontSize = '16px';
-  icon.textContent = type === 'error' ? '❌' : 
+  icon.textContent = type === 'error' ? '❌' :
                      type === 'warning' ? '⚠️' :
-                     type === 'success' ? '✅' : 
+                     type === 'success' ? '✅' :
                      'ℹ️';
-  
+
   notification.appendChild(icon);
   notification.appendChild(document.createTextNode(message));
-  
+
   // Enhanced styling with higher z-index and better positioning
   Object.assign(notification.style, {
     position: 'fixed',
@@ -2008,20 +1974,20 @@ function showNotification(message, type = 'info', duration = 4000) {
     transform: 'translateX(400px) scale(0.9)',
     opacity: '0',
     transition: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-    background: type === 'error' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 
+    background: type === 'error' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
                 type === 'warning' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' :
-                type === 'success' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 
+                type === 'success' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' :
                 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
   });
-  
+
   document.body.appendChild(notification);
-  
+
   // Animate in
   setTimeout(() => {
     notification.style.transform = 'translateX(0) scale(1)';
     notification.style.opacity = '1';
   }, 10);
-  
+
   // Auto-remove after specified duration
   setTimeout(() => {
     if (notification.parentNode) {
@@ -2034,7 +2000,7 @@ function showNotification(message, type = 'info', duration = 4000) {
       }, 400);
     }
   }, duration);
-  
+
   return notification;
 }
 
@@ -2055,12 +2021,12 @@ function formatTime(timestamp) {
   const date = new Date(timestamp);
   const now = new Date();
   const diff = now - date;
-  
+
   if (diff < 60000) return 'Just now';
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-  
+
   return date.toLocaleDateString();
 }
 
@@ -2094,11 +2060,11 @@ async function checkVaultSetupStatus() {
 function showVaultSetup() {
   const setupSection = document.getElementById('vault-setup-section');
   const dashboardSections = document.querySelectorAll('.dashboard-stats, .dashboard-main');
-  
+
   if (setupSection) {
     setupSection.style.display = 'block';
   }
-  
+
   // Hide dashboard sections
   dashboardSections.forEach(section => {
     if (section) section.style.display = 'none';
@@ -2108,11 +2074,11 @@ function showVaultSetup() {
 function hideVaultSetup() {
   const setupSection = document.getElementById('vault-setup-section');
   const dashboardSections = document.querySelectorAll('.dashboard-stats, .dashboard-main');
-  
+
   if (setupSection) {
     setupSection.style.display = 'none';
   }
-  
+
   // Show dashboard sections
   dashboardSections.forEach(section => {
     if (section) section.style.display = 'block';
@@ -2122,7 +2088,7 @@ function hideVaultSetup() {
 function showVaultSetupStatus(message, type) {
   const statusEl = document.getElementById('vault-setup-status');
   if (!statusEl) return;
-  
+
   statusEl.textContent = message;
   statusEl.className = `vault-status-message ${type}`;
 }
@@ -2131,23 +2097,23 @@ async function createVaultFromPopup() {
   const passphraseEl = document.getElementById('popup-vault-passphrase');
   const confirmEl = document.getElementById('popup-vault-confirm');
   const createBtn = document.getElementById('create-vault-btn');
-  
+
   if (!passphraseEl || !confirmEl || !createBtn) return;
-  
+
   const passphrase = passphraseEl.value.trim();
   const confirm = confirmEl.value.trim();
-  
+
   // Validation
   if (passphrase.length < 6) {
     showVaultSetupStatus('Passcode must be at least 6 characters', 'error');
     return;
   }
-  
+
   if (passphrase !== confirm) {
     showVaultSetupStatus('Passcodes do not match', 'error');
     return;
   }
-  
+
   // Create vault
   try {
     createBtn.disabled = true;
@@ -2161,14 +2127,14 @@ async function createVaultFromPopup() {
     }
     if (!res || !res.success) throw new Error(res?.error || 'Initialize failed');
     showVaultSetupStatus('✅ Vault created successfully!', 'success');
-    
+
     // Wait a moment then switch to dashboard
     setTimeout(() => {
       hideVaultSetup();
       // Reinitialize dashboard
       init();
     }, 1500);
-    
+
   } catch (error) {
     console.error('Vault creation failed:', error);
     showVaultSetupStatus(`Failed to create vault: ${error.message}`, 'error');
@@ -2187,7 +2153,7 @@ async function createVaultDirectly(passphrase) {
       demo: passphrase === 'demo'
     }
   });
-  
+
   console.log('🔐 Popup: Vault created directly (simplified approach)');
 }
 
@@ -2200,24 +2166,24 @@ function showPasswordModal(title = 'Enter Vault Code') {
     const cancelBtn = document.getElementById('password-modal-cancel');
     const confirmBtn = document.getElementById('password-modal-confirm');
     const closeBtn = document.getElementById('password-modal-close');
-    
+
     if (!modal || !input || !cancelBtn || !confirmBtn || !closeBtn) {
       reject(new Error('Password modal elements not found'));
       return;
     }
-    
+
     // Set title
     if (titleEl) titleEl.textContent = title;
-    
+
     // Clear previous input
     input.value = '';
-    
+
     // Show modal
     modal.style.display = 'flex';
-    
+
     // Focus input after modal is shown
     setTimeout(() => input.focus(), 100);
-    
+
     // Handle input events
     const handleConfirm = () => {
       const passphrase = input.value.trim();
@@ -2225,28 +2191,28 @@ function showPasswordModal(title = 'Enter Vault Code') {
         input.focus();
         return;
       }
-      
+
       // Clear input for security
       input.value = '';
       modal.style.display = 'none';
-      
+
       // Remove event listeners
       cleanup();
-      
+
       resolve(passphrase);
     };
-    
+
     const handleCancel = () => {
       // Clear input for security
       input.value = '';
       modal.style.display = 'none';
-      
+
       // Remove event listeners
       cleanup();
-      
+
       reject(new Error('User cancelled'));
     };
-    
+
     const handleKeyPress = (e) => {
       if (e.key === 'Enter') {
         handleConfirm();
@@ -2254,14 +2220,14 @@ function showPasswordModal(title = 'Enter Vault Code') {
         handleCancel();
       }
     };
-    
+
     const cleanup = () => {
       input.removeEventListener('keypress', handleKeyPress);
       confirmBtn.removeEventListener('click', handleConfirm);
       cancelBtn.removeEventListener('click', handleCancel);
       closeBtn.removeEventListener('click', handleCancel);
     };
-    
+
     // Add event listeners
     input.addEventListener('keypress', handleKeyPress);
     confirmBtn.addEventListener('click', handleConfirm);
@@ -2274,7 +2240,7 @@ function showPasswordModal(title = 'Enter Vault Code') {
 async function unlockVault() {
   try {
     const passphrase = await showPasswordModal();
-    
+
     showNotification('Unlocking vault...', 'info');
     let result;
     if (window.emma?.vault) {
@@ -2283,7 +2249,7 @@ async function unlockVault() {
     } else if (chrome?.runtime?.sendMessage) {
       result = await chrome.runtime.sendMessage({ action: 'vault.unlock', passphrase });
     }
-    
+
     if (result && result.success) {
       showNotification('Vault unlocked successfully! 🔓', 'success');
       await updateStats();
@@ -2304,13 +2270,13 @@ async function lockVault() {
     // CRITICAL: Ask for passphrase to encrypt vault before locking
     const passphrase = await showPasswordModal('🔐 Enter passphrase to encrypt and lock vault');
     if (!passphrase) return;
-    
+
     showNotification('Locking vault...', 'info');
-    
+
     // Use web vault system for locking
     if (window.emmaWebVault) {
       await window.emmaWebVault.lockVault();
-      console.log('✅ VAULT: Locked and encrypted successfully');
+
       showNotification('Vault locked successfully', 'success');
       // Refresh page to show locked state
       setTimeout(() => window.location.reload(), 1000);
@@ -2324,7 +2290,7 @@ async function lockVault() {
         setTimeout(() => window.location.reload(), 1000);
       }
     }
-    
+
     if (result && result.success) {
       showNotification('Vault locked successfully! 🔒', 'success');
       await updateStats();
@@ -2341,9 +2307,9 @@ async function lockVault() {
 async function showVaultStatus() {
   try {
     showNotification('Checking vault status...', 'info');
-    
+
     const result = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
-    
+
     if (result && result.success) {
       const status = result;
       const statusText = `
@@ -2354,9 +2320,9 @@ Vault Status:
 ${status.sessionExpiresAt ? `• Session Expires: ${new Date(status.sessionExpiresAt).toLocaleString()}` : ''}
 ${status.lastUnlockedAt ? `• Last Unlocked: ${new Date(status.lastUnlockedAt).toLocaleString()}` : ''}
       `.trim();
-      
+
       alert(statusText);
-      
+
       // Update the status subtitle
       const statusSubtitle = document.getElementById('vault-status-text');
       if (statusSubtitle) {
@@ -2379,11 +2345,11 @@ async function updateVaultStatusUI() {
       if (statusSubtitle) {
         statusSubtitle.textContent = result.isUnlocked ? '🔓 Unlocked' : '🔒 Locked';
       }
-      
+
       // Update button visibility/styling based on vault state
       const unlockBtn = document.getElementById('unlock-vault-btn');
       const lockBtn = document.getElementById('lock-vault-btn');
-      
+
       if (unlockBtn && lockBtn) {
         if (result.isUnlocked) {
           unlockBtn.style.opacity = '0.5';
@@ -2404,37 +2370,33 @@ async function updateVaultStatusUI() {
 
 // Save Selection function
 async function saveSelection() {
-  console.log('✂️ Starting selection capture...');
-  
+
   try {
     // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
+
     if (!tab) {
       console.error('No active tab found');
       return;
     }
-    
-    console.log('📄 Capturing selection from:', tab.url);
-    
+
     // Check vault status first
     const vaultStatus = window.emma?.vault ? await window.emma.vault.status() : await chrome.runtime.sendMessage({ action: 'vault.status' });
-    console.log('🔐 Vault status for selection:', vaultStatus);
-    
+
     if (!vaultStatus.success || !vaultStatus.isUnlocked) {
       console.warn('🔒 Vault not unlocked for capture');
       showNotification('Vault must be unlocked to capture memories', 'warning');
       return;
     }
-    
+
     // Send selection capture message to content script
-    await chrome.tabs.sendMessage(tab.id, { 
+    await chrome.tabs.sendMessage(tab.id, {
       action: 'capture',
       type: 'selection'
     });
-    
+
     showNotification('Selection saved successfully!', 'success');
-    
+
   } catch (error) {
     console.error('❌ Selection capture failed:', error);
     showNotification('Failed to save selection', 'error');
@@ -2454,7 +2416,7 @@ if (document.readyState === 'loading') {
 
 // Universal orb system handles orb initialization
 function initializeUniversalOrbSystem() {
-  console.log('🎯 Popup: Universal orb system will handle orb display');
+
   // The universal orb injection script handles everything now
 }
 

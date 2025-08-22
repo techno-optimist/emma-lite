@@ -1,7 +1,7 @@
 /**
  * Emma Chat Experience - Intelligent Memory Companion Chat Interface
  * CTO-approved implementation following Emma's premium design principles
- * 
+ *
  * 🚀 VECTORLESS AI INTEGRATION: Revolutionary memory intelligence without vector embeddings
  * Privacy-first, local processing with optional cloud LLM enhancement
  */
@@ -11,7 +11,7 @@ console.log('💬 CACHE BUST DEBUG: emma-chat-experience.js LOADED at', new Date
 class EmmaChatExperience extends ExperiencePopup {
   constructor(position, settings = {}) {
     super(position, settings);
-    
+
     // Chat-specific properties
     this.messages = [];
     this.isTyping = false;
@@ -20,19 +20,19 @@ class EmmaChatExperience extends ExperiencePopup {
     this.messageContainer = null;
     this.inputField = null;
     this.sendButton = null;
-    
+
     // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
-    
+
     // 💝 Intelligent Memory Capture Integration
     this.intelligentCapture = null;
     this.detectedMemories = new Map();
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
-    
+
     // Emma personality settings
     this.emmaPersonality = {
       name: "Emma",
@@ -40,8 +40,7 @@ class EmmaChatExperience extends ExperiencePopup {
       tone: "warm, helpful, memory-focused",
       capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
-    
-    console.log('💬 Emma Chat Experience initialized');
+
   }
 
   getTitle() {
@@ -52,20 +51,20 @@ class EmmaChatExperience extends ExperiencePopup {
     this.initializeEmmaOrb();
     this.setupChatInterface();
     this.setupKeyboardShortcuts();
-    
+
     // Add initial Emma welcome message (single clean bubble)
     this.addInitialWelcomeMessage();
     this.loadChatHistory();
-    
+
     // 🧠 Initialize Vectorless AI Engine
     await this.initializeVectorlessEngine();
-    
+
     // 💝 Initialize Intelligent Memory Capture
     await this.initializeIntelligentCapture();
-    
+
     // Set global reference for onclick handlers (production-safe)
     window.chatExperience = this;
-    
+
     this.enableFocusMode();
   }
 
@@ -76,7 +75,7 @@ class EmmaChatExperience extends ExperiencePopup {
         console.warn('💬 Chat Emma orb container not found');
         return;
       }
-      
+
       if (window.EmmaOrb) {
         // Create WebGL Emma Orb for chat interface
         this.webglOrb = new window.EmmaOrb(orbContainer, {
@@ -85,7 +84,7 @@ class EmmaChatExperience extends ExperiencePopup {
           rotateOnHover: false,
           forceHoverState: false
         });
-        console.log('💬 Chat Emma Orb initialized successfully');
+
       } else {
         console.warn('💬 EmmaOrb class not available, using fallback');
         // Fallback gradient
@@ -116,7 +115,7 @@ class EmmaChatExperience extends ExperiencePopup {
       background: transparent;
       border: none;
     `;
-    
+
     contentElement.innerHTML = `
       <!-- Settings button removed - clean chat interface -->
 
@@ -136,9 +135,9 @@ class EmmaChatExperience extends ExperiencePopup {
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <textarea 
-            id="chat-input" 
-            class="chat-textarea" 
+          <textarea
+            id="chat-input"
+            class="chat-textarea"
             placeholder="Ask Emma about your memories..."
             rows="1"
             maxlength="2000"
@@ -150,7 +149,7 @@ class EmmaChatExperience extends ExperiencePopup {
             </svg>
           </button>
         </div>
-        
+
         <!-- Add bottom spacing for input area - match top padding exactly -->
         <div style="height: 32px;"></div>
       </div>
@@ -176,27 +175,27 @@ class EmmaChatExperience extends ExperiencePopup {
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
     // Settings button removed - clean chat interface
-    
+
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
       console.error('💬 Critical chat interface elements not found');
       return;
     }
-    
+
     // Setup input handling
     this.inputField.addEventListener('input', () => this.handleInputChange());
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
-    
+
     // Settings removed from chat - access via main settings panel
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
 
     // Auto-resize textarea
     this.inputField.addEventListener('input', () => this.autoResizeTextarea());
-    
+
     // Initialize voice recognition
     this.initializeVoiceRecognition();
-    
+
     // Setup settings modal
     this.setupSettingsModal();
   }
@@ -204,7 +203,7 @@ class EmmaChatExperience extends ExperiencePopup {
   setupKeyboardShortcuts() {
     this.keyboardHandler = (e) => {
       if (!this.isVisible || !this.element) return;
-      
+
       // Escape to close (unless typing in input)
       if (e.code === 'Escape' && document.activeElement !== this.inputField) {
         e.preventDefault();
@@ -213,7 +212,7 @@ class EmmaChatExperience extends ExperiencePopup {
         return;
       }
     };
-    
+
     document.addEventListener('keydown', this.keyboardHandler, true);
   }
 
@@ -224,7 +223,7 @@ class EmmaChatExperience extends ExperiencePopup {
       this.sendMessage();
       return;
     }
-    
+
     // Auto-resize on Enter
     if (e.key === 'Enter') {
       setTimeout(() => this.autoResizeTextarea(), 0);
@@ -249,7 +248,7 @@ class EmmaChatExperience extends ExperiencePopup {
   initializeVoiceRecognition() {
     // Check for speech recognition support
     this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!this.SpeechRecognition) {
       console.warn('💬 Speech recognition not supported');
       this.voiceButton.disabled = true;
@@ -263,11 +262,11 @@ class EmmaChatExperience extends ExperiencePopup {
     this.voiceRecognition.lang = 'en-US';
 
     this.voiceRecognition.onstart = () => {
-      console.log('🎤 Voice recognition started');
+
       this.isListening = true;
       this.voiceButton.classList.add('listening');
       this.voiceButton.title = 'Listening... Click to stop';
-      
+
       // Update Emma orb state
       if (this.webglOrb && this.webglOrb.options) {
         this.webglOrb.options.forceHoverState = true;
@@ -277,7 +276,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     this.voiceRecognition.onresult = (event) => {
       let transcript = '';
-      
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           transcript += event.results[i][0].transcript;
@@ -291,7 +290,7 @@ class EmmaChatExperience extends ExperiencePopup {
         this.inputField.value = newText;
         this.autoResizeTextarea();
         this.handleInputChange();
-        
+
         // Focus the input field for potential editing
         this.inputField.focus();
         this.inputField.setSelectionRange(newText.length, newText.length);
@@ -301,7 +300,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.voiceRecognition.onerror = (event) => {
       console.error('💬 Voice recognition error:', event.error);
       this.stopVoiceInput();
-      
+
       if (event.error === 'not-allowed') {
         this.showToast('Microphone access denied. Please allow microphone permissions.', 'error');
       } else if (event.error === 'no-speech') {
@@ -312,7 +311,7 @@ class EmmaChatExperience extends ExperiencePopup {
     };
 
     this.voiceRecognition.onend = () => {
-      console.log('🎤 Voice recognition ended');
+
       this.stopVoiceInput();
     };
 
@@ -324,60 +323,55 @@ class EmmaChatExperience extends ExperiencePopup {
       this.showToast('Voice input not supported in this browser', 'error');
       return;
     }
-    
-    console.log('🎤 Starting Emma voice transcription experience...');
-    
+
     // Create beautiful voice transcription experience
     const voiceTranscription = new EmmaVoiceTranscription({
       onTranscriptionComplete: (text) => {
-        console.log('🎤 CALLBACK: Voice transcription completed with text:', text);
-        console.log('🎤 CALLBACK: Input field exists?', !!this.inputField);
-        
+
         if (!text || !text.trim()) {
           console.warn('🎤 CALLBACK: No text to inject');
           return;
         }
-        
+
         if (!this.inputField) {
           console.error('🎤 CALLBACK: Input field not found!');
           return;
         }
-        
+
         // CRITICAL FIX: Ensure text injection works
         const trimmedText = text.trim();
-        console.log('🎤 CALLBACK: Injecting text:', trimmedText);
-        
+
         // Clear and set the input field
         this.inputField.value = '';
         this.inputField.value = trimmedText;
-        
+
         // Trigger input events for proper handling
         this.inputField.dispatchEvent(new Event('input', { bubbles: true }));
         this.autoResizeTextarea();
         this.handleInputChange();
-        
+
         // Update Emma orb state
         if (this.webglOrb && this.webglOrb.options) {
           this.webglOrb.options.forceHoverState = true;
         }
-        
+
         // Focus input for editing/sending with delay
         setTimeout(() => {
           this.inputField.focus();
           this.inputField.setSelectionRange(trimmedText.length, trimmedText.length);
-          console.log('🎤 CALLBACK: Input focused and cursor positioned');
+
         }, 100);
       },
-      
+
       onTranscriptionCancel: () => {
-        console.log('🎤 Voice transcription cancelled');
+
       },
-      
+
       showPreview: true,
       autoSend: false, // Let user review before sending
       placeholder: "Speak to Emma about your memories..."
     });
-    
+
     // Start the beautiful transcription experience
     voiceTranscription.startTranscription();
   }
@@ -405,7 +399,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.isListening = false;
     this.voiceButton.classList.remove('listening');
     this.voiceButton.title = 'Voice to text';
-    
+
     // Reset Emma orb state
     if (this.webglOrb && this.webglOrb.options) {
       this.webglOrb.options.forceHoverState = false;
@@ -431,9 +425,9 @@ class EmmaChatExperience extends ExperiencePopup {
       animation: slideInRight 0.3s ease;
     `;
     toast.textContent = message;
-    
+
     document.body.appendChild(toast);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
       if (toast.parentNode) {
@@ -461,12 +455,12 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     // 💝 Check for memory detection (new messages only)
-    console.log('🚨 DEBUG: intelligentCapture exists?', !!this.intelligentCapture);
+
     if (this.intelligentCapture) {
-      console.log('💝 TESTING: About to analyze message for memory:', message);
+
       await this.analyzeForMemory(message, messageId);
     } else {
-      console.log('💝 TESTING: No intelligent capture available for memory analysis');
+
     }
 
     // Show typing indicator
@@ -483,13 +477,13 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
-    
+
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     if (sender === 'emma') {
       // Handle HTML content vs regular text
       const messageContent = options.isHtml ? content : `<p>${this.formatMessageContent(content)}</p>`;
-      
+
       messageDiv.innerHTML = `
         <div class="emma-orb-avatar" id="emma-orb-msg-${messageId}"></div>
         <div class="message-content">
@@ -546,7 +540,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Auto-scroll to bottom (with delay for DOM update)
     setTimeout(() => this.scrollToBottom(), 200);
-    
+
     return messageId;
   }
 
@@ -564,15 +558,15 @@ class EmmaChatExperience extends ExperiencePopup {
     if (messagesContainer) {
       // Force layout recalculation before scrolling
       messagesContainer.offsetHeight;
-      
+
       // Smooth scroll to bottom
       messagesContainer.scrollTo({
         top: messagesContainer.scrollHeight,
         behavior: 'smooth'
       });
-      
+
       if (this.debugMode) {
-        console.log('📜 SCROLL: Auto-scrolled to bottom - scrollHeight:', messagesContainer.scrollHeight);
+
       }
     } else {
       console.warn('📜 SCROLL: Messages container not found');
@@ -584,7 +578,7 @@ class EmmaChatExperience extends ExperiencePopup {
     if (indicator) {
       indicator.style.display = 'flex';
       this.isTyping = true;
-      
+
       // Emma orb thinking state
       if (this.webglOrb && this.webglOrb.options) {
         this.webglOrb.options.forceHoverState = true;
@@ -598,7 +592,7 @@ class EmmaChatExperience extends ExperiencePopup {
     if (indicator) {
       indicator.style.display = 'none';
       this.isTyping = false;
-      
+
       // Reset Emma orb
       if (this.webglOrb && this.webglOrb.options) {
         this.webglOrb.options.forceHoverState = false;
@@ -609,29 +603,29 @@ class EmmaChatExperience extends ExperiencePopup {
 
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
-    
+
     // 💝 Check if this message has detected memory - if so, focus on capture instead of search
-    const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis => 
-      analysis.memory && analysis.memory.originalContent && 
+    const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
+      analysis.memory && analysis.memory.originalContent &&
       analysis.memory.originalContent.includes(userMessage.substring(0, 50))
     );
-    
+
     if (hasDetectedMemory) {
       // Focus on memory capture, not searching existing memories
       const captureResponse = await this.generateMemoryCaptureResponse(userMessage);
       this.addMessage(captureResponse, 'emma');
       return;
     }
-    
+
     // 💜 PRIORITIZE DYNAMIC RESPONSES for natural conversation
     // Only use vectorless for specific memory search queries, not general chat
     const isMemorySearchQuery = /\b(find|search|show|what|who|when|where)\b.*\b(memory|memories|remember)\b/i.test(userMessage);
-    
+
     if (isMemorySearchQuery && this.isVectorlessEnabled && this.vectorlessEngine) {
-      console.log('🔍 MEMORY SEARCH: Using vectorless for specific memory query');
+
       try {
         const result = await this.vectorlessEngine.processQuestion(userMessage);
-        
+
         if (result.success) {
           // Add Emma's intelligent response with memory citations
           this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
@@ -643,9 +637,9 @@ class EmmaChatExperience extends ExperiencePopup {
         console.error('💬 Vectorless AI error:', error);
       }
     }
-    
+
     // 💜 DEFAULT: Use dynamic, contextual responses for natural conversation
-    console.log('💬 DYNAMIC: Using contextual Emma response for natural conversation');
+
     const response = this.generateDynamicEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
   }
@@ -654,9 +648,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Generate a dynamic, contextual Emma fallback response without LLM
    */
   generateDynamicEmmaResponse(userMessage) {
-    console.log('🎭 GENERATING TRULY DYNAMIC RESPONSE for:', userMessage);
-    
-    // FORCE DEBUG: Always log vault people when generating responses
+
     try {
       const vault = window.emmaWebVault?.vaultData?.content;
       if (vault?.people) {
@@ -670,14 +662,14 @@ class EmmaChatExperience extends ExperiencePopup {
           allNames: people.map(p => ({ id: p.id, name: p.name }))
         });
       } else {
-        console.log('🔍 FORCED PEOPLE DEBUG: No people in vault or vault not available');
+
       }
     } catch (e) {
-      console.log('🔍 FORCED PEOPLE DEBUG ERROR:', e);
+
     }
-    
+
     const lower = (userMessage || '').toLowerCase().trim();
-    
+
     // Handle very short or unclear messages with gentle encouragement
     if (!lower || lower.length < 3) {
       const responses = [
@@ -688,7 +680,7 @@ class EmmaChatExperience extends ExperiencePopup {
       ];
       return responses[Math.floor(Math.random() * responses.length)];
     }
-    
+
     // Analyze the user's intent and emotional context
     const isQuestion = /^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/.test(lower);
     const isGreeting = /(hello|hi|hey|good morning|good afternoon|good evening|how are you)/.test(lower);
@@ -696,11 +688,11 @@ class EmmaChatExperience extends ExperiencePopup {
     const isSharing = /(tell you|share|want to say|need to talk)/.test(lower);
     const isConfused = /(confused|don't understand|not sure|unclear)/.test(lower);
     const isAppreciation = /(thank|thanks|appreciate|grateful)/.test(lower);
-    
+
     // Get conversation context - how many messages have we exchanged?
     const messageHistory = document.querySelectorAll('.message-bubble').length;
     const isEarlyConversation = messageHistory < 6;
-    
+
     // Get vault insights for personalization (without canned snippets)
     let vaultInsights = null;
     try {
@@ -710,7 +702,7 @@ class EmmaChatExperience extends ExperiencePopup {
         const memories = memoryIds.map(id => vault.memories[id]);
         const people = vault.people ? Object.values(vault.people) : [];
         const recentMemory = memories[memories.length - 1];
-        
+
         vaultInsights = {
           hasMemories: memories.length > 0,
           memoryCount: memories.length,
@@ -720,8 +712,7 @@ class EmmaChatExperience extends ExperiencePopup {
           oldestMemory: memories[0],
           themes: this.extractThemesFromMemories(memories)
         };
-        
-        // NUCLEAR DEBUG: Log people data structure
+
         console.log('🔍 VAULT PEOPLE DEBUG:', {
           peopleCount: people.length,
           peopleArray: people,
@@ -732,9 +723,9 @@ class EmmaChatExperience extends ExperiencePopup {
         });
       }
     } catch (e) {
-      console.log('🔍 Vault context unavailable');
+
     }
-    
+
     // Generate truly contextual responses based on intent and vault
     if (isHelp) {
       if (vaultInsights?.hasMemories) {
@@ -743,7 +734,7 @@ class EmmaChatExperience extends ExperiencePopup {
       }
       return "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. When you share something meaningful, I can help turn it into a memory capsule. What brings you here today?";
     }
-    
+
     if (isGreeting) {
       const hour = new Date().getHours();
       if (vaultInsights?.recentMemory && isEarlyConversation) {
@@ -754,24 +745,24 @@ class EmmaChatExperience extends ExperiencePopup {
           return `Hi there! It's nice to see you again. I've been holding onto that memory from ${daysSince === 1 ? 'yesterday' : `${daysSince} days ago`}. What's been on your mind?`;
         }
       }
-      
+
       if (hour < 12) return "Good morning! What's stirring in your heart today?";
       if (hour < 17) return "Good afternoon! I'm here if you'd like to share what's on your mind.";
       return "Good evening! Sometimes evenings bring up the most meaningful thoughts. I'm here to listen.";
     }
-    
+
     if (isAppreciation) {
       return "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
     }
-    
+
     if (isConfused) {
       return "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
     }
-    
+
     if (isSharing) {
       return "I'm all ears. Take your time and share whatever feels important to you right now.";
     }
-    
+
     // For questions, check if they're asking about someone/something in the vault
     if (isQuestion) {
       // Check if asking about a specific person in the vault
@@ -788,44 +779,42 @@ class EmmaChatExperience extends ExperiencePopup {
             firstNameMatch: lower.includes(name?.toLowerCase().split(' ')[0])
           }))
         });
-        
-        const askedAboutPerson = vaultInsights.peopleNames.find(name => 
-          lower.includes(name.toLowerCase()) || 
+
+        const askedAboutPerson = vaultInsights.peopleNames.find(name =>
+          lower.includes(name.toLowerCase()) ||
           lower.includes(name.toLowerCase().split(' ')[0]) // First name match
         );
-        
-        console.log('🔍 PERSON MATCH RESULT:', { askedAboutPerson, foundMatch: !!askedAboutPerson });
-        
+
         if (askedAboutPerson) {
           // Find memories about this person
           const vault = window.emmaWebVault?.vaultData?.content;
           const memories = vault?.memories ? Object.values(vault.memories) : [];
-          const personMemories = memories.filter(m => 
+          const personMemories = memories.filter(m =>
             m.people?.some(p => p.toLowerCase().includes(askedAboutPerson.toLowerCase())) ||
             m.content?.toLowerCase().includes(askedAboutPerson.toLowerCase())
           );
-          
+
           if (personMemories.length > 0) {
             const recentMemory = personMemories[personMemories.length - 1];
             const memorySnippet = recentMemory.content.substring(0, 100);
             const timeAgo = Math.floor((Date.now() - recentMemory.created) / (1000 * 60 * 60 * 24));
             const timeContext = timeAgo === 0 ? 'today' : timeAgo === 1 ? 'yesterday' : `${timeAgo} days ago`;
-            
+
             return `Oh, ${askedAboutPerson}! I have ${personMemories.length} ${personMemories.length === 1 ? 'memory' : 'memories'} about them in your vault. The most recent one was from ${timeContext}: "${memorySnippet}..." Would you like me to share more about what you've told me about ${askedAboutPerson}?`;
           }
         }
       }
-      
+
       // Check if asking about memories/vault content
       const isAskingAboutMemories = /(memories|remember|story|stories|vault|past|childhood)/.test(lower);
       if (isAskingAboutMemories && vaultInsights?.hasMemories) {
         const oldestYear = new Date(vaultInsights.oldestMemory?.created).getFullYear();
         const newestYear = new Date(vaultInsights.recentMemory?.created).getFullYear();
         const timeSpan = oldestYear === newestYear ? `from ${oldestYear}` : `spanning ${oldestYear} to ${newestYear}`;
-        
+
         return `You have ${vaultInsights.memoryCount} beautiful memories in your vault ${timeSpan}. They tell such a rich story of your life. What specifically would you like to explore?`;
       }
-      
+
       // Generic thoughtful question response
       if (vaultInsights?.themes?.length > 0) {
         const theme = vaultInsights.themes[0];
@@ -833,7 +822,7 @@ class EmmaChatExperience extends ExperiencePopup {
       }
       return "That's a really interesting question. I find that the questions we ask often connect to experiences we've had. What made you think of this?";
     }
-    
+
     // Default: Be genuinely curious and encouraging without templates
     const curiosityResponses = [
       "I'm genuinely curious about that. Tell me more?",
@@ -843,17 +832,17 @@ class EmmaChatExperience extends ExperiencePopup {
       "I'd love to know more about what you're thinking.",
       "That catches my attention. What's the fuller picture?"
     ];
-    
+
     return curiosityResponses[Math.floor(Math.random() * curiosityResponses.length)];
   }
-  
+
   // Helper method to extract themes from memories for contextual responses
   extractThemesFromMemories(memories) {
     if (!memories || memories.length === 0) return [];
-    
+
     const themes = [];
     const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 'is', 'was', 'were', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they']);
-    
+
     const wordCounts = {};
     memories.forEach(memory => {
       const content = memory.content || '';
@@ -864,13 +853,13 @@ class EmmaChatExperience extends ExperiencePopup {
         }
       });
     });
-    
+
     // Get most frequent meaningful words as themes
     const sortedWords = Object.entries(wordCounts)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 3)
       .map(([word]) => word);
-    
+
     return sortedWords;
   }
 
@@ -878,31 +867,31 @@ class EmmaChatExperience extends ExperiencePopup {
     // Find the detected memory for this message
     let detectedMemory = null;
     for (const [msgId, analysis] of this.detectedMemories) {
-      if (analysis.memory && analysis.memory.originalContent && 
+      if (analysis.memory && analysis.memory.originalContent &&
           analysis.memory.originalContent.includes(userMessage.substring(0, 50))) {
         detectedMemory = analysis;
         break;
       }
     }
-    
+
     if (!detectedMemory) {
       return "I'd love to help you capture this memory! Tell me more about what happened.";
     }
-    
+
     // Generate intelligent follow-up questions based on what's missing
     const memory = detectedMemory.memory;
     const signals = detectedMemory.signals;
-    
+
     // Determine what information we need
     const needsPeople = !memory.metadata.people || memory.metadata.people.length === 0;
     const needsEmotions = !memory.metadata.emotions || memory.metadata.emotions.length === 0;
     const needsLocation = !memory.metadata.location;
     const needsPhotos = !memory.attachments || memory.attachments.length === 0;
     const needsDetails = memory.content && memory.content.length < 100;
-    
+
     // Generate contextual follow-up questions
     let followUp = "";
-    
+
     if (signals.types.includes('pet') && needsDetails) {
       followUp = "Tell me more about your pet! What's their personality like? How did this moment make you feel?";
     } else if (signals.types.includes('milestone') && needsPeople) {
@@ -918,40 +907,40 @@ class EmmaChatExperience extends ExperiencePopup {
     } else {
       followUp = "This sounds like such a meaningful moment! What other details would make this memory complete?";
     }
-    
+
     // Always ask about photos
     const photoPrompt = needsPhotos ? " Do you have any photos from this moment you'd like to add?" : "";
-    
+
     return `I can sense this is really special to you! ${followUp}${photoPrompt}`;
   }
 
   async generateEmmaResponse(userMessage) {
     // This is where we'd integrate with actual Emma AI/memory context
     // For now, providing contextual responses based on keywords
-    
+
     const lowerMessage = userMessage.toLowerCase();
-    
+
     // Memory-related responses
     if (lowerMessage.includes('memory') || lowerMessage.includes('remember') || lowerMessage.includes('recall')) {
       return "I'd love to help you explore your memories! I can see you have some beautiful moments captured. Would you like me to help you organize them or find something specific?";
     }
-    
+
     if (lowerMessage.includes('photo') || lowerMessage.includes('picture') || lowerMessage.includes('image')) {
       return "Photos hold such precious memories! I can help you add context to your images, organize them by people or events, or even suggest new ways to capture moments. What would you like to do?";
     }
-    
+
     if (lowerMessage.includes('family') || lowerMessage.includes('relative') || lowerMessage.includes('loved one')) {
       return "Family connections are so important. I can help you create memory capsules about family members, organize photos by people, or set up sharing with family members. How can I assist with your family memories?";
     }
-    
+
     if (lowerMessage.includes('help') || lowerMessage.includes('how') || lowerMessage.includes('what can')) {
       return "I'm here to be your memory companion! I can help you **capture new memories** through voice or photos, **organize your existing memories**, **find specific moments**, and **share memories with loved ones**. What interests you most?";
     }
-    
+
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
       return "Hello! I'm so glad you're here. I'm Emma, your memory companion. I notice you have some wonderful memories already - would you like to explore them or capture something new today?";
     }
-    
+
     // Default thoughtful response
     const responses = [
       "That's interesting! How does that relate to your memories or experiences?",
@@ -959,13 +948,9 @@ class EmmaChatExperience extends ExperiencePopup {
       "I'd love to understand better. Are you thinking about capturing a new memory or exploring existing ones?",
       "Let me help you with that. What kind of memory or experience would you like to work with?"
     ];
-    
+
     return responses[Math.floor(Math.random() * responses.length)];
-  }
-
-
-
-  loadChatHistory() {
+  }  loadChatHistory() {
     // Load previous chat messages from session storage
     try {
       const stored = sessionStorage.getItem(`emma-chat-${this.sessionId}`);
@@ -1013,7 +998,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Load saved settings
       this.loadVectorlessSettings();
-      
+
       // Check if EmmaVectorlessEngine is available
       if (typeof EmmaVectorlessEngine === 'undefined') {
         if (this.debugMode) {
@@ -1021,23 +1006,23 @@ class EmmaChatExperience extends ExperiencePopup {
         }
         await this.loadVectorlessEngine();
       }
-      
+
       // Initialize the engine
       this.vectorlessEngine = new EmmaVectorlessEngine({
         apiKey: this.apiKey,
         dementiaMode: this.dementiaMode || false,
         debug: this.debugMode || false
       });
-      
+
       // Try to load vault data (non-blocking)
       await this.loadVaultForVectorless();
-      
+
       this.updateVectorlessStatus();
-      
+
       if (this.debugMode) {
-        console.log('🧠 Vectorless AI Engine initialized successfully');
+
       }
-      
+
     } catch (error) {
       if (this.debugMode) {
         console.error('🧠 Failed to initialize Vectorless AI:', error);
@@ -1056,11 +1041,11 @@ class EmmaChatExperience extends ExperiencePopup {
         resolve();
         return;
       }
-      
+
       const script = document.createElement('script');
       script.src = '../js/emma-vectorless-engine.js';
       script.onload = () => {
-        console.log('🧠 Vectorless engine script loaded');
+
         resolve();
       };
       script.onerror = () => {
@@ -1077,19 +1062,19 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Try to get vault data from extension or web vault
       let vaultData = null;
-      
+
       // Check if we have web vault available (PURE WEB APP MODE)
       if (window.emmaWebVault && window.emmaWebVault.isOpen) {
         // Get vault data directly from web app (no extension needed)
         vaultData = window.emmaWebVault.vaultData;
-        console.log('🧠 CHAT: Got vault data directly from web app:', !!vaultData);
+
       }
-      
+
       if (vaultData && this.vectorlessEngine) {
         const result = await this.vectorlessEngine.loadVault(vaultData);
         if (result.success) {
           this.isVectorlessEnabled = true;
-          console.log('🧠 Vault loaded into vectorless engine:', result);
+
           return result;
         } else {
           throw new Error(result.error || 'Failed to load vault');
@@ -1116,20 +1101,20 @@ class EmmaChatExperience extends ExperiencePopup {
     return new Promise((resolve) => {
       const messageHandler = (event) => {
         if (event.data?.channel === 'emma-vault-bridge' && event.data?.type === 'VAULT_DATA_FOR_VECTORLESS') {
-          console.log('🧠 Received vault data for vectorless processing');
+
           window.removeEventListener('message', messageHandler);
           resolve(event.data.data);
         }
       };
-      
+
       window.addEventListener('message', messageHandler);
-      
+
       // Request vault data from extension
       window.postMessage({
         channel: 'emma-vault-bridge',
         type: 'REQUEST_VAULT_DATA_FOR_VECTORLESS'
       }, window.location.origin);
-      
+
       // Timeout fallback
       setTimeout(() => {
         window.removeEventListener('message', messageHandler);
@@ -1184,7 +1169,7 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
       `;
     }
-    
+
     // Build elegant Emma suggestions
     let suggestionsHtml = '';
     if (suggestions && suggestions.length > 0) {
@@ -1204,7 +1189,7 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
       `;
     }
-    
+
     // Create beautiful Emma response
     const messageContent = `
       <div class="emma-intelligent-response">
@@ -1213,9 +1198,9 @@ class EmmaChatExperience extends ExperiencePopup {
         ${suggestionsHtml}
       </div>
     `;
-    
+
     // Add as Emma message with beautiful styling
-    this.addMessage(messageContent, 'emma', { 
+    this.addMessage(messageContent, 'emma', {
       isHtml: true,
       type: 'intelligent-response',
       memories,
@@ -1238,7 +1223,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Open memory detail (placeholder)
    */
   openMemoryDetail(memoryId) {
-    console.log('📖 Opening memory detail for:', memoryId);
+
     this.showToast('📖 Memory details coming soon!', 'info');
   }
 
@@ -1246,7 +1231,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Show all memories (placeholder)
    */
   showAllMemories() {
-    console.log('📚 Showing all memories...');
+
     this.addMessage("Would you like me to open the memory gallery to explore all your memories?", 'emma');
   }
 
@@ -1270,7 +1255,7 @@ class EmmaChatExperience extends ExperiencePopup {
     const closeButton = document.getElementById('modal-close-button');
     const saveButton = document.getElementById('save-settings-button');
     const resetButton = document.getElementById('reset-settings-button');
-    
+
     if (!modal || !backdrop || !closeButton || !saveButton || !resetButton) {
       console.error('💬 Settings modal elements not found');
       return;
@@ -1279,11 +1264,11 @@ class EmmaChatExperience extends ExperiencePopup {
     // Close modal handlers
     backdrop.addEventListener('click', () => this.closeVectorlessSettings());
     closeButton.addEventListener('click', () => this.closeVectorlessSettings());
-    
+
     // Settings handlers
     saveButton.addEventListener('click', () => this.saveVectorlessSettings());
     resetButton.addEventListener('click', () => this.resetVectorlessSettings());
-    
+
     // Load current settings into modal
     this.loadSettingsIntoModal();
   }
@@ -1293,13 +1278,12 @@ class EmmaChatExperience extends ExperiencePopup {
    * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
   addInitialWelcomeMessage() {
-    console.log('💬 GENERATING TRULY UNIQUE WELCOME MESSAGE...');
-    
+
     // Get current session context
     const hour = new Date().getHours();
     const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     const isWeekend = [0, 6].includes(new Date().getDay());
-    
+
     // Analyze vault deeply for personalization
     let vaultContext = null;
     try {
@@ -1308,12 +1292,12 @@ class EmmaChatExperience extends ExperiencePopup {
         const memoryIds = Object.keys(vault.memories);
         const memories = memoryIds.map(id => vault.memories[id]);
         const people = vault.people ? Object.values(vault.people) : [];
-        
+
         // Get time-based insights
         const now = Date.now();
         const recentMemories = memories.filter(m => now - m.created < 7 * 24 * 60 * 60 * 1000);
         const oldMemories = memories.filter(m => now - m.created > 30 * 24 * 60 * 60 * 1000);
-        
+
         vaultContext = {
           totalMemories: memories.length,
           recentCount: recentMemories.length,
@@ -1322,8 +1306,7 @@ class EmmaChatExperience extends ExperiencePopup {
           lastMemoryAge: memories.length > 0 ? Math.floor((now - memories[memories.length - 1].created) / (1000 * 60 * 60 * 24)) : null,
           hasPhotos: memories.some(m => m.attachments?.length > 0)
         };
-        
-        // NUCLEAR DEBUG: Log people data for welcome message
+
         console.log('🔍 WELCOME PEOPLE DEBUG:', {
           peopleCount: people.length,
           peopleArray: people,
@@ -1333,12 +1316,12 @@ class EmmaChatExperience extends ExperiencePopup {
         });
       }
     } catch (e) {
-      console.log('🔍 No vault context for welcome message');
+
     }
-    
+
     // Generate completely unique welcome based on actual context
     let welcomeMessage;
-    
+
     if (!vaultContext) {
       // First time user - warm and inviting
       if (hour < 10) {
@@ -1382,7 +1365,7 @@ class EmmaChatExperience extends ExperiencePopup {
         }
       }
     }
-    
+
     this.addMessage(welcomeMessage, 'emma');
     console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
   }
@@ -1398,37 +1381,37 @@ class EmmaChatExperience extends ExperiencePopup {
     if (closeBtn) {
       closeBtn.onclick = () => this.closeChatSettings();
     }
-    
+
     // Save settings button
     const saveBtn = document.getElementById('save-settings-btn');
     if (saveBtn) {
       saveBtn.onclick = () => this.saveSettings();
     }
-    
+
     // Reset settings button
     const resetBtn = document.getElementById('reset-settings-btn');
     if (resetBtn) {
       resetBtn.onclick = () => this.resetSettings();
     }
-    
+
     // Debug mode toggle
     const debugToggle = document.getElementById('debug-mode-toggle');
     if (debugToggle) {
       debugToggle.onchange = (e) => {
         this.debugMode = e.target.checked;
-        console.log('🔍 Debug mode:', this.debugMode ? 'enabled' : 'disabled');
+
       };
     }
-    
+
     // Dementia care mode toggle
     const dementiaToggle = document.getElementById('dementia-mode-toggle');
     if (dementiaToggle) {
       dementiaToggle.onchange = (e) => {
         this.dementiaMode = e.target.checked;
-        console.log('🤗 Dementia care mode:', this.dementiaMode ? 'enabled' : 'disabled');
+
       };
     }
-    
+
     // API key input
     const apiKeyInput = document.getElementById('api-key-input');
     if (apiKeyInput) {
@@ -1439,7 +1422,7 @@ class EmmaChatExperience extends ExperiencePopup {
         }
       };
     }
-    
+
     // Click outside to close
     const modal = document.getElementById('chat-settings-modal');
     if (modal) {
@@ -1473,19 +1456,19 @@ class EmmaChatExperience extends ExperiencePopup {
     if (apiKeyInput) {
       apiKeyInput.value = this.apiKey || localStorage.getItem('emma-openai-api-key') || '';
     }
-    
+
     // Load debug mode
     const debugToggle = document.getElementById('debug-mode-toggle');
     if (debugToggle) {
       debugToggle.checked = this.debugMode;
     }
-    
+
     // Load dementia care mode
     const dementiaToggle = document.getElementById('dementia-mode-toggle');
     if (dementiaToggle) {
       dementiaToggle.checked = this.dementiaMode;
     }
-    
+
     // Update vectorless status
     this.updateVectorlessStatus();
   }
@@ -1497,7 +1480,7 @@ class EmmaChatExperience extends ExperiencePopup {
     const apiKey = document.getElementById('api-key-input')?.value || '';
     const debugMode = document.getElementById('debug-mode-toggle')?.checked || false;
     const dementiaMode = document.getElementById('dementia-mode-toggle')?.checked || false;
-    
+
     // Save to localStorage
     if (apiKey) {
       localStorage.setItem('emma-openai-api-key', apiKey);
@@ -1506,17 +1489,17 @@ class EmmaChatExperience extends ExperiencePopup {
     }
     localStorage.setItem('emma-debug-mode', debugMode);
     localStorage.setItem('emma-dementia-mode', dementiaMode);
-    
+
     // Update instance
     this.apiKey = apiKey;
     this.debugMode = debugMode;
     this.dementiaMode = dementiaMode;
-    
+
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
       this.initializeVectorlessEngine();
     }
-    
+
     this.showToast('✅ Settings saved successfully!', 'success');
     this.closeChatSettings();
   }
@@ -1529,11 +1512,11 @@ class EmmaChatExperience extends ExperiencePopup {
       localStorage.removeItem('emma-openai-api-key');
       localStorage.removeItem('emma-debug-mode');
       localStorage.removeItem('emma-dementia-mode');
-      
+
       this.apiKey = null;
       this.debugMode = true;
       this.dementiaMode = false;
-      
+
       this.loadSettingsIntoModal();
       this.showToast('🔄 Settings reset to defaults', 'info');
     }
@@ -1545,7 +1528,7 @@ class EmmaChatExperience extends ExperiencePopup {
   updateVectorlessStatus() {
     const indicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
-    
+
     if (indicator && statusText) {
       if (this.isVectorlessEnabled && this.vectorlessEngine) {
         indicator.textContent = '🟢';
@@ -1584,7 +1567,7 @@ class EmmaChatExperience extends ExperiencePopup {
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
-    
+
     setTimeout(() => toast.style.transform = 'translateX(0)', 100);
     setTimeout(() => {
       toast.style.transform = 'translateX(100%)';
@@ -1599,40 +1582,40 @@ class EmmaChatExperience extends ExperiencePopup {
     const apiKeyInput = document.getElementById('api-key-input');
     const dementiaToggle = document.getElementById('dementia-mode-toggle');
     const debugToggle = document.getElementById('debug-mode-toggle');
-    
+
     // Get values from modal
     const newApiKey = apiKeyInput?.value.trim() || null;
     const newDementiaMode = dementiaToggle?.checked || false;
     const newDebugMode = debugToggle?.checked || false;
-    
+
     // Update settings
     this.apiKey = newApiKey;
     this.dementiaMode = newDementiaMode;
     this.debugMode = newDebugMode;
-    
+
     // Save to localStorage
     const settings = {
       apiKey: this.apiKey,
       dementiaMode: this.dementiaMode,
       debugMode: this.debugMode
     };
-    
+
     try {
       localStorage.setItem('emma-vectorless-settings', JSON.stringify(settings));
-      
+
       // Reinitialize vectorless engine with new settings
       if (this.vectorlessEngine) {
         this.vectorlessEngine.options.apiKey = this.apiKey;
         this.vectorlessEngine.options.dementiaMode = this.dementiaMode;
         this.vectorlessEngine.options.debug = this.debugMode;
       }
-      
+
       this.updateVectorlessStatus();
       this.closeVectorlessSettings();
-      
+
       // Show success message
       this.addMessage('⚙️ Settings saved successfully! Vectorless AI updated with new configuration.', 'emma');
-      
+
     } catch (error) {
       console.error('💬 Failed to save settings:', error);
       this.addMessage('❌ Failed to save settings. Please try again.', 'emma');
@@ -1646,20 +1629,20 @@ class EmmaChatExperience extends ExperiencePopup {
     this.apiKey = null;
     this.dementiaMode = false;
     this.debugMode = false;
-    
+
     // Clear localStorage
     localStorage.removeItem('emma-vectorless-settings');
-    
+
     // Update modal
     this.loadSettingsIntoModal();
-    
+
     // Reinitialize engine
     if (this.vectorlessEngine) {
       this.vectorlessEngine.options.apiKey = null;
       this.vectorlessEngine.options.dementiaMode = false;
       this.vectorlessEngine.options.debug = false;
     }
-    
+
     this.updateVectorlessStatus();
     this.addMessage('🔄 Settings reset to defaults. Vectorless AI will use intelligent heuristics.', 'emma');
   }
@@ -1687,22 +1670,22 @@ class EmmaChatExperience extends ExperiencePopup {
   updateVectorlessStatus(customMessage = null) {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
-    
+
     if (!statusIndicator || !statusText) return;
-    
+
     if (customMessage) {
       statusIndicator.textContent = '🔴';
       statusText.textContent = customMessage;
       return;
     }
-    
+
     if (this.isVectorlessEnabled) {
       statusIndicator.textContent = '🟢';
       const mode = this.apiKey ? 'OpenAI API' : 'Heuristics';
       const extras = [];
       if (this.dementiaMode) extras.push('Dementia Mode');
       if (this.debugMode) extras.push('Debug Mode');
-      
+
       statusText.textContent = `Active (${mode})${extras.length ? ' • ' + extras.join(', ') : ''}`;
     } else {
       statusIndicator.textContent = '🟡';
@@ -1722,13 +1705,13 @@ class EmmaChatExperience extends ExperiencePopup {
         await this.loadIntelligentCaptureScript();
         await new Promise(resolve => setTimeout(resolve, 200));
       }
-      
+
       if (typeof EmmaIntelligentCapture === 'undefined') {
         console.error('💬 Failed to load intelligent capture module');
         this.intelligentCapture = null;
         return;
       }
-      
+
       // Initialize capture engine
       this.intelligentCapture = new EmmaIntelligentCapture({
         vectorlessEngine: this.vectorlessEngine || null,
@@ -1736,12 +1719,12 @@ class EmmaChatExperience extends ExperiencePopup {
         dementiaMode: this.dementiaMode || false,
         debug: this.debugMode || false
       });
-      
+
       if (this.debugMode) {
         const mode = this.vectorlessEngine ? 'with vectorless engine' : 'with heuristics only';
-        console.log(`💝 Intelligent Memory Capture initialized ${mode}`);
+
       }
-      
+
     } catch (error) {
       console.error('💬 Failed to initialize intelligent capture:', error);
       this.intelligentCapture = null;
@@ -1757,11 +1740,11 @@ class EmmaChatExperience extends ExperiencePopup {
         resolve();
         return;
       }
-      
+
       const script = document.createElement('script');
       script.src = '../js/emma-intelligent-capture.js';
       script.onload = () => {
-        console.log('💝 Intelligent capture script loaded');
+
         resolve();
       };
       script.onerror = () => {
@@ -1777,48 +1760,48 @@ class EmmaChatExperience extends ExperiencePopup {
   async analyzeForMemory(message, messageId) {
     if (!this.intelligentCapture) {
       if (this.debugMode) {
-        console.log('💝 No intelligent capture available - skipping memory analysis');
+
       }
       return;
     }
-    
+
     try {
       if (this.debugMode) {
-        console.log('💝 Analyzing message for memory potential:', message);
+
       }
-      
+
       const analysis = await this.intelligentCapture.analyzeMessage({
         content: message,
         timestamp: Date.now(),
         sender: 'user'
       });
-      
+
       if (this.debugMode) {
-        console.log('💝 Memory analysis result:', analysis);
+
       }
-      
+
       if (analysis.isMemoryWorthy) {
         // Store detected memory
         this.detectedMemories.set(messageId, analysis);
-        
+
         // Show memory detection indicator with new confidence
         this.showMemoryDetectionIndicator(messageId, analysis);
-        
+
         if (this.debugMode) {
           console.log(`💝 Memory detected! FinalScore: ${analysis.finalScore?.toFixed(3)}, AutoCapture: ${analysis.autoCapture}, Confidence: ${analysis.confidence}%`);
           console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
-        
+
         // NEW FSM LOGIC: Always start enrichment for memory-worthy content
         // Auto-capture (≥0.70) gets quick suggestion + enrichment
         // Regular memory-worthy (0.40-0.69) gets enrichment only
-        
+
         if (analysis.autoCapture) {
           // High-confidence: Show quick capture option + start enrichment
           setTimeout(() => {
             this.suggestMemoryCapture(analysis);
           }, 1500);
-          
+
           setTimeout(() => {
             this.startStructuredEnrichment(analysis, messageId);
           }, 3000);
@@ -1828,14 +1811,14 @@ class EmmaChatExperience extends ExperiencePopup {
             this.startStructuredEnrichment(analysis, messageId);
           }, 2000);
         }
-        
+
       } else {
         if (this.debugMode) {
           console.log(`💝 Not memory-worthy. FinalScore: ${analysis.finalScore?.toFixed(3)}, Reason: ${analysis.reason}`);
           console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
       }
-      
+
     } catch (error) {
       if (this.debugMode) {
         console.error('💝 Memory analysis failed:', error);
@@ -1849,7 +1832,7 @@ class EmmaChatExperience extends ExperiencePopup {
   showMemoryDetectionIndicator(messageId, analysis) {
     const messageEl = document.getElementById(messageId);
     if (!messageEl) return;
-    
+
     const indicator = document.createElement('div');
     indicator.className = 'memory-detection-indicator';
     indicator.innerHTML = `
@@ -1862,11 +1845,11 @@ class EmmaChatExperience extends ExperiencePopup {
         </button>
       </div>
     `;
-    
+
     // Add animation
     indicator.style.opacity = '0';
     indicator.style.transform = 'translateY(-10px)';
-    
+
     // Fix: User messages have .message-bubble, Emma messages have .message-content
     const contentContainer = messageEl.querySelector('.message-content') || messageEl.querySelector('.message-bubble');
     if (contentContainer) {
@@ -1875,7 +1858,7 @@ class EmmaChatExperience extends ExperiencePopup {
       console.error('💝 Could not find content container for memory indicator');
       messageEl.appendChild(indicator); // Fallback
     }
-    
+
     // Animate in
     requestAnimationFrame(() => {
       indicator.style.transition = 'all 0.3s ease';
@@ -1889,9 +1872,9 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   suggestMemoryCapture(analysis) {
     const suggestion = `I noticed you shared something special! ${analysis.memory.title || 'This moment'} seems worth preserving. Would you like me to help you save this as a memory?`;
-    
+
     const suggestionId = this.addMessage(suggestion, 'emma', { type: 'memory-suggestion' });
-    
+
     // Add action buttons
     const messageEl = document.getElementById(suggestionId);
     if (messageEl) {
@@ -1905,7 +1888,7 @@ class EmmaChatExperience extends ExperiencePopup {
           Maybe later
         </button>
       `;
-      
+
       // Fix: User messages have .message-bubble, Emma messages have .message-content
       const contentContainer = messageEl.querySelector('.message-content') || messageEl.querySelector('.message-bubble');
       if (contentContainer) {
@@ -1926,7 +1909,7 @@ class EmmaChatExperience extends ExperiencePopup {
       this.addMessage("I couldn't find the memory details. Let me help you capture it fresh!", 'emma');
       return;
     }
-    
+
     // Show memory preview dialog
     this.showMemoryPreviewDialog(analysis.memory);
   }
@@ -1943,18 +1926,18 @@ class EmmaChatExperience extends ExperiencePopup {
         break;
       }
     }
-    
+
     if (!analysis) {
       this.addMessage("Let's start fresh! Tell me about the memory you'd like to capture.", 'emma');
       return;
     }
-    
+
     // Start capture session
     this.activeCapture = await this.intelligentCapture.startCaptureSession({
       content: analysis.memory.originalContent,
       timestamp: Date.now()
     });
-    
+
     if (this.activeCapture.success && this.activeCapture.nextPrompt) {
       this.addMessage(this.activeCapture.nextPrompt.text, 'emma', { type: 'memory-prompt' });
     }
@@ -1964,8 +1947,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Show memory preview dialog
    */
   showMemoryPreviewDialog(memory) {
-    console.log('🎯 PREVIEW: Showing memory preview dialog for:', memory);
-    
+
     // BEAUTIFUL EMMA-STYLE: Create as chat message instead of dialog
     const previewHTML = `
       <div class="memory-capsule-preview">
@@ -1973,32 +1955,32 @@ class EmmaChatExperience extends ExperiencePopup {
           <div class="capsule-icon">💝</div>
           <div class="capsule-title">Your Memory Capsule</div>
         </div>
-        
+
         <div class="capsule-content">
           <h3 class="memory-title">${memory.title || 'Untitled Memory'}</h3>
           <p class="memory-story">${memory.content}</p>
-          
+
           ${memory.metadata?.people?.length > 0 ? `
             <div class="memory-detail">
               <span class="detail-label">👥 People:</span>
               <span class="detail-value">${memory.metadata.people.join(', ')}</span>
             </div>
           ` : ''}
-          
+
           ${memory.metadata?.emotions?.length > 0 ? `
             <div class="memory-detail">
               <span class="detail-label">💭 Emotions:</span>
               <span class="detail-value">${memory.metadata.emotions.join(', ')}</span>
             </div>
           ` : ''}
-          
+
           ${memory.metadata?.location ? `
             <div class="memory-detail">
               <span class="detail-label">📍 Location:</span>
               <span class="detail-value">${memory.metadata.location}</span>
             </div>
           ` : ''}
-          
+
           ${memory.attachments?.length > 0 ? `
             <div class="memory-detail">
               <span class="detail-label">📷 Media:</span>
@@ -2030,7 +2012,7 @@ class EmmaChatExperience extends ExperiencePopup {
             </div>
           ` : ''}
         </div>
-        
+
         <div class="capsule-actions">
           <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
             ✨ Save to Vault
@@ -2041,8 +2023,8 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
       </div>
     `;
-    
-    // Create proper overlay dialog with NUCLEAR z-index
+
+    // Create proper overlay dialog with high z-index
     const dialog = document.createElement('div');
     dialog.className = 'memory-preview-dialog';
     dialog.style.cssText = `
@@ -2071,32 +2053,29 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
       </div>
     `;
-    
-    // NUCLEAR: Click anywhere on dialog background to close
+
     dialog.addEventListener('click', (e) => {
       if (e.target === dialog) {
         dialog.remove();
       }
     });
-    
-    console.log('🎯 PREVIEW: Adding memory dialog to DOM with z-index 10003...');
+
     document.body.appendChild(dialog);
-    
+
     // Animate in
     setTimeout(() => {
       dialog.style.opacity = '1';
     }, 100);
-    
-    console.log('🎯 PREVIEW: Memory preview dialog should now be visible on top');
+
   }
 
   /**
    * Edit memory details (placeholder for future implementation)
    */
   editMemoryDetails(memoryId) {
-    console.log('✏️ EDIT: Edit memory details requested for:', memoryId);
+
     this.showToast('✏️ Memory editing coming soon!', 'info');
-    
+
     // For now, just close the dialog
     const dialog = document.querySelector('.memory-preview-dialog');
     if (dialog) dialog.remove();
@@ -2106,12 +2085,11 @@ class EmmaChatExperience extends ExperiencePopup {
    * Confirm and save memory to vault
    */
   async confirmSaveMemory(memoryId) {
-    console.log('💾 SAVE: Saving memory to vault:', memoryId);
-    
+
     try {
       // Find the memory from enrichment state or detected memories
       let memory = null;
-      
+
       // Check enrichment state first
       for (const [id, state] of this.enrichmentState) {
         if (state.memory && state.memory.id === memoryId) {
@@ -2119,7 +2097,7 @@ class EmmaChatExperience extends ExperiencePopup {
           break;
         }
       }
-      
+
       // Fallback to detected memories
       if (!memory) {
         for (const [msgId, analysis] of this.detectedMemories) {
@@ -2129,67 +2107,56 @@ class EmmaChatExperience extends ExperiencePopup {
           }
         }
       }
-      
+
       if (!memory) {
         this.showToast('❌ Memory not found', 'error');
         return;
-      }
-      
-      // NUCLEAR DEBUG: Check what attachments we're actually passing
-      console.log('🔥 SAVE DEBUG: About to save memory with attachments:', {
-        memoryId: memory.id,
-        attachmentCount: memory.attachments?.length || 0,
-        attachments: memory.attachments || []
-      });
-      
-      // Save to vault
+      }      // Save to vault
       if (window.emmaWebVault && window.emmaWebVault.isOpen) {
         await window.emmaWebVault.addMemory({
           content: memory.content,
           metadata: memory.metadata,
           attachments: memory.attachments || []
         });
-        
+
         this.showToast('✅ Memory saved to vault successfully!', 'success');
-        console.log('💾 SAVE: Memory saved to vault successfully');
-        
+
         // Close dialog
         const dialog = document.querySelector('.memory-preview-dialog');
         if (dialog) dialog.remove();
-        
+
         // Add confirmation message and redirect to constellation
         this.addMessage("Perfect! Your memory has been saved to your vault. Let me show you how it connects to your other memories! 🌟", 'emma');
-        
+
         // Redirect to constellation after brief delay to show new memory
         setTimeout(() => {
-          console.log('🌟 REDIRECT: Opening constellation to show new memory...');
-          
+
           // Close chat experience first
           if (this.close) {
             this.close();
           }
-          
+
           // Wait for chat to close, then enter constellation
           setTimeout(() => {
             // Access the dashboard instance and enter constellation mode
             if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
-              console.log('🌟 CONSTELLATION: Entering memory constellation via emmaDashboard...');
+
               window.emmaDashboard.enterMemoryConstellation();
             } else if (window.parent && window.parent.emmaDashboard && typeof window.parent.emmaDashboard.enterMemoryConstellation === 'function') {
-              console.log('🌟 CONSTELLATION: Entering via parent emmaDashboard...');
+
               window.parent.emmaDashboard.enterMemoryConstellation();
             } else {
-              console.log('🌟 FALLBACK: Trying direct constellation trigger...');
+
               // Try multiple ways to trigger constellation
-              const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]') || 
+              const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]') ||
                                      document.querySelector('[data-action="memories"]') ||
                                      document.querySelector('.radial-item[data-action="memories"]');
-              
+
               if (constellationBtn) {
-                console.log('🌟 Found constellation trigger, clicking...');
+
                 constellationBtn.click();
               } else {
-                console.log('🌟 SUCCESS: Memory saved! Staying on dashboard - you can manually enter constellation');
+
                 // Show success message on dashboard
                 if (window.showToast) {
                   window.showToast('✅ Memory saved! Check the constellation view to see it connected to your other memories.', 'success');
@@ -2198,12 +2165,12 @@ class EmmaChatExperience extends ExperiencePopup {
             }
           }, 500);
         }, 2000);
-        
+
       } else {
         this.showToast('❌ Vault not available', 'error');
         console.error('💾 SAVE: Vault not available for saving');
       }
-      
+
     } catch (error) {
       console.error('💾 SAVE: Error saving memory:', error);
       this.showToast('❌ Failed to save memory', 'error');
@@ -2219,11 +2186,11 @@ class EmmaChatExperience extends ExperiencePopup {
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
     fileInput.multiple = true;
-    
+
     fileInput.onchange = async (e) => {
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
-      
+
       // Find the memory
       let memory = null;
       for (const [msgId, analysis] of this.detectedMemories) {
@@ -2232,9 +2199,9 @@ class EmmaChatExperience extends ExperiencePopup {
           break;
         }
       }
-      
+
       if (!memory) return;
-      
+
       // Process photos
       for (const file of files) {
         const base64 = await this.fileToBase64(file);
@@ -2247,14 +2214,14 @@ class EmmaChatExperience extends ExperiencePopup {
           data: base64
         });
       }
-      
+
       // Update the preview dialog
       document.querySelector('.memory-preview-dialog')?.remove();
       this.showMemoryPreviewDialog(memory);
-      
+
       this.addMessage(`📸 Great! I've added ${files.length} photo${files.length > 1 ? 's' : ''} to your memory. This will make it even more special!`, 'emma');
     };
-    
+
     fileInput.click();
   }
 
@@ -2268,11 +2235,7 @@ class EmmaChatExperience extends ExperiencePopup {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  }
-
-
-
-  /**
+  }  /**
    * Dismiss memory suggestion
    */
   dismissMemorySuggestion(messageId) {
@@ -2293,11 +2256,11 @@ class EmmaChatExperience extends ExperiencePopup {
   async startStructuredEnrichment(analysis, messageId) {
     const memory = analysis.memory;
     const memoryId = memory.id;
-    
+
     if (this.debugMode) {
-      console.log('🎯 ENRICHMENT FSM: Starting structured enrichment for memory:', memoryId);
+
     }
-    
+
     // Initialize enrichment state for this memory
     this.enrichmentState.set(memoryId, {
       messageId,
@@ -2315,7 +2278,7 @@ class EmmaChatExperience extends ExperiencePopup {
       stagesCompleted: [],
       startTime: Date.now()
     });
-    
+
     // Start with first enrichment question
     this.askNextEnrichmentQuestion(memoryId);
   }
@@ -2327,13 +2290,13 @@ class EmmaChatExperience extends ExperiencePopup {
   askNextEnrichmentQuestion(memoryId) {
     const state = this.enrichmentState.get(memoryId);
     if (!state) return;
-    
+
     const { collectedData, stagesCompleted } = state;
-    
+
     // Determine next question based on missing data (FSM stages)
     let nextStage = null;
     let question = "";
-    
+
     // Stage 1: Who was there?
     if (!stagesCompleted.includes('who') && (!collectedData.people || collectedData.people.length === 0)) {
       nextStage = 'who';
@@ -2364,30 +2327,30 @@ class EmmaChatExperience extends ExperiencePopup {
       this.completeEnrichmentAndShowPreview(memoryId);
       return;
     }
-    
+
     // Update state
     state.currentStage = nextStage;
     this.enrichmentState.set(memoryId, state);
-    
+
     // Add dementia-friendly pacing (2-3 second delay)
     const delay = this.dementiaMode ? 2500 : 1500;
-    
+
     setTimeout(() => {
-      const messageId = this.addMessage(question, 'emma', { 
+      const messageId = this.addMessage(question, 'emma', {
         type: 'enrichment-question',
         memoryId: memoryId,
         stage: nextStage
       });
-      
+
       // If asking for media, show elegant file upload interface
       if (nextStage === 'media') {
         setTimeout(() => {
           this.showMediaUploadInterface(messageId, memoryId);
         }, 800);
       }
-      
+
       if (this.debugMode) {
-        console.log(`🎯 ENRICHMENT FSM: Asked ${nextStage} question for memory ${memoryId}`);
+
       }
     }, delay);
   }
@@ -2396,16 +2359,13 @@ class EmmaChatExperience extends ExperiencePopup {
    * Complete enrichment and show preview for final save
    */
   completeEnrichmentAndShowPreview(memoryId) {
-    console.log('🎯 ENRICHMENT: Starting completion for memory:', memoryId);
-    
+
     const state = this.enrichmentState.get(memoryId);
     if (!state) {
       console.error('🎯 ENRICHMENT: No state found for memory:', memoryId);
       return;
     }
-    
-    console.log('🎯 ENRICHMENT: State found:', state);
-    
+
     // Build final enriched memory
     const enrichedMemory = {
       ...state.memory,
@@ -2427,7 +2387,7 @@ class EmmaChatExperience extends ExperiencePopup {
           hasDataUrl: !!mediaItem.dataUrl,
           dataUrlStart: mediaItem.dataUrl ? mediaItem.dataUrl.substring(0, 50) : 'none'
         });
-        
+
         const convertedItem = {
           id: mediaItem.id,
           name: mediaItem.name,
@@ -2435,40 +2395,31 @@ class EmmaChatExperience extends ExperiencePopup {
           size: mediaItem.size,
           data: mediaItem.dataUrl || mediaItem.data // Try both dataUrl and data properties
         };
-        
-        console.log('🔥 CONVERSION RESULT:', {
-          originalHasDataUrl: !!mediaItem.dataUrl,
-          originalHasData: !!mediaItem.data,
-          convertedHasData: !!convertedItem.data,
-          dataType: typeof convertedItem.data,
-          convertedItem: convertedItem
-        });
-        
+
         return convertedItem;
       })
     };
-    
-    // NUCLEAR DEBUG: Log final enriched memory structure
+
     console.log('🔥 FINAL ENRICHED MEMORY:', {
       memoryId: enrichedMemory.id,
       attachmentCount: enrichedMemory.attachments?.length || 0,
       attachments: enrichedMemory.attachments || [],
       hasDataInAttachments: enrichedMemory.attachments?.every(att => !!att.data) || false
     });
-    
+
     if (this.debugMode) {
-      console.log('🎯 ENRICHMENT FSM: Completed enrichment for memory:', memoryId, enrichedMemory);
+
     }
-    
+
     // Show preview dialog for final confirmation
     setTimeout(() => {
       this.addMessage("Perfect! I've gathered all the details. Let me show you a preview of your memory capsule.", 'emma');
-      
+
       setTimeout(() => {
         this.showMemoryPreviewDialog(enrichedMemory);
       }, 1500);
     }, this.dementiaMode ? 2000 : 1000);
-    
+
     // Clean up enrichment state
     this.enrichmentState.delete(memoryId);
   }
@@ -2478,12 +2429,12 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   calculateEnrichedImportance(collectedData) {
     let importance = 5; // Base importance
-    
+
     // People involvement increases importance
     if (collectedData.people && collectedData.people.length > 0) {
       importance += Math.min(2, collectedData.people.length);
     }
-    
+
     // Strong emotions increase importance
     if (collectedData.emotion) {
       const strongEmotions = ['amazing', 'wonderful', 'terrible', 'devastating', 'perfect', 'best', 'worst'];
@@ -2493,17 +2444,17 @@ class EmmaChatExperience extends ExperiencePopup {
         importance += 1;
       }
     }
-    
+
     // Media presence increases importance
     if (collectedData.media && collectedData.media.length > 0) {
       importance += 1;
     }
-    
+
     // Specific location increases importance
     if (collectedData.where) {
       importance += 1;
     }
-    
+
     return Math.min(10, Math.max(1, importance));
   }
 
@@ -2512,27 +2463,27 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   buildEnrichedContent(collectedData) {
     let content = collectedData.details || '';
-    
+
     // Add contextual enrichments
     if (collectedData.when && !content.toLowerCase().includes('when')) {
       content += ` This happened ${collectedData.when}.`;
     }
-    
+
     if (collectedData.where && !content.toLowerCase().includes('where')) {
       content += ` The setting was ${collectedData.where}.`;
     }
-    
+
     if (collectedData.people && collectedData.people.length > 0) {
       const peopleText = collectedData.people.join(', ');
       if (!content.toLowerCase().includes(peopleText.toLowerCase())) {
         content += ` ${collectedData.people.length === 1 ? 'Also there was' : 'Also there were'} ${peopleText}.`;
       }
     }
-    
+
     if (collectedData.emotion && !content.toLowerCase().includes(collectedData.emotion.toLowerCase())) {
       content += ` This moment felt ${collectedData.emotion}.`;
     }
-    
+
     return content.trim();
   }
 
@@ -2556,11 +2507,11 @@ class EmmaChatExperience extends ExperiencePopup {
   async processEnrichmentResponse(activeEnrichment, userResponse) {
     const { memoryId, state } = activeEnrichment;
     const currentStage = state.currentStage;
-    
+
     if (this.debugMode) {
-      console.log(`🎯 ENRICHMENT FSM: Processing ${currentStage} response for memory ${memoryId}:`, userResponse);
+
     }
-    
+
     // Extract information based on current stage
     switch (currentStage) {
       case 'who':
@@ -2582,22 +2533,22 @@ class EmmaChatExperience extends ExperiencePopup {
         }
         break;
     }
-    
+
     // Mark stage as completed
     state.stagesCompleted.push(currentStage);
     this.enrichmentState.set(memoryId, state);
-    
+
     // Acknowledge the response with validation (dementia-friendly)
     const acknowledgment = this.generateStageAcknowledgment(currentStage, userResponse);
-    
+
     setTimeout(() => {
       this.addMessage(acknowledgment, 'emma', { type: 'enrichment-acknowledgment' });
-      
+
       // Ask next question after brief pause
       setTimeout(() => {
         this.askNextEnrichmentQuestion(memoryId);
       }, this.dementiaMode ? 1500 : 800);
-      
+
     }, this.dementiaMode ? 2000 : 1000);
   }
 
@@ -2607,7 +2558,7 @@ class EmmaChatExperience extends ExperiencePopup {
   extractPeopleFromResponse(response) {
     const people = [];
     const text = response.toLowerCase();
-    
+
     // Common relationship terms
     const relationships = ['mom', 'dad', 'mother', 'father', 'sister', 'brother', 'friend', 'husband', 'wife', 'son', 'daughter'];
     relationships.forEach(rel => {
@@ -2615,7 +2566,7 @@ class EmmaChatExperience extends ExperiencePopup {
         people.push(rel.charAt(0).toUpperCase() + rel.slice(1));
       }
     });
-    
+
     // Extract proper names (capitalized words)
     const words = response.split(/\s+/);
     words.forEach(word => {
@@ -2624,12 +2575,12 @@ class EmmaChatExperience extends ExperiencePopup {
         people.push(clean);
       }
     });
-    
+
     // Handle "no one" or "alone" responses
     if (/\b(no one|nobody|alone|just me|by myself)\b/i.test(text)) {
       return [];
     }
-    
+
     return [...new Set(people)]; // Remove duplicates
   }
 
@@ -2638,31 +2589,31 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   extractTimeFromResponse(response) {
     const text = response.toLowerCase();
-    
+
     // Age references
     const ageMatch = text.match(/\b(?:age\s+)?(\d+)\b/);
     if (ageMatch) {
       return `around age ${ageMatch[1]}`;
     }
-    
+
     // Time periods
     if (text.includes('kid') || text.includes('child')) return 'childhood';
     if (text.includes('teenager') || text.includes('teen')) return 'teenage years';
     if (text.includes('young adult')) return 'young adult';
     if (text.includes('college')) return 'college years';
-    
+
     // Specific years
     const yearMatch = text.match(/\b(19|20)\d{2}\b/);
     if (yearMatch) {
       return yearMatch[0];
     }
-    
+
     // Relative time
     if (text.includes('yesterday')) return 'yesterday';
     if (text.includes('last week')) return 'last week';
     if (text.includes('last month')) return 'last month';
     if (text.includes('last year')) return 'last year';
-    
+
     // Return original if we can't parse
     return response;
   }
@@ -2672,7 +2623,7 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   extractLocationFromResponse(response) {
     const text = response.toLowerCase();
-    
+
     // Common locations
     const locations = ['home', 'school', 'park', 'hospital', 'beach', 'restaurant', 'church', 'work'];
     for (const loc of locations) {
@@ -2680,13 +2631,13 @@ class EmmaChatExperience extends ExperiencePopup {
         return loc;
       }
     }
-    
+
     // Look for "at/in [place]" patterns
     const atMatch = text.match(/\b(?:at|in)\s+(?:the\s+)?([a-z\s]+)/);
     if (atMatch) {
       return atMatch[1].trim();
     }
-    
+
     return response;
   }
 
@@ -2695,7 +2646,7 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   extractEmotionFromResponse(response) {
     const text = response.toLowerCase();
-    
+
     // Emotion words
     const emotions = ['happy', 'sad', 'excited', 'scared', 'proud', 'embarrassed', 'surprised', 'angry', 'grateful', 'peaceful'];
     for (const emotion of emotions) {
@@ -2703,13 +2654,13 @@ class EmmaChatExperience extends ExperiencePopup {
         return emotion;
       }
     }
-    
+
     // Feeling patterns
     const feelingMatch = text.match(/\bfelt?\s+([a-z]+)/);
     if (feelingMatch) {
       return feelingMatch[1];
     }
-    
+
     return response;
   }
 
@@ -2720,14 +2671,14 @@ class EmmaChatExperience extends ExperiencePopup {
     const text = response.toLowerCase();
     const positive = ['yes', 'yeah', 'sure', 'okay', 'ok', 'definitely', 'absolutely'];
     const negative = ['no', 'nope', 'not really', 'don\'t have', 'none'];
-    
+
     for (const pos of positive) {
       if (text.includes(pos)) return true;
     }
     for (const neg of negative) {
       if (text.includes(neg)) return false;
     }
-    
+
     return text.length > 10; // Assume longer responses are positive
   }
 
@@ -2742,7 +2693,7 @@ class EmmaChatExperience extends ExperiencePopup {
       emotion: "Thank you for sharing how that felt.",
       media: "I understand about the photos."
     };
-    
+
     return acknowledgments[stage] || "Thank you for sharing that detail.";
   }
 
@@ -2751,9 +2702,9 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async handleCaptureResponse(response) {
     if (!this.activeCapture || !this.intelligentCapture) return;
-    
+
     const result = await this.intelligentCapture.continueCapture(response);
-    
+
     if (result.continue && result.nextPrompt) {
       this.addMessage(result.nextPrompt.text, 'emma', { type: 'memory-prompt' });
     } else if (result.complete) {
@@ -2767,8 +2718,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Show media upload interface when Emma asks for photos/videos
    */
   showMediaUploadInterface(messageId, memoryId) {
-    console.log('📷 UPLOAD: Showing media upload interface for message:', messageId, 'memory:', memoryId);
-    
+
     const messageEl = document.getElementById(messageId);
     if (!messageEl) {
       console.error('📷 UPLOAD: Message element not found:', messageId);
@@ -2778,13 +2728,13 @@ class EmmaChatExperience extends ExperiencePopup {
     const uploadId = `upload-${Date.now()}`;
     const uploadHTML = `
       <div class="emma-simple-upload" id="${uploadId}">
-        <input type="file" 
-               class="file-input-hidden" 
+        <input type="file"
+               class="file-input-hidden"
                id="${uploadId}-input"
-               multiple 
+               multiple
                accept="image/*,video/*,audio/*"
                onchange="window.chatExperience.handleEnrichmentFileSelect(event, '${memoryId}', '${uploadId}')">
-        
+
         <div class="upload-button-container">
           <button class="emma-file-btn" onclick="document.getElementById('${uploadId}-input').click(); event.stopPropagation();">
             📷 Choose Photos & Videos
@@ -2794,11 +2744,11 @@ class EmmaChatExperience extends ExperiencePopup {
           </button>
           <div class="upload-formats">JPG, PNG, MP4, MOV, etc.</div>
         </div>
-        
+
         <div class="file-preview-area" id="${uploadId}-preview" style="display: none;">
           <!-- File previews will appear here -->
         </div>
-        
+
         <div class="upload-status" id="${uploadId}-status" style="display: none;">
           <div class="upload-success">✅ Files added to memory</div>
         </div>
@@ -2809,10 +2759,7 @@ class EmmaChatExperience extends ExperiencePopup {
     const contentContainer = messageEl.querySelector('.message-content');
     if (contentContainer) {
       contentContainer.insertAdjacentHTML('beforeend', uploadHTML);
-      console.log('📷 UPLOAD: File upload interface added to message');
-      
-      console.log('📷 UPLOAD: Simple file button setup complete');
-      
+
       // Auto-scroll to show upload area
       setTimeout(() => this.scrollToBottom(), 300);
     } else {
@@ -2837,7 +2784,7 @@ class EmmaChatExperience extends ExperiencePopup {
     uploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
       uploadArea.classList.remove('dragover');
-      
+
       const files = e.dataTransfer.files;
       if (files.length > 0) {
         this.processEnrichmentFiles(files, memoryId, uploadId);
@@ -2856,7 +2803,7 @@ class EmmaChatExperience extends ExperiencePopup {
   async handleEnrichmentFileSelect(event, memoryId, uploadId) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-    
+
     await this.processEnrichmentFiles(files, memoryId, uploadId);
   }
 
@@ -2869,7 +2816,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     const previewArea = document.getElementById(`${uploadId}-preview`);
     const actionsArea = document.getElementById(`${uploadId}-actions`);
-    
+
     if (!state.collectedData.media) {
       state.collectedData.media = [];
     }
@@ -2907,7 +2854,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
         // Show preview
         this.addFilePreview(mediaItem, `${uploadId}-preview`);
-        
+
         this.showToast(`✅ ${file.name} ready to add!`, 'success');
 
       } catch (error) {
@@ -2919,29 +2866,29 @@ class EmmaChatExperience extends ExperiencePopup {
     // Show preview and auto-progress if files were added
     if (state.collectedData.media.length > 0) {
       previewArea.style.display = 'block';
-      
+
       // Show status instead of manual buttons
       const statusArea = document.getElementById(`${uploadId}-status`);
       if (statusArea) {
         statusArea.style.display = 'block';
       }
-      
+
       // Auto-progress after showing preview
       setTimeout(() => {
         const mediaCount = state.collectedData.media.length;
         this.addMessage(`Perfect! I've added ${mediaCount} ${mediaCount === 1 ? 'file' : 'files'} to your memory. Let me put together a beautiful memory capsule for you to review.`, 'emma');
-        
+
         // Mark media stage as completed and continue
         state.stagesCompleted.push('media');
         this.enrichmentState.set(memoryId, state);
-        
+
         // Continue to completion
         setTimeout(() => {
           this.completeEnrichmentAndShowPreview(memoryId);
         }, 1500);
-        
+
       }, 1000); // Brief delay to show the files were added
-      
+
       setTimeout(() => this.scrollToBottom(), 300);
     }
   }
@@ -2956,8 +2903,8 @@ class EmmaChatExperience extends ExperiencePopup {
     const previewHTML = `
       <div class="file-preview-item" id="preview-${mediaItem.id}">
         <div class="file-preview-icon">
-          ${mediaItem.type.startsWith('image/') 
-            ? `<img src="${mediaItem.dataUrl}" alt="${mediaItem.name}">` 
+          ${mediaItem.type.startsWith('image/')
+            ? `<img src="${mediaItem.dataUrl}" alt="${mediaItem.name}">`
             : mediaItem.type.startsWith('video/')
             ? '🎥'
             : '🎵'}
@@ -3018,17 +2965,8 @@ class EmmaChatExperience extends ExperiencePopup {
     const state = this.enrichmentState.get(memoryId);
     if (!state) return;
 
-    const mediaCount = state.collectedData.media?.length || 0;
-    
-    // NUCLEAR DEBUG: Check media state before completion
-    console.log('🔥 MEDIA COMPLETION DEBUG:', {
-      memoryId,
-      mediaCount: state.collectedData.media?.length || 0,
-      mediaItems: state.collectedData.media || [],
-      stagesCompleted: state.stagesCompleted,
-      hasMediaData: state.collectedData.media?.every(item => !!item.dataUrl)
-    });
-    
+    const mediaCount = state.collectedData.media?.length || 0;    });
+
     if (mediaCount > 0) {
       this.addMessage(`Perfect! I've added ${mediaCount} ${mediaCount === 1 ? 'file' : 'files'} to your memory. Let me put together a beautiful memory capsule for you to review.`, 'emma');
     } else {
@@ -3038,7 +2976,7 @@ class EmmaChatExperience extends ExperiencePopup {
     // Mark media stage as completed and continue
     state.stagesCompleted.push('media');
     this.enrichmentState.set(memoryId, state);
-    
+
     // Continue to completion
     setTimeout(() => {
       this.completeEnrichmentAndShowPreview(memoryId);
@@ -3057,7 +2995,7 @@ class EmmaChatExperience extends ExperiencePopup {
     // Mark media stage as completed and continue
     state.stagesCompleted.push('media');
     this.enrichmentState.set(memoryId, state);
-    
+
     // Continue to completion
     setTimeout(() => {
       this.completeEnrichmentAndShowPreview(memoryId);
@@ -3075,51 +3013,54 @@ class EmmaChatExperience extends ExperiencePopup {
       emotion: "Those feelings are such an important part of this memory.",
       media: "Thank you for letting me know about photos and videos."
     };
-    
+
     return acknowledgments[stage] || "Thank you for sharing that detail.";
   }
 
   cleanup() {
     // Save chat history before closing
     this.saveChatHistory();
-    
+
     // Stop voice recognition if active
     if (this.isListening) {
       this.stopVoiceInput();
     }
-    
+
     // Remove keyboard shortcuts listener
     if (this.keyboardHandler) {
       document.removeEventListener('keydown', this.keyboardHandler, true);
       this.keyboardHandler = null;
     }
-    
+
     // Clean up WebGL orb
     if (this.webglOrb && this.webglOrb.dispose) {
       this.webglOrb.dispose();
       this.webglOrb = null;
     }
-    
+
     // Clean up vectorless engine
     if (this.vectorlessEngine) {
       this.vectorlessEngine = null;
     }
-    
+
     // Clean up intelligent capture
     if (this.intelligentCapture) {
       this.intelligentCapture = null;
     }
-    
+
     // Clear detected memories
     this.detectedMemories.clear();
-    
+
     // Disable focus mode
     this.disableFocusMode();
-    
+
     super.cleanup();
   }
 }
 
 // Export for use in other modules
 window.EmmaChatExperience = EmmaChatExperience;
+<<<<<<< Current (Your changes)
 console.log('💬 Emma Chat Experience: Module loaded successfully');
+=======
+>>>>>>> Incoming (Background Agent changes)

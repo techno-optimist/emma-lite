@@ -36,14 +36,14 @@
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
-          <input 
-            type="text" 
-            id="search-input" 
-            placeholder="Search memories..." 
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search memories..."
             class="search-input"
           >
         </div>
-        
+
         <div class="filter-container">
           <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
@@ -121,18 +121,18 @@
 
   <!-- HML Sync Initialization (CSP-compliant) -->
   <script type="module" src="../js/memories-hml-init.js"></script>
-  
+
   <!-- Core Orb System -->
   <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
   <script src="../js/emma-orb.js"></script>
-  <script src="../js/settings-service.js"></script> 
+  <script src="../js/settings-service.js"></script>
   <script src="../js/orb-experience-manager.js"></script>
   <script src="../js/experience-popup-base.js?v=20250814115222"></script>
   <script src="../js/assistant-experience-popup.js"></script>
   <script src="../js/dementia-experience-popup.js"></script>
   <script src="../js/mirror-experience-popup.js"></script>
   <script src="../js/universal-emma-orb.js"></script>
-  
+
   <!-- Initialize Universal Orb for Extension Page -->
   <script>
     if (document.readyState === 'loading') {
@@ -143,33 +143,32 @@
       setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
     }
   </script>
-  
+
   <!-- Load VaultGuardian first -->
   <script type="module">
     import VaultGuardian from '../lib/vault-guardian.js';
     window.VaultGuardian = VaultGuardian;
     await VaultGuardian.initialize();
-    console.log('🛡️ VaultGuardian loaded and ready');
+
   </script>
-  
-  <script src="../js/memories.js?v=20250814115553" 
-          onload="console.log('🔥 SCRIPT LOADED: memories.js loaded successfully')" 
+
+  <script src="../js/memories.js?v=20250814115553"
+          onload="console.log('🔥 SCRIPT LOADED: memories.js loaded successfully')"
           onerror="console.error('🚨 SCRIPT ERROR: Failed to load memories.js')"></script>
 
   <!-- Home Navigation Script -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('🏠 HOME NAV: Setting up home button...');
+
       const homeBtn = document.getElementById('home-nav-button');
-      console.log('🏠 HOME NAV: Found home button:', homeBtn);
-      
+
       if (homeBtn) {
         homeBtn.addEventListener('click', () => {
-          console.log('🏠 HOME NAV: Home button clicked!');
+
           // Navigate back to the HTML dashboard
           window.location.href = 'dashboard-new.html';
         });
-        console.log('🏠 HOME NAV: Event listener attached');
+
       } else {
         console.error('🏠 HOME NAV: Home button not found!');
       }

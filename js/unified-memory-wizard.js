@@ -1,6 +1,6 @@
 /**
  * 🧠 Emma Unified Memory Wizard - Clean Working Version
- * 
+ *
  * CTO Emergency Fix: Simplified, working wizard without intelligence layer complexity
  * Emma Branding: Pixel-perfect implementation
  */
@@ -8,7 +8,7 @@
 class UnifiedMemoryWizard extends ExperiencePopup {
   constructor(position, settings = {}) {
     super(position, settings);
-    
+
     // Core state management
     this.currentStep = 1;
     this.totalSteps = 7;
@@ -18,15 +18,14 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     this.recognition = null;
     this.currentTranscript = '';
     this.inputMethod = null;
-    
+
     // People selection state
     this.availablePeople = [];
     this.selectedPeople = [];
-    
+
     // Initialize speech recognition if available
     this.initializeSpeechRecognition();
-    
-    console.log('🧠 UnifiedMemoryWizard: Clean version initialized');
+
   }
 
   getTitle() {
@@ -93,15 +92,14 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     try {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       this.recognition = new SpeechRecognition();
-      
+
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
       this.recognition.lang = 'en-US';
       this.recognition.maxAlternatives = 1;
-      
+
       this.speechAvailable = true;
-      console.log('🎤 Speech recognition initialized successfully');
-      
+
     } catch (error) {
       console.error('🎤 Speech recognition initialization failed:', error);
       this.speechAvailable = false;
@@ -114,7 +112,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   renderContent(contentElement) {
     // Set global reference first
     window.unifiedWizardInstance = this;
-    
+
     // Make the wizard take full popup space
     contentElement.style.cssText = `
       position: absolute;
@@ -126,7 +124,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       margin: 0;
       overflow: hidden;
     `;
-    
+
     contentElement.innerHTML = `
       <style>
         /* Voice Input Interface */
@@ -425,7 +423,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           margin-top: 16px;
         }
       </style>
-      
+
       <!-- Emma Header -->
       <div class="wizard-header">
         <div class="emma-orb-container" id="wizard-emma-orb">
@@ -458,10 +456,8 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         ${this.renderCurrentStep()}
       </div>
 
-
     `;
 
-    console.log('🎨 UnifiedMemoryWizard: Clean layout rendered');
     return contentElement;
   }
 
@@ -494,7 +490,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       <div class="wizard-step welcome-step">
         <div class="input-method-selection">
           <h3 class="selection-title">How would you like to share your memory?</h3>
-          
+
           <div class="method-options">
             ${this.speechAvailable ? `
               <div class="method-option recommended" onclick="event.stopPropagation(); window.unifiedWizardInstance?.selectInputMethod('voice')">
@@ -513,7 +509,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                 </div>
               </div>
             ` : ''}
-            
+
             <div class="method-option" onclick="event.stopPropagation(); window.unifiedWizardInstance?.selectInputMethod('text')">
               <div class="method-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
@@ -550,30 +546,30 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   renderQuestionStep() {
     const questions = [
       "What memory would you like to capture?",
-      "Who was involved in this memory?", 
+      "Who was involved in this memory?",
       "Where did this take place?",
       "What made this moment special?"
     ];
-    
+
     const questionIndex = this.currentStep - 2;
     const question = questions[questionIndex] || "Tell me more about this memory";
-    
+
     // Special handling for people selection (step 3, questionIndex 1)
     if (questionIndex === 1) {
       return this.renderPeopleSelectionStep();
     }
-    
+
     return `
       <div class="wizard-step question-step">
         <div class="input-area">
           <div class="emma-input-container">
             <div class="input-label">${this.getInputLabel(questionIndex)}</div>
-            
+
             ${this.inputMethod === 'voice' ? `
               <!-- Voice Input Interface -->
               <div class="voice-input-section">
                 <div class="voice-controls">
-                  <button class="voice-btn ${this.isRecording ? 'recording' : ''}" 
+                  <button class="voice-btn ${this.isRecording ? 'recording' : ''}"
                           onclick="window.unifiedWizardInstance?.toggleRecording()"
                           id="voice-btn-${questionIndex}">
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
@@ -588,14 +584,14 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                     ${this.isRecording ? '🎤 Listening...' : '🎤 Tap to speak'}
                   </div>
                 </div>
-                
+
                 <!-- Audio Visualizer -->
                 <div class="audio-visualizer ${this.isRecording ? 'active' : ''}" id="audio-visualizer-${questionIndex}">
                   <div class="visualizer-bars">
                     ${Array.from({length: 8}, (_, i) => `<div class="bar" style="animation-delay: ${i * 0.1}s"></div>`).join('')}
                   </div>
                 </div>
-                
+
                 <!-- Transcription Display -->
                 <div class="transcription-display" id="transcription-${questionIndex}">
                   <div class="transcription-label">What you said:</div>
@@ -603,9 +599,9 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                 </div>
               </div>
             ` : ''}
-            
-            <textarea 
-              class="emma-memory-textarea" 
+
+            <textarea
+              class="emma-memory-textarea"
               placeholder="${this.getInputPlaceholder(questionIndex)}"
               id="memory-input-${questionIndex}"
               oninput="window.unifiedWizardInstance?.updateInput(this.value)">${this.currentTranscript || ''}</textarea>
@@ -617,13 +613,13 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             </div>
           </div>
         </div>
-        
+
         <div class="question-actions">
           <button class="wizard-btn wizard-btn-secondary" onclick="event.stopPropagation(); window.unifiedWizardInstance?.goBack()">
             Back
           </button>
-          <button class="wizard-btn wizard-btn-primary" id="question-next-btn" 
-                  onclick="event.stopPropagation(); window.unifiedWizardInstance?.goNext()" 
+          <button class="wizard-btn wizard-btn-primary" id="question-next-btn"
+                  onclick="event.stopPropagation(); window.unifiedWizardInstance?.goNext()"
                   ${!this.currentTranscript ? 'disabled' : ''}>
             ${questionIndex < 3 ? 'Next Question' : 'Add Media'}
           </button>
@@ -640,13 +636,13 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       <div class="wizard-step media-step">
         <div class="media-upload-container">
           <!-- Emma Premium Drag & Drop Zone -->
-          <div class="emma-drop-zone" 
+          <div class="emma-drop-zone"
                id="emma-drop-zone"
                onclick="document.getElementById('media-upload').click()"
                ondragover="event.preventDefault(); this.classList.add('drag-over')"
                ondragleave="this.classList.remove('drag-over')"
                ondrop="window.unifiedWizardInstance?.handleFileDrop(event)">
-            
+
             <div class="drop-zone-content">
               <div class="upload-icon">
                 <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -655,23 +651,23 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                   <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
               </div>
-              
+
               <div class="upload-text">
                 <h3>Drop your photos & videos here</h3>
                 <p>or <span class="upload-link">click to browse</span> your files</p>
               </div>
-              
+
               <div class="upload-specs">
                 <span class="spec-item">📷 Photos: JPG, PNG, HEIC</span>
                 <span class="spec-item">🎥 Videos: MP4, MOV, AVI</span>
                 <span class="spec-item">📁 Max 50MB per file</span>
               </div>
             </div>
-            
+
             <input type="file" id="media-upload" multiple accept="image/*,video/*" style="display: none;"
                    onchange="window.unifiedWizardInstance?.handleFileSelect(event)">
           </div>
-          
+
           <!-- Media Preview Grid -->
           <div class="media-preview-grid" id="media-preview-grid" style="display: none;">
             <div class="preview-header">
@@ -689,7 +685,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             </div>
           </div>
         </div>
-        
+
         <div class="media-actions">
           <button class="wizard-btn wizard-btn-secondary" onclick="event.stopPropagation(); window.unifiedWizardInstance?.goBack()">
             Back
@@ -711,7 +707,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   renderReviewStep() {
     const memoryTitle = this.generateMemoryTitle();
     const memoryStory = this.generateMemoryStory();
-    
+
     return `
       <div class="wizard-step review-step">
         <div class="memory-capsule-preview">
@@ -724,11 +720,11 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             </div>
             <div class="capsule-title-section">
               <h2 class="capsule-title">${memoryTitle}</h2>
-              <p class="capsule-date">${new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              <p class="capsule-date">${new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}</p>
             </div>
           </div>
@@ -770,7 +766,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             ` : ''}
           </div>
         </div>
-        
+
         <div class="review-actions">
           <button class="wizard-btn wizard-btn-secondary" onclick="event.stopPropagation(); window.unifiedWizardInstance?.goBack()">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -793,25 +789,23 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    * Initialize the wizard after rendering
    */
   async initialize() {
-    console.log('🧠 UnifiedMemoryWizard: Initializing clean version...');
-    
+
     // Hide the base popup header since we're creating our own wizard header
     const baseHeader = this.element.querySelector('.popup-header');
     if (baseHeader) {
       baseHeader.style.display = 'none';
-      console.log('🧠 UnifiedMemoryWizard: Hidden duplicate popup header');
+
     }
-    
+
     // Load people data for selection
     await this.loadPeopleData();
-    
+
     this.initializeEmmaOrb();
     this.updateDynamicHeader();
     this.updateProgress();
     this.optimizePopupHeight();
     this.setupDynamicResizing();
-    
-    console.log('🧠 UnifiedMemoryWizard: Clean initialization complete');
+
   }
 
   /**
@@ -819,19 +813,19 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   renderPeopleSelectionStep() {
     const questionIndex = this.currentStep - 2;
-    
+
     return `
       <div class="wizard-step people-step">
         <div class="input-area">
           <div class="emma-input-container">
             <div class="input-label">👥 The People Involved</div>
-            
+
             ${this.availablePeople && this.availablePeople.length > 0 ? `
               <!-- People Selection Grid -->
               <div class="people-selection-section">
                 <div class="people-grid">
                   ${this.availablePeople.map(person => `
-                    <div class="person-card ${this.selectedPeople.includes(person.id) ? 'selected' : ''}" 
+                    <div class="person-card ${this.selectedPeople.includes(person.id) ? 'selected' : ''}"
                          onclick="window.unifiedWizardInstance?.togglePersonSelection('${person.id}')">
                       <div class="person-avatar">
                         ${person.name.charAt(0).toUpperCase()}
@@ -848,7 +842,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                     </div>
                   `).join('')}
                 </div>
-                
+
                 <div class="add-new-person">
                   <button class="add-person-btn" onclick="window.unifiedWizardInstance?.showAddPersonForm()">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -878,7 +872,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                 </div>
               </div>
             `}
-            
+
             <!-- Selected People Summary -->
             <div class="selected-people-summary" id="selected-people-summary" style="display: ${this.selectedPeople.length > 0 ? 'block' : 'none'}">
               <div class="summary-label">Selected people:</div>
@@ -886,7 +880,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                 <!-- Will be populated by JavaScript -->
               </div>
             </div>
-            
+
             <!-- Manual Text Input (fallback) -->
             <div class="manual-input-section">
               <div class="manual-input-toggle">
@@ -895,8 +889,8 @@ class UnifiedMemoryWizard extends ExperiencePopup {
                 </button>
               </div>
               <div class="manual-input-area" id="manual-input-area" style="display: none;">
-                <textarea 
-                  class="emma-memory-textarea" 
+                <textarea
+                  class="emma-memory-textarea"
                   placeholder="${this.getInputPlaceholder(questionIndex)}"
                   id="memory-input-${questionIndex}"
                   oninput="window.unifiedWizardInstance?.updateInput(this.value)">${this.currentTranscript || ''}</textarea>
@@ -910,13 +904,13 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             </div>
           </div>
         </div>
-        
+
         <div class="question-actions">
           <button class="wizard-btn wizard-btn-secondary" onclick="event.stopPropagation(); window.unifiedWizardInstance?.goBack()">
             Back
           </button>
-          <button class="wizard-btn wizard-btn-primary" id="question-next-btn" 
-                  onclick="event.stopPropagation(); window.unifiedWizardInstance?.goNext()" 
+          <button class="wizard-btn wizard-btn-primary" id="question-next-btn"
+                  onclick="event.stopPropagation(); window.unifiedWizardInstance?.goNext()"
                   ${this.selectedPeople.length === 0 && !this.currentTranscript ? 'disabled' : ''}>
             Next Question
           </button>
@@ -930,27 +924,25 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   async loadPeopleData() {
     try {
-      console.log('👥 Loading people from vault...');
-      
+
       if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.list) {
         const result = await window.emmaAPI.people.list();
-        console.log('👥 People result:', result);
-        
+
         if (result && result.success && Array.isArray(result.items)) {
           this.availablePeople = result.items;
-          console.log(`👥 Loaded ${this.availablePeople.length} people from vault`);
+
         } else {
           this.availablePeople = [];
-          console.log('👥 No people found in vault');
+
         }
       } else {
         console.warn('👥 People API not available');
         this.availablePeople = [];
       }
-      
+
       // Initialize selected people array
       this.selectedPeople = [];
-      
+
     } catch (error) {
       console.error('👥 Error loading people:', error);
       this.availablePeople = [];
@@ -968,7 +960,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         console.warn('🌟 Wizard Emma orb container not found');
         return;
       }
-      
+
       if (window.EmmaOrb) {
         this.webglOrb = new window.EmmaOrb(orbContainer, {
           hue: 270,
@@ -976,7 +968,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           rotateOnHover: false,
           forceHoverState: true
         });
-        console.log('🌟 Wizard Emma Orb initialized successfully');
+
       } else {
         console.warn('🌟 EmmaOrb class not available, using fallback');
         orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb)';
@@ -992,10 +984,9 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   selectInputMethod(method) {
     try {
     this.inputMethod = method;
-    console.log(`🎯 Input method selected: ${method}`);
-      console.log(`🎯 Current step before goNext: ${this.currentStep}`);
+
     this.goNext();
-      console.log(`🎯 Current step after goNext: ${this.currentStep}`);
+
     } catch (error) {
       console.error('🚨 Error in selectInputMethod:', error);
     }
@@ -1006,30 +997,30 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   updateInput(value) {
     this.currentTranscript = value;
-    
+
     // Update character count
     const questionIndex = this.currentStep - 2;
     const charCount = document.getElementById(`char-count-${questionIndex}`);
     if (charCount) {
       const count = value.length;
       charCount.textContent = `${count} character${count !== 1 ? 's' : ''}`;
-      
+
       // Add color coding for length
       if (count > 100) {
         charCount.style.color = '#48BB78'; // Green for good length
       } else if (count > 20) {
-        charCount.style.color = '#667eea'; // Emma purple for decent length  
+        charCount.style.color = '#667eea'; // Emma purple for decent length
       } else {
         charCount.style.color = '#A0AEC0'; // Gray for short
       }
     }
-    
+
     // Enable/disable next button based on content
     const nextBtn = document.getElementById('question-next-btn');
     if (nextBtn && this.currentStep >= 2 && this.currentStep <= 5) {
       const hasContent = value.trim().length > 0;
       nextBtn.disabled = !hasContent;
-      
+
       // Update button text based on content quality
       if (hasContent && value.trim().length > 20) {
         nextBtn.innerHTML = `
@@ -1047,21 +1038,20 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   goNext() {
     try {
-      console.log(`🎯 goNext called - current step: ${this.currentStep}, total steps: ${this.totalSteps}`);
-      
+
       // Save response if on question step
       if (this.currentStep >= 2 && this.currentStep <= 5 && this.currentTranscript) {
         this.responses.push(this.currentTranscript);
         this.currentTranscript = '';
-        console.log(`🎯 Saved response, total responses: ${this.responses.length}`);
+
       }
-      
+
       if (this.currentStep < this.totalSteps) {
         this.currentStep++;
-        console.log(`🎯 Moving to step: ${this.currentStep}`);
+
         this.updateWizardContent();
         this.updateProgress();
-        console.log(`🎯 Content and progress updated`);
+
       } else {
         console.log(`🎯 Already at final step (${this.currentStep}/${this.totalSteps})`);
       }
@@ -1090,19 +1080,18 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   updateWizardContent() {
     try {
-      console.log(`🎯 updateWizardContent called for step: ${this.currentStep}`);
-      
+
       // Update dynamic header
       this.updateDynamicHeader();
-      
+
       // Update content
     const contentElement = document.getElementById('wizard-content');
     if (contentElement) {
         const newContent = this.renderCurrentStep();
-        console.log(`🎯 Generated content length: ${newContent.length}`);
+
         contentElement.innerHTML = newContent;
       setTimeout(() => this.optimizePopupHeight(), 50);
-        console.log(`🎯 Content updated successfully`);
+
       } else {
         console.error('🚨 wizard-content element not found!');
       }
@@ -1118,11 +1107,11 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   updateDynamicHeader() {
     const titleElement = document.getElementById('dynamic-title');
     const subtitleElement = document.getElementById('dynamic-subtitle');
-    
+
     if (titleElement) {
       titleElement.textContent = this.getDynamicTitle();
     }
-    
+
     if (subtitleElement) {
       subtitleElement.textContent = this.getDynamicSubtitle();
     }
@@ -1134,11 +1123,11 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   getInputLabel(questionIndex) {
     const labels = [
       '✨ Your Special Memory',      // Question 1: What memory
-      '👥 The People Involved',     // Question 2: Who was involved  
+      '👥 The People Involved',     // Question 2: Who was involved
       '📍 The Location',            // Question 3: Where
       '💖 What Made It Special'     // Question 4: What made it special
     ];
-    
+
     return labels[questionIndex] || '✨ Your Memory';
   }
 
@@ -1152,7 +1141,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       'Where did this take place? Was it at home, a special location, during travel? Paint the scene for me...',
       'What emotions did you feel? What made this moment stand out? Why is this memory precious to you?'
     ];
-    
+
     return placeholders[questionIndex] || 'Share your thoughts and feelings about this memory...';
   }
 
@@ -1166,7 +1155,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       '🗺️ Describe the setting, atmosphere, and what the place was like',
       '❤️ Share the emotions, feelings, and why this moment matters'
     ];
-    
+
     return hints[questionIndex] || '💡 Be as detailed as you\'d like';
   }
 
@@ -1176,12 +1165,12 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   updateProgress() {
     const progressFill = document.getElementById('wizard-progress-fill');
     const progressText = document.getElementById('progress-text');
-    
+
     if (progressFill) {
       const percentage = (this.currentStep / this.totalSteps) * 100;
       progressFill.style.width = `${percentage}%`;
     }
-    
+
     if (progressText) {
       progressText.textContent = `Step ${this.currentStep} of ${this.totalSteps}`;
     }
@@ -1194,34 +1183,32 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     try {
       const popup = this.element; // Use this.element instead of this.popupElement
       if (!popup) {
-        console.log('🎨 No popup element found for height optimization');
+
         return;
       }
-      
+
       const content = popup.querySelector('.wizard-content');
       if (!content) {
-        console.log('🎨 No wizard-content found for height optimization');
+
         return;
       }
-      
+
       // Calculate optimal height based on actual content
       const headerHeight = 120; // Wizard header with Emma orb
       const progressHeight = 40; // Progress bar
       const contentHeight = content.scrollHeight;
       const padding = 40;
-      
+
       const optimalHeight = headerHeight + progressHeight + contentHeight + padding;
       const maxHeight = window.innerHeight * 0.85; // Leave some margin
       const minHeight = 300; // Minimum height
       const finalHeight = Math.max(minHeight, Math.min(optimalHeight, maxHeight));
-      
-      console.log(`🎨 Height optimization: content=${contentHeight}px, optimal=${optimalHeight}px, final=${finalHeight}px`);
-      
+
       popup.style.height = `${finalHeight}px`;
-      
+
       // Update position to keep it centered
       this.position.height = finalHeight;
-      
+
     } catch (error) {
       console.error('🎨 Height optimization failed:', error);
     }
@@ -1241,8 +1228,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    * Toggle voice recording
    */
   toggleRecording() {
-    console.log('🎤 Toggle recording called, current state:', this.isRecording);
-    
+
     if (!this.recognition) {
       console.error('🎤 Speech recognition not available');
       this.showToast('❌ Speech recognition not available', 'error');
@@ -1261,21 +1247,21 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   startRecording() {
     try {
-      console.log('🎤 Starting voice recording...');
+
       this.isRecording = true;
       this.currentTranscript = '';
-      
+
       // Update UI
       this.updateVoiceUI();
-      
+
       // Start recognition
       this.recognition.start();
-      
+
       // Set up event handlers
       this.recognition.onresult = (event) => {
         let finalTranscript = '';
         let interimTranscript = '';
-        
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
@@ -1284,24 +1270,24 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             interimTranscript += transcript;
           }
         }
-        
+
         this.currentTranscript = finalTranscript + interimTranscript;
         this.updateTranscriptionDisplay();
         this.updateInput(this.currentTranscript);
       };
-      
+
       this.recognition.onerror = (event) => {
         console.error('🎤 Speech recognition error:', event.error);
         this.stopRecording();
         this.showToast('❌ Voice recognition error', 'error');
       };
-      
+
       this.recognition.onend = () => {
-        console.log('🎤 Speech recognition ended');
+
         this.isRecording = false;
         this.updateVoiceUI();
       };
-      
+
     } catch (error) {
       console.error('🎤 Error starting recording:', error);
       this.isRecording = false;
@@ -1314,15 +1300,15 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   stopRecording() {
     try {
-      console.log('🎤 Stopping voice recording...');
+
       this.isRecording = false;
-      
+
       if (this.recognition) {
         this.recognition.stop();
       }
-      
+
       this.updateVoiceUI();
-      
+
     } catch (error) {
       console.error('🎤 Error stopping recording:', error);
     }
@@ -1333,7 +1319,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   updateVoiceUI() {
     const questionIndex = this.currentStep - 2;
-    
+
     // Update voice button
     const voiceBtn = document.getElementById(`voice-btn-${questionIndex}`);
     if (voiceBtn) {
@@ -1343,13 +1329,13 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         span.textContent = this.isRecording ? 'Stop Recording' : 'Start Recording';
       }
     }
-    
+
     // Update voice status
     const voiceStatus = document.getElementById(`voice-status-${questionIndex}`);
     if (voiceStatus) {
       voiceStatus.textContent = this.isRecording ? '🎤 Listening...' : '🎤 Tap to speak';
     }
-    
+
     // Update audio visualizer
     const visualizer = document.getElementById(`audio-visualizer-${questionIndex}`);
     if (visualizer) {
@@ -1367,11 +1353,11 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   updateTranscriptionDisplay() {
     const questionIndex = this.currentStep - 2;
     const transcriptionText = document.getElementById(`transcription-${questionIndex}`)?.querySelector('.transcription-text');
-    
+
     if (transcriptionText) {
       transcriptionText.textContent = this.currentTranscript || 'Your words will appear here as you speak...';
     }
-    
+
     // Also update the textarea
     const textarea = document.getElementById(`memory-input-${questionIndex}`);
     if (textarea) {
@@ -1383,21 +1369,20 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    * Toggle person selection
    */
   togglePersonSelection(personId) {
-    console.log('👥 Toggle person selection:', personId);
-    
+
     if (!this.selectedPeople) {
       this.selectedPeople = [];
     }
-    
+
     const index = this.selectedPeople.indexOf(personId);
     if (index === -1) {
       this.selectedPeople.push(personId);
-      console.log('👥 Added person:', personId);
+
     } else {
       this.selectedPeople.splice(index, 1);
-      console.log('👥 Removed person:', personId);
+
     }
-    
+
     this.updatePeopleUI();
     this.updateNextButton();
   }
@@ -1421,7 +1406,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         }
       }
     });
-    
+
     // Update selected people summary
     this.updateSelectedPeopleSummary();
   }
@@ -1432,17 +1417,17 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   updateSelectedPeopleSummary() {
     const summaryElement = document.getElementById('selected-people-summary');
     const listElement = document.getElementById('selected-people-list');
-    
+
     if (!summaryElement || !listElement) return;
-    
+
     if (this.selectedPeople.length > 0) {
       summaryElement.style.display = 'block';
-      
+
       const selectedNames = this.selectedPeople.map(personId => {
         const person = this.availablePeople.find(p => p.id === personId);
         return person ? person.name : 'Unknown';
       });
-      
+
       listElement.innerHTML = selectedNames.map(name => `
         <div class="selected-person-tag">
           <span>${name}</span>
@@ -1472,7 +1457,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     if (manualArea) {
       const isVisible = manualArea.style.display !== 'none';
       manualArea.style.display = isVisible ? 'none' : 'block';
-      
+
       if (!isVisible) {
         // Focus the textarea when showing manual input
         const textarea = manualArea.querySelector('textarea');
@@ -1506,10 +1491,10 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   handleFileDrop(event) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     const dropZone = document.getElementById('emma-drop-zone');
     dropZone.classList.remove('drag-over');
-    
+
     const files = Array.from(event.dataTransfer.files);
     this.processFiles(files);
   }
@@ -1522,17 +1507,17 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
       const isValidSize = file.size <= 50 * 1024 * 1024; // 50MB limit
-      
+
       if (!isImage && !isVideo) {
         this.showUploadError(`${file.name} is not a supported media file`);
         return false;
       }
-      
+
       if (!isValidSize) {
         this.showUploadError(`${file.name} is too large (max 50MB)`);
         return false;
       }
-      
+
       return true;
     });
 
@@ -1548,13 +1533,13 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         preview: await this.generatePreview(file),
         id: `media-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       };
-      
+
       this.mediaItems.push(mediaItem);
     }
 
     // Update the UI
     this.updateMediaPreview();
-    console.log(`📷 Added ${validFiles.length} media items, total: ${this.mediaItems.length}`);
+
   }
 
   /**
@@ -1563,7 +1548,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   async generatePreview(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         if (file.type.startsWith('image/')) {
           resolve({
@@ -1584,7 +1569,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             canvas.height = 150;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
+
             resolve({
               type: 'video',
               url: e.target.result,
@@ -1594,7 +1579,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           };
         }
       };
-      
+
       reader.readAsDataURL(file);
     });
   }
@@ -1606,12 +1591,12 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     const previewGrid = document.getElementById('media-preview-grid');
     const previewItems = document.getElementById('preview-items');
     const dropZone = document.getElementById('emma-drop-zone');
-    
+
     if (this.mediaItems.length > 0) {
       // Show preview grid, hide drop zone
       previewGrid.style.display = 'block';
       dropZone.style.display = 'none';
-      
+
       // Generate preview HTML
       previewItems.innerHTML = this.mediaItems.map(item => `
         <div class="media-preview-item" data-id="${item.id}">
@@ -1630,12 +1615,12 @@ class UnifiedMemoryWizard extends ExperiencePopup {
               </div>
             `}
           </div>
-          
+
           <div class="preview-info">
             <div class="file-name">${this.truncateFileName(item.name)}</div>
             <div class="file-size">${this.formatFileSize(item.size)}</div>
           </div>
-          
+
           <button class="remove-media-btn" onclick="event.stopPropagation(); window.unifiedWizardInstance?.removeMedia('${item.id}')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
@@ -1657,7 +1642,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   removeMedia(mediaId) {
     this.mediaItems = this.mediaItems.filter(item => item.id !== mediaId);
     this.updateMediaPreview();
-    console.log(`🗑️ Removed media item, remaining: ${this.mediaItems.length}`);
+
   }
 
   /**
@@ -1675,9 +1660,9 @@ class UnifiedMemoryWizard extends ExperiencePopup {
       </svg>
       ${message}
     `;
-    
+
     document.body.appendChild(errorDiv);
-    
+
     // Remove after 4 seconds
     setTimeout(() => {
       if (errorDiv.parentNode) {
@@ -1716,17 +1701,17 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   generateMemoryTitle() {
     if (this.responses.length === 0) return 'New Memory';
-    
+
     const firstResponse = this.responses[0] || '';
-    
+
     // Extract key phrases for title
     const words = firstResponse.split(' ').filter(word => word.length > 3);
     const keyWords = words.slice(0, 4).join(' ');
-    
+
     if (keyWords.length > 50) {
       return keyWords.substring(0, 47) + '...';
     }
-    
+
     return keyWords || 'Special Memory';
   }
 
@@ -1735,21 +1720,21 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   generateMemoryStory() {
     if (this.responses.length === 0) return 'No story captured yet.';
-    
+
     const questionLabels = [
       'The Memory',
-      'People Involved', 
+      'People Involved',
       'Location',
       'What Made It Special'
     ];
-    
+
     let story = '';
     this.responses.forEach((response, index) => {
       if (response && response.trim()) {
         story += `**${questionLabels[index] || `Detail ${index + 1}`}:**\n${response.trim()}\n\n`;
       }
     });
-    
+
     return story || 'No details captured yet.';
   }
 
@@ -1758,8 +1743,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   async saveMemoryToVault() {
     try {
-      console.log('💾 Saving memory capsule to vault...');
-      
+
       // Show saving state
       const saveBtn = document.querySelector('.wizard-btn-save');
       if (saveBtn) {
@@ -1771,10 +1755,10 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           Saving...
         `;
       }
-      
+
       // First, save media files to vault if any exist
       const processedMediaItems = await this.saveMediaToVault();
-      
+
       // Create memory capsule object with vault-processed media
       const memoryCapsule = {
         id: `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -1789,32 +1773,25 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         category: this.detectCategory(),
         tags: this.generateTags()
       };
-      
-      console.log('💾 Memory capsule created:', memoryCapsule);
-      
-      // Save to .emma web vault using our web vault system
-      console.log('💾 VAULT DEBUG: Checking vault availability...');
-      console.log('💾 VAULT DEBUG: emmaWebVault exists:', !!window.emmaWebVault);
-      console.log('💾 VAULT DEBUG: webVaultStatus exists:', !!window.webVaultStatus);
-      console.log('💾 VAULT DEBUG: sessionStorage emmaVaultActive:', sessionStorage.getItem('emmaVaultActive'));
+
+      // Save to .emma web vault using our web vault system      console.log('💾 VAULT DEBUG: sessionStorage emmaVaultActive:', sessionStorage.getItem('emmaVaultActive'));
       if (window.webVaultStatus) {
-        console.log('✅ VAULT: Checking vault status');
+
       }
-      
+
       // SIMPLIFIED: Check if vault is available
       if (window.emmaWebVault && sessionStorage.getItem('emmaVaultActive') === 'true') {
-        console.log('✅ VAULT: Session indicates vault is active');
-        
+
         if (!window.emmaWebVault.isOpen) {
-          console.log('✅ VAULT: Opening vault based on active session');
+
           window.emmaWebVault.isOpen = true;
         }
       }
-      
+
       // CRITICAL: Check for extension mode OR normal vault unlock
       const extensionMode = window.emmaWebVault && window.emmaWebVault.extensionAvailable;
       const normalVaultUnlocked = window.emmaWebVault && window.webVaultStatus && window.webVaultStatus.isUnlocked();
-      
+
       if (extensionMode || normalVaultUnlocked) {
         try {
           console.log('💾 Using emmaWebVault.addMemory() for .emma vault');
@@ -1835,9 +1812,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
               });
             }
           }
-          
-          console.log('💾 VAULT: Converted attachments for vault:', vaultAttachments);
-          
+
           const result = await window.emmaWebVault.addMemory({
             content: memoryCapsule.content || memoryCapsule.story,
             metadata: {
@@ -1850,17 +1825,16 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             },
             attachments: vaultAttachments
           });
-          console.log('💾 Memory saved to .emma vault successfully:', result);
-          
+
           this.showSuccessMessage('Memory capsule saved to your secure .emma vault! 🎉');
-          
+
           // Close wizard and refresh gallery
           setTimeout(() => {
             this.close();
-            
+
             // Refresh gallery if we're on the gallery page
             if (window.location.pathname.includes('memory-gallery')) {
-              console.log('🔄 WIZARD: Refreshing gallery to show new memory...');
+
               // Wait for extension to complete saving, then refresh
               setTimeout(() => {
                 if (window.refreshMemoryGallery) {
@@ -1872,7 +1846,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             }
           }, 2000);
           return;
-          
+
         } catch (vaultError) {
           console.error('💾 .emma vault save failed:', vaultError);
         }
@@ -1882,11 +1856,10 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         return;
       }
 
-      
     } catch (error) {
       console.error('💾 Error saving memory:', error);
       this.showErrorMessage('Error saving memory. Please try again.');
-      
+
       // Reset save button
       const saveBtn = document.querySelector('.wizard-btn-save');
       if (saveBtn) {
@@ -1908,25 +1881,23 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     try {
       // Add a unique ID for the memory
       memoryCapsule.id = `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       const existingMemories = JSON.parse(localStorage.getItem('emma_memories') || '[]');
       existingMemories.push(memoryCapsule);
       localStorage.setItem('emma_memories', JSON.stringify(existingMemories));
-      
-      console.log('💾 Memory saved to local storage:', memoryCapsule);
-      
+
       this.showSuccessMessage('Memory capsule saved! Refreshing gallery... 💾');
-      
+
       // Close wizard and refresh gallery
       setTimeout(() => {
         this.close();
         // Try to refresh the gallery if possible
         if (window.location.pathname.includes('memory-gallery')) {
-          console.log('💾 Refreshing gallery page...');
+
           window.location.reload();
         }
       }, 1500);
-      
+
     } catch (error) {
       console.error('💾 Local storage failed:', error);
       this.showErrorMessage('Failed to save memory. Please try again.');
@@ -1938,37 +1909,35 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   async saveMediaToVault() {
     if (!this.mediaItems || this.mediaItems.length === 0) {
-      console.log('💾 No media items to save');
+
       return [];
     }
-    
-    console.log(`💾 Processing ${this.mediaItems.length} media files for vault storage...`);
+
     const processedMediaItems = [];
-    
+
     for (const mediaItem of this.mediaItems) {
       try {
         let vaultAttachmentId = null;
-        
+
         // Try to save to vault using attachment API
         if (window.emmaAPI && window.emmaAPI.vault && window.emmaAPI.vault.attachment && window.emmaAPI.vault.attachment.add) {
-          console.log(`📷 MEDIA: Saving ${mediaItem.name} to vault...`);
-          
+
           // Convert file to data URL if not already done
           let dataUrl = mediaItem.preview.url;
           if (mediaItem.file && !dataUrl) {
             dataUrl = await this.fileToDataUrl(mediaItem.file);
           }
-          
+
           const vaultResult = await window.emmaAPI.vault.attachment.add({
             name: mediaItem.name,
             type: mediaItem.type,
             data: dataUrl,
             size: mediaItem.size
           });
-          
+
           if (vaultResult && vaultResult.success && vaultResult.id) {
             vaultAttachmentId = vaultResult.id;
-            console.log(`📷 MEDIA: ${mediaItem.name} saved to vault with ID: ${vaultAttachmentId}`);
+
           } else {
             console.error(`📷 MEDIA: Vault save failed for ${mediaItem.name}:`, vaultResult);
           }
@@ -1981,10 +1950,10 @@ class UnifiedMemoryWizard extends ExperiencePopup {
               type: mediaItem.type,
               file: mediaItem.file || mediaItem.preview.url
             });
-            console.log(`📷 MEDIA: ${mediaItem.name} saved directly to web vault with ID: ${vaultAttachmentId}`);
+
           }
         }
-        
+
         // Create processed media item
         const processedItem = {
           id: mediaItem.id,
@@ -1998,12 +1967,12 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           url: vaultAttachmentId ? null : mediaItem.preview.url,
           dataUrl: vaultAttachmentId ? null : mediaItem.preview.url
         };
-        
+
         processedMediaItems.push(processedItem);
-        
+
       } catch (error) {
         console.error(`📷 MEDIA: Error processing ${mediaItem.name}:`, error);
-        
+
         // Add as local-only item if vault processing fails
         processedMediaItems.push({
           id: mediaItem.id,
@@ -2018,13 +1987,13 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         });
       }
     }
-    
+
     console.log(`💾 Processed ${processedMediaItems.length} media items:`, processedMediaItems.map(item => ({
       name: item.name,
       isPersisted: item.isPersisted,
       vaultId: item.vaultId
     })));
-    
+
     return processedMediaItems;
   }
 
@@ -2045,7 +2014,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
    */
   detectCategory() {
     const allText = this.responses.join(' ').toLowerCase();
-    
+
     if (allText.includes('family') || allText.includes('mom') || allText.includes('dad') || allText.includes('child')) return 'family';
     if (allText.includes('travel') || allText.includes('trip') || allText.includes('vacation')) return 'travel';
     if (allText.includes('wedding') || allText.includes('marriage')) return 'celebration';
@@ -2053,7 +2022,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     if (allText.includes('work') || allText.includes('job') || allText.includes('career')) return 'work';
     if (allText.includes('school') || allText.includes('education') || allText.includes('graduation')) return 'education';
     if (allText.includes('holiday') || allText.includes('christmas')) return 'holiday';
-    
+
     return 'personal'; // Default category
   }
 
@@ -2063,7 +2032,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   generateTags() {
     const tags = new Set();
     const allText = this.responses.join(' ').toLowerCase();
-    
+
     // Auto-detect common themes
     if (allText.includes('family') || allText.includes('mom') || allText.includes('dad')) tags.add('family');
     if (allText.includes('friend') || allText.includes('friends')) tags.add('friends');
@@ -2073,7 +2042,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     if (allText.includes('work') || allText.includes('job') || allText.includes('career')) tags.add('work');
     if (allText.includes('school') || allText.includes('education')) tags.add('education');
     if (allText.includes('holiday') || allText.includes('christmas') || allText.includes('thanksgiving')) tags.add('holiday');
-    
+
     return Array.from(tags);
   }
 
@@ -2085,7 +2054,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   }
 
   /**
-   * Show error message  
+   * Show error message
    */
   showErrorMessage(message) {
     this.showToast(message, 'error');
@@ -2102,12 +2071,12 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'} ${message}
       </div>
     `;
-    
+
     document.body.appendChild(toast);
-    
+
     // Animate in
     setTimeout(() => toast.classList.add('show'), 100);
-    
+
     // Remove after 4 seconds
     setTimeout(() => {
       toast.classList.remove('show');
@@ -2123,4 +2092,3 @@ class UnifiedMemoryWizard extends ExperiencePopup {
 // Export for global access
 window.UnifiedMemoryWizard = UnifiedMemoryWizard;
 
-console.log('🧠 UnifiedMemoryWizard: Clean version loaded successfully');

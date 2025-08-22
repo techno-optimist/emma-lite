@@ -3,8 +3,6 @@
  * Created with love for those living with dementia and their families
  */
 
-console.log('💝 Beautiful Memory Gallery: Loading...');
-
 // Global state
 let memories = [];
 let currentFilter = 'all';
@@ -16,8 +14,7 @@ let isLoading = true;
  * Initialize the gallery
  */
 function initializeGallery() {
-  console.log('💝 GALLERY: Initializing beautiful memory gallery');
-  
+
   // Debug: Check what Emma API methods are available
   if (window.emmaAPI) {
     console.log('💝 GALLERY: Emma API available, methods:', Object.keys(window.emmaAPI));
@@ -31,22 +28,22 @@ function initializeGallery() {
       console.log('💝 GALLERY: Storage API methods:', Object.keys(window.emmaAPI.storage));
     }
   } else {
-    console.log('💝 GALLERY: No Emma API available - will use sample data');
+
   }
-  
+
   // Set up event listeners
   setupEventListeners();
-  
+
   // Pure web app mode - load memories directly
   if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
-    console.log('💝 GALLERY: Web app vault data available - loading memories');
+
     loadMemories();
   } else {
-    console.log('💝 GALLERY: Waiting for vault data to be restored...');
+
     // Wait for vault data restoration
     setTimeout(() => {
       if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
-        console.log('💝 GALLERY: Vault data restored - loading memories');
+
         loadMemories();
       } else {
         console.warn('💝 GALLERY: No vault data available after delay');
@@ -61,7 +58,7 @@ function initializeGallery() {
  * Set up all event listeners
  */
 function setupEventListeners() {
-  console.log('💝 GALLERY: Setting up simple event listeners');
+
   // No extra buttons to wire up - just memory cards
 }
 
@@ -69,7 +66,7 @@ function setupEventListeners() {
  * Refresh gallery (can be called externally)
  */
 window.refreshMemoryGallery = function() {
-  console.log('🔄 GALLERY: External refresh requested');
+
   loadMemories();
 };
 
@@ -77,23 +74,19 @@ window.refreshMemoryGallery = function() {
  * Load memories from vault storage
  */
 async function loadMemories() {
-  console.log('💝 GALLERY: Loading memories from vault...');
-  
+
   try {
     // Try to get memories from .emma vault first
     let vaultMemories = [];
-    
+
     // Check if we have the web vault available
     if (window.emmaWebVault) {
-          console.log('💝 GALLERY: Using pure web app vault data...');
-    
+
     if (window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
-      console.log('💝 GALLERY: Loading from web app vault data...');
+
       try {
         vaultMemories = await window.emmaWebVault.listMemories(1000, 0);
-        console.log('💝 GALLERY: Web app vault result:', vaultMemories);
-          
-          // DEBUG: Log each memory to identify the issue
+
           vaultMemories.forEach((mem, idx) => {
             console.log(`📝 MEMORY ${idx + 1}:`, {
               id: mem.id,
@@ -108,18 +101,17 @@ async function loadMemories() {
           console.error('💝 GALLERY: .emma vault error:', vaultError);
         }
       } else {
-        console.log('💝 GALLERY: Vault not open - cannot load memories');
+
       }
     }
-    
+
     // Fallback to old API if no web vault
     if (vaultMemories.length === 0 && window.emmaAPI) {
       // Try memories.getAll as fallback (old API method)
       if (window.emmaAPI.memories && window.emmaAPI.memories.getAll) {
         console.log('💝 GALLERY: Trying old API memories.getAll()');
         const vaultResult = await window.emmaAPI.memories.getAll({ limit: 1000, offset: 0 });
-        console.log('💝 GALLERY: Old API result:', vaultResult);
-        
+
         if (vaultResult && Array.isArray(vaultResult)) {
           vaultMemories = vaultResult;
         } else if (vaultResult && vaultResult.memories && Array.isArray(vaultResult.memories)) {
@@ -127,15 +119,14 @@ async function loadMemories() {
         }
       }
     }
-    
+
     // Transform vault memories to our format
     if (vaultMemories.length > 0) {
-      console.log(`💝 GALLERY: Found ${vaultMemories.length} vault memories`);
+
       memories = await Promise.all(vaultMemories.map(async (memory, index) => {
         // Convert vault attachments to mediaItems format
         const attachments = memory.attachments || [];
-        console.log(`📷 GALLERY: Memory "${memory.metadata?.title || memory.id}" has ${attachments.length} attachments`);
-        
+
         // Ensure media items are properly formatted and reconstruct URLs
         const mediaItems = await Promise.all(attachments.map(async (item) => {
           // If the item has a dataUrl but no url, use dataUrl as url
@@ -143,10 +134,10 @@ async function loadMemories() {
             item.url = item.dataUrl;
             return item;
           }
-          
+
           // CRITICAL FIX: If item has vaultId but no URL, fetch thumbnail from vault
           if (!item.url && !item.dataUrl && item.vaultId && item.isPersisted) {
-            console.log('📷 MEDIA: Reconstructing URL for vaultId:', item.vaultId, 'memoryId:', memory.id);
+
             try {
               // Fetch attachment metadata from vault to get thumbnail
               if (window.emmaAPI && window.emmaAPI.attachments && window.emmaAPI.attachments.list) {
@@ -157,7 +148,7 @@ async function loadMemories() {
                     // Use thumbnail for display
                     const thumbnailDataUrl = `data:image/jpeg;base64,${attachment.thumb}`;
                     item.url = thumbnailDataUrl;
-                    console.log('📷 MEDIA: Reconstructed thumbnail URL for', item.name);
+
                   } else {
                     console.warn('📷 MEDIA: No thumbnail found in vault for', item.name);
                     item.url = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2U8L3RleHQ+PC9zdmc+';
@@ -176,7 +167,7 @@ async function loadMemories() {
               item.url = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+RXJyb3I8L3RleHQ+PC9zdmc+';
             }
           }
-          
+
           return item;
         }));
 
@@ -194,12 +185,11 @@ async function loadMemories() {
           mediaItems: mediaItems // Preserve media items with URL fixing
         };
       }));
-      console.log(`💝 GALLERY: Transformed ${memories.length} memories for display`);
-      
+
       // Debug: Log media items for each memory
       memories.forEach((memory, index) => {
         if (memory.mediaItems && memory.mediaItems.length > 0) {
-          console.log(`📷 GALLERY: Memory "${memory.title}" has ${memory.mediaItems.length} media items:`, 
+          console.log(`📷 GALLERY: Memory "${memory.title}" has ${memory.mediaItems.length} media items:`,
             memory.mediaItems.map(item => ({
               name: item.name,
               hasUrl: !!item.url,
@@ -212,13 +202,12 @@ async function loadMemories() {
         }
       });
     } else {
-      console.log('💝 GALLERY: No vault memories found - checking local storage fallback');
-      
+
       // Check local storage for wizard-created memories
       try {
         const localMemories = JSON.parse(localStorage.getItem('emma_memories') || '[]');
         if (localMemories.length > 0) {
-          console.log(`💝 GALLERY: Found ${localMemories.length} local memories`);
+
           memories = localMemories.map(memory => ({
             id: memory.id || `local-${Date.now()}`,
             title: memory.title || 'Untitled Memory',
@@ -230,7 +219,7 @@ async function loadMemories() {
             source: 'local'
           }));
         } else {
-          console.log('💝 GALLERY: No local memories found either - starting with empty gallery');
+
           memories = [];
         }
       } catch (localError) {
@@ -238,15 +227,15 @@ async function loadMemories() {
         memories = [];
       }
     }
-    
-    // Render immediately 
+
+    // Render immediately
     setTimeout(() => {
       renderMemories();
     }, 100);
-    
+
   } catch (error) {
     console.error('💝 GALLERY: Error loading vault memories:', error);
-    console.log('💝 GALLERY: Starting with empty gallery - vault connection failed');
+
     memories = [];
     setTimeout(() => {
       renderMemories();
@@ -258,20 +247,19 @@ async function loadMemories() {
  * Render memories in the grid
  */
 function renderMemories() {
-  console.log(`💝 GALLERY: Rendering ${memories.length} memories`);
-  
+
   // Handle empty state
   if (memories.length === 0) {
     renderEmptyState();
     return;
   }
-  
+
   const memoriesGrid = document.getElementById('memories-grid');
-  
+
   // Show all memories (no filtering)
   if (memoriesGrid) {
     memoriesGrid.innerHTML = memories.map(memory => createMemoryCard(memory)).join('');
-    
+
     // Add click handlers to cards
     memoriesGrid.querySelectorAll('.memory-card').forEach((card, index) => {
       card.style.pointerEvents = 'auto';
@@ -289,15 +277,15 @@ function renderMemories() {
  */
 function createMemoryCard(memory) {
   const date = new Date(memory.date);
-  const formattedDate = date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  const formattedDate = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   });
-  
+
   const categoryIcon = getCategoryIcon(memory.category);
   const favoriteIcon = memory.favorite ? '❤️' : '';
-  
+
   return `
     <div class="memory-card" data-memory-id="${memory.id}">
       <div class="memory-image">
@@ -324,21 +312,21 @@ function createMemoryCard(memory) {
  */
 function cleanExcerptForPreview(excerpt) {
   if (!excerpt) return '';
-  
+
   // Remove markdown headers (**text**)
   let cleaned = excerpt.replace(/\*\*([^*]+)\*\*/g, '$1');
-  
+
   // Remove section headers like "**The Memory:**"
   cleaned = cleaned.replace(/\*\*[^*]+:\*\*/g, '');
-  
+
   // Remove extra newlines and trim
   cleaned = cleaned.replace(/\n+/g, ' ').trim();
-  
+
   // Limit length for preview
   if (cleaned.length > 150) {
     cleaned = cleaned.substring(0, 150) + '...';
   }
-  
+
   return cleaned;
 }
 
@@ -355,26 +343,20 @@ function getCategoryIcon(category) {
     default: '💝'
   };
   return icons[category] || icons.default;
-}
-
-
-
-/**
+}/**
  * Open memory detail view
  */
 function openMemoryDetail(memory) {
-  console.log(`💝 GALLERY: Opening memory detail for: ${memory.title}`);
-  
-  // FORCE: Temporarily disable Emma orb to avoid z-index conflicts
+
   const emmaOrb = document.getElementById('universal-emma-orb');
   if (emmaOrb) {
     emmaOrb.style.display = 'none';
-    console.log('💝 GALLERY: Temporarily hid Emma orb for modal');
+
   }
-  
+
   // Create beautiful modal
   const modal = document.createElement('div');
-  console.log('💝 GALLERY: Creating modal with z-index 2147483650');
+
   modal.style.cssText = `
     position: fixed !important;
     top: 0 !important;
@@ -393,15 +375,15 @@ function openMemoryDetail(memory) {
     visibility: visible !important;
     opacity: 1 !important;
   `;
-  
+
   const date = new Date(memory.date);
-  const formattedDate = date.toLocaleDateString('en-US', { 
+  const formattedDate = date.toLocaleDateString('en-US', {
     weekday: 'long',
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
-  
+
   modal.innerHTML = `
     <div class="memory-detail-overlay" style="
       position: fixed !important;
@@ -427,7 +409,7 @@ function openMemoryDetail(memory) {
       display: flex !important;
       flex-direction: column !important;
     ">
-      
+
       <!-- Header with editable title and actions -->
       <div class="memory-detail-header" style="
         padding: 24px 24px 16px !important;
@@ -446,7 +428,7 @@ function openMemoryDetail(memory) {
           font-size: 18px !important;
           font-weight: 600 !important;
         " value="${escapeHtml(memory.title)}" placeholder="Enter memory title..." />
-        
+
         <div class="memory-header-actions" style="display: flex; align-items: center; gap: 12px;">
           <div id="save-status" class="save-status" style="display: none; color: #4ade80; font-size: 14px;">
             <span id="save-status-text">Saved</span>
@@ -473,12 +455,12 @@ function openMemoryDetail(memory) {
             font-weight: 600 !important;
           ">💾 Save</button>
         </div>
-        
+
         <button class="close-btn" onclick="
           const emmaOrb = document.getElementById('universal-emma-orb');
           if (emmaOrb) {
             emmaOrb.style.display = 'block';
-            console.log('💝 GALLERY: Restored Emma orb after modal close');
+
           }
           this.closest('.memory-modal').remove();
         " style="
@@ -573,7 +555,7 @@ function openMemoryDetail(memory) {
           font-size: 11px !important;
           margin-left: 4px !important;
         ">0</span></button>
-        
+
         <div style="margin-left: auto; padding: 8px 12px;">
           <button class="btn secondary" id="share-memory-btn" style="
             background: rgba(255, 255, 255, 0.1) !important;
@@ -597,18 +579,18 @@ function openMemoryDetail(memory) {
       </div>
     </div>
   `;
-  
+
   modal.className = 'memory-modal';
   document.body.appendChild(modal);
-  
+
   // Store current memory globally for functions
   window.currentMemory = memory;
-  
+
   // Set up tab system
   let activeTab = 'overview';
   const bodyHost = modal.querySelector('#memory-detail-body');
   const tabButtons = Array.from(modal.querySelectorAll('.tab-btn'));
-  
+
   // Tab switching functionality
   async function switchTab(tab) {
     activeTab = tab;
@@ -620,12 +602,12 @@ function openMemoryDetail(memory) {
     });
     await renderTab();
   }
-  
+
   // Add tab click handlers
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
-  
+
   // Render tab content
   async function renderTab() {
     if (activeTab === 'overview') {
@@ -659,45 +641,45 @@ function openMemoryDetail(memory) {
       bodyHost.innerHTML = renderRelated(memory);
     }
   }
-  
+
   // Save functionality
   const saveBtn = modal.querySelector('#memory-save-btn');
   const saveStatus = modal.querySelector('#save-status');
   const saveStatusText = modal.querySelector('#save-status-text');
   const titleInput = modal.querySelector('#memory-title-input');
-  
+
   function showSaveStatus(type, message) {
     if (!saveStatus || !saveStatusText) return;
     saveStatus.style.display = 'inline-flex';
     saveStatus.style.color = type === 'saved' ? '#4ade80' : type === 'error' ? '#f87171' : '#fbbf24';
     saveStatusText.textContent = message;
-    
+
     if (type === 'saved') {
       setTimeout(() => {
         saveStatus.style.display = 'none';
       }, 3000);
     }
   }
-  
+
   async function handleSave() {
     const title = titleInput.value.trim() || 'Untitled Memory';
     const content = document.getElementById('memory-content-input')?.value || memory.content || '';
     const category = document.getElementById('memory-category-select')?.value || memory.category || 'family';
     const date = document.getElementById('memory-date-input')?.value || memory.date;
-    
+
     try {
       showSaveStatus('saving', 'Saving...');
       if (saveBtn) saveBtn.disabled = true;
-      
+
       // Update memory object
       memory.title = title;
       memory.content = content;
       memory.category = category;
       memory.date = date;
-      
+
       // Try to save via .emma web vault first
       if (window.emmaWebVault && window.emmaWebVault.isOpen) {
-        console.log('💾 SAVE: Saving to .emma web vault...');
+
         // Update the memory in the vault
         const memoryData = {
           id: memory.id,
@@ -707,22 +689,22 @@ function openMemoryDetail(memory) {
           date: date,
           mediaItems: memory.mediaItems || []
         };
-        
+
         // Extension mode: Route memory updates through extension
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-          console.log('🔗 GALLERY: Routing memory update through extension');
+
           // Extension handles all vault operations - no direct data manipulation
           // Memory updates should go through proper extension save flow
-          
+
           // Trigger direct save to update original file
           try {
             await window.emmaWebVault.autoSave();
             showSaveStatus('saved', '✓ Saved to .emma vault');
-            console.log('💾 SAVE: Memory updated in .emma vault successfully');
+
           } catch (saveError) {
             showSaveStatus('error', '⚠️ Direct save required');
             console.error('💾 SAVE: Direct save failed:', saveError);
-            
+
             if (saveError.message.includes('Direct save required')) {
               // Show user-friendly message
               setTimeout(() => {
@@ -731,18 +713,18 @@ function openMemoryDetail(memory) {
             }
             return; // Don't refresh gallery if save failed
           }
-          
+
           // Refresh gallery to show updated memory
           setTimeout(() => {
-            console.log('🔄 SAVE: Refreshing gallery to show updated memory...');
+
             if (window.loadMemories) {
               window.loadMemories();
             }
           }, 1000);
         }
-        
+
       } else if (window.emmaAPI && window.emmaAPI.memories && window.emmaAPI.memories.save) {
-        console.log('💾 SAVE: Falling back to old API...');
+
         // CRITICAL FIX: Strip dataUrls from mediaItems before persistence
         const persistableMediaItems = (memory.mediaItems || []).map(item => ({
           id: item.id,
@@ -756,7 +738,7 @@ function openMemoryDetail(memory) {
           url: item.isPersisted ? null : item.url,
           dataUrl: item.isPersisted ? null : item.dataUrl
         }));
-        
+
         const memoryData = {
           id: memory.id,
           title: title,
@@ -765,7 +747,7 @@ function openMemoryDetail(memory) {
           date: date,
           mediaItems: persistableMediaItems
         };
-        
+
         console.log('💾 SAVE: Saving memory with media items:', {
           memoryId: memory.id,
           title: title,
@@ -778,12 +760,12 @@ function openMemoryDetail(memory) {
             vaultId: item.vaultId
           }))
         });
-        
+
         const result = await window.emmaAPI.memories.save(memoryData);
-        
+
         if (result && result.success) {
           showSaveStatus('saved', '✓ Saved to vault');
-          console.log('💾 SAVE: Memory saved to vault successfully');
+
         } else {
           showSaveStatus('error', 'Vault save failed');
           console.error('💾 SAVE: Vault save failed:', result);
@@ -792,13 +774,13 @@ function openMemoryDetail(memory) {
         showSaveStatus('saved', '✓ Saved (demo)');
         console.warn('💾 SAVE: No vault API - saved locally only');
       }
-      
+
       // Update the memory in the main array
       const memoryIndex = memories.findIndex(m => m.id === memory.id);
       if (memoryIndex !== -1) {
         memories[memoryIndex] = memory;
       }
-      
+
     } catch (error) {
       showSaveStatus('error', 'Save failed');
       console.error('💾 SAVE: Error saving memory:', error);
@@ -806,12 +788,12 @@ function openMemoryDetail(memory) {
       if (saveBtn) saveBtn.disabled = false;
     }
   }
-  
+
   // Add save button handler
   if (saveBtn) {
     saveBtn.addEventListener('click', handleSave);
   }
-  
+
   // Add delete button handler
   const deleteBtn = modal.querySelector('#memory-delete-btn');
   if (deleteBtn) {
@@ -819,46 +801,45 @@ function openMemoryDetail(memory) {
       // Confirm deletion
       const confirmed = confirm(`Are you sure you want to permanently delete "${memory.title}"?\n\nThis action cannot be undone.`);
       if (!confirmed) return;
-      
+
       try {
-        console.log('🗑️ DELETE: Deleting memory:', memory.id);
-        
+
         // Delete using elegant API
         if (window.emmaAPI && window.emmaAPI.memories && window.emmaAPI.memories.delete) {
-          console.log('🗑️ DELETE: Removing from .emma vault via API...');
+
           const result = await window.emmaAPI.memories.delete(memory.id);
           if (result && result.success) {
-            console.log('🗑️ DELETE: Memory removed from .emma vault and auto-saved');
+
           } else {
             console.error('🗑️ DELETE: API delete failed:', result);
           }
         }
-        
+
         // Remove from local memories array
         const memoryIndex = memories.findIndex(m => m.id === memory.id);
         if (memoryIndex !== -1) {
           memories.splice(memoryIndex, 1);
-          console.log('🗑️ DELETE: Memory removed from local array');
+
         }
-        
+
         // Close modal
         closeModal();
-        
+
         // Refresh gallery to show updated list
         setTimeout(() => {
-          console.log('🔄 DELETE: Refreshing gallery after deletion...');
+
           if (window.loadMemories) {
             window.loadMemories();
           }
         }, 500);
-        
+
       } catch (error) {
         console.error('🗑️ DELETE: Error deleting memory:', error);
         alert('Failed to delete memory. Please try again.');
       }
     });
   }
-  
+
   // Add keyboard shortcuts
   const handleKeydown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -869,10 +850,10 @@ function openMemoryDetail(memory) {
       closeModal();
     }
   };
-  
+
   document.addEventListener('keydown', handleKeydown);
   modal._keydownHandler = handleKeydown;
-  
+
   // Share button handler
   const shareBtn = modal.querySelector('#share-memory-btn');
   if (shareBtn) {
@@ -880,7 +861,7 @@ function openMemoryDetail(memory) {
       openQRShareModal(memory);
     });
   }
-  
+
   // Close handlers
   const overlay = modal.querySelector('.memory-detail-overlay');
   const closeModal = () => {
@@ -891,23 +872,23 @@ function openMemoryDetail(memory) {
     const emmaOrb = document.getElementById('universal-emma-orb');
     if (emmaOrb) {
       emmaOrb.style.display = 'block';
-      console.log('💝 GALLERY: Restored Emma orb after modal close');
+
     }
     modal.remove();
   };
-  
+
   overlay.addEventListener('click', closeModal);
-  
+
   // Update close button to use the cleanup function
   const closeBtn = modal.querySelector('.close-btn');
   closeBtn.onclick = closeModal;
-  
+
   // Store current memory globally for helper functions
   window.currentMemory = memory;
-  
+
   // Initial render
   renderTab();
-  
+
   // Add fade in animation
   modal.style.opacity = '0';
   setTimeout(() => {
@@ -920,7 +901,7 @@ function openMemoryDetail(memory) {
  */
 function renderMiniSlideshow(memory) {
   const mediaItems = memory.mediaItems || [];
-  
+
   if (mediaItems.length === 0) {
     return `
       <!-- No media placeholder -->
@@ -949,7 +930,7 @@ function renderMiniSlideshow(memory) {
       </div>
     `;
   }
-  
+
   return `
     <div class="mini-slideshow" style="margin-bottom: 24px;">
       <div style="position: relative; height: 200px; border-radius: 12px; overflow: hidden; background: rgba(255, 255, 255, 0.05);">
@@ -964,7 +945,7 @@ function renderMiniSlideshow(memory) {
               height: 100%;
               position: relative;
             ">
-              ${item.type.startsWith('image/') ? 
+              ${item.type.startsWith('image/') ?
                 `<img src="${item.url}" style="width: 100%; height: 200px; object-fit: cover; display: block;">` :
                 `<video src="${item.url}" style="width: 100%; height: 200px; object-fit: cover; display: block;" muted autoplay loop></video>`
               }
@@ -983,7 +964,7 @@ function renderMiniSlideshow(memory) {
             </div>
           `).join('')}
         </div>
-        
+
         <!-- Navigation dots -->
         ${mediaItems.length > 1 ? `
           <div style="
@@ -1007,7 +988,7 @@ function renderMiniSlideshow(memory) {
               " onclick="goToSlide(${index})"></button>
             `).join('')}
           </div>
-          
+
           <!-- Navigation arrows -->
           <button class="slide-nav prev" onclick="previousSlide()" style="
             position: absolute;
@@ -1028,7 +1009,7 @@ function renderMiniSlideshow(memory) {
             opacity: 0.7;
             transition: opacity 0.3s ease;
           " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">‹</button>
-          
+
           <button class="slide-nav next" onclick="nextSlide()" style="
             position: absolute;
             right: 12px;
@@ -1050,10 +1031,10 @@ function renderMiniSlideshow(memory) {
           " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">›</button>
         ` : ''}
       </div>
-      
+
       <div style="text-align: center; margin-top: 12px;">
         <small style="color: rgba(255, 255, 255, 0.6);">
-          ${mediaItems.length} media file${mediaItems.length > 1 ? 's' : ''} • 
+          ${mediaItems.length} media file${mediaItems.length > 1 ? 's' : ''} •
           <a href="#" onclick="switchTab('media'); return false;" style="color: var(--emma-accent); text-decoration: none;">Manage all media</a>
         </small>
       </div>
@@ -1069,10 +1050,10 @@ function renderOverview(memory) {
     <div class="overview-content">
       <!-- Hidden file input for adding media from Overview tab -->
       <input type="file" id="overview-media-file-input" accept="image/*,video/*" multiple style="display: none;" onchange="handleMediaUpload(event)">
-      
+
       <!-- Mini Media Slideshow at the top -->
       ${renderMiniSlideshow(memory)}
-      
+
       <!-- Memory content editor -->
       <div style="margin-bottom: 24px;">
         <label style="display: block; font-weight: 600; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8);">Memory Content</label>
@@ -1089,7 +1070,7 @@ function renderOverview(memory) {
           resize: vertical;
         " placeholder="Describe this memory...">${escapeHtml(memory.content || '')}</textarea>
       </div>
-      
+
       <!-- Category and tags -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
         <div>
@@ -1123,7 +1104,7 @@ function renderOverview(memory) {
           " value="${new Date(memory.date).toISOString().split('T')[0]}" />
         </div>
       </div>
-      
+
       <!-- Tags -->
       <div style="margin-bottom: 24px;">
         <label style="display: block; font-weight: 600; margin-bottom: 8px; color: rgba(255, 255, 255, 0.8);">Tags</label>
@@ -1252,18 +1233,18 @@ function renderMeta(memory) {
 
 function renderMedia(memory) {
   const mediaItems = memory.mediaItems || [];
-  
+
   return `
     <div class="media-content">
       <!-- Hidden file input -->
       <input type="file" id="media-file-input" accept="image/*,video/*" multiple style="display: none;" onchange="handleMediaUpload(event)">
-      
+
       ${mediaItems.length > 0 ? `
         <!-- Media grid -->
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
           ${mediaItems.map(item => `
             <div style="position: relative; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
-              ${item.type.startsWith('image/') ? 
+              ${item.type.startsWith('image/') ?
                 `<img src="${item.url}" style="width: 100%; height: 150px; object-fit: cover;">` :
                 `<video src="${item.url}" style="width: 100%; height: 150px; object-fit: cover;" controls></video>`
               }
@@ -1279,7 +1260,7 @@ function renderMedia(memory) {
                 font-size: 10px;
                 font-weight: 600;
               ">${item.isPersisted ? '✓ Vault' : '⚠ Local'}</div>
-              
+
               <button onclick="removeMediaItem('${item.id}')" style="
                 position: absolute;
                 top: 8px;
@@ -1293,7 +1274,7 @@ function renderMedia(memory) {
                 cursor: pointer;
                 font-size: 12px;
               ">×</button>
-              
+
               <!-- Media info overlay -->
               <div style="
                 position: absolute;
@@ -1321,7 +1302,7 @@ function renderMedia(memory) {
           </p>
         </div>
       `}
-      
+
       <!-- Add media button -->
       <div style="text-align: center;">
         <button onclick="document.getElementById('media-file-input').click()" style="
@@ -1340,23 +1321,20 @@ function renderMedia(memory) {
 }
 
 async function renderPeople(memory) {
-  console.log('👥 GALLERY: Rendering people for memory:', memory.id);
-  
+
   try {
     // Load actual people from vault
     let vaultPeople = [];
     if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-      console.log('👥 GALLERY: Loading people from extension vault...');
+
       vaultPeople = await window.emmaWebVault.listPeople();
-      console.log('👥 GALLERY: Found vault people:', vaultPeople.length);
+
     }
-    
+
     // Get people connected to this memory (from memory.metadata.people or similar)
     const connectedPeopleIds = memory.metadata?.people || memory.people || [];
     const connectedPeople = vaultPeople.filter(person => connectedPeopleIds.includes(person.id));
-    
-    console.log('👥 GALLERY: Connected people for this memory:', connectedPeople.length);
-    
+
     return `
       <div class="people-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -1371,7 +1349,7 @@ async function renderPeople(memory) {
             font-size: 14px;
           ">+ Add People</button>
         </div>
-        
+
         ${connectedPeople.length > 0 ? `
           <div class="people-grid" style="display: grid; gap: 16px;">
             ${connectedPeople.map(person => `
@@ -1434,7 +1412,7 @@ async function renderPeople(memory) {
             <div style="font-size: 14px; opacity: 0.8;">Add people to share this precious moment</div>
           </div>
         `}
-        
+
         ${vaultPeople.length > 0 ? `
           <div style="margin-top: 24px;">
             <h4 style="color: rgba(255, 255, 255, 0.8); margin-bottom: 16px;">Available People</h4>
@@ -1534,19 +1512,18 @@ function addTag() {
 
 // Helper functions for people management in memory details
 function showAddPeopleToMemory(memoryId) {
-  console.log('👥 Add people to memory:', memoryId);
+
   showNotification('👥 Add people feature coming soon!', 'info');
 }
 
 function openPersonFromMemory(personId) {
-  console.log('👥 Opening person from memory:', personId);
+
   // Navigate to people page and show person detail
   window.location.href = `pages/people-emma.html?person=${personId}`;
 }
 
 async function connectPersonToMemory(memoryId, personId) {
-  console.log('🔗 Connecting person to memory:', personId, '→', memoryId);
-  
+
   try {
     // Get current memory data
     const currentMemory = window.currentMemory;
@@ -1555,7 +1532,7 @@ async function connectPersonToMemory(memoryId, personId) {
       showNotification('❌ Error: No memory data found', 'error');
       return;
     }
-    
+
     // Add person to memory's people list
     if (!currentMemory.metadata) {
       currentMemory.metadata = {};
@@ -1563,16 +1540,14 @@ async function connectPersonToMemory(memoryId, personId) {
     if (!currentMemory.metadata.people) {
       currentMemory.metadata.people = [];
     }
-    
+
     // Add person if not already connected
     if (!currentMemory.metadata.people.includes(personId)) {
       currentMemory.metadata.people.push(personId);
-      console.log('👥 Added person to memory metadata:', personId);
-      
+
       // Update memory in vault through extension
       if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-        console.log('💾 Updating memory in vault with new person connection...');
-        
+
         // Send memory update to extension
         window.postMessage({
           channel: 'emma-vault-bridge',
@@ -1583,7 +1558,7 @@ async function connectPersonToMemory(memoryId, personId) {
             updated: new Date().toISOString()
           }
         }, window.location.origin);
-        
+
         // Re-render the people tab to show the connection
         setTimeout(async () => {
           const bodyHost = document.querySelector('#memory-detail-body');
@@ -1592,7 +1567,7 @@ async function connectPersonToMemory(memoryId, personId) {
             bodyHost.innerHTML = peopleContent;
           }
         }, 300);
-        
+
         showNotification('✅ Person connected to memory!', 'success');
       } else {
         showNotification('❌ Extension not available', 'error');
@@ -1600,7 +1575,7 @@ async function connectPersonToMemory(memoryId, personId) {
     } else {
       showNotification('👥 Person already connected to this memory', 'info');
     }
-    
+
   } catch (error) {
     console.error('❌ Error connecting person to memory:', error);
     showNotification('❌ Failed to connect person', 'error');
@@ -1616,11 +1591,7 @@ function removeTag(tag) {
       bodyHost.innerHTML = renderOverview(window.currentMemory);
     }
   }
-}
-
-
-
-/**
+}/**
  * Show beautiful notification
  */
 function showNotification(message, type = 'info') {
@@ -1640,10 +1611,10 @@ function showNotification(message, type = 'info') {
     line-height: 1.4;
     animation: slideIn 0.3s ease;
   `;
-  
+
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.style.opacity = '0';
     notification.style.transform = 'translateX(100%)';
@@ -1669,7 +1640,7 @@ style.textContent = `
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  
+
   @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
@@ -1683,7 +1654,7 @@ document.head.appendChild(style);
 function renderEmptyState() {
   const memoriesGrid = document.getElementById('memories-grid');
   if (!memoriesGrid) return;
-  
+
   memoriesGrid.innerHTML = `
     <div class="empty-state-card">
       <div class="empty-icon">💝</div>
@@ -1704,15 +1675,15 @@ function renderEmptyState() {
       </div>
     </div>
   `;
-  
+
   // No button click handler needed - users should click the Emma orb
-  
+
   // Add event listener for clear vault button
   const clearBtn = document.getElementById('clear-vault-btn');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
       if (confirm('⚠️ Are you sure you want to clear all memories from the vault? This cannot be undone!')) {
-        console.log('💝 GALLERY: Clearing vault memories...');
+
         clearVaultMemories();
       }
     });
@@ -1726,16 +1697,15 @@ async function clearVaultMemories() {
   try {
     // Clear using debug.kv.clear if available
     if (window.emmaAPI && window.emmaAPI.debug && window.emmaAPI.debug.kv && window.emmaAPI.debug.kv.clear) {
-      console.log('💝 GALLERY: Clearing vault storage...');
+
       const result = await window.emmaAPI.debug.kv.clear();
-      console.log('💝 GALLERY: Clear result:', result);
-      
+
       // Clear local memories array
       memories = [];
-      
+
       // Re-render to show empty state
       renderMemories();
-      
+
       // Show success notification
       showNotification('🗑️ All memories cleared from vault', 'success');
     } else {
@@ -1764,13 +1734,13 @@ function createNewMemory() {
     favorite: false,
     mediaItems: []
   };
-  
+
   // Add to memories array
   memories.unshift(newMemory);
-  
+
   // Re-render the grid
   renderMemories();
-  
+
   // Automatically open the new memory for editing
   setTimeout(() => {
     openMemoryDetail(newMemory);
@@ -1783,21 +1753,19 @@ function createNewMemory() {
 async function handleMediaUpload(event) {
   const files = event.target.files;
   if (!files || files.length === 0) return;
-  
-  console.log('📷 MEDIA: Uploading', files.length, 'files');
-  
+
   // Get current memory
   const memory = window.currentMemory;
   if (!memory) {
     showNotification('❌ No memory selected', 'error');
     return;
   }
-  
+
   // Initialize mediaItems array if it doesn't exist
   if (!memory.mediaItems) {
     memory.mediaItems = [];
   }
-  
+
   // Process each file
   for (const file of Array.from(files)) {
     try {
@@ -1806,10 +1774,9 @@ async function handleMediaUpload(event) {
         showNotification(`❌ "${file.name}" is not a supported media file`, 'error');
         continue;
       }
-      
-      console.log('📷 MEDIA: Processing', file.name);
+
       showNotification(`📷 Uploading ${file.name}...`, 'info');
-      
+
       // Convert file to data URL for vault storage
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1817,35 +1784,33 @@ async function handleMediaUpload(event) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      
+
       // Save to elegant vault system
       let vaultAttachmentId = null;
       if (window.emmaWebVault && window.emmaWebVault.isOpen) {
         try {
-          console.log('📷 MEDIA: Saving to elegant vault:', file.name);
+
           vaultAttachmentId = await window.emmaWebVault.addMedia({
             name: file.name,
             type: file.type,
             data: dataUrl
           });
-          
-          console.log('📷 MEDIA: Saved to elegant vault with ID:', vaultAttachmentId);
-          
+
           // Extension mode: Route attachment updates through extension
           if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-            console.log('🔗 GALLERY: Routing attachment update through extension');
+
             // Extension handles all vault operations - no direct data manipulation
-            
+
             // Trigger direct save to persist to file
             try {
               await window.emmaWebVault.autoSave();
-              console.log('📷 MEDIA: Triggered direct save for media upload');
+
             } catch (saveError) {
               console.error('📷 MEDIA: Direct save failed for media upload:', saveError);
               showNotification('⚠️ Media added but direct save required - click "Enable direct save"', 'warning');
             }
           }
-          
+
         } catch (vaultError) {
           console.error('📷 MEDIA: Failed to save to elegant vault:', vaultError);
           showNotification(`⚠️ ${file.name} uploaded locally (vault save failed)`, 'warning');
@@ -1853,7 +1818,7 @@ async function handleMediaUpload(event) {
       } else {
         console.warn('📷 MEDIA: Elegant vault not available - storing locally only');
       }
-      
+
       // Add to memory (use dataUrl for immediate display)
       const mediaItem = {
         id: 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -1866,35 +1831,26 @@ async function handleMediaUpload(event) {
         uploadedAt: new Date(),
         isPersisted: !!vaultAttachmentId // Track if saved to vault
       };
-      
+
       memory.mediaItems.push(mediaItem);
       console.log('📷 MEDIA: Added', file.name, 'to memory', vaultAttachmentId ? '(vault saved)' : '(local only)');
-      console.log('📷 MEDIA: Media item details:', {
-        id: mediaItem.id,
-        name: mediaItem.name,
-        hasUrl: !!mediaItem.url,
-        hasDataUrl: !!mediaItem.dataUrl,
-        urlLength: mediaItem.url ? mediaItem.url.length : 0,
-        dataUrlLength: mediaItem.dataUrl ? mediaItem.dataUrl.length : 0,
-        isPersisted: mediaItem.isPersisted,
-        vaultId: mediaItem.vaultId
-      });
+
       showNotification(`✅ ${file.name} uploaded successfully!`, 'success');
-      
+
     } catch (error) {
       console.error('📷 MEDIA: Error processing', file.name, ':', error);
       showNotification(`❌ Failed to upload ${file.name}`, 'error');
     }
   }
-  
+
   // Update the memory in the main array
   const memoryIndex = memories.findIndex(m => m.id === memory.id);
   if (memoryIndex !== -1) {
     memories[memoryIndex] = memory;
   }
-  
+
   // CRITICAL FIX: Auto-save memory with new media items
-  console.log('📷 MEDIA: Auto-saving memory with updated media items...');
+
   console.log('📷 MEDIA: mediaItems before save:', {
     count: memory.mediaItems.length,
     items: memory.mediaItems.map(item => ({
@@ -1911,24 +1867,23 @@ async function handleMediaUpload(event) {
       vaultId: item.vaultId
     }))
   });
-  
+
   try {
     // Use .emma web vault for saving updated memory
     if (window.emmaWebVault && window.emmaWebVault.isOpen) {
-      console.log('📷 MEDIA: Updating memory in .emma vault...');
-      
+
       // Extension mode: Route memory updates through extension
       if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-        console.log('🔗 GALLERY: Routing memory update through extension');
+
         // Extension handles all vault operations - no direct data manipulation
-        
+
         // Save vault data
         await window.emmaWebVault.saveToIndexedDB(window.emmaWebVault.vaultData);
-        console.log('📷 MEDIA: Memory updated in vault with new media');
+
       }
-      
+
     } else if (window.emmaAPI && window.emmaAPI.memories && window.emmaAPI.memories.save) {
-      console.log('📷 MEDIA: Falling back to old API...');
+
       // CRITICAL FIX: Strip dataUrls from mediaItems before persistence to avoid size issues
       const persistableMediaItems = memory.mediaItems.map(item => ({
         id: item.id,
@@ -1942,7 +1897,7 @@ async function handleMediaUpload(event) {
         url: item.isPersisted ? null : item.url,
         dataUrl: item.isPersisted ? null : item.dataUrl
       }));
-      
+
       const memoryPayload = {
         id: memory.id,
         title: memory.title,
@@ -1951,18 +1906,18 @@ async function handleMediaUpload(event) {
         date: memory.date,
         mediaItems: persistableMediaItems // Use stripped version for storage
       };
-      
+
       console.log('📷 MEDIA: Sending payload to save:', {
         id: memoryPayload.id,
         title: memoryPayload.title,
         mediaItemsCount: memoryPayload.mediaItems.length,
         payloadSize: JSON.stringify(memoryPayload).length
       });
-      
+
       const saveResult = await window.emmaAPI.memories.save(memoryPayload);
-      
+
       if (saveResult && saveResult.success) {
-        console.log('📷 MEDIA: Memory auto-saved successfully with media items');
+
         showNotification(`💾 Memory updated with ${files.length} media file${files.length > 1 ? 's' : ''}`, 'success');
       } else {
         console.error('📷 MEDIA: Auto-save failed:', saveResult);
@@ -1976,13 +1931,13 @@ async function handleMediaUpload(event) {
     console.error('📷 MEDIA: Auto-save error:', saveError);
     showNotification(`⚠️ Media added but auto-save failed: ${saveError.message}`, 'warning');
   }
-  
+
   // Re-render the media tab
   const bodyHost = document.getElementById('memory-detail-body');
   if (bodyHost) {
     bodyHost.innerHTML = renderMedia(memory);
   }
-  
+
   // Update the memory card image if it doesn't have one
   if (!memory.image && memory.mediaItems.length > 0) {
     const firstImage = memory.mediaItems.find(item => item.type.startsWith('image/'));
@@ -1992,7 +1947,7 @@ async function handleMediaUpload(event) {
       renderMemories();
     }
   }
-  
+
   // Clear the input
   event.target.value = '';
 }
@@ -2001,43 +1956,42 @@ async function handleMediaUpload(event) {
  * Remove a media item
  */
 async function removeMediaItem(mediaId) {
-  console.log('🗑️ MEDIA: Removing', mediaId);
-  
+
   const memory = window.currentMemory;
   if (!memory || !memory.mediaItems) return;
-  
+
   // Find and remove the media item
   const itemIndex = memory.mediaItems.findIndex(item => item.id === mediaId);
   if (itemIndex === -1) return;
-  
+
   const item = memory.mediaItems[itemIndex];
-  
+
   // Remove from vault if it was persisted
   if (item.vaultId && window.emmaAPI && window.emmaAPI.vault && window.emmaAPI.vault.attachment && window.emmaAPI.vault.attachment.remove) {
     try {
-      console.log('🗑️ MEDIA: Removing from vault:', item.vaultId);
+
       await window.emmaAPI.vault.attachment.remove(item.vaultId);
-      console.log('🗑️ MEDIA: Successfully removed from vault');
+
     } catch (error) {
       console.error('🗑️ MEDIA: Failed to remove from vault:', error);
       showNotification(`⚠️ Failed to remove ${item.name} from vault`, 'warning');
     }
   }
-  
+
   // Revoke the object URL to free memory
   URL.revokeObjectURL(item.url);
-  
+
   // Remove from array
   memory.mediaItems.splice(itemIndex, 1);
-  
+
   showNotification(`🗑️ Removed ${item.name}`, 'success');
-  
+
   // Update the memory in the main array
   const memoryIndex = memories.findIndex(m => m.id === memory.id);
   if (memoryIndex !== -1) {
     memories[memoryIndex] = memory;
   }
-  
+
   // If this was the main image, update it
   if (memory.image === item.url) {
     const firstImage = memory.mediaItems.find(item => item.type.startsWith('image/'));
@@ -2045,13 +1999,13 @@ async function removeMediaItem(mediaId) {
     // Re-render the gallery
     renderMemories();
   }
-  
+
   // Re-render the media tab
   const bodyHost = document.getElementById('memory-detail-body');
   if (bodyHost) {
     bodyHost.innerHTML = renderMedia(memory);
   }
-  
+
   showNotification(`🗑️ Removed "${item.name}"`, 'info');
 }
 
@@ -2063,15 +2017,15 @@ let currentSlideIndex = 0;
 function goToSlide(index) {
   const container = document.getElementById('slideshow-container');
   if (!container) return;
-  
+
   const memory = window.currentMemory;
   if (!memory || !memory.mediaItems) return;
-  
+
   currentSlideIndex = Math.max(0, Math.min(index, memory.mediaItems.length - 1));
-  
+
   // Move the container
   container.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
-  
+
   // Update dots
   document.querySelectorAll('.slide-dot').forEach((dot, i) => {
     dot.style.background = i === currentSlideIndex ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.5)';
@@ -2081,7 +2035,7 @@ function goToSlide(index) {
 function nextSlide() {
   const memory = window.currentMemory;
   if (!memory || !memory.mediaItems) return;
-  
+
   const nextIndex = (currentSlideIndex + 1) % memory.mediaItems.length;
   goToSlide(nextIndex);
 }
@@ -2089,7 +2043,7 @@ function nextSlide() {
 function previousSlide() {
   const memory = window.currentMemory;
   if (!memory || !memory.mediaItems) return;
-  
+
   const prevIndex = currentSlideIndex === 0 ? memory.mediaItems.length - 1 : currentSlideIndex - 1;
   goToSlide(prevIndex);
 }
@@ -2100,10 +2054,10 @@ let slideshowTimer;
 function startSlideshow() {
   const memory = window.currentMemory;
   if (!memory || !memory.mediaItems || memory.mediaItems.length <= 1) return;
-  
+
   // Clear existing timer
   if (slideshowTimer) clearInterval(slideshowTimer);
-  
+
   // Auto-advance every 4 seconds
   slideshowTimer = setInterval(() => {
     nextSlide();
@@ -2139,26 +2093,25 @@ window.memoryGallery = {
  * Open QR Share Modal for Memory Capsule
  */
 function openQRShareModal(memory) {
-  console.log('🔗 Opening QR Share Modal for memory:', memory.id);
-  
+
   // Remove any existing QR modals
   const existingQRModal = document.querySelector('.qr-share-modal');
   if (existingQRModal) existingQRModal.remove();
-  
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay active qr-share-modal';
   modal.style.zIndex = '2000'; // Above memory detail modal
-  
+
   const memoryTitle = memory.title || 'Untitled Memory';
   const memoryType = memory.type || 'note';
   const memoryDate = memory.date || new Date().toLocaleDateString();
   const attachmentCount = (memory.mediaItems || []).length;
-  
+
   modal.innerHTML = `
     <div class="modal qr-share-dialog" style="
-      max-width: 600px; 
-      background: linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(30, 30, 40, 0.98)); 
-      backdrop-filter: blur(20px); 
+      max-width: 600px;
+      background: linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(30, 30, 40, 0.98));
+      backdrop-filter: blur(20px);
       border: 1px solid rgba(134, 88, 255, 0.3);
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -2170,10 +2123,10 @@ function openQRShareModal(memory) {
       ">
         <div style="display: flex; align-items: center; gap: 16px;">
           <div class="qr-icon" style="
-            width: 48px; height: 48px; 
-            background: linear-gradient(135deg, #8658ff, #f093fb); 
-            border-radius: 12px; 
-            display: flex; align-items: center; justify-content: center; 
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #8658ff, #f093fb);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
             font-size: 24px;
           ">📱</div>
           <div>
@@ -2186,11 +2139,11 @@ function openQRShareModal(memory) {
           </div>
         </div>
         <button class="close-btn close-qr-modal" style="
-          color: #cccccc; font-size: 24px; cursor: pointer; 
+          color: #cccccc; font-size: 24px; cursor: pointer;
           background: none; border: none;
         ">×</button>
       </div>
-      
+
       <div class="qr-modal-body" style="padding: 32px;">
         <!-- Privacy Level Selection -->
         <div class="privacy-selection" style="margin-bottom: 32px;">
@@ -2199,7 +2152,7 @@ function openQRShareModal(memory) {
           </h3>
           <div class="privacy-options" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
             <div class="privacy-option" data-level="private" style="
-              padding: 16px; border: 2px solid rgba(255, 255, 255, 0.2); 
+              padding: 16px; border: 2px solid rgba(255, 255, 255, 0.2);
               border-radius: 12px; cursor: pointer; text-align: center;
               background: rgba(255, 255, 255, 0.05);
               transition: all 0.3s ease;
@@ -2209,7 +2162,7 @@ function openQRShareModal(memory) {
               <div style="color: #cccccc; font-size: 12px;">Reference only</div>
             </div>
             <div class="privacy-option active" data-level="protected" style="
-              padding: 16px; border: 2px solid #8658ff; 
+              padding: 16px; border: 2px solid #8658ff;
               border-radius: 12px; cursor: pointer; text-align: center;
               background: rgba(134, 88, 255, 0.1);
               transition: all 0.3s ease;
@@ -2219,7 +2172,7 @@ function openQRShareModal(memory) {
               <div style="color: #cccccc; font-size: 12px;">24hr token</div>
             </div>
             <div class="privacy-option" data-level="public" style="
-              padding: 16px; border: 2px solid rgba(255, 255, 255, 0.2); 
+              padding: 16px; border: 2px solid rgba(255, 255, 255, 0.2);
               border-radius: 12px; cursor: pointer; text-align: center;
               background: rgba(255, 255, 255, 0.05);
               transition: all 0.3s ease;
@@ -2230,23 +2183,23 @@ function openQRShareModal(memory) {
             </div>
           </div>
         </div>
-        
+
         <!-- QR Code Generation -->
         <div class="qr-generation" style="margin-bottom: 32px;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
             <!-- QR Display -->
             <div class="qr-display" style="text-align: center;">
               <div id="qr-code-container" style="
-                background: white; 
-                padding: 20px; 
-                border-radius: 16px; 
+                background: white;
+                padding: 20px;
+                border-radius: 16px;
                 margin-bottom: 16px;
                 display: inline-block;
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
               ">
                 <div id="qr-placeholder" style="
-                  width: 200px; height: 200px; 
-                  background: #f0f0f0; 
+                  width: 200px; height: 200px;
+                  background: #f0f0f0;
                   border-radius: 8px;
                   display: flex; align-items: center; justify-content: center;
                   color: #666; font-size: 14px;
@@ -2265,11 +2218,11 @@ function openQRShareModal(memory) {
                 " disabled>Download</button>
               </div>
             </div>
-            
+
             <!-- QR Info -->
             <div class="qr-info">
               <h4 style="color: #ffffff; margin-bottom: 16px;">Share Options</h4>
-              
+
               <div class="share-option" style="margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                   <span style="font-size: 20px;">👨‍👩‍👧‍👦</span>
@@ -2279,7 +2232,7 @@ function openQRShareModal(memory) {
                   Share with family for viewing memories together
                 </div>
               </div>
-              
+
               <div class="share-option" style="margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                   <span style="font-size: 20px;">🤖</span>
@@ -2289,7 +2242,7 @@ function openQRShareModal(memory) {
                   Let AI agents understand your memory context
                 </div>
               </div>
-              
+
               <div class="share-option">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                   <span style="font-size: 20px;">⚕️</span>
@@ -2302,7 +2255,7 @@ function openQRShareModal(memory) {
             </div>
           </div>
         </div>
-        
+
         <!-- Advanced Options -->
         <div class="advanced-options" style="
           border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -2336,7 +2289,7 @@ function openQRShareModal(memory) {
             </div>
           </details>
         </div>
-        
+
         <!-- Generated Data Preview -->
         <div id="qr-data-preview" style="
           display: none;
@@ -2356,10 +2309,10 @@ function openQRShareModal(memory) {
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
   setupQRModalInteractions(modal, memory);
-  
+
   // Animate in
   modal.style.opacity = '0';
   setTimeout(() => {
@@ -2373,7 +2326,7 @@ function openQRShareModal(memory) {
 function setupQRModalInteractions(modal, memory) {
   let currentPrivacyLevel = 'protected';
   let generatedQRData = null;
-  
+
   // Privacy level selection
   const privacyOptions = modal.querySelectorAll('.privacy-option');
   privacyOptions.forEach(option => {
@@ -2384,20 +2337,19 @@ function setupQRModalInteractions(modal, memory) {
         opt.style.border = '2px solid rgba(255, 255, 255, 0.2)';
         opt.style.background = 'rgba(255, 255, 255, 0.05)';
       });
-      
+
       // Add active to clicked
       this.classList.add('active');
       this.style.border = '2px solid #8658ff';
       this.style.background = 'rgba(134, 88, 255, 0.1)';
-      
+
       currentPrivacyLevel = this.dataset.level;
-      console.log('🔐 Privacy level changed to:', currentPrivacyLevel);
-      
+
       // Reset QR generation
       resetQRGeneration();
     });
   });
-  
+
   // Generate QR button
   const generateBtn = modal.querySelector('#generate-qr-btn');
   const downloadBtn = modal.querySelector('#download-qr-btn');
@@ -2405,46 +2357,44 @@ function setupQRModalInteractions(modal, memory) {
   const qrPlaceholder = modal.querySelector('#qr-placeholder');
   const dataPreview = modal.querySelector('#qr-data-preview');
   const dataContent = modal.querySelector('#qr-data-content');
-  
+
   generateBtn.addEventListener('click', async function() {
     try {
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
-      
+
       // Get options
       const includeSummary = modal.querySelector('#include-summary').checked;
       const includeKeywords = modal.querySelector('#include-keywords').checked;
       const expiryTime = parseInt(modal.querySelector('#expiry-time').value);
-      
+
       const options = {
         privacyLevel: currentPrivacyLevel,
         includeSummary,
         includeKeywords,
         expiryMs: expiryTime
       };
-      
-      console.log('🔗 Generating QR with options:', options);
-      
+
       // Generate QR via Emma API
       if (window.emmaAPI && window.emmaAPI.memories && window.emmaAPI.memories.generateQR) {
         const result = await window.emmaAPI.memories.generateQR(memory.id, options);
-        
+
         if (result && result.success) {
           // Display QR code
           qrPlaceholder.innerHTML = `<img src="${result.qrCode}" style="width: 200px; height: 200px;" alt="QR Code" />`;
-          
+
           // Show data preview
           dataContent.textContent = JSON.stringify(result.payload, null, 2);
           dataPreview.style.display = 'block';
-          
+
           // Enable download
           downloadBtn.disabled = false;
           downloadBtn.style.opacity = '1';
           downloadBtn.style.pointerEvents = 'auto';
-          
+
           // Store for download
           generatedQRData = result;
-          
+
           showNotification('✅ QR code generated successfully!', 'success');
         } else {
           throw new Error(result?.error || 'QR generation failed');
@@ -2454,7 +2404,7 @@ function setupQRModalInteractions(modal, memory) {
         console.warn('🔗 No Emma API - generating demo QR');
         generateDemoQR();
       }
-      
+
     } catch (error) {
       console.error('🔗 QR Generation error:', error);
       showNotification('❌ Failed to generate QR code: ' + error.message, 'error');
@@ -2463,26 +2413,26 @@ function setupQRModalInteractions(modal, memory) {
       generateBtn.textContent = 'Generate QR';
     }
   });
-  
+
   // Download QR button
   downloadBtn.addEventListener('click', function() {
     if (generatedQRData && generatedQRData.qrCode) {
       downloadQRCode(generatedQRData.qrCode, memory.title);
     }
   });
-  
+
   // Close modal
   const closeBtn = modal.querySelector('.close-qr-modal');
   closeBtn.addEventListener('click', () => {
     modal.remove();
   });
-  
+
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       modal.remove();
     }
   });
-  
+
   function resetQRGeneration() {
     qrPlaceholder.innerHTML = 'Click Generate QR';
     dataPreview.style.display = 'none';
@@ -2491,7 +2441,7 @@ function setupQRModalInteractions(modal, memory) {
     downloadBtn.style.pointerEvents = 'none';
     generatedQRData = null;
   }
-  
+
   function generateDemoQR() {
     // Demo QR generation for when API isn't available
     const demoPayload = {
@@ -2505,14 +2455,14 @@ function setupQRModalInteractions(modal, memory) {
         summary: currentPrivacyLevel !== 'private' ? (memory.content || '').substring(0, 200) + '...' : undefined
       }
     };
-    
+
     // Create simple demo QR (just text for demo)
     qrPlaceholder.innerHTML = `
       <div style="
-        width: 200px; height: 200px; 
-        background: linear-gradient(45deg, #000 25%, transparent 25%), 
-                    linear-gradient(-45deg, #000 25%, transparent 25%), 
-                    linear-gradient(45deg, transparent 75%, #000 75%), 
+        width: 200px; height: 200px;
+        background: linear-gradient(45deg, #000 25%, transparent 25%),
+                    linear-gradient(-45deg, #000 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, #000 75%),
                     linear-gradient(-45deg, transparent 75%, #000 75%);
         background-size: 20px 20px;
         background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
@@ -2522,14 +2472,14 @@ function setupQRModalInteractions(modal, memory) {
         DEMO QR
       </div>
     `;
-    
+
     dataContent.textContent = JSON.stringify(demoPayload, null, 2);
     dataPreview.style.display = 'block';
-    
+
     downloadBtn.disabled = false;
     downloadBtn.style.opacity = '1';
     downloadBtn.style.pointerEvents = 'auto';
-    
+
     showNotification('📱 Demo QR generated (API not available)', 'info');
   }
 }
@@ -2545,7 +2495,7 @@ function downloadQRCode(qrDataUrl, memoryTitle) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     showNotification('📥 QR code downloaded!', 'success');
   } catch (error) {
     console.error('Download failed:', error);
@@ -2556,4 +2506,7 @@ function downloadQRCode(qrDataUrl, memoryTitle) {
 // Global access
 window.openQRShareModal = openQRShareModal;
 
+<<<<<<< Current (Your changes)
 console.log('💝 Beautiful Memory Gallery: Ready to honor precious moments');
+=======
+>>>>>>> Incoming (Background Agent changes)

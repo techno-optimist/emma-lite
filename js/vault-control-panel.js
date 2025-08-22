@@ -470,7 +470,8 @@ class EmmaVaultControlPanel {
           });
         } else {
           // Fallback to simple prompt if modal not available
-          passphrase = prompt(`🔐 Enter passphrase for ${file.name}:`);
+          // SECURITY FIX: Replace prompt with proper modal
+          passphrase = await showPasswordModal(`Enter passphrase for ${file.name}`, 'Passphrase:');
         }
       } catch (error) {
         if (error.message === 'User cancelled') {

@@ -37,7 +37,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: 
+      background:
         radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
         radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
@@ -150,7 +150,7 @@
     .person-card:hover {
       transform: translateY(-8px) scale(1.02);
       border-color: rgba(139, 92, 246, 0.3);
-      box-shadow: 
+      box-shadow:
         0 20px 40px rgba(139, 92, 246, 0.2),
         0 0 0 1px rgba(139, 92, 246, 0.1);
     }
@@ -229,7 +229,7 @@
       transform: translateY(-8px) scale(1.02);
       border-color: rgba(139, 92, 246, 0.6);
       background: rgba(139, 92, 246, 0.15);
-      box-shadow: 
+      box-shadow:
         0 20px 40px rgba(139, 92, 246, 0.3),
         0 0 0 1px rgba(139, 92, 246, 0.2);
     }
@@ -726,37 +726,37 @@
       .people-title {
         font-size: 2.5rem;
       }
-      
+
       .people-grid {
         grid-template-columns: 1fr;
         gap: 16px;
       }
-      
+
       .modal {
         padding: 20px;
         margin: 16px;
         max-width: calc(100vw - 32px);
         max-height: 90vh;
       }
-      
+
       .modal-title {
         font-size: 1.3rem;
       }
-      
+
       .avatar-preview {
         width: 80px;
         height: 80px;
       }
-      
+
       .form-group {
         margin-bottom: 16px;
       }
-      
+
       .form-actions {
         margin-top: 20px;
         gap: 10px;
       }
-      
+
       .btn {
         padding: 10px;
         font-size: 0.85rem;
@@ -805,7 +805,7 @@
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
       <button class="modal-close" onclick="closeAddPersonModal()">×</button>
-      
+
       <div class="modal-header">
         <h2 class="modal-title">Add New Person</h2>
         <p class="modal-subtitle">Add someone to your network of family, friends, and connections</p>
@@ -867,7 +867,7 @@
   <div class="modal-overlay" id="person-detail-modal">
     <div class="modal person-detail-modal">
       <button class="modal-close" onclick="closePersonDetailModal()">×</button>
-      
+
       <div class="person-detail-header">
         <div class="person-detail-avatar" id="person-detail-avatar">
           <div class="avatar-placeholder">
@@ -919,7 +919,7 @@
   <div class="modal-overlay" id="edit-person-modal">
     <div class="modal">
       <button class="modal-close" onclick="closeEditPersonModal()">×</button>
-      
+
       <div class="modal-header">
         <h2 class="modal-title">Edit Person</h2>
         <p class="modal-subtitle">Update their information and avatar</p>
@@ -1005,32 +1005,23 @@
   <script>
     // Initialize vault system for people management
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('👥 PEOPLE: Initializing vault system...');
-      
+
       // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
       console.log('🔍 PEOPLE: Using existing vault instances (no new creation)');
-      console.log('🔍 emmaWebVault exists:', !!window.emmaWebVault);
-      console.log('🔍 webVaultStatus exists:', !!window.webVaultStatus);
-      
+
       // Pure web app mode - Check if vault is loaded in web app
       if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
-        console.log('🔗 PEOPLE: Extension detected - extension manages vault, web app is just UI');
-        
+
         // NO MOCK VAULT! Extension handles all vault operations
         // Web app just needs to know extension is available
-        console.log('✅ PEOPLE: Extension vault mode configured - no mock vault needed');
-        
+
       } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
         (async () => {
           try {
-            console.log('🔄 PEOPLE: Restoring elegant vault state...');
+
             const result = await window.emmaWebVault.restoreVaultState();
-            if (result) {
-              console.log('✅ PEOPLE: Vault state restored successfully');
-              console.log('📊 PEOPLE: Passphrase available:', result.hasPassphrase);
-              console.log('📁 PEOPLE: Filename available:', result.hasFileName);
-            } else {
-              console.log('🔒 PEOPLE: Vault session is locked or invalid');
+            if (result) {            } else {
+
             }
           } catch (error) {
             console.warn('⚠️ PEOPLE: Could not restore vault state:', error);
@@ -1043,18 +1034,18 @@
     function initNeuralNetwork() {
       const canvas = document.getElementById('neural-canvas');
       const ctx = canvas.getContext('2d');
-      
+
       function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
       }
-      
+
       resize();
       window.addEventListener('resize', resize);
-      
+
       const nodes = [];
       const connections = [];
-      
+
       // Create nodes
       for (let i = 0; i < 15; i++) {
         nodes.push({
@@ -1065,29 +1056,29 @@
           radius: Math.random() * 2 + 1
         });
       }
-      
+
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
         // Update nodes
         nodes.forEach(node => {
           node.x += node.vx;
           node.y += node.vy;
-          
+
           if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
           if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
         });
-        
+
         // Draw connections
         ctx.strokeStyle = 'rgba(139, 92, 246, 0.1)';
         ctx.lineWidth = 1;
-        
+
         for (let i = 0; i < nodes.length; i++) {
           for (let j = i + 1; j < nodes.length; j++) {
             const dx = nodes[i].x - nodes[j].x;
             const dy = nodes[i].y - nodes[j].y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             if (distance < 150) {
               ctx.beginPath();
               ctx.moveTo(nodes[i].x, nodes[i].y);
@@ -1096,7 +1087,7 @@
             }
           }
         }
-        
+
         // Draw nodes
         ctx.fillStyle = 'rgba(139, 92, 246, 0.6)';
         nodes.forEach(node => {
@@ -1104,10 +1095,10 @@
           ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
           ctx.fill();
         });
-        
+
         requestAnimationFrame(animate);
       }
-      
+
       animate();
     }
 
@@ -1120,10 +1111,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       const avatarUpload = document.getElementById('avatar-upload');
       const avatarPreview = document.getElementById('avatar-preview');
-      
+
       // Handle file selection
       avatarUpload.addEventListener('change', handleAvatarUpload);
-      
+
       // Handle click on preview to select file
       avatarPreview.addEventListener('click', () => {
         avatarUpload.click();
@@ -1133,22 +1124,21 @@
     async function handleAvatarUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
+
       // Validate file type
       if (!file.type.startsWith('image/')) {
         showToast('❌ Please select an image file', 'error');
         return;
       }
-      
+
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         showToast('❌ Image must be smaller than 5MB', 'error');
         return;
       }
-      
+
       try {
-        console.log('📷 AVATAR: Processing avatar upload:', file.name);
-        
+
         // Convert to data URL for preview and storage
         currentAvatarDataUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -1156,15 +1146,14 @@
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-        
+
         currentAvatarFile = file;
-        
+
         // Update preview
         updateAvatarPreview(currentAvatarDataUrl);
-        
-        console.log('📷 AVATAR: Avatar ready for upload');
+
         showToast('✅ Avatar selected', 'success');
-        
+
       } catch (error) {
         console.error('📷 AVATAR: Failed to process avatar:', error);
         showToast('❌ Failed to process avatar', 'error');
@@ -1173,20 +1162,40 @@
 
     function updateAvatarPreview(dataUrl) {
       const preview = document.getElementById('avatar-preview');
-      
+
+      // SECURITY FIX: Use safe DOM creation instead of innerHTML
+      preview.innerHTML = ''; // Clear existing content safely
+
       if (dataUrl) {
-        preview.innerHTML = `
-          <img src="${dataUrl}" alt="Avatar preview">
-          <button type="button" class="avatar-remove-btn" onclick="removeAvatar()" title="Remove avatar">×</button>
-        `;
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = 'Avatar preview';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'avatar-remove-btn';
+        removeBtn.textContent = '×';
+        removeBtn.title = 'Remove avatar';
+        removeBtn.onclick = removeAvatar;
+
+        preview.appendChild(img);
+        preview.appendChild(removeBtn);
         preview.style.border = '2px solid rgba(139, 92, 246, 0.6)';
       } else {
-        preview.innerHTML = `
-          <div class="avatar-placeholder">
-            <div class="avatar-icon">📷</div>
-            <div class="avatar-text">Add Photo</div>
-          </div>
-        `;
+        const placeholder = document.createElement('div');
+        placeholder.className = 'avatar-placeholder';
+
+        const icon = document.createElement('div');
+        icon.className = 'avatar-icon';
+        icon.textContent = '📷';
+
+        const text = document.createElement('div');
+        text.className = 'avatar-text';
+        text.textContent = 'Add Photo';
+
+        placeholder.appendChild(icon);
+        placeholder.appendChild(text);
+        preview.appendChild(placeholder);
         preview.style.border = '2px dashed rgba(255, 255, 255, 0.3)';
       }
     }
@@ -1201,10 +1210,9 @@
 
     async function loadPeople() {
       try {
-        console.log('🔍 Loading people from Emma vault...');
+
         const response = await window.emmaAPI.people.list();
-        console.log('👥 People response:', response);
-        
+
         if (response.success) {
           people = response.items || [];
           await renderPeople();
@@ -1219,16 +1227,16 @@
     async function renderPeople() {
       const grid = document.getElementById('people-grid');
       const emptyState = document.getElementById('empty-state');
-      
+
       // Clear existing people cards (keep add button)
       const existingCards = grid.querySelectorAll('.person-card');
       existingCards.forEach(card => card.remove());
-      
+
       if (people.length === 0) {
         emptyState.style.display = 'block';
       } else {
         emptyState.style.display = 'none';
-        
+
         // Create person cards with avatar loading
         for (const person of people) {
           const card = await createPersonCard(person);
@@ -1247,16 +1255,16 @@
     async function createPersonCard(person) {
       const card = document.createElement('div');
       card.className = 'person-card';
-      
+
       const avatar = document.createElement('div');
       avatar.className = `person-avatar ${person.relation || 'other'}`;
-      
+
       // Start with letter, then try to load avatar
       avatar.textContent = person.name.charAt(0).toUpperCase();
-      
+
       // Prefer direct avatarUrl provided by extension (already reconstructed)
       if (person.avatarUrl) {
-        console.log('📷 AVATAR: Using avatarUrl for person:', person.name);
+
         const img = document.createElement('img');
         img.src = person.avatarUrl;
         img.alt = `${person.name} avatar`;
@@ -1264,7 +1272,7 @@
         img.onload = () => {
           avatar.innerHTML = '';
           avatar.appendChild(img);
-          console.log('📷 AVATAR: Successfully displayed avatar for:', person.name);
+
         };
         img.onerror = () => {
           console.error('📷 AVATAR: Failed to display avatarUrl for:', person.name);
@@ -1273,17 +1281,16 @@
       // If person has an avatar ID but no avatarUrl, fetch from legacy API as fallback
       } else if (person.avatarId) {
         try {
-          console.log('📷 AVATAR: Loading avatar via legacy API for person:', person.name, 'ID:', person.avatarId);
-          
+
           // Use web vault to get media directly - SAME AS MEMORY GALLERY
           if (window.emmaWebVault && window.emmaWebVault.isOpen) {
             const avatarData = await window.emmaWebVault.getMedia(person.avatarId);
-            
+
             if (avatarData) {
               // Convert decrypted data to data URL for display
               const blob = new Blob([avatarData], { type: 'image/jpeg' });
               const dataUrl = URL.createObjectURL(blob);
-              
+
               const img = document.createElement('img');
               img.src = dataUrl;
               img.alt = `${person.name} avatar`;
@@ -1292,7 +1299,7 @@
                 // Replace letter with image once loaded
                 avatar.innerHTML = '';
                 avatar.appendChild(img);
-                console.log('📷 AVATAR: Successfully loaded avatar for:', person.name);
+
               };
               img.onerror = () => {
                 console.error('📷 AVATAR: Failed to display avatar for:', person.name);
@@ -1308,19 +1315,19 @@
           console.error('📷 AVATAR: Error loading avatar for:', person.name, error);
         }
       }
-      
+
       const name = document.createElement('div');
       name.className = 'person-name';
       name.textContent = person.name;
-      
+
       const relation = document.createElement('div');
       relation.className = 'person-relation';
       relation.textContent = person.relation || 'other';
-      
+
       const contact = document.createElement('div');
       contact.className = 'person-contact';
       contact.textContent = person.contact || person.email || person.phone || '';
-      
+
       // Quick actions (delete)
       const actions = document.createElement('div');
       actions.style.cssText = 'position:absolute; top:8px; right:8px; display:flex; gap:6px;';
@@ -1330,7 +1337,8 @@
       delBtn.style.cssText = 'background:rgba(0,0,0,0.4); color:#fff; border:none; border-radius:8px; padding:6px; cursor:pointer;';
       delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm(`Delete ${person.name}? This cannot be undone.`)) return;
+        // SECURITY FIX: Replace confirm with proper modal
+        if (!await showConfirmModal(`Delete ${person.name}?`, 'This action cannot be undone.', 'Delete', 'Cancel')) return;
         try {
           if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.delete) {
             const res = await window.emmaAPI.people.delete(person.id);
@@ -1355,12 +1363,12 @@
       if (contact.textContent) {
         card.appendChild(contact);
       }
-      
+
       // Add click handler to open person detail modal
       card.addEventListener('click', () => {
         openPersonDetailModal(person);
       });
-      
+
       return card;
     }
 
@@ -1372,7 +1380,7 @@
     function closeAddPersonModal() {
       document.getElementById('modal-overlay').classList.remove('active');
       document.getElementById('add-person-form').reset();
-      
+
       // Reset avatar state
       currentAvatarFile = null;
       currentAvatarDataUrl = null;
@@ -1382,40 +1390,33 @@
 
     async function handleAddPerson(event) {
       event.preventDefault();
-      
+
       const name = document.getElementById('person-name').value.trim();
       const email = document.getElementById('person-email').value.trim();
       const phone = document.getElementById('person-phone').value.trim();
       const relation = document.getElementById('person-relation').value;
-      
+
       if (!name || !relation) {
-        alert('Please fill in the required fields');
+        // SECURITY FIX: Replace alert with proper modal
+        showErrorModal('Required Fields Missing', 'Please fill in all required fields before saving.');
         return;
       }
-      
+
       try {
-        console.log('💾 Adding person to Emma vault:', { name, email, phone, relation, hasAvatar: !!currentAvatarDataUrl });
-        
+
         // First, add the person to get their ID
         const personData = {
           name,
           contact: email || phone || null,
           relation
         };
-        
+
         // If we have an avatar, save it to vault first
         let avatarAttachmentId = null;
-        console.log('📷 AVATAR DEBUG: Checking avatar state:', {
-          hasAvatarDataUrl: !!currentAvatarDataUrl,
-          hasAvatarFile: !!currentAvatarFile,
-          avatarFileSize: currentAvatarFile?.size,
-          avatarFileName: currentAvatarFile?.name
-        });
-        
+
         if (currentAvatarDataUrl && currentAvatarFile) {
           try {
-            console.log('📷 AVATAR: Saving avatar to vault for person:', name);
-            
+
             // Use web app for avatar storage
             if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
               avatarAttachmentId = await window.emmaWebVault.addMedia({
@@ -1423,7 +1424,7 @@
                 type: currentAvatarFile.type,
                 data: currentAvatarDataUrl
               });
-              console.log('📷 AVATAR: Avatar saved via extension with ID:', avatarAttachmentId);
+
             } else {
               console.warn('📷 AVATAR: Extension not available - avatar will not be saved');
             }
@@ -1432,45 +1433,41 @@
             showToast('⚠️ Person will be added but avatar upload failed', 'warning');
           }
         } else {
-          console.log('📷 AVATAR DEBUG: No avatar to save - proceeding without avatar');
+
         }
-        
+
         // Add avatar info to person data if we have it
         if (avatarAttachmentId) {
           personData.avatar = currentAvatarDataUrl; // Use 'avatar' field for web vault
         }
-        
-        console.log('👥 PEOPLE: Calling web vault addPerson with:', personData);
-        
+
         try {
           const response = await window.emmaAPI.people.add(personData);
-          
-          console.log('✅ Add person response:', response);
-          
+
           if (response.success) {
             closeAddPersonModal();
-            
+
             // Wait a moment for extension to finish saving to storage
             setTimeout(async () => {
               await loadPeople(); // Reload to show the new person
             }, 500);
-            
+
             // Show success message
             const message = avatarAttachmentId ? '✨ Person and avatar added successfully!' : '✨ Person added successfully!';
             showToast(message, 'success');
-            
+
             // Reset avatar state
             currentAvatarFile = null;
             currentAvatarDataUrl = null;
             updateAvatarPreview(null);
-            
+
           } else {
             console.error('Failed to add person:', response);
             showToast('❌ Failed to add person: ' + (response.message || response.error), 'error');
           }
         } catch (directSaveError) {
           console.error('❌ Direct save error adding person:', directSaveError);
-          
+
           if (directSaveError.message.includes('Direct save required')) {
             showToast('⚠️ Please click "Enable direct save" to add people', 'warning');
           } else {
@@ -1501,7 +1498,7 @@
       `;
       toast.textContent = message;
       document.body.appendChild(toast);
-      
+
       setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
@@ -1589,10 +1586,35 @@
           </div>
         </div>
       `;
-      
-      // Add to body
-      document.body.insertAdjacentHTML('beforeend', alertHTML);
-      
+
+      // SECURITY FIX: Use safe DOM creation instead of insertAdjacentHTML
+      const alertElement = document.createElement('div');
+      alertElement.id = 'vault-lock-alert';
+      alertElement.className = 'vault-lock-alert';
+      alertElement.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); color: white; padding: 20px; border-radius: 10px; z-index: 10000; opacity: 0; visibility: hidden; transition: all 0.3s ease;';
+
+      const content = document.createElement('div');
+      content.style.cssText = 'text-align: center;';
+
+      const title = document.createElement('h3');
+      title.textContent = '🔒 Vault Locked';
+      title.style.cssText = 'margin-bottom: 10px; color: #f093fb;';
+
+      const message = document.createElement('p');
+      message.textContent = 'Your vault has been locked for security. Please unlock to continue.';
+      message.style.cssText = 'margin-bottom: 20px; line-height: 1.5;';
+
+      const unlockBtn = document.createElement('button');
+      unlockBtn.textContent = 'Unlock Vault';
+      unlockBtn.style.cssText = 'background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;';
+      unlockBtn.onclick = () => window.open('popup.html', '_blank');
+
+      content.appendChild(title);
+      content.appendChild(message);
+      content.appendChild(unlockBtn);
+      alertElement.appendChild(content);
+      document.body.appendChild(alertElement);
+
       // Show with animation
       setTimeout(() => {
         const alert = document.getElementById('vault-lock-alert');
@@ -1624,7 +1646,7 @@
         },
         onCancel: () => {
           // User cancelled - nothing to do
-          console.log('👤 User cancelled vault unlock');
+
         }
       });
     }
@@ -1634,12 +1656,11 @@
 
     async function openPersonDetailModal(person) {
       currentPerson = person;
-      console.log('👤 Opening person detail modal for:', person.name);
-      
+
       // Update modal content
       document.getElementById('person-detail-name').textContent = person.name;
       document.getElementById('person-detail-relation').textContent = person.relation || 'other';
-      
+
       // Update contact info
       const contactInfo = document.getElementById('person-contact-info');
       if (person.contact) {
@@ -1653,21 +1674,21 @@
           <span class="detail-value">No contact information</span>
         `;
       }
-      
+
       // Update created date
       const createdDate = new Date(person.createdAt).toLocaleDateString();
       document.getElementById('person-created-date').textContent = createdDate;
-      
+
       // Load avatar for detail view - SAME LOGIC AS PERSON CARDS
       const detailAvatar = document.getElementById('person-detail-avatar');
       detailAvatar.className = `person-detail-avatar ${person.relation || 'other'}`;
-      
+
       // Use the same logic as createPersonCard - prefer avatarUrl from extension
       // Clear existing content safely
       detailAvatar.innerHTML = '';
-      
+
       if (person.avatarUrl) {
-        console.log('📷 DETAIL: Using avatarUrl for person:', person.name);
+
         // Safely create img element
         const img = document.createElement('img');
         img.src = person.avatarUrl;
@@ -1675,19 +1696,19 @@
         img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
         detailAvatar.appendChild(img);
       } else {
-        console.log('📷 DETAIL: No avatarUrl found for person:', person.name);
+
         // Safely create placeholder elements
         const placeholder = document.createElement('div');
         placeholder.className = 'avatar-placeholder';
-        
+
         const icon = document.createElement('div');
         icon.className = 'avatar-icon';
         icon.textContent = person.name.charAt(0).toUpperCase(); // Safe - textContent auto-escapes
-        
+
         placeholder.appendChild(icon);
         detailAvatar.appendChild(placeholder);
       }
-      
+
       // Show modal
       document.getElementById('person-detail-modal').classList.add('active');
     }
@@ -1702,15 +1723,13 @@
         console.error('❌ EDIT: No current person selected');
         return;
       }
-      
-      console.log('✏️ Opening edit modal for person:', currentPerson.name);
-      
+
       // Store the person data before closing detail modal
       const personToEdit = { ...currentPerson };
-      
+
       // Close detail modal first
       closePersonDetailModal();
-      
+
       // Small delay to ensure modal is closed before opening edit
       setTimeout(() => {
         openEditPersonModal(personToEdit);
@@ -1727,38 +1746,37 @@
         console.error('❌ EDIT: Cannot open edit modal - no person data provided');
         return;
       }
-      
+
       currentPerson = person;
-      console.log('✏️ EDIT: Opening edit modal with person data:', person);
-      
+
       // Safely populate form fields with null checks
       const nameField = document.getElementById('edit-person-name');
       const emailField = document.getElementById('edit-person-email');
       const phoneField = document.getElementById('edit-person-phone');
       const relationField = document.getElementById('edit-person-relation');
-      
+
       if (!nameField || !emailField || !phoneField || !relationField) {
         console.error('❌ EDIT: Form fields not found');
         return;
       }
-      
+
       nameField.value = person.name || '';
       emailField.value = person.contact && person.contact.includes('@') ? person.contact : '';
       phoneField.value = person.contact && !person.contact.includes('@') ? person.contact : '';
       relationField.value = person.relation || 'other';
-      
+
       // Load current avatar
       const editPreview = document.getElementById('edit-avatar-preview');
       if (!editPreview) {
         console.error('❌ EDIT: Avatar preview element not found');
         return;
       }
-      
+
       editPreview.className = `avatar-preview ${person.relation || 'other'}`;
-      
+
       if (person.avatarId) {
         try {
-          console.log('📷 EDIT: Loading current avatar for:', person.name);
+
           const avatarResult = await window.emmaAPI.vault.attachment.get(person.avatarId);
           if (avatarResult && avatarResult.success && avatarResult.dataUrl) {
             editPreview.innerHTML = `
@@ -1798,17 +1816,16 @@
         `;
         editPreview.style.border = '2px dashed rgba(255, 255, 255, 0.3)';
       }
-      
+
       // Reset edit state
       editAvatarFile = null;
       editAvatarChanged = false;
-      
+
       // Show modal
       const editModal = document.getElementById('edit-person-modal');
       if (editModal) {
         editModal.classList.add('active');
-        console.log('✅ EDIT: Edit modal opened successfully');
-        
+
         // Focus on name field after a short delay
         setTimeout(() => {
           const nameField = document.getElementById('edit-person-name');
@@ -1824,20 +1841,20 @@
     function closeEditPersonModal() {
       const editModal = document.getElementById('edit-person-modal');
       const editForm = document.getElementById('edit-person-form');
-      
+
       if (editModal) {
         editModal.classList.remove('active');
       }
-      
+
       if (editForm) {
         editForm.reset();
       }
-      
+
       // Reset edit state
       editAvatarFile = null;
       editAvatarDataUrl = null;
       editAvatarChanged = false;
-      
+
       // Reset avatar preview
       const editPreview = document.getElementById('edit-avatar-preview');
       if (editPreview) {
@@ -1849,15 +1866,14 @@
         `;
         editPreview.style.border = '2px dashed rgba(255, 255, 255, 0.3)';
       }
-      
+
       currentPerson = null;
-      
-      console.log('✅ EDIT: Edit modal closed');
+
     }
 
     function createMemoryWithPerson() {
       if (!currentPerson) return;
-      
+
       // Navigate to memory creation with person pre-selected
       window.location.href = `../working-desktop-dashboard.html?createMemory=true&person=${currentPerson.id}`;
     }
@@ -1880,22 +1896,21 @@
     async function handleEditAvatarUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
+
       // Validate file type
       if (!file.type.startsWith('image/')) {
         showToast('❌ Please select an image file', 'error');
         return;
       }
-      
+
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         showToast('❌ Image must be smaller than 5MB', 'error');
         return;
       }
-      
+
       try {
-        console.log('📷 EDIT AVATAR: Processing new avatar:', file.name);
-        
+
         // Convert to data URL
         editAvatarDataUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -1903,10 +1918,10 @@
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
-        
+
         editAvatarFile = file;
         editAvatarChanged = true;
-        
+
         // Update preview
         const preview = document.getElementById('edit-avatar-preview');
         if (preview && editAvatarDataUrl) {
@@ -1916,10 +1931,9 @@
           `;
           preview.style.border = '2px solid rgba(139, 92, 246, 0.6)';
         }
-        
-        console.log('📷 EDIT AVATAR: New avatar ready for upload');
+
         showToast('✅ New avatar selected', 'success');
-        
+
       } catch (error) {
         console.error('📷 EDIT AVATAR: Failed to process avatar:', error);
         showToast('❌ Failed to process avatar', 'error');
@@ -1928,7 +1942,7 @@
 
     function updateEditAvatarPreview(dataUrl) {
       const preview = document.getElementById('edit-avatar-preview');
-      
+
       if (dataUrl) {
         preview.innerHTML = `
           <img src="${dataUrl}" alt="Avatar preview">
@@ -1950,7 +1964,7 @@
       editAvatarFile = null;
       editAvatarDataUrl = null;
       editAvatarChanged = true; // Mark as changed (removing avatar)
-      
+
       // Reset preview
       const preview = document.getElementById('edit-avatar-preview');
       if (preview) {
@@ -1962,47 +1976,46 @@
         `;
         preview.style.border = '2px dashed rgba(255, 255, 255, 0.3)';
       }
-      
+
       const uploadField = document.getElementById('edit-avatar-upload');
       if (uploadField) {
         uploadField.value = '';
       }
-      
+
       showToast('Avatar will be removed', 'info');
     }
 
     async function handleEditPerson(event) {
       event.preventDefault();
-      
+
       if (!currentPerson) return;
-      
+
       const name = document.getElementById('edit-person-name').value.trim();
       const email = document.getElementById('edit-person-email').value.trim();
       const phone = document.getElementById('edit-person-phone').value.trim();
       const relation = document.getElementById('edit-person-relation').value;
-      
+
       if (!name || !relation) {
         showToast('❌ Please fill in the required fields', 'error');
         return;
       }
-      
+
       try {
-        console.log('💾 EDIT: Updating person:', currentPerson.id, { name, email, phone, relation, avatarChanged: editAvatarChanged });
-        
+
         // Handle avatar changes
         let newAvatarId = currentPerson.avatarId; // Keep current by default
-        
+
         if (editAvatarChanged) {
           // Remove old avatar if it exists
           if (currentPerson.avatarId) {
             try {
               await window.emmaAPI.vault.attachment.remove(currentPerson.avatarId);
-              console.log('📷 EDIT: Removed old avatar:', currentPerson.avatarId);
+
             } catch (error) {
               console.warn('📷 EDIT: Failed to remove old avatar:', error);
             }
           }
-          
+
           // Upload new avatar if we have one
           if (editAvatarDataUrl && editAvatarFile) {
             try {
@@ -2018,10 +2031,10 @@
                   personName: name
                 }
               });
-              
+
               if (avatarResult && avatarResult.success && avatarResult.id) {
                 newAvatarId = avatarResult.id;
-                console.log('📷 EDIT: Saved new avatar with ID:', newAvatarId);
+
               } else {
                 console.error('📷 EDIT: Failed to save new avatar:', avatarResult);
                 showToast('⚠️ Person updated but avatar upload failed', 'warning');
@@ -2035,7 +2048,7 @@
             newAvatarId = null;
           }
         }
-        
+
         // Update person data
         const updatedPerson = {
           ...currentPerson,
@@ -2045,7 +2058,7 @@
           avatarId: newAvatarId,
           avatarUrl: editAvatarDataUrl // For immediate display
         };
-        
+
         // Update in vault using the proper update API
         const response = await window.emmaAPI.people.update({
           id: currentPerson.id,
@@ -2055,7 +2068,7 @@
           avatarId: newAvatarId,
           avatarUrl: editAvatarDataUrl
         });
-        
+
         if (response.success) {
           closeEditPersonModal();
           // Add delay to allow extension to process and save the update
@@ -2065,7 +2078,7 @@
           showToast('✅ Person updated successfully!', 'success');
         } else {
           console.error('Failed to update person:', response);
-          
+
           // Handle vault lock error with elegant alert
           if (response.error === 'vault_locked') {
             showVaultLockAlert(response.userMessage || 'Please unlock your vault to edit people');
@@ -2073,44 +2086,40 @@
             showToast('❌ Failed to update person: ' + (response.message || response.error), 'error');
           }
         }
-        
+
       } catch (error) {
         console.error('Error updating person:', error);
         showToast('❌ Error updating person', 'error');
       }
-    }
-
-
-
-    async function deletePerson() {
+    }    async function deletePerson() {
       if (!currentPerson) return;
-      
-      const confirmed = confirm(`Are you sure you want to delete ${currentPerson.name}? This action cannot be undone.`);
+
+      // SECURITY FIX: Replace confirm with proper modal
+      const confirmed = await showConfirmModal(`Delete ${currentPerson.name}?`, 'This action cannot be undone.', 'Delete', 'Cancel');
       if (!confirmed) return;
-      
+
       try {
-        console.log('🗑️ Deleting person:', currentPerson.name);
-        
+
         // Remove avatar if it exists (best-effort)
         if (currentPerson.avatarId && window.emmaAPI?.vault?.attachment?.remove) {
           try {
             await window.emmaAPI.vault.attachment.remove(currentPerson.avatarId);
-            console.log('📷 DELETE: Removed avatar for:', currentPerson.name);
+
           } catch (error) {
             console.warn('📷 DELETE: Failed to remove avatar:', error);
           }
         }
-        
+
         // Remove person from vault via new API
         const response = await window.emmaAPI.people.delete(currentPerson.id);
-        
+
         if (response.success) {
           closeEditPersonModal();
           await loadPeople(); // Reload to remove from display
           showToast('✅ Person deleted successfully', 'success');
         } else {
           console.error('Failed to delete person:', response);
-          
+
           // Handle vault lock error with elegant alert
           if (response.error === 'vault_locked') {
             showVaultLockAlert(response.userMessage || 'Please unlock your vault to remove people');
@@ -2118,7 +2127,7 @@
             showToast('❌ Failed to delete person: ' + (response.message || response.error), 'error');
           }
         }
-        
+
       } catch (error) {
         console.error('Error deleting person:', error);
         showToast('❌ Error deleting person', 'error');
@@ -2135,7 +2144,7 @@
           }
         });
       }
-      
+
       const editPersonModal = document.getElementById('edit-person-modal');
       if (editPersonModal) {
         editPersonModal.addEventListener('click', (e) => {
@@ -2149,7 +2158,7 @@
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       initNeuralNetwork();
-      
+
       // Delay loadPeople to allow vault restoration
       setTimeout(() => {
         loadPeople();

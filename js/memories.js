@@ -4,7 +4,6 @@
 const chrome = (typeof window !== 'undefined' && (window.chromeShim || window.chrome)) || undefined;
 
 console.log('🔥🔥🔥 CACHE BUST DEBUG: memories.js RELOADED at', new Date().toISOString());
-console.log('🧠 Emma Memory Gallery script loading...');
 
 // Timer manager will be loaded dynamically to avoid module errors
 let timerManager = null;
@@ -30,7 +29,7 @@ const simpleTimerManager = {
       clearTimeout(id);
     }
     this.timers.clear();
-    console.log('🧹 Cleared all timers');
+
   }
 };
 
@@ -39,20 +38,18 @@ const globalAbortController = new AbortController();
 
 // Clean up everything when page unloads
 window.addEventListener('beforeunload', () => {
-  console.log('🧹 Page unloading - cleaning up resources...');
-  
+
   // Clear all timers
   simpleTimerManager.clearAll();
-  
+
   // Abort all event listeners
   globalAbortController.abort();
-  
+
   // Clean up constellation canvas if active
   if (window.constellationCleanup) {
     window.constellationCleanup();
   }
-  
-  console.log('✅ Cleanup complete');
+
 }, { signal: globalAbortController.signal });
 
 let allMemories = [];
@@ -88,12 +85,12 @@ async function ensureVaultReady(vaultBanner) {
   if (!isDesktopVault) return true;
     try {
       // CRITICAL FIX: Use new extension FSM system instead of VaultGuardian
-      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' ||
                            sessionStorage.getItem('emmaVaultActive') === 'true' ||
                            (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
-      
+
       if (vaultUnlocked) {
-        console.log('✅ MEMORIES: ensureVaultReady - vault is unlocked');
+
         return true;
       }
 
@@ -146,10 +143,10 @@ async function ensureVaultReady(vaultBanner) {
       (async () => {
         try {
           // CRITICAL FIX: Use new extension FSM system
-          const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+          const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' ||
                                sessionStorage.getItem('emmaVaultActive') === 'true' ||
                                (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
-          
+
           if (!vaultUnlocked) {
             const createTab = overlay.querySelector('.create-tab');
             if (createTab) createTab.style.display = 'none';
@@ -310,9 +307,7 @@ async function loadMemories() {
   const emptyState = document.getElementById('empty-state');
   const vaultBanner = document.getElementById('vault-banner');
   const vaultFilterEl = document.getElementById('vault-filter');
-  
-  console.log('🧠 Emma Memory Gallery: Loading memories...');
-  
+
   try {
     // Show loading state
     container.innerHTML = `
@@ -343,7 +338,7 @@ async function loadMemories() {
         </div>
       </div>
     `;
-    
+
     // VaultGuardian will check status in the next section - no redundant calls needed
 
     // Always handle vault filter if present, populate with shared vaults if available
@@ -354,14 +349,14 @@ async function loadMemories() {
         if (window.vaultApi?.getAccessibleVaults) {
           vaults = await window.vaultApi.getAccessibleVaults() || [];
         }
-        
+
         // Always populate the filter (shows "My Vault" at minimum)
         const prev = vaultFilterEl.value || 'current';
         vaultFilterEl.innerHTML = '<option value="current">My Vault</option>' +
           (vaults.length > 0 ? vaults.map(v => `<option value="${v.id}">Shared: ${v.name}</option>`).join('') : '');
         vaultFilterEl.value = prev;
         currentVaultFilter = vaultFilterEl.value || 'current';
-        
+
         // Attach change listener once
         if (!vaultFilterEl.dataset.bound) {
           vaultFilterEl.addEventListener('change', async (e) => {
@@ -370,36 +365,34 @@ async function loadMemories() {
           });
           vaultFilterEl.dataset.bound = '1';
         }
-        
-        console.log('🗄️ Vault filter populated with', vaults.length, 'shared vaults');
+
       }
     } catch (e) {
       console.warn('Failed to populate vault filter:', e);
     }
 
     // ✅ VAULT-ONLY ACCESS - Single source of truth via VaultGuardian
-    console.log('🛡️ Loading memories via VaultGuardian...');
-    
+
     try {
       // Import VaultGuardian if not already available
       if (!window.VaultGuardian) {
         const module = await import('../lib/vault-guardian.js');
         window.VaultGuardian = module.default;
       }
-      
+
       // Initialize VaultGuardian
       await window.VaultGuardian.initialize();
-      
+
       // Force refresh VaultGuardian status to ensure we have the latest state
       await window.VaultGuardian.getStatus();
-      
+
       // CRITICAL FIX: Check vault status using new extension FSM system
-      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' ||
                            sessionStorage.getItem('emmaVaultActive') === 'true' ||
                            (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
-      
+
       if (!vaultUnlocked) {
-        console.log('🔒 MEMORIES: Vault not unlocked - checking extension status');
+
         // Vault banner hidden - user can see lock status in header
         if (vaultBanner) {
           vaultBanner.style.display = 'none';
@@ -411,19 +404,17 @@ async function loadMemories() {
         }
         return;
       }
-      
-      console.log('✅ MEMORIES: Vault is unlocked - loading memories');
 
       // Reset pagination state for fresh load
       currentOffset = 0;
       hasMoreMemories = true;
       isLoadingMore = false;
-      
+
       // Load memories from vault only - NO FALLBACKS
       const response = isDesktopVault
         ? await window.emma.vault.listCapsules({ limit: 50, offset: currentOffset })
         : await chrome.runtime.sendMessage({ action: 'vault.listCapsules', limit: 50, offset: currentOffset });
-      
+
       const items = Array.isArray(response) ? response : (response && response.items) ? response.items : [];
       const memories = Array.isArray(items) ? items.map(it => ({
         id: it.id,
@@ -433,22 +424,22 @@ async function loadMemories() {
         _attachmentCount: it.attachmentCount,
         _previewThumb: it.previewThumb
       })) : [];
-      
+
       allMemories = memories;
       await enrichMemoriesWithAttachments(allMemories);
       filteredMemories = [...allMemories];
-      
+
       // Update pagination state
       currentOffset = allMemories.length;
       hasMoreMemories = memories.length === 50; // Has more if we got a full page
-      
+
       if (allMemories.length > 0) {
         displayMemories(filteredMemories);
         updateResultsCount();
-        
+
         // Add load more button if there are more memories
         addLoadMoreButton();
-        
+
         // Update banner to show vault success
         if (vaultBanner) {
           vaultBanner.style.display = 'block';
@@ -456,12 +447,11 @@ async function loadMemories() {
           vaultBanner.style.border = '1px solid rgba(16,185,129,0.3)';
           vaultBanner.textContent = `🛡️ Vault Guardian · ${allMemories.length} memories loaded${hasMoreMemories ? ' (more available)' : ''}`;
         }
-        
+
         console.log(`✅ VaultGuardian: Loaded ${allMemories.length} memories (hasMore: ${hasMoreMemories})`);
       } else {
         showEmptyState();
-        console.log('📭 VaultGuardian: No memories found');
-        
+
         if (vaultBanner) {
           vaultBanner.style.display = 'block';
           vaultBanner.style.background = 'rgba(16,185,129,0.15)';
@@ -469,10 +459,10 @@ async function loadMemories() {
           vaultBanner.textContent = '🛡️ Vault Guardian · Ready to store memories';
         }
       }
-      
+
     } catch (error) {
       console.error('🚨 VaultGuardian access failed:', error);
-      
+
       // Show error state
       if (vaultBanner) {
         vaultBanner.style.display = 'block';
@@ -480,7 +470,7 @@ async function loadMemories() {
         vaultBanner.style.border = '1px solid rgba(239,68,68,0.3)';
         vaultBanner.textContent = '⚠️ Vault Error · Check vault status';
       }
-      
+
       showEmptyState();
       const emptyMessageText = document.getElementById('empty-message-text');
       if (emptyMessageText) {
@@ -503,45 +493,44 @@ async function loadMemories() {
 // ✅ PERFORMANCE: Load More Functionality
 async function loadMoreMemories() {
   if (isLoadingMore || !hasMoreMemories) return;
-  
+
   isLoadingMore = true;
   const loadMoreBtn = document.getElementById('load-more-btn');
   if (loadMoreBtn) {
     loadMoreBtn.textContent = 'Loading...';
     loadMoreBtn.disabled = true;
   }
-  
+
   try {
-    console.log(`📋 Loading more memories from offset ${currentOffset}...`);
-    
+
     const response = await Promise.race([
       chrome.runtime.sendMessage({ action: 'getAllMemories', limit: 50, offset: currentOffset }),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Load more timeout')), 5000))
     ]);
-    
+
     if (response && response.success && Array.isArray(response.memories)) {
       const newMemories = response.memories;
-      
+
       if (newMemories.length > 0) {
         // Append new memories to existing ones
         allMemories = [...allMemories, ...newMemories];
         await enrichMemoriesWithAttachments(newMemories); // Only enrich new ones
         filteredMemories = [...allMemories];
-        
+
         // Update pagination state
         currentOffset += newMemories.length;
         hasMoreMemories = newMemories.length === 50;
-        
+
         // Re-render all memories
         displayMemories(filteredMemories);
         updateResultsCount();
-        
+
         console.log(`✅ MTAP: Loaded ${newMemories.length} additional memories (total: ${allMemories.length})`);
       } else {
         hasMoreMemories = false;
-        console.log('📭 MTAP: No more memories available');
+
       }
-      
+
       // Update load more button
       updateLoadMoreButton();
     }
@@ -560,9 +549,9 @@ function addLoadMoreButton() {
   // Remove existing button if present
   const existingBtn = document.getElementById('load-more-btn');
   if (existingBtn) existingBtn.remove();
-  
+
   if (!hasMoreMemories) return;
-  
+
   const container = document.getElementById('memory-grid');
   const loadMoreContainer = document.createElement('div');
   loadMoreContainer.className = 'load-more-container';
@@ -572,7 +561,7 @@ function addLoadMoreButton() {
     margin: 32px 0;
     grid-column: 1 / -1;
   `;
-  
+
   const loadMoreBtn = document.createElement('button');
   loadMoreBtn.id = 'load-more-btn';
   loadMoreBtn.className = 'btn-secondary';
@@ -583,7 +572,7 @@ function addLoadMoreButton() {
     border-radius: 12px;
     transition: all 0.2s ease;
   `;
-  
+
   loadMoreBtn.addEventListener('click', loadMoreMemories);
   loadMoreContainer.appendChild(loadMoreBtn);
   container.appendChild(loadMoreContainer);
@@ -592,7 +581,7 @@ function addLoadMoreButton() {
 function updateLoadMoreButton() {
   const loadMoreBtn = document.getElementById('load-more-btn');
   if (!loadMoreBtn) return;
-  
+
   if (hasMoreMemories) {
     loadMoreBtn.textContent = `Load More Memories`;
     loadMoreBtn.disabled = false;
@@ -619,7 +608,7 @@ function handleMemoryActions(event) {
     event.preventDefault();
     event.stopPropagation();
     const memoryId = deleteBtn.getAttribute('data-memory-id');
-    console.log('🗑️ Delete button clicked for memory:', memoryId);
+
     if (memoryId) {
       deleteMemory(memoryId);
     }
@@ -630,15 +619,15 @@ function handleMemoryActions(event) {
 async function displayMemories(memories) {
   const container = document.getElementById('memory-grid');
   const emptyState = document.getElementById('empty-state');
-  
+
   if (memories.length === 0) {
     showEmptyState();
     return;
   }
-  
+
   // Hide empty state
   emptyState.classList.add('hidden');
-  
+
   const sortedMemories = memories.sort((a, b) => b.timestamp - a.timestamp);
   // Apply title/content overrides if present
   try {
@@ -653,11 +642,11 @@ async function displayMemories(memories) {
   } catch {}
 
   container.innerHTML = sortedMemories.map(memory => createMemoryCapsule(memory)).join('');
-  
+
   // Add CSP-compliant event delegation for delete buttons
   container.removeEventListener('click', handleMemoryActions); // Remove existing listener
   container.addEventListener('click', handleMemoryActions);
-  
+
   // Add click handlers for memory cards
   container.querySelectorAll('.memory-card').forEach(card => {
     card.addEventListener('click', (e) => {
@@ -695,18 +684,18 @@ async function enrichMemoriesWithAttachments(memories) {
 
 function createMemoryCapsule(memory) {
   const timeAgo = getTimeAgo(new Date(memory.timestamp));
-  
+
   // Handle conversation capsules vs individual memories
   let displayTitle, displayContent, messageCount = 0, totalChars = 0;
-  
+
   if (memory.type === 'conversation' && memory.messages) {
     displayTitle = memory.title || memory.metadata?.title || `Conversation (${memory.messages?.length || 0} messages)`;
     messageCount = memory.messageCount || memory.messages.length;
-    
+
     // Show preview of first message
     const firstMessage = memory.messages[0];
     displayContent = firstMessage ? firstMessage.content : 'No content';
-    
+
     // Calculate total character count for all messages
     totalChars = memory.messages.reduce((total, msg) => total + (msg.content ? msg.content.length : 0), 0);
   } else {
@@ -714,10 +703,10 @@ function createMemoryCapsule(memory) {
     displayContent = memory.content || 'No content';
     totalChars = displayContent.length;
   }
-  
+
   const preview = displayContent ? escapeHtml(displayContent.substring(0, 200)) : 'No content';
   const platform = memory.metadata?.platform || memory.source || 'unknown';
-  
+
   const attachmentCount = memory._attachmentCount || memory.attachmentCount || (Array.isArray(memory.attachments) ? memory.attachments.length : 0);
   const bgStyle = memory._previewThumb ? `style=\"background-image:url('${memory._previewThumb}'); background-size:cover; background-position:center;\"` : '';
   return `
@@ -734,7 +723,7 @@ function createMemoryCapsule(memory) {
         ${memory._previewThumb ? '' : `<div class="memory-icon">${memory.type === 'conversation' ? '💬' : '📝'}</div>`}
         ${attachmentCount ? `<div class="memory-badge">🖼️ ${attachmentCount}</div>` : ''}
       </div>
-      
+
       <div class="memory-card-content">
         <h3 class="memory-title">${escapeHtml(displayTitle)}</h3>
         <p class="memory-description">
@@ -775,11 +764,11 @@ function getSourceIcon(source) {
 function showEmptyState() {
   const container = document.getElementById('memory-grid');
   const emptyState = document.getElementById('empty-state');
-  
+
   // Hide the grid content and show empty state
   container.innerHTML = '';
   emptyState.classList.remove('hidden');
-  
+
   // Update empty state message
   const emptyMessageText = document.getElementById('empty-message-text');
   if (emptyMessageText) {
@@ -826,7 +815,7 @@ async function generateSampleMemories() {
       metadata: { timestamp: Date.now() - 1800000 }
     }
   ];
-  
+
   try {
     for (const memory of sampleMemories) {
       await chrome.runtime.sendMessage({
@@ -834,10 +823,10 @@ async function generateSampleMemories() {
         data: memory
       });
     }
-    
+
     showNotification('Sample memories generated successfully!');
     await loadMemories(); // Reload the gallery
-    
+
   } catch (error) {
     console.error('Failed to generate sample memories:', error);
     showNotification('Failed to generate sample memories: ' + error.message, 'error');
@@ -861,7 +850,7 @@ function showNotification(message, type = 'success') {
   `;
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   simpleTimerManager.setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease';
     simpleTimerManager.setTimeout(() => notification.remove(), 300, 'notification_remove');
@@ -872,56 +861,55 @@ function showNotification(message, type = 'success') {
 async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
   try {
     if (!window.hmlSync?.manager) {
-      console.log('[HML] Sync manager not available, offering to create identity');
-      
+
       // Offer to create an HML identity
       const message = `You need an HML identity to sync memories with ${peopleWithFingerprints.map(p => p.name).join(', ')}.\n\nWould you like to create your HML identity now? This will enable peer-to-peer collaboration.`;
-      
+
       if (!confirm(message)) {
         return;
       }
-      
+
       // Create HML identity and initialize sync
       try {
         await createHMLIdentityAndInitialize();
         showNotification('HML identity created! You can now sync with people.', 'success');
-        
+
         // Now retry the sync offer
         setTimeout(() => {
           offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId);
         }, 1000);
-        
+
       } catch (error) {
         console.error('[HML] Failed to create identity:', error);
         showNotification('Failed to create HML identity: ' + error.message, 'error');
       }
-      
+
       return;
     }
-    
+
     const names = peopleWithFingerprints.map(p => p.name).join(', ');
-    const message = peopleWithFingerprints.length === 1 
+    const message = peopleWithFingerprints.length === 1
       ? `${names} has an HML identity and can sync this memory!\n\nWould you like to share your vault so they can see this memory and collaborate?`
       : `${names} have HML identities and can sync this memory!\n\nWould you like to share your vault so they can see this memory and collaborate?`;
-    
+
     if (!confirm(message)) {
       return;
     }
-    
+
     // Get current vault info
     const { getVaultManager } = await import('./vault/vault-manager.js');
     const vaultManager = getVaultManager();
     const status = await vaultManager.getStatus();
     const vaultId = status?.vaultId || 'default';
-    
+
     // Share vault with each person who has a fingerprint
     let successCount = 0;
     let errors = [];
-    
+
     for (const person of peopleWithFingerprints) {
       try {
         const fingerprint = person.keyFingerprint || person.fingerprint;
-        
+
         // Set appropriate permissions (viewer by default, but could be enhanced)
         const permissions = {
           read: true,
@@ -930,14 +918,14 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
           share: false,
           admin: false
         };
-        
+
         console.log(`[HML] Sharing vault ${vaultId} with ${person.name} (${fingerprint.slice(0, 16)}...)`);
-        
+
         await window.hmlSync.manager.shareVault(vaultId, fingerprint, permissions);
-        
+
         // Also ensure this person is being monitored for connections
         await window.hmlSync.manager.addPeerToMonitor(fingerprint);
-        
+
         // Store in monitored peers
         const result = await chrome.storage.local.get(['emma_monitored_peers']);
         const peers = result.emma_monitored_peers || [];
@@ -945,35 +933,34 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
           peers.push(fingerprint);
           await chrome.storage.local.set({ emma_monitored_peers: peers });
         }
-        
+
         successCount++;
-        console.log(`[HML] Successfully shared vault with ${person.name}`);
-        
+
       } catch (error) {
         console.error(`[HML] Failed to share vault with ${person.name}:`, error);
         errors.push(`${person.name}: ${error.message}`);
       }
     }
-    
+
     // Show results
     if (successCount > 0) {
       const successMsg = successCount === peopleWithFingerprints.length
         ? `Successfully shared vault with all ${successCount} people! They can now sync and collaborate on this memory.`
         : `Successfully shared vault with ${successCount} of ${peopleWithFingerprints.length} people.`;
-      
+
       showNotification(successMsg, 'success');
-      
+
       // Show helpful next steps
       setTimeout(() => {
         alert(`Vault sharing complete! 🎉\n\nNext steps:\n1. The tagged people will receive vault invitations\n2. Once they accept, this memory will sync to their devices\n3. You can collaborate on memories together\n\nNote: Make sure they have added your fingerprint in their HML Sync settings too!`);
       }, 2000);
     }
-    
+
     if (errors.length > 0) {
       console.error('[HML] Vault sharing errors:', errors);
       showNotification(`Some vault shares failed: ${errors.join('; ')}`, 'error');
     }
-    
+
   } catch (error) {
     console.error('[HML] Failed to offer vault sharing:', error);
     showNotification('Failed to set up vault sharing: ' + error.message, 'error');
@@ -985,35 +972,31 @@ async function createHMLIdentityAndInitialize() {
   try {
     // Import identity crypto utilities
     const { generateIdentity } = await import('./vault/identity-crypto.js');
-    
+
     // Generate new identity (contains signing and encryption keypairs)
     const identity = await generateIdentity();
-    
+
     // Store full identity object (preserve structure expected by HML Sync)
     await chrome.storage.local.set({ emma_my_identity: identity });
-    
-    console.log('[HML] Identity created:', identity.fingerprint);
-    
+
     // Initialize HML Sync with new identity
     const { P2PManager } = await import('./p2p/p2p-manager.js');
     const { BulletinBoardManager } = await import('./p2p/bulletin-board.js');
-    
+
     const bulletinBoard = new BulletinBoardManager({ useMock: false });
     const p2pManager = new P2PManager(bulletinBoard);
-    
+
     // Initialize the manager with the full identity
     await p2pManager.initialize(identity);
-    
+
     // Make available globally
     window.hmlSync = {
       manager: p2pManager,
       initialized: true
     };
-    
-    console.log('[HML] Sync system initialized');
-    
+
     return identity;
-    
+
   } catch (error) {
     console.error('[HML] Failed to create identity and initialize sync:', error);
     throw error;
@@ -1026,16 +1009,16 @@ function filterMemories() {
   const roleFilter = document.getElementById('role-filter')?.value;
   const vaultFilterEl = document.getElementById('vault-filter');
   if (vaultFilterEl) currentVaultFilter = vaultFilterEl.value || 'current';
-  
+
   filteredMemories = allMemories.filter(memory => {
     const matchesSearch = memory.content.toLowerCase().includes(searchTerm);
     const matchesSource = !sourceFilter || sourceFilter === 'all' || memory.source === sourceFilter;
     const matchesRole = !roleFilter || roleFilter === 'all' || memory.role === roleFilter;
     const matchesVault = currentVaultFilter === 'current' || memory.vaultId === currentVaultFilter;
-    
+
     return matchesSearch && matchesSource && matchesRole && matchesVault;
   });
-  
+
   displayMemories(filteredMemories);
   updateResultsCount();
 }
@@ -1045,7 +1028,7 @@ function updateResultsCount() {
   const totalCountEl = document.getElementById('total-count');
   const total = allMemories.length;
   const showing = filteredMemories.length;
-  
+
   if (filteredCountEl) filteredCountEl.textContent = showing;
   if (totalCountEl) totalCountEl.textContent = total;
 }
@@ -1418,28 +1401,24 @@ async function loadConstellationView() {
 }
 
 async function deleteMemory(memoryId) {
-  console.log('🗑️ Memories: Delete request for memory:', memoryId);
-  
+
   // Confirm deletion
   if (!confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
     return;
   }
-  
+
   try {
-    console.log('🗑️ Memories: Calling deleteMemory in background...');
+
     const response = await chrome.runtime.sendMessage({
       action: 'deleteMemory',
       memoryId: memoryId
     });
-    
-    console.log('🗑️ Memories: Delete response:', response);
-    
+
     if (response?.success) {
-      console.log('✅ Memories: Memory deleted successfully');
-      
+
       // Show success notification
       showNotification('✅ Memory deleted successfully', 'success', 2000);
-      
+
       // Reload memories to reflect the change
       await loadMemories();
     } else {
@@ -1452,13 +1431,13 @@ async function deleteMemory(memoryId) {
 }
 
 async function injectHeaderLockStatus() {
-  // GLOBAL GUARD: Only allow one instance 
+  // GLOBAL GUARD: Only allow one instance
   if (window.emmaLockStatusInjected) {
-    console.log('🛡️ Lock status already injected, skipping...');
+
     return;
   }
   window.emmaLockStatusInjected = true;
-  
+
   const header = document.querySelector('.memories-header .header-actions');
   if (!header) return;
   let node = document.getElementById('emma-lock-status');
@@ -1471,28 +1450,28 @@ async function injectHeaderLockStatus() {
   async function refresh() {
     try {
       // CRITICAL FIX: Use new extension FSM system instead of VaultGuardian
-      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' || 
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' ||
                            sessionStorage.getItem('emmaVaultActive') === 'true' ||
                            (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
-      
-      const vaultName = localStorage.getItem('emmaVaultName') || 
-                       sessionStorage.getItem('emmaVaultName') || 
-                       (window.currentVaultStatus && window.currentVaultStatus.name) || 
+
+      const vaultName = localStorage.getItem('emmaVaultName') ||
+                       sessionStorage.getItem('emmaVaultName') ||
+                       (window.currentVaultStatus && window.currentVaultStatus.name) ||
                        'My Vault';
-      
+
       if (vaultUnlocked) {
         // Unlocked state - show status with lock button
         node.innerHTML = `🔓 ${vaultName} <button id="emma-lock-now" class="btn-secondary" style="margin-left:8px">Lock</button>`;
         const lockBtn = document.getElementById('emma-lock-now');
-        if (lockBtn) lockBtn.onclick = async () => { 
-          try { 
+        if (lockBtn) lockBtn.onclick = async () => {
+          try {
             // CRITICAL: Ask for passphrase to encrypt vault before locking
             const passphrase = await showSimplePasswordPrompt('🔐 Enter passphrase to encrypt and lock vault');
             if (!passphrase) return;
-            
+
             if (window.emmaWebVault) {
               await window.emmaWebVault.lockVault();
-              console.log('✅ VAULT: Locked and encrypted successfully');
+
               // Refresh page to show locked state
               window.location.reload();
             }
@@ -1510,11 +1489,11 @@ async function injectHeaderLockStatus() {
             try {
               const passphrase = await showSimplePasswordPrompt('🔐 Enter Vault Passphrase');
               if (!passphrase) return;
-              
+
               // Try to unlock via web vault system
               if (window.emmaWebVault) {
                 await window.emmaWebVault.openVaultFile();
-                console.log('✅ VAULT: Unlocked successfully');
+
                 // Refresh page to show unlocked state
                 window.location.reload();
               }
@@ -1534,10 +1513,10 @@ async function injectHeaderLockStatus() {
           try {
             const passphrase = await showSimplePasswordPrompt('🔐 Enter Vault Passphrase');
             if (!passphrase) return;
-            
+
             const unlockResult = await window.emma.vault.unlock({ passphrase });
             if (unlockResult && unlockResult.success) {
-              console.log('🛡️ Vault unlocked successfully');
+
             } else {
               alert('Failed to unlock vault. Please check your passphrase.');
             }
@@ -1549,15 +1528,14 @@ async function injectHeaderLockStatus() {
       }
     }
   }
-  
+
   // PREVENT MULTIPLE INTERVALS - Clear any existing ones first
   if (window.emmaLockStatusInterval) {
     clearInterval(window.emmaLockStatusInterval);
   }
-  
+
   refresh();
-  // EMERGENCY DISABLE: Stop vault.status polling storm
-  console.log('🚨 MEMORIES: setInterval DISABLED to stop vault.status polling storm');
+
   // window.emmaLockStatusInterval = setInterval(refresh, 5000); // DISABLED
 }
 
@@ -1830,24 +1808,24 @@ function syntaxHighlight(json) {
 }
 
 function setupIdleAutoLock() {
-  // GLOBAL GUARD: Only allow one instance 
+  // GLOBAL GUARD: Only allow one instance
   if (window.emmaIdleAutoLockSetup) {
-    console.log('🛡️ Idle auto-lock already setup, skipping...');
+
     return;
   }
   window.emmaIdleAutoLockSetup = true;
-  
+
   let lastActivity = Date.now();
   const update = () => (lastActivity = Date.now());
   ['mousemove','keydown','click','scroll','touchstart'].forEach(evt => window.addEventListener(evt, update, { passive: true }));
-  
+
   // PREVENT MULTIPLE INTERVALS - Clear any existing ones first
   if (window.emmaIdleAutoLockInterval) {
     clearInterval(window.emmaIdleAutoLockInterval);
   }
-  
+
   // CRITICAL FIX: Idle auto-lock permanently disabled - vault only locks when user chooses
-  console.log('✅ MEMORIES: Idle auto-lock PERMANENTLY DISABLED - user controlled vault locking only');
+
 }
 
 // Simple password prompt for Electron (since prompt() doesn't work)
@@ -1965,12 +1943,12 @@ function showNotification(message, type = 'info', duration = 3000) {
     ${type === 'info' ? 'background: linear-gradient(135deg, #667eea, #764ba2);' : ''}
   `;
   notification.textContent = message;
-  
+
   document.body.appendChild(notification);
-  
+
   // Animate in
   setTimeout(() => notification.style.opacity = '1', 10);
-  
+
   // Remove after duration
   setTimeout(() => {
     notification.style.opacity = '0';
@@ -1985,7 +1963,7 @@ function showNotification(message, type = 'info', duration = 3000) {
 function openMemoryDetail(memoryId) {
   const memory = allMemories.find(m => m.id == memoryId);
   if (!memory) return;
-  
+
   // Create modal for memory detail
   const modal = document.createElement('div');
   modal.className = 'memory-detail-modal';
@@ -2015,16 +1993,16 @@ function openMemoryDetail(memoryId) {
       <div class="memory-detail-body" id="memory-detail-body"></div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
-  
+
   // Add event listeners for closing
   const overlay = modal.querySelector('.memory-detail-overlay');
   const closeBtn = modal.querySelector('.close-btn');
-  
+
   overlay.addEventListener('click', () => closeMemoryDetail());
   closeBtn.addEventListener('click', () => closeMemoryDetail());
-  
+
   // Close on Escape key
   const handleEscape = (e) => {
     if (e.key === 'Escape') {
@@ -2032,10 +2010,10 @@ function openMemoryDetail(memoryId) {
     }
   };
   document.addEventListener('keydown', handleEscape);
-  
+
   // Store the handler on the modal for cleanup
   modal._escapeHandler = handleEscape;
-  
+
   // Local tab state & lazy loading
   let activeTab = 'overview';
   const bodyHost = modal.querySelector('#memory-detail-body');
@@ -2048,33 +2026,33 @@ function openMemoryDetail(memoryId) {
   const saveStatus = modal.querySelector('#save-status');
   const saveStatusText = modal.querySelector('#save-status-text');
   const titleInput = modal.querySelector('#memory-title-input');
-  
+
   function showSaveStatus(type, message) {
     if (!saveStatus || !saveStatusText) return;
     saveStatus.className = `save-status ${type}`;
     saveStatusText.textContent = message;
     saveStatus.style.display = 'inline-flex';
-    
+
     if (type === 'saved') {
       setTimeout(() => {
         saveStatus.style.display = 'none';
       }, 3000);
     }
   }
-  
+
   // Add keyboard shortcuts and save handler
   const handleSave = async () => {
     const title = titleInput.value.trim() || 'Untitled Memory';
     const content = getOverviewEditedContent();
-    
+
     try {
       showSaveStatus('saving', 'Saving...');
       if (saveBtn) saveBtn.disabled = true;
-      
+
       const updated = await saveMemoryEdits({ id: memory.id, title, content });
       if (updated && updated.success) {
         showSaveStatus('saved', '✓ Saved');
-        
+
         // Update local state and rerender
         const idx = allMemories.findIndex(m => m.id === memory.id);
         if (idx >= 0) {
@@ -2092,7 +2070,7 @@ function openMemoryDetail(memoryId) {
       if (saveBtn) saveBtn.disabled = false;
     }
   };
-  
+
   // Keyboard shortcuts (Ctrl+S to save)
   const handleKeydown = (e) => {
     if (e.ctrlKey && e.key === 's') {
@@ -2100,11 +2078,11 @@ function openMemoryDetail(memoryId) {
       handleSave();
     }
   };
-  
+
   if (saveBtn && titleInput) {
     saveBtn.addEventListener('click', handleSave);
     titleInput.addEventListener('keydown', handleKeydown);
-    
+
     const contentInput = modal.querySelector('#memory-content-input');
     if (contentInput) {
       contentInput.addEventListener('keydown', handleKeydown);
@@ -2218,7 +2196,7 @@ async function loadOverviewMediaGallery(memory) {
 
   try {
     const mediaItems = await loadMedia(memory);
-    
+
     if (mediaItems.length === 0) {
       // Hide the gallery if no media
       galleryContainer.style.display = 'none';
@@ -2228,10 +2206,10 @@ async function loadOverviewMediaGallery(memory) {
     // Render compact media gallery
     const galleryHtml = renderCompactMediaGallery(mediaItems);
     galleryContainer.innerHTML = galleryHtml;
-    
+
     // Wire up click handlers for slideshow
     wireMediaGalleryActions(galleryContainer, mediaItems);
-    
+
   } catch (error) {
     console.error('Failed to load overview media gallery:', error);
     // Hide gallery on error
@@ -2254,7 +2232,7 @@ function renderCompactMediaGallery(mediaItems) {
       <div class="gallery-grid">
         ${visibleItems.map((item, index) => `
           <div class="gallery-item" data-media-index="${index}">
-            ${item.type === 'image' 
+            ${item.type === 'image'
               ? `<img src="${item.dataUrl || item.url}" alt="Memory media" loading="lazy" />`
               : `<video src="${item.dataUrl || item.url}" poster="${item.thumbnail || ''}" muted></video>`
             }
@@ -2465,7 +2443,7 @@ function wirePeopleActions(host) {
         openPersonModal(personId);
       }
     });
-    
+
     // Add hover effect
     card.addEventListener('mouseenter', () => {
       card.style.backgroundColor = 'rgba(134, 88, 255, 0.1)';
@@ -2474,7 +2452,7 @@ function wirePeopleActions(host) {
       card.style.backgroundColor = '';
     });
   });
-  
+
   // Add click handler for "Add People" button
   const addPeopleBtn = host.querySelector('.add-people-btn');
   if (addPeopleBtn) {
@@ -2483,7 +2461,7 @@ function wirePeopleActions(host) {
       openAddPeopleModal();
     });
   }
-  
+
   // Add click handler for "Add More People" button
   const addMorePeopleBtn = host.querySelector('.add-more-people');
   if (addMorePeopleBtn) {
@@ -2491,7 +2469,7 @@ function wirePeopleActions(host) {
       e.preventDefault();
       openAddPeopleModal();
     });
-    
+
     // Add hover effect
     addMorePeopleBtn.addEventListener('mouseenter', () => {
       addMorePeopleBtn.style.backgroundColor = 'rgba(134, 88, 255, 0.1)';
@@ -2509,42 +2487,42 @@ async function openAddPeopleModal() {
     // Load all people from storage
     const store = await chrome.storage.local.get(['emma_people']);
     const allPeople = Array.isArray(store.emma_people) ? store.emma_people : [];
-    
+
     if (allPeople.length === 0) {
       alert('No people found. Please add people in the People page first.');
       return;
     }
-    
+
     // Get currently tagged people for this memory to filter them out
     const currentMemory = { id: window._currentMemoryId };
     const currentlyTaggedPeople = await loadPeople(currentMemory);
     const taggedPeopleIds = new Set(currentlyTaggedPeople.map(p => String(p.id)));
-    
+
     // Filter out already tagged people
     const availablePeople = allPeople.filter(person => !taggedPeopleIds.has(String(person.id)));
-    
+
     if (availablePeople.length === 0) {
       alert('All people are already tagged to this memory.');
       return;
     }
-    
+
     // Create add people modal
     const modal = document.createElement('div');
     modal.className = 'memory-detail-modal add-people-modal';
     modal.style.zIndex = '10000';
-    
+
     const peopleGridHtml = availablePeople.map(person => {
       const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-      const avatar = person.profilePicture 
+      const avatar = person.profilePicture
         ? `<img src="${person.profilePicture}" style="width:60px; height:60px; object-fit:cover; border-radius:50%;"/>`
         : `<div style="width:60px; height:60px; background:#8658ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:600;">${initials}</div>`;
-      
+
       // Show HML sync capability if person has fingerprint
       const hasFingerprint = person.keyFingerprint || person.fingerprint;
-      const syncBadge = hasFingerprint 
+      const syncBadge = hasFingerprint
         ? `<div style="position:absolute; top:8px; right:8px; background:#4cd964; color:white; font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600;">🔗 HML</div>`
         : '';
-      
+
       return `
         <div class="selectable-person" data-person-id="${person.id}" data-fingerprint="${hasFingerprint || ''}" style="position:relative; padding:16px; border:2px solid transparent; border-radius:12px; text-align:center; cursor:pointer; transition:all 0.2s ease; background:rgba(255,255,255,0.05);">
           ${syncBadge}
@@ -2555,7 +2533,7 @@ async function openAddPeopleModal() {
         </div>
       `;
     }).join('');
-    
+
     modal.innerHTML = `
       <div class="memory-detail-overlay"></div>
       <div class="memory-detail-content" style="max-width: 600px;">
@@ -2575,18 +2553,18 @@ async function openAddPeopleModal() {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     // Track selected people
     const selectedPeople = new Set();
     const confirmBtn = modal.querySelector('.add-people-confirm');
-    
+
     // Add selection handlers
     modal.querySelectorAll('.selectable-person').forEach(card => {
       card.addEventListener('click', () => {
         const personId = card.dataset.personId;
-        
+
         if (selectedPeople.has(personId)) {
           // Deselect
           selectedPeople.delete(personId);
@@ -2598,7 +2576,7 @@ async function openAddPeopleModal() {
           card.style.borderColor = '#8658ff';
           card.style.backgroundColor = 'rgba(134,88,255,0.1)';
         }
-        
+
         // Update confirm button state
         if (selectedPeople.size > 0) {
           confirmBtn.disabled = false;
@@ -2610,7 +2588,7 @@ async function openAddPeopleModal() {
           confirmBtn.textContent = 'Add Selected People';
         }
       });
-      
+
       // Add hover effect
       card.addEventListener('mouseenter', () => {
         if (!selectedPeople.has(card.dataset.personId)) {
@@ -2623,59 +2601,59 @@ async function openAddPeopleModal() {
         }
       });
     });
-    
+
     // Add close handlers
     modal.querySelectorAll('.add-people-modal-close').forEach(btn => {
       btn.addEventListener('click', () => modal.remove());
     });
     modal.querySelector('.memory-detail-overlay').addEventListener('click', () => modal.remove());
-    
+
     // Add confirm handler
     confirmBtn.addEventListener('click', async () => {
       if (selectedPeople.size > 0) {
         try {
           confirmBtn.disabled = true;
           confirmBtn.textContent = 'Adding People...';
-          
+
           const selectedPeopleList = Array.from(selectedPeople).map(id => {
             const person = availablePeople.find(p => String(p.id) === id);
             return person;
           }).filter(Boolean);
-          
+
           await tagPeopleToMemory(window._currentMemoryId, selectedPeopleList);
-          
+
           // Check if any of the added people have HML fingerprints for sync
-          const peopleWithFingerprints = selectedPeopleList.filter(person => 
+          const peopleWithFingerprints = selectedPeopleList.filter(person =>
             person.keyFingerprint || person.fingerprint
           );
-          
+
           // Show success notification
           showNotification(`Successfully tagged ${selectedPeopleList.length} people to this memory!`, 'success');
-          
+
           // Close modal
           modal.remove();
-          
+
           // Refresh the people tab to show the newly tagged people
           refreshPeopleTab();
-          
+
           // Offer HML sync if people have fingerprints
           if (peopleWithFingerprints.length > 0) {
             setTimeout(() => {
               offerHMLSyncForTaggedPeople(peopleWithFingerprints, window._currentMemoryId);
             }, 1000);
           }
-          
+
         } catch (error) {
           console.error('Failed to tag people:', error);
           showNotification('Failed to tag people: ' + error.message, 'error');
-          
+
           // Re-enable button
           confirmBtn.disabled = false;
           confirmBtn.textContent = `Add ${selectedPeople.size} People`;
         }
       }
     });
-    
+
     // Add escape key handler
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -2684,10 +2662,10 @@ async function openAddPeopleModal() {
       }
     };
     document.addEventListener('keydown', handleEscape);
-    
+
     // Show modal with animation
     setTimeout(() => modal.classList.add('active'), 10);
-    
+
   } catch (error) {
     console.error('Failed to open add people modal:', error);
     alert('Failed to load people. Please try again.');
@@ -2700,22 +2678,22 @@ async function openPersonModal(personId) {
     const store = await chrome.storage.local.get(['emma_people']);
     const people = Array.isArray(store.emma_people) ? store.emma_people : [];
     const person = people.find(p => String(p.id) === String(personId));
-    
+
     if (!person) {
       console.error('Person not found:', personId);
       return;
     }
-    
+
     // Create simplified person modal
     const modal = document.createElement('div');
     modal.className = 'memory-detail-modal person-modal';
     modal.style.zIndex = '10000';
-    
+
     const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-    const avatar = person.profilePicture 
+    const avatar = person.profilePicture
       ? `<img src="${person.profilePicture}" style="width:80px; height:80px; object-fit:cover; border-radius:50%; margin-bottom:16px;"/>`
       : `<div style="width:80px; height:80px; background:#8658ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:600; margin-bottom:16px;">${initials}</div>`;
-    
+
     modal.innerHTML = `
       <div class="memory-detail-overlay"></div>
       <div class="memory-detail-content" style="max-width: 480px;">
@@ -2746,15 +2724,15 @@ async function openPersonModal(personId) {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     // Add close handlers
     modal.querySelectorAll('.person-modal-close').forEach(btn => {
       btn.addEventListener('click', () => modal.remove());
     });
     modal.querySelector('.memory-detail-overlay').addEventListener('click', () => modal.remove());
-    
+
     // Add view full profile handler
     const viewFullBtn = modal.querySelector('.person-view-full');
     if (viewFullBtn) {
@@ -2762,7 +2740,7 @@ async function openPersonModal(personId) {
         window.open(`people.html#person-${person.id}`, '_blank');
       });
     }
-    
+
     // Add escape key handler
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -2771,10 +2749,10 @@ async function openPersonModal(personId) {
       }
     };
     document.addEventListener('keydown', handleEscape);
-    
+
     // Show modal with animation
     setTimeout(() => modal.classList.add('active'), 10);
-    
+
   } catch (error) {
     console.error('Failed to open person modal:', error);
   }
@@ -2785,12 +2763,11 @@ async function tagPeopleToMemory(memoryId, peopleList) {
   if (!memoryId || !peopleList || peopleList.length === 0) {
     throw new Error('Invalid memory ID or people list');
   }
-  
+
   try {
-    console.log('🏷️ Tagging people to memory:', memoryId, peopleList);
-    
+
     // Try multiple approaches to tag people, starting with the most comprehensive
-    
+
     // Approach 1: Use background script API if available
     try {
       const result = await chrome.runtime.sendMessage({
@@ -2803,28 +2780,28 @@ async function tagPeopleToMemory(memoryId, peopleList) {
           profilePicture: p.profilePicture
         }))
       });
-      
+
       if (result && result.success) {
-        console.log('✅ Successfully tagged people via background API');
+
         return result;
       }
     } catch (error) {
       console.warn('⚠️ Background API tagging failed, trying direct storage:', error);
     }
-    
+
     // Approach 2: Direct storage approach - store memory-people associations
     try {
       const storage = await chrome.storage.local.get(['emma_memory_people_tags']);
       const existingTags = storage.emma_memory_people_tags || {};
-      
+
       // Initialize memory tags if not exist
       if (!existingTags[memoryId]) {
         existingTags[memoryId] = [];
       }
-      
+
       // Add new people (avoid duplicates)
       const existingPeopleIds = new Set(existingTags[memoryId].map(p => String(p.id)));
-      
+
       for (const person of peopleList) {
         if (!existingPeopleIds.has(String(person.id))) {
           existingTags[memoryId].push({
@@ -2836,18 +2813,17 @@ async function tagPeopleToMemory(memoryId, peopleList) {
           });
         }
       }
-      
+
       // Save back to storage
       await chrome.storage.local.set({ emma_memory_people_tags: existingTags });
-      
-      console.log('✅ Successfully tagged people via direct storage');
+
       return { success: true, method: 'direct_storage' };
-      
+
     } catch (error) {
       console.error('❌ Direct storage tagging failed:', error);
       throw new Error(`Failed to tag people: ${error.message}`);
     }
-    
+
   } catch (error) {
     console.error('❌ Tag people operation failed:', error);
     throw error;
@@ -2857,44 +2833,41 @@ async function tagPeopleToMemory(memoryId, peopleList) {
 // Refresh the people tab to show updated people list
 async function refreshPeopleTab() {
   try {
-    console.log('🔄 Refreshing people tab...');
-    
+
     const memoryId = window._currentMemoryId;
     if (!memoryId) {
       console.warn('⚠️ No current memory ID for refresh');
       return;
     }
-    
+
     // Find the people tab content area
     const peopleTabBody = document.querySelector('.memory-detail-modal #memory-detail-body');
     if (!peopleTabBody) {
       console.warn('⚠️ People tab body not found');
       return;
     }
-    
+
     // Check if people tab is currently active
     const peopleTabBtn = document.querySelector('.memory-detail-modal .tab-btn[data-tab="people"]');
     if (!peopleTabBtn || !peopleTabBtn.classList.contains('active')) {
-      console.log('👥 People tab not active, will refresh when switched');
+
       return;
     }
-    
+
     // Reload people for current memory
     const memory = { id: memoryId };
     const updatedPeopleList = await loadPeople(memory);
-    
+
     // Re-render people tab content
     peopleTabBody.innerHTML = renderPeople(updatedPeopleList);
     wirePeopleActions(peopleTabBody);
-    
+
     // Update people count in tab
     const peopleCountEl = document.querySelector('.memory-detail-modal #tab-people-count');
     if (peopleCountEl) {
       peopleCountEl.textContent = String(updatedPeopleList.length);
     }
-    
-    console.log('✅ People tab refreshed successfully');
-    
+
   } catch (error) {
     console.error('❌ Failed to refresh people tab:', error);
   }
@@ -2902,8 +2875,7 @@ async function refreshPeopleTab() {
 
 // Enhanced loadPeople function to include tagged people
 async function loadPeopleEnhanced(memory) {
-  console.log('🔍 loadPeopleEnhanced called for memory:', memory);
-  
+
   let base = [];
   try {
     const resp = await chrome.runtime.sendMessage({ action: 'memory.getPeople', id: memory.id });
@@ -2915,9 +2887,7 @@ async function loadPeopleEnhanced(memory) {
     const storage = await chrome.storage.local.get(['emma_memory_people_tags']);
     const memoryTags = storage.emma_memory_people_tags || {};
     const taggedPeople = memoryTags[memory.id] || [];
-    
-    console.log('🏷️ Found tagged people:', taggedPeople);
-    
+
     // Merge tagged people with base
     const existingIds = new Set(base.map(p => String(p.id)));
     for (const tagged of taggedPeople) {
@@ -2934,26 +2904,20 @@ async function loadPeopleEnhanced(memory) {
   try {
     const store = await chrome.storage.local.get(['emma_vault_sharing', 'emma_people']);
     const records = Array.isArray(store.emma_vault_sharing) ? store.emma_vault_sharing : [];
-    const people = Array.isArray(store.emma_people) ? store.emma_people : [];
-    
-    console.log('🔍 Found sharing records:', records);
-    console.log('🔍 Found people:', people);
-    console.log('🔍 Looking for memory ID:', memory.id);
-    
-    const shared = records
+    const people = Array.isArray(store.emma_people) ? store.emma_people : [];    const shared = records
       .filter(r => {
-        console.log('🔎 Checking record:', r);
+
         const hasMemories = r && r.status !== 'revoked' && Array.isArray(r.memories);
         if (!hasMemories) {
-          console.log('❌ Record has no memories or is revoked');
+
           return false;
         }
-        
+
         const hasThisMemory = r.memories.some(m => {
-          console.log('🔍 Checking memory:', m, 'against:', memory.id);
+
           return String(m.memoryId) === String(memory.id);
         });
-        console.log('✅ Has this memory:', hasThisMemory);
+
         return hasThisMemory;
       })
       .map(r => {
@@ -2967,17 +2931,14 @@ async function loadPeopleEnhanced(memory) {
           permission: (mem && mem.permission) || 'view'
         };
       });
-    
-    console.log('🎯 Found shared people:', shared);
-    
+
     const merged = [...base];
     const seen = new Set(merged.map(p => String(p.id || p.name)));
     for (const s of shared) {
       const key = String(s.id || s.name);
       if (!seen.has(key)) { merged.push(s); seen.add(key); }
     }
-    
-    console.log('🏁 Final merged people list:', merged);
+
     return merged;
   } catch (error) {
     console.error('❌ Error in loadPeopleEnhanced sharing lookup:', error);
@@ -3046,10 +3007,10 @@ function wireMediaActions(host, items) {
       const caption = prompt('Enter caption/title for this media:');
       if (caption == null) return;
       // Use efficient attachment.update API
-      const resp = await chrome.runtime.sendMessage({ 
-        action: 'attachment.update', 
-        id, 
-        updates: { caption } 
+      const resp = await chrome.runtime.sendMessage({
+        action: 'attachment.update',
+        id,
+        updates: { caption }
       });
       if (resp && resp.success) {
         const refreshed = await loadMedia({ id: window._currentMemoryId });
@@ -3149,12 +3110,12 @@ function closeMemoryDetail() {
   const modal = document.querySelector('.memory-detail-modal');
   if (modal) {
     modal.classList.remove('active');
-    
+
     // Clean up escape key listener
     if (modal._escapeHandler) {
       document.removeEventListener('keydown', modal._escapeHandler);
     }
-    
+
     setTimeout(() => {
       modal.remove();
     }, 300);
@@ -3170,7 +3131,7 @@ function getTimeAgo(date) {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  
+
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
@@ -3186,8 +3147,7 @@ function escapeHtml(text) {
 
 // Initialize when DOM loads
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🔥🔥🔥 DOM READY DEBUG: DOMContentLoaded event fired!');
-  console.log('🧠 DOM loaded, starting memory view...');
+
   // Route by query param
   let isConstellation = false;
   try {
@@ -3200,7 +3160,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     loadMemories();
   }
-  
+
   // Set up event listeners
   const searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.addEventListener('input', filterMemories);
@@ -3218,56 +3178,51 @@ document.addEventListener('DOMContentLoaded', () => {
       refreshMemories();
     }
   });
-  console.log('🔥🔥🔥 BACK DEBUG: Looking for back-btn element...');
+
   const backBtn = document.getElementById('back-btn');
-  console.log('🔥🔥🔥 BACK DEBUG: Found backBtn:', backBtn);
-  
+
   if (backBtn) {
-    console.log('🔥🔥🔥 BACK DEBUG: Attaching event listener to backBtn...');
-    
-    // FORCE EMERGENCY BUTTON VISIBILITY AND INTERACTION
+
     backBtn.style.pointerEvents = 'auto';
     backBtn.style.position = 'relative';
     backBtn.style.zIndex = '9999999';
     backBtn.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'; // Red debug background
     backBtn.style.border = '2px solid red'; // Red debug border
-    
+
     // Add multiple event listeners for maximum compatibility
     backBtn.addEventListener('click', (e) => {
-      console.log('🔥 BACK BUTTON DEBUG: Button clicked!', e);
-      console.log('🔥 BACK BUTTON DEBUG: Event target:', e.target);
-      
+
       e.preventDefault();
       e.stopPropagation();
-      
+
       try {
         // Desktop: open dashboard page if available, otherwise navigate to welcome
         if (window.location && window.location.href.includes('memories.html')) {
-          console.log('🔥 BACK BUTTON: Navigating to welcome.html');
+
           window.location.href = 'welcome.html';
         } else {
-          console.log('🔥 BACK BUTTON: Going back in history');
+
           window.history.back();
         }
       } catch (error) {
         console.error('🔥 BACK BUTTON: Navigation error:', error);
         // As a last resort, navigate to welcome
-        try { 
-          console.log('🔥 BACK BUTTON: Emergency fallback to welcome.html');
-          window.location.href = 'welcome.html'; 
+        try {
+
+          window.location.href = 'welcome.html';
         } catch {}
       }
     });
-    
+
     // Add mouse event for extra debugging
     backBtn.addEventListener('mousedown', () => {
-      console.log('🔥 BACK BUTTON: Mouse down detected');
+
     });
-    
+
     backBtn.addEventListener('mouseup', () => {
-      console.log('🔥 BACK BUTTON: Mouse up detected');
+
     });
-    
+
   } else {
     console.error('🔥🔥🔥 BACK DEBUG: No back-btn element found!');
   }
@@ -3279,25 +3234,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if (genBtn) {
     genBtn.addEventListener('click', generateSampleMemories);
   }
-  
-  // EMERGENCY: Force Create New Memory button to be clickable
+
   const createBtn = document.getElementById('create-memory-btn');
   if (createBtn) {
-    console.log('🔥 EMERGENCY: Making Create button clickable');
+
     createBtn.style.pointerEvents = 'auto';
     createBtn.style.position = 'relative';
     createBtn.style.zIndex = '9999999';
     createBtn.style.border = '2px solid blue'; // Blue debug border
   }
-  
+
   // Clean button initialization
   const createBtn = document.getElementById('create-memory-btn');
   if (createBtn) {
     createBtn.addEventListener('click', () => {
-      console.log('✅ MEMORIES: Create button clicked');
+
       openCreateWizardModal();
     });
-    console.log('✅ MEMORIES: Create button initialized');
+
   }
   const emptyCreateBtn = document.getElementById('empty-create-btn');
   if (emptyCreateBtn) emptyCreateBtn.addEventListener('click', () => openCreateWizardModal());
@@ -3315,7 +3269,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       chrome.runtime.onMessage.addListener((request) => {
         if (request && request.action === 'vault.stateChanged') {
-          console.log('🔐 Memories: Received vault state change:', request.status);
+
           updateVaultBanner(request.status);
           loadMemories();
         }
@@ -3336,43 +3290,39 @@ document.addEventListener('DOMContentLoaded', () => {
 // Database diagnostic function
 async function checkDatabaseModes() {
   try {
-    console.log('🔍 Checking database modes...');
-    
+
     // Check current MTAP setting
     const mtapSetting = localStorage.getItem('emma_use_mtap');
-    console.log('🔍 localStorage MTAP:', mtapSetting);
-    
+
     // Get stats (shows what database the background is using)
     const statsResponse = await chrome.runtime.sendMessage({ action: 'getStats' });
-    console.log('🔍 Stats response:', statsResponse);
-    
+
     // Get MTAP status from background
     const mtapResponse = await chrome.runtime.sendMessage({ action: 'getMTAPStatus' });
-    console.log('🔍 Background MTAP status:', mtapResponse);
-    
+
     // Direct database check
     return new Promise((resolve) => {
       const dbRequest = indexedDB.open('EmmaLiteDB');
-      
+
       dbRequest.onsuccess = (event) => {
         const db = event.target.result;
         const stores = Array.from(db.objectStoreNames);
-        
+
         const counts = {};
         let completed = 0;
-        
+
         stores.forEach(storeName => {
           if (storeName === 'memories' || storeName === 'mtap_memories') {
             const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const countRequest = store.count();
-            
+
             countRequest.onsuccess = () => {
               counts[storeName] = countRequest.result;
               completed++;
-              
+
               if (completed === 2 || (completed === 1 && stores.length === 1)) {
-                console.log('🔍 Direct database counts:', counts);
+
                 resolve(counts);
               }
             };
@@ -3380,7 +3330,7 @@ async function checkDatabaseModes() {
         });
       };
     });
-    
+
   } catch (error) {
     console.error('🔍 Database check failed:', error);
   }
@@ -3395,10 +3345,10 @@ if (chrome && chrome.runtime && chrome.runtime.onMessage) {
   try {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg && msg.action === 'memory.created') {
-        console.log('🧠 Memories: memory.created received, refreshing...');
+
         try { loadMemories(); } catch (e) { console.warn('Refresh failed:', e); }
       } else if (msg && msg.action === 'openMemoryById' && msg.memoryId) {
-        console.log('🧠 Memories: openMemoryById received for', msg.memoryId);
+
         try { openMemoryDetail(msg.memoryId); } catch (e) { console.warn('Open modal failed:', e); }
       }
     });
@@ -3418,50 +3368,29 @@ window.memoryGallery = {
   filterMemories,
   refreshMemories,
   createNewCapsuleFlow
-};
+};window.debugVaultState = async function() {
 
-console.log('🧠 Emma Memory Gallery script loaded');
-
-// DEBUG: Add vault state debugging
-window.debugVaultState = async function() {
-  console.log('🔍 === VAULT STATE DEBUG ===');
-  
   try {
-    console.log('🔍 Step 1: Checking vault.getStatus...');
+
     const status = await chrome.runtime.sendMessage({ action: 'vault.getStatus' });
-    console.log('🔍 Vault Status Response:', status);
-    
-    if (status && status.success) {
-      console.log('🔍 Key Status Fields:');
-      console.log('  - initialized:', status.initialized);
-      console.log('  - isUnlocked:', status.isUnlocked);
-      console.log('  - hasValidSession:', status.hasValidSession);
-      console.log('  - sessionExpiresAt:', status.sessionExpiresAt);
-      console.log('  - debug info:', status.debug);
-    }
-    
-    console.log('🔍 Step 2: Testing vault.listCapsules...');
+
+    if (status && status.success) {    }
+
     const list = await chrome.runtime.sendMessage({ action: 'vault.listCapsules', limit: 5 });
-    console.log('🔍 List Capsules Response:', list);
-    
-    console.log('🔍 Step 3: Checking raw storage...');
+
     const storage = await chrome.storage.local.get([
-      'emma_vault_initialized', 
-      'emma_vault_settings', 
+      'emma_vault_initialized',
+      'emma_vault_settings',
       'emma_vault_session',
       'emma_vault_state'
     ]);
-    console.log('🔍 Raw Storage:', storage);
-    
-    console.log('🔍 Step 4: Testing vault.debug...');
+
     const debug = await chrome.runtime.sendMessage({ action: 'vault.debug' });
-    console.log('🔍 Debug Response:', debug);
-    
+
   } catch (e) {
     console.error('🔍 Debug error:', e);
   }
-  
-  console.log('🔍 === DEBUG COMPLETE ===');
+
 };
 
 console.log('🔍 Debug function added. Run debugVaultState() in console to test vault state.');
@@ -3470,7 +3399,7 @@ console.log('🔍 Debug function added. Run debugVaultState() in console to test
 function updateVaultBanner(status) {
   const vaultBanner = document.getElementById('vault-banner');
   if (!vaultBanner || !status) return;
-  
+
   if (!status.initialized) {
     vaultBanner.style.display = 'block';
     vaultBanner.style.background = 'linear-gradient(90deg, rgba(244,63,94,0.15) 0%, rgba(239,68,68,0.15) 100%)';
@@ -3489,7 +3418,7 @@ function updateVaultBanner(status) {
     vaultBanner.style.display = 'block';
     vaultBanner.style.background = 'rgba(16,185,129,0.15)';
     vaultBanner.style.border = '1px solid rgba(16,185,129,0.3)';
-    const sessionText = status.sessionExpiresAt ? 
+    const sessionText = status.sessionExpiresAt ?
       ` (session expires ${new Date(status.sessionExpiresAt).toLocaleTimeString()})` : '';
     vaultBanner.textContent = `🔐 Vault unlocked · Encrypted capsules available${sessionText}`;
   }
