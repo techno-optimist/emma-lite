@@ -1048,7 +1048,7 @@ function openMemoryDetail(memory) {
   }
 
   // Close handlers
-  const overlay = modal.querySelector('.memory-detail-overlay');
+  const modalOverlay = modal.querySelector('.memory-detail-overlay');
   const closeModal = () => {
     // Cleanup
     if (modal._keydownHandler) {
@@ -1062,7 +1062,7 @@ function openMemoryDetail(memory) {
     modal.remove();
   };
 
-  overlay.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', closeModal);
 
   // Update close button to use the cleanup function
   const closeBtn = modal.querySelector('.close-btn');
