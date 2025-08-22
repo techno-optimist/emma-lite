@@ -23,15 +23,21 @@ class EmmaIntelligentCapture {
     this.activeMemory = null;
     this.followUpQueue = [];
     
-    // Memory detection thresholds (lowered for better sensitivity)
+    // Legacy heuristic thresholds (kept for compatibility with existing signal scoring)
     this.thresholds = {
-      memoryWorthy: 3,     // Minimum score to consider memory-worthy (lowered from 5)
-      autoCapture: 6,      // Auto-suggest capture above this score (lowered from 8)
+      memoryWorthy: 1,
+      autoCapture: 2,
       importance: {
-        low: 2,
-        medium: 4,
-        high: 7
+        low: 1,
+        medium: 2,
+        high: 3
       }
+    };
+
+    // Normalized decision thresholds for the new MemoryWorthinessEngine (0..1 scale)
+    this.thresholdsNormalized = {
+      memoryWorthy: 0.40,   // begin enrichment
+      autoCapture: 0.70     // offer quick capture in addition to enrichment
     };
     
     // Conversation state
@@ -66,30 +72,50 @@ class EmmaIntelligentCapture {
         }
       }
       
+      // New: Aggregated normalized scoring (0..1) with novelty and optional LLM gating
+      const content = message.content || message.text || '';
+      const heuristicsScore = this.computeHeuristicsScore(content, message); // 0..1
+
+      let llmScore = 0; // 0..1
+      const needsLLM = heuristicsScore > 0.30 && heuristicsScore < 0.70; // borderline → ask LLM if available
+      if (needsLLM && this.options.vectorlessEngine && typeof this.options.vectorlessEngine.analyzeMemoryPotential === 'function') {
+        try {
+          const ctx = this.getRecentContextText(3);
+          const ai = await this.options.vectorlessEngine.analyzeMemoryPotential(content, { context: ctx });
+          llmScore = this.normalizeLLMScore(ai && (ai.score0to10 ?? ai.score));
+          if (ai && ai.rationale) signals.aiInsights = ai.rationale;
+        } catch (err) {
+          if (this.options.debug) console.warn('⚠️ LLM gating failed, using heuristics only:', err);
+        }
+      }
+
+      const noveltyPenalty = await this.computeNoveltyPenalty(content); // 0..1 (higher = more similar → lower final)
+
+      const finalScore = this.clamp01(0.6 * llmScore + 0.3 * heuristicsScore - 0.2 * noveltyPenalty);
+      const isMemoryWorthy = finalScore >= this.thresholdsNormalized.memoryWorthy;
+      const autoCapture = finalScore >= this.thresholdsNormalized.autoCapture;
+
       if (this.options.debug) {
         console.log('📊 Memory signals detected:', signals);
+        console.log('🧮 Aggregated scoring:', { heuristicsScore, llmScore, noveltyPenalty, finalScore });
       }
-      
-      // If memory-worthy, extract components
-      if (signals.score >= this.thresholds.memoryWorthy) {
+
+      if (isMemoryWorthy) {
         const memory = await this.extractMemoryComponents(message, signals);
         const prompts = await this.generateSmartPrompts(memory, signals);
-        
         return {
           isMemoryWorthy: true,
+          autoCapture,
+          finalScore,
+          components: { heuristicsScore, llmScore, noveltyPenalty },
           memory,
           signals,
           prompts,
-          confidence: this.calculateConfidence(signals),
-          autoCapture: signals.score >= this.thresholds.autoCapture
+          confidence: Math.round(finalScore * 100)
         };
       }
-      
-      return {
-        isMemoryWorthy: false,
-        signals,
-        reason: 'Score below threshold'
-      };
+
+      return { isMemoryWorthy: false, finalScore, components: { heuristicsScore, llmScore, noveltyPenalty }, signals, reason: 'Below threshold' };
       
     } catch (error) {
       console.error('❌ Error analyzing message:', error);
@@ -361,6 +387,100 @@ class EmmaIntelligentCapture {
     temporalPatterns.forEach(p => { if (p.test(content)) { signals.score += 2; matched = true; } });
     if (matched && !signals.types.includes('temporal')) signals.types.push('temporal');
   }
+
+  /**
+   * Normalized heuristics-based memory worthiness (0..1)
+   * No hard-coded scenarios; relies on general linguistic signals.
+   */
+  computeHeuristicsScore(text, message) {
+    const content = (text || '').trim();
+    if (!content) return 0;
+
+    // First-person indicator
+    const firstPerson = /(\bI\b|\bI'm\b|\bI was\b|\bwe\b|\bwe're\b|\bwe were\b)/i.test(content) ? 1 : 0;
+
+    // Past-tense proxy: ratio of words ending with 'ed' (very rough)
+    const tokens = content.split(/\s+/).filter(Boolean);
+    const edCount = tokens.filter(w => /[a-z]{3,}ed\b/i.test(w)).length;
+    const pastTense = tokens.length ? Math.min(1, edCount / Math.max(8, tokens.length)) : 0; // cap and de-bias short texts
+
+    // Temporal hint (generic)
+    const temporal = /(yesterday|today|years?\s+ago|last\s+(week|month|year)|when\s+I\s+was)/i.test(content) ? 1 : 0;
+
+    // Named entity density (proper names)
+    const names = this.extractProperNames(content);
+    const nameDensity = tokens.length ? Math.min(1, names.length / Math.max(20, tokens.length)) : 0;
+
+    // Coherence/length (discourage too-short, too-long)
+    const len = content.length;
+    const lengthScore = len < 30 ? 0 : len > 600 ? 0.6 : Math.min(1, (len - 30) / 300);
+
+    // Attachments hint
+    const hasAttachments = (message.attachments && message.attachments.length > 0) ? 1 : 0;
+
+    // Weighted aggregation (sum then clamp)
+    let score = 0;
+    score += 0.20 * firstPerson;
+    score += 0.20 * pastTense;
+    score += 0.15 * temporal;
+    score += 0.15 * nameDensity;
+    score += 0.10 * lengthScore;
+    score += 0.10 * hasAttachments;
+    // Remaining 0.10 intentionally left unallocated for neutrality
+    return this.clamp01(score);
+  }
+
+  /**
+   * Novelty penalty (0..1) using Jaccard similarity of bigrams vs existing memories
+   */
+  async computeNoveltyPenalty(content) {
+    try {
+      const vault = this.options.vaultManager && this.options.vaultManager.vaultData;
+      const memories = (vault && vault.content && vault.content.memories) ? Object.values(vault.content.memories) : [];
+      if (!memories || memories.length === 0) return 0;
+
+      const inputBigrams = this.getBigrams(content.toLowerCase());
+      if (inputBigrams.size === 0) return 0;
+
+      let maxJac = 0;
+      const sample = memories.slice(0, 80); // lightweight
+      for (const m of sample) {
+        const txt = (m.content || m.title || '').toLowerCase();
+        const bg = this.getBigrams(txt);
+        if (bg.size === 0) continue;
+        const jac = this.jaccard(inputBigrams, bg);
+        if (jac > maxJac) maxJac = jac;
+        if (maxJac > 0.5) break; // early exit
+      }
+      return this.clamp01(maxJac); // treat similarity as penalty directly
+    } catch (e) {
+      if (this.options.debug) console.warn('⚠️ Novelty penalty failed:', e);
+      return 0;
+    }
+  }
+
+  getBigrams(text) {
+    const tokens = text.split(/[^a-z0-9']+/i).filter(t => t.length > 1);
+    const set = new Set();
+    for (let i = 0; i < tokens.length - 1; i++) {
+      set.add(tokens[i] + ' ' + tokens[i + 1]);
+    }
+    return set;
+  }
+
+  jaccard(a, b) {
+    let inter = 0;
+    for (const x of a) if (b.has(x)) inter++;
+    const union = a.size + b.size - inter;
+    return union === 0 ? 0 : inter / union;
+  }
+
+  normalizeLLMScore(score0to10) {
+    if (typeof score0to10 !== 'number' || Number.isNaN(score0to10)) return 0;
+    return this.clamp01(score0to10 / 10);
+  }
+
+  clamp01(x) { return Math.max(0, Math.min(1, x)); }
 
   /**
    * Extract memory components from message and context

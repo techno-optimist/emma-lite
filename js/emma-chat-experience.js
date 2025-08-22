@@ -504,7 +504,14 @@ class EmmaChatExperience extends ExperiencePopup {
     this.autoResizeTextarea();
     this.handleInputChange();
 
-    // 💝 Check for memory detection
+    // 🎯 ENRICHMENT FSM: Check if this is a response to an enrichment question
+    const activeEnrichment = this.findActiveEnrichmentForResponse();
+    if (activeEnrichment) {
+      await this.processEnrichmentResponse(activeEnrichment, message);
+      return;
+    }
+
+    // 💝 Check for memory detection (new messages only)
     console.log('🚨 DEBUG: intelligentCapture exists?', !!this.intelligentCapture);
     if (this.intelligentCapture) {
       console.log('💝 TESTING: About to analyze message for memory:', message);
@@ -1491,30 +1498,38 @@ class EmmaChatExperience extends ExperiencePopup {
         // Store detected memory
         this.detectedMemories.set(messageId, analysis);
         
-        // Show memory detection indicator
+        // Show memory detection indicator with new confidence
         this.showMemoryDetectionIndicator(messageId, analysis);
         
-        // Auto-suggest capture for high-value memories
+        if (this.debugMode) {
+          console.log(`💝 Memory detected! FinalScore: ${analysis.finalScore?.toFixed(3)}, AutoCapture: ${analysis.autoCapture}, Confidence: ${analysis.confidence}%`);
+          console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
+        }
+        
+        // NEW FSM LOGIC: Always start enrichment for memory-worthy content
+        // Auto-capture (≥0.70) gets quick suggestion + enrichment
+        // Regular memory-worthy (0.40-0.69) gets enrichment only
+        
         if (analysis.autoCapture) {
+          // High-confidence: Show quick capture option + start enrichment
           setTimeout(() => {
             this.suggestMemoryCapture(analysis);
+          }, 1500);
+          
+          setTimeout(() => {
+            this.startStructuredEnrichment(analysis, messageId);
+          }, 3000);
+        } else {
+          // Medium-confidence: Start enrichment conversation immediately
+          setTimeout(() => {
+            this.startStructuredEnrichment(analysis, messageId);
           }, 2000);
         }
         
-        // Start intelligent follow-up conversation for memory enrichment
-        // Only if not auto-capture (to avoid overwhelming user)
-        if (!analysis.autoCapture) {
-          setTimeout(() => {
-            this.startMemoryEnrichmentConversation(analysis);
-          }, 2500);
-        }
-        
-        if (this.debugMode) {
-          console.log(`💝 Memory detected! Score: ${analysis.signals?.score}, Confidence: ${analysis.confidence}%`);
-        }
       } else {
         if (this.debugMode) {
-          console.log(`💝 Not memory-worthy. Score: ${analysis.signals?.score}, Reason: ${analysis.reason}`);
+          console.log(`💝 Not memory-worthy. FinalScore: ${analysis.finalScore?.toFixed(3)}, Reason: ${analysis.reason}`);
+          console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
       }
       
@@ -1784,37 +1799,415 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Start intelligent memory enrichment conversation
+   * Start structured enrichment FSM (who/when/where/what/emotion/media/preview)
+   * CTO BEST PRACTICES: One question at a time, dementia-friendly pacing
    */
-  async startMemoryEnrichmentConversation(analysis) {
+  async startStructuredEnrichment(analysis, messageId) {
     const memory = analysis.memory;
-    const signals = analysis.signals;
+    const memoryId = memory.id;
     
-    // Generate contextual follow-up based on what we detected
-    let followUpQuestion = "";
-    
-    if (signals.types.includes('pet')) {
-      followUpQuestion = `Tell me more about your pet! What's their personality like, and how did this moment make you feel?`;
-    } else if (signals.types.includes('milestone')) {
-      if (memory.metadata.people.length === 0) {
-        followUpQuestion = `What an important moment! Who else was there to share this milestone with you?`;
-      } else {
-        followUpQuestion = `This sounds like a significant moment! What led up to this, and how did it feel when it happened?`;
-      }
-    } else if (memory.content.includes('mom') || memory.content.includes('dad') || memory.content.includes('family')) {
-      followUpQuestion = `Family moments are so precious! Can you tell me more about what made this time special? Do you have any photos from this moment?`;
-    } else if (signals.emotions.length > 0) {
-      const emotion = signals.emotions[0];
-      followUpQuestion = `I can sense this was a ${emotion} moment for you. What details would you want to remember forever about this experience?`;
-    } else {
-      followUpQuestion = `This sounds meaningful! Can you paint me a picture of this moment? Where were you, and what made it special?`;
+    if (this.debugMode) {
+      console.log('🎯 ENRICHMENT FSM: Starting structured enrichment for memory:', memoryId);
     }
     
-    // Add the enrichment question
-    this.addMessage(followUpQuestion, 'emma', { 
-      type: 'memory-enrichment',
-      memoryId: memory.id 
+    // Initialize enrichment state for this memory
+    this.enrichmentState.set(memoryId, {
+      messageId,
+      memory,
+      analysis,
+      currentStage: 'who',
+      collectedData: {
+        people: memory.metadata.people || [],
+        when: memory.metadata.date || null,
+        where: memory.metadata.location || null,
+        emotion: memory.metadata.emotions?.[0] || null,
+        details: memory.content || '',
+        media: memory.attachments || []
+      },
+      stagesCompleted: [],
+      startTime: Date.now()
     });
+    
+    // Start with first enrichment question
+    this.askNextEnrichmentQuestion(memoryId);
+  }
+
+  /**
+   * FSM: Ask next enrichment question based on missing data
+   * CTO BEST PRACTICES: Short questions, dementia-friendly, one at a time
+   */
+  askNextEnrichmentQuestion(memoryId) {
+    const state = this.enrichmentState.get(memoryId);
+    if (!state) return;
+    
+    const { collectedData, stagesCompleted } = state;
+    
+    // Determine next question based on missing data (FSM stages)
+    let nextStage = null;
+    let question = "";
+    
+    // Stage 1: Who was there?
+    if (!stagesCompleted.includes('who') && (!collectedData.people || collectedData.people.length === 0)) {
+      nextStage = 'who';
+      question = "Who else was there with you during this moment?";
+    }
+    // Stage 2: When did this happen?
+    else if (!stagesCompleted.includes('when') && !collectedData.when) {
+      nextStage = 'when';
+      question = "When did this happen? Can you remember the time period or your age?";
+    }
+    // Stage 3: Where were you?
+    else if (!stagesCompleted.includes('where') && !collectedData.where) {
+      nextStage = 'where';
+      question = "Where did this take place? Paint me a picture of the setting.";
+    }
+    // Stage 4: How did it feel?
+    else if (!stagesCompleted.includes('emotion') && !collectedData.emotion) {
+      nextStage = 'emotion';
+      question = "How did this moment make you feel? What emotions do you remember?";
+    }
+    // Stage 5: Any photos or media?
+    else if (!stagesCompleted.includes('media') && collectedData.media.length === 0) {
+      nextStage = 'media';
+      question = "Do you have any photos, videos, or other mementos from this time that you'd like to include?";
+    }
+    // Stage 6: Complete - show preview
+    else {
+      this.completeEnrichmentAndShowPreview(memoryId);
+      return;
+    }
+    
+    // Update state
+    state.currentStage = nextStage;
+    this.enrichmentState.set(memoryId, state);
+    
+    // Add dementia-friendly pacing (2-3 second delay)
+    const delay = this.dementiaMode ? 2500 : 1500;
+    
+    setTimeout(() => {
+      this.addMessage(question, 'emma', { 
+        type: 'enrichment-question',
+        memoryId: memoryId,
+        stage: nextStage
+      });
+      
+      if (this.debugMode) {
+        console.log(`🎯 ENRICHMENT FSM: Asked ${nextStage} question for memory ${memoryId}`);
+      }
+    }, delay);
+  }
+
+  /**
+   * Complete enrichment and show preview for final save
+   */
+  completeEnrichmentAndShowPreview(memoryId) {
+    const state = this.enrichmentState.get(memoryId);
+    if (!state) return;
+    
+    // Build final enriched memory
+    const enrichedMemory = {
+      ...state.memory,
+      metadata: {
+        ...state.memory.metadata,
+        people: state.collectedData.people,
+        date: state.collectedData.when || new Date(),
+        location: state.collectedData.where,
+        emotions: state.collectedData.emotion ? [state.collectedData.emotion] : [],
+        importance: this.calculateEnrichedImportance(state.collectedData),
+        enrichmentComplete: true
+      },
+      content: this.buildEnrichedContent(state.collectedData),
+      attachments: state.collectedData.media
+    };
+    
+    if (this.debugMode) {
+      console.log('🎯 ENRICHMENT FSM: Completed enrichment for memory:', memoryId, enrichedMemory);
+    }
+    
+    // Show preview dialog for final confirmation
+    setTimeout(() => {
+      this.addMessage("Perfect! I've gathered all the details. Let me show you a preview of your memory capsule.", 'emma');
+      
+      setTimeout(() => {
+        this.showMemoryPreviewDialog(enrichedMemory);
+      }, 1500);
+    }, this.dementiaMode ? 2000 : 1000);
+    
+    // Clean up enrichment state
+    this.enrichmentState.delete(memoryId);
+  }
+
+  /**
+   * Calculate importance based on enriched data
+   */
+  calculateEnrichedImportance(collectedData) {
+    let importance = 5; // Base importance
+    
+    // People involvement increases importance
+    if (collectedData.people && collectedData.people.length > 0) {
+      importance += Math.min(2, collectedData.people.length);
+    }
+    
+    // Strong emotions increase importance
+    if (collectedData.emotion) {
+      const strongEmotions = ['amazing', 'wonderful', 'terrible', 'devastating', 'perfect', 'best', 'worst'];
+      if (strongEmotions.some(e => collectedData.emotion.toLowerCase().includes(e))) {
+        importance += 2;
+      } else {
+        importance += 1;
+      }
+    }
+    
+    // Media presence increases importance
+    if (collectedData.media && collectedData.media.length > 0) {
+      importance += 1;
+    }
+    
+    // Specific location increases importance
+    if (collectedData.where) {
+      importance += 1;
+    }
+    
+    return Math.min(10, Math.max(1, importance));
+  }
+
+  /**
+   * Build enriched content from collected data
+   */
+  buildEnrichedContent(collectedData) {
+    let content = collectedData.details || '';
+    
+    // Add contextual enrichments
+    if (collectedData.when && !content.toLowerCase().includes('when')) {
+      content += ` This happened ${collectedData.when}.`;
+    }
+    
+    if (collectedData.where && !content.toLowerCase().includes('where')) {
+      content += ` The setting was ${collectedData.where}.`;
+    }
+    
+    if (collectedData.people && collectedData.people.length > 0) {
+      const peopleText = collectedData.people.join(', ');
+      if (!content.toLowerCase().includes(peopleText.toLowerCase())) {
+        content += ` ${collectedData.people.length === 1 ? 'Also there was' : 'Also there were'} ${peopleText}.`;
+      }
+    }
+    
+    if (collectedData.emotion && !content.toLowerCase().includes(collectedData.emotion.toLowerCase())) {
+      content += ` This moment felt ${collectedData.emotion}.`;
+    }
+    
+    return content.trim();
+  }
+
+  /**
+   * Find active enrichment session waiting for user response
+   */
+  findActiveEnrichmentForResponse() {
+    // Look for the most recent enrichment state that's waiting for input
+    for (const [memoryId, state] of this.enrichmentState) {
+      if (state.currentStage && !state.stagesCompleted.includes(state.currentStage)) {
+        return { memoryId, state };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Process user response to enrichment question
+   * CTO BEST PRACTICES: Extract data, update state, ask next question
+   */
+  async processEnrichmentResponse(activeEnrichment, userResponse) {
+    const { memoryId, state } = activeEnrichment;
+    const currentStage = state.currentStage;
+    
+    if (this.debugMode) {
+      console.log(`🎯 ENRICHMENT FSM: Processing ${currentStage} response for memory ${memoryId}:`, userResponse);
+    }
+    
+    // Extract information based on current stage
+    switch (currentStage) {
+      case 'who':
+        state.collectedData.people = this.extractPeopleFromResponse(userResponse);
+        break;
+      case 'when':
+        state.collectedData.when = this.extractTimeFromResponse(userResponse);
+        break;
+      case 'where':
+        state.collectedData.where = this.extractLocationFromResponse(userResponse);
+        break;
+      case 'emotion':
+        state.collectedData.emotion = this.extractEmotionFromResponse(userResponse);
+        break;
+      case 'media':
+        // Handle media response (yes/no, or media upload)
+        if (this.isPositiveResponse(userResponse)) {
+          this.addMessage("Great! You can drag and drop photos here, or I'll help you add them to the final memory capsule.", 'emma');
+        }
+        break;
+    }
+    
+    // Mark stage as completed
+    state.stagesCompleted.push(currentStage);
+    this.enrichmentState.set(memoryId, state);
+    
+    // Acknowledge the response with validation (dementia-friendly)
+    const acknowledgment = this.generateStageAcknowledgment(currentStage, userResponse);
+    
+    setTimeout(() => {
+      this.addMessage(acknowledgment, 'emma', { type: 'enrichment-acknowledgment' });
+      
+      // Ask next question after brief pause
+      setTimeout(() => {
+        this.askNextEnrichmentQuestion(memoryId);
+      }, this.dementiaMode ? 1500 : 800);
+      
+    }, this.dementiaMode ? 2000 : 1000);
+  }
+
+  /**
+   * Extract people names from user response
+   */
+  extractPeopleFromResponse(response) {
+    const people = [];
+    const text = response.toLowerCase();
+    
+    // Common relationship terms
+    const relationships = ['mom', 'dad', 'mother', 'father', 'sister', 'brother', 'friend', 'husband', 'wife', 'son', 'daughter'];
+    relationships.forEach(rel => {
+      if (text.includes(rel)) {
+        people.push(rel.charAt(0).toUpperCase() + rel.slice(1));
+      }
+    });
+    
+    // Extract proper names (capitalized words)
+    const words = response.split(/\s+/);
+    words.forEach(word => {
+      const clean = word.replace(/[^A-Za-z]/g, '');
+      if (/^[A-Z][a-z]+$/.test(clean) && clean.length > 2) {
+        people.push(clean);
+      }
+    });
+    
+    // Handle "no one" or "alone" responses
+    if (/\b(no one|nobody|alone|just me|by myself)\b/i.test(text)) {
+      return [];
+    }
+    
+    return [...new Set(people)]; // Remove duplicates
+  }
+
+  /**
+   * Extract time information from user response
+   */
+  extractTimeFromResponse(response) {
+    const text = response.toLowerCase();
+    
+    // Age references
+    const ageMatch = text.match(/\b(?:age\s+)?(\d+)\b/);
+    if (ageMatch) {
+      return `around age ${ageMatch[1]}`;
+    }
+    
+    // Time periods
+    if (text.includes('kid') || text.includes('child')) return 'childhood';
+    if (text.includes('teenager') || text.includes('teen')) return 'teenage years';
+    if (text.includes('young adult')) return 'young adult';
+    if (text.includes('college')) return 'college years';
+    
+    // Specific years
+    const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+    if (yearMatch) {
+      return yearMatch[0];
+    }
+    
+    // Relative time
+    if (text.includes('yesterday')) return 'yesterday';
+    if (text.includes('last week')) return 'last week';
+    if (text.includes('last month')) return 'last month';
+    if (text.includes('last year')) return 'last year';
+    
+    // Return original if we can't parse
+    return response;
+  }
+
+  /**
+   * Extract location from user response
+   */
+  extractLocationFromResponse(response) {
+    const text = response.toLowerCase();
+    
+    // Common locations
+    const locations = ['home', 'school', 'park', 'hospital', 'beach', 'restaurant', 'church', 'work'];
+    for (const loc of locations) {
+      if (text.includes(loc)) {
+        return loc;
+      }
+    }
+    
+    // Look for "at/in [place]" patterns
+    const atMatch = text.match(/\b(?:at|in)\s+(?:the\s+)?([a-z\s]+)/);
+    if (atMatch) {
+      return atMatch[1].trim();
+    }
+    
+    return response;
+  }
+
+  /**
+   * Extract emotion from user response
+   */
+  extractEmotionFromResponse(response) {
+    const text = response.toLowerCase();
+    
+    // Emotion words
+    const emotions = ['happy', 'sad', 'excited', 'scared', 'proud', 'embarrassed', 'surprised', 'angry', 'grateful', 'peaceful'];
+    for (const emotion of emotions) {
+      if (text.includes(emotion)) {
+        return emotion;
+      }
+    }
+    
+    // Feeling patterns
+    const feelingMatch = text.match(/\bfelt?\s+([a-z]+)/);
+    if (feelingMatch) {
+      return feelingMatch[1];
+    }
+    
+    return response;
+  }
+
+  /**
+   * Check if response is positive (for media question)
+   */
+  isPositiveResponse(response) {
+    const text = response.toLowerCase();
+    const positive = ['yes', 'yeah', 'sure', 'okay', 'ok', 'definitely', 'absolutely'];
+    const negative = ['no', 'nope', 'not really', 'don\'t have', 'none'];
+    
+    for (const pos of positive) {
+      if (text.includes(pos)) return true;
+    }
+    for (const neg of negative) {
+      if (text.includes(neg)) return false;
+    }
+    
+    return text.length > 10; // Assume longer responses are positive
+  }
+
+  /**
+   * Generate stage acknowledgment (dementia-friendly validation)
+   */
+  generateStageAcknowledgment(stage, response) {
+    const acknowledgments = {
+      who: "Thank you for sharing who was there with you.",
+      when: "I appreciate you telling me about the timing.",
+      where: "That helps me picture where this happened.",
+      emotion: "Thank you for sharing how that felt.",
+      media: "I understand about the photos."
+    };
+    
+    return acknowledgments[stage] || "Thank you for sharing that detail.";
   }
 
   /**

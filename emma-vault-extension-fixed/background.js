@@ -126,6 +126,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Received message:', request.action);
   
   switch (request.action) {
+    case 'SET_LLM_KEY':
+      (async () => {
+        try {
+          // Only accept from trusted origins
+          const ok = await isTrustedSender(sender);
+          if (!ok) throw new Error('Untrusted sender');
+          await storeEncryptedLLMKey(request.key);
+          sendResponse({ success: true });
+        } catch (e) {
+          sendResponse({ success: false, error: e?.message || String(e) });
+        }
+      })();
+      return true;
+
+    case 'LLM_SCORE_REQUEST':
+      (async () => {
+        try {
+          const ok = await isTrustedSender(sender);
+          if (!ok) throw new Error('Untrusted sender');
+          const { content, context } = request;
+          const result = await scoreMemoryWorthinessWithLLM(content, context || '');
+          sendResponse({ success: true, ...result });
+        } catch (e) {
+          console.warn('⚠️ LLM_SCORE_REQUEST failed, returning heuristic fallback:', e);
+          sendResponse({ success: false, error: e?.message || String(e) });
+        }
+      })();
+      return true;
+
     case 'CHECK_STATE':
       (async () => {
         const { state, fileName } = await getVaultState();
@@ -1968,3 +1997,83 @@ function handleGenerateEncryptionSalt() {
 
 console.log('Emma Vault Bridge background service initialized');
 console.log('🔐 CRYPTO SERVICE: Pure crypto functions ready for Web App Primary architecture');
+
+/**
+ * SECURITY: Trusted sender check (restrict to our web origins)
+ */
+async function isTrustedSender(sender) {
+  try {
+    const url = new URL(sender?.url || sender?.origin || '');
+    const trusted = [
+      'emma-hjjc.onrender.com',
+      'localhost',
+      '127.0.0.1'
+    ];
+    return trusted.includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * SECURITY: Store LLM key encrypted in chrome.storage.local
+ */
+async function storeEncryptedLLMKey(apiKey) {
+  if (!apiKey || typeof apiKey !== 'string') throw new Error('Invalid key');
+  // Derive a storage key using a random salt kept in storage
+  const { llm_salt } = await chrome.storage.local.get(['llm_salt']);
+  const salt = llm_salt ? new Uint8Array(llm_salt) : crypto.getRandomValues(new Uint8Array(32));
+  if (!llm_salt) await chrome.storage.local.set({ llm_salt: Array.from(salt) });
+
+  const enc = new TextEncoder();
+  const material = await crypto.subtle.importKey('raw', enc.encode('emma-extension-key'), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 200000, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(apiKey));
+  await chrome.storage.local.set({ llm_key: Array.from(new Uint8Array(cipher)), llm_iv: Array.from(iv) });
+}
+
+async function loadDecryptedLLMKey() {
+  const { llm_key, llm_iv, llm_salt } = await chrome.storage.local.get(['llm_key', 'llm_iv', 'llm_salt']);
+  if (!llm_key || !llm_iv || !llm_salt) throw new Error('No LLM key stored');
+  const enc = new TextEncoder();
+  const material = await crypto.subtle.importKey('raw', enc.encode('emma-extension-key'), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new Uint8Array(llm_salt), iterations: 200000, hash: 'SHA-256' }, material, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(llm_iv) }, key, new Uint8Array(llm_key));
+  return new TextDecoder().decode(plain);
+}
+
+/**
+ * LLM scoring call (uses fetch to OpenAI with stored key). Returns normalized score and rationale only.
+ */
+async function scoreMemoryWorthinessWithLLM(content, context) {
+  const apiKey = await loadDecryptedLLMKey();
+  // Safety: trim content size
+  const maxLen = 800;
+  const input = (content || '').slice(0, maxLen);
+  const ctx = (context || '').slice(0, 1000);
+
+  const prompt = `Rate from 0 to 10 how memory-worthy this user message is for a personal memory journal. Use reasoning but reply as JSON {"score":number,"rationale":string}. Consider: first-person experience, past-tense/eventness, emotional salience, people involved, specificity, review value. Message: "${input}". Context(last messages): "${ctx}"`;
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 120
+    })
+  });
+
+  if (!res.ok) throw new Error('LLM request failed');
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content || '';
+  let json;
+  try { json = JSON.parse(text); } catch { json = { score: 5, rationale: 'default' }; }
+  const score0to10 = typeof json.score === 'number' ? json.score : 5;
+  return { score0to10, rationale: json.rationale || 'n/a' };
+}

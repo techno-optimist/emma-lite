@@ -29,6 +29,35 @@ class EmmaVectorlessEngine {
   }
 
   /**
+   * Analyze memory potential using extension LLM gateway when available.
+   * Returns { score0to10, rationale }
+   */
+  async analyzeMemoryPotential(content, { context } = {}) {
+    try {
+      // Ask the extension to score using its secure key store
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        const response = await chrome.runtime.sendMessage({
+          action: 'LLM_SCORE_REQUEST',
+          content,
+          context: context || ''
+        });
+        if (response && response.success) {
+          return { score0to10: response.score0to10, rationale: response.rationale };
+        }
+      }
+    } catch (e) {
+      if (this.options.debug) console.warn('⚠️ analyzeMemoryPotential via extension failed:', e);
+    }
+    // Fallback: lightweight heuristic estimate if extension not available
+    const len = (content || '').length;
+    const fp = /(\bI\b|\bI'm\b|\bI was\b|\bwe\b)/i.test(content) ? 2 : 0;
+    const past = /[a-z]{3,}ed\b/i.test(content) ? 2 : 0;
+    const temporal = /(yesterday|years?\s+ago|last\s+(week|month|year))/i.test(content) ? 2 : 0;
+    const score0to10 = Math.min(10, fp + past + temporal + Math.min(4, Math.floor(len / 120)));
+    return { score0to10, rationale: 'heuristic-fallback' };
+  }
+
+  /**
    * Load and parse .emma vault for intelligent processing
    * @param {Object} vaultData - Decrypted .emma vault content
    */

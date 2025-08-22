@@ -116,6 +116,18 @@ function handleEmmaMessage(message) {
   console.log('Received Emma message:', message.type);
   
   switch (message.type) {
+    case 'SET_LLM_KEY':
+      // Forward to background for secure, encrypted storage
+      chrome.runtime.sendMessage({ action: 'SET_LLM_KEY', key: message.key }, (response) => {
+        postToEmma({
+          channel: EMMA_VAULT_CHANNEL,
+          type: 'EMMA_RESPONSE',
+          messageId: message.messageId,
+          success: response?.success || false,
+          error: response?.error
+        });
+      });
+      break;
     case 'VAULT_UPDATE':
       handleVaultUpdate(message.data);
       break;
