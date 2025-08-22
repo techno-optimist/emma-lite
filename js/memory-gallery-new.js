@@ -229,16 +229,16 @@ async function loadMemories() {
     }
 
     // Render immediately
-    setTimeout(() => {
-      renderMemories();
+    setTimeout(async () => {
+      await renderMemories();
     }, 100);
 
   } catch (error) {
     console.error('💝 GALLERY: Error loading vault memories:', error);
 
     memories = [];
-    setTimeout(() => {
-      renderMemories();
+    setTimeout(async () => {
+      await renderMemories();
     }, 100);
   }
 }
@@ -246,7 +246,7 @@ async function loadMemories() {
 /**
  * Render memories in the grid
  */
-function renderMemories() {
+async function renderMemories() {
 
   // Handle empty state
   if (memories.length === 0) {
@@ -255,27 +255,49 @@ function renderMemories() {
   }
 
   const memoriesGrid = document.getElementById('memories-grid');
+  if (!memoriesGrid) return;
 
-  // Show all memories (no filtering)
-  if (memoriesGrid) {
-    memoriesGrid.innerHTML = memories.map(memory => createMemoryCard(memory)).join('');
+  // Clear grid
+  memoriesGrid.innerHTML = '';
 
-    // Add click handlers to cards
-    memoriesGrid.querySelectorAll('.memory-card').forEach((card, index) => {
-      card.style.pointerEvents = 'auto';
-      card.style.zIndex = '999999';
-      card.addEventListener('click', () => {
-        const memory = memories[index];
-        openMemoryDetail(memory);
-      });
-    });
+  // Create cards asynchronously with staggered animation
+  for (let i = 0; i < memories.length; i++) {
+    const memory = memories[i];
+    const card = await createMemoryCardElement(memory);
+    
+    // Add staggered fade-in animation
+    card.style.opacity = '0';
+    card.style.animation = `fadeInUp 0.6s ease ${i * 0.1}s forwards`;
+    
+    memoriesGrid.appendChild(card);
+  }
+
+  // Add animation keyframes if not already added
+  if (!document.querySelector('#gallery-animations')) {
+    const style = document.createElement('style');
+    style.id = 'gallery-animations';
+    style.textContent = `
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
   }
 }
 
+// Legacy function removed - using createMemoryCardElement instead
+
 /**
- * Create a beautiful memory card HTML - matching people page design
+ * Create memory card as DOM element (async version)
  */
-function createMemoryCard(memory) {
+async function createMemoryCardElement(memory) {
   const date = new Date(memory.date);
   const formattedDate = date.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -283,7 +305,6 @@ function createMemoryCard(memory) {
     day: 'numeric'
   });
 
-  const categoryIcon = getCategoryIcon(memory.category);
   const favoriteIcon = memory.favorite ? '❤️' : '';
 
   // Create card element
@@ -299,15 +320,17 @@ function createMemoryCard(memory) {
     }
   }
 
-  // Memory icon circle (like people avatar)
-  const iconCircle = document.createElement('div');
-  iconCircle.className = 'memory-icon-circle';
-  iconCircle.textContent = categoryIcon;
+  // Create info overlay at bottom
+  const infoOverlay = document.createElement('div');
+  infoOverlay.className = 'memory-info-overlay';
 
-  // Memory content
+  // Left side: Text content
+  const textContent = document.createElement('div');
+  textContent.className = 'memory-text-content';
+
   const title = document.createElement('h3');
   title.className = 'memory-title';
-  title.innerHTML = escapeHtml(memory.title) + ' ' + favoriteIcon;
+  title.innerHTML = escapeHtml(memory.title) + (favoriteIcon ? ' ' + favoriteIcon : '');
 
   const excerpt = document.createElement('p');
   excerpt.className = 'memory-excerpt';
@@ -320,23 +343,36 @@ function createMemoryCard(memory) {
   // Tags
   const tagsDiv = document.createElement('div');
   tagsDiv.className = 'memory-tags';
-  memory.tags.slice(0, 3).forEach(tag => {
+  memory.tags.slice(0, 2).forEach(tag => {
     const tagSpan = document.createElement('span');
     tagSpan.className = 'memory-tag';
     tagSpan.textContent = tag;
     tagsDiv.appendChild(tagSpan);
   });
 
-  // Assemble card
-  card.appendChild(iconCircle);
-  card.appendChild(title);
-  card.appendChild(excerpt);
-  card.appendChild(dateDiv);
+  textContent.appendChild(title);
+  textContent.appendChild(excerpt);
+  textContent.appendChild(dateDiv);
   if (memory.tags.length > 0) {
-    card.appendChild(tagsDiv);
+    textContent.appendChild(tagsDiv);
   }
 
-  return card.outerHTML;
+  // Right side: People avatars
+  const peopleAvatars = await createMemoryPeopleAvatars(memory);
+
+  // Assemble overlay
+  infoOverlay.appendChild(textContent);
+  infoOverlay.appendChild(peopleAvatars);
+
+  // Assemble card
+  card.appendChild(infoOverlay);
+
+  // Add click handler
+  card.addEventListener('click', () => {
+    openMemoryDetail(memory);
+  });
+
+  return card;
 }
 
 /**
@@ -387,6 +423,85 @@ function createMemorySlideshow(memory) {
   } catch (error) {
     console.error('❌ Error creating memory slideshow:', error);
     return null;
+  }
+}
+
+/**
+ * Create people avatars for memory card
+ */
+async function createMemoryPeopleAvatars(memory) {
+  const avatarsContainer = document.createElement('div');
+  avatarsContainer.className = 'memory-people-avatars';
+
+  try {
+    // Get people connected to this memory
+    if (!memory.metadata || !memory.metadata.people || !Array.isArray(memory.metadata.people)) {
+      return avatarsContainer; // Empty container
+    }
+
+    // Load people data from vault
+    if (!window.emmaWebVault || !window.emmaWebVault.isOpen || !window.emmaWebVault.vaultData) {
+      return avatarsContainer;
+    }
+
+    const vaultData = window.emmaWebVault.vaultData;
+    const peopleData = vaultData.people || {};
+
+    // Create avatars for connected people (limit to 3)
+    const connectedPeople = memory.metadata.people.slice(0, 3);
+    
+    for (const personId of connectedPeople) {
+      const person = peopleData[personId];
+      if (!person) continue;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'memory-person-avatar';
+      avatar.title = person.name;
+
+      // Start with letter
+      avatar.textContent = person.name.charAt(0).toUpperCase();
+
+      // Try to load person's avatar if they have one
+      if (person.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = person.avatarUrl;
+        img.alt = `${person.name} avatar`;
+        img.onload = () => {
+          avatar.innerHTML = '';
+          avatar.appendChild(img);
+        };
+        img.onerror = () => {
+          // Keep letter fallback
+        };
+      } else if (person.avatarId) {
+        try {
+          // Load from vault
+          const avatarData = await window.emmaWebVault.getMedia(person.avatarId);
+          if (avatarData) {
+            const blob = new Blob([avatarData], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = `${person.name} avatar`;
+            img.onload = () => {
+              avatar.innerHTML = '';
+              avatar.appendChild(img);
+            };
+          }
+        } catch (error) {
+          console.error('❌ Failed to load person avatar:', error);
+        }
+      }
+
+      avatarsContainer.appendChild(avatar);
+    }
+
+    return avatarsContainer;
+
+  } catch (error) {
+    console.error('❌ Error creating people avatars:', error);
+    return avatarsContainer;
   }
 }
 
@@ -1787,7 +1902,7 @@ async function clearVaultMemories() {
       memories = [];
 
       // Re-render to show empty state
-      renderMemories();
+      await renderMemories();
 
       // Show success notification
       showNotification('🗑️ All memories cleared from vault', 'success');
@@ -1804,7 +1919,7 @@ async function clearVaultMemories() {
 /**
  * Create a new empty memory for editing
  */
-function createNewMemory() {
+async function createNewMemory() {
   const newMemory = {
     id: 'new_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     title: 'New Memory',
@@ -1822,7 +1937,7 @@ function createNewMemory() {
   memories.unshift(newMemory);
 
   // Re-render the grid
-  renderMemories();
+  await renderMemories();
 
   // Automatically open the new memory for editing
   setTimeout(() => {
@@ -2027,7 +2142,7 @@ async function handleMediaUpload(event) {
     if (firstImage) {
       memory.image = firstImage.url;
       // Re-render the gallery to show the new thumbnail
-      renderMemories();
+      await renderMemories();
     }
   }
 
@@ -2080,7 +2195,7 @@ async function removeMediaItem(mediaId) {
     const firstImage = memory.mediaItems.find(item => item.type.startsWith('image/'));
     memory.image = firstImage ? firstImage.url : null;
     // Re-render the gallery
-    renderMemories();
+    await renderMemories();
   }
 
   // Re-render the media tab

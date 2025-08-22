@@ -219,7 +219,7 @@
       width: 100%;
     }
 
-    /* Memory Photo Slideshow Background */
+    /* Memory Photo Slideshow Background - More visible */
     .memory-slideshow-bg {
       position: absolute;
       top: 0;
@@ -227,7 +227,7 @@
       width: 100%;
       height: 100%;
       z-index: 0;
-      opacity: 0.4;
+      opacity: 0.8; /* Much more visible */
       transition: opacity 1s ease;
     }
 
@@ -235,10 +235,10 @@
       opacity: 1;
     }
 
-    /* Touch devices - always show slideshow */
+    /* Touch devices - always show slideshow clearly */
     @media (hover: none) and (pointer: coarse) {
       .memory-slideshow-bg {
-        opacity: 0.7;
+        opacity: 0.9;
       }
     }
 
@@ -258,7 +258,7 @@
       opacity: 1;
     }
 
-    /* Emma Gradient Overlay - same as people page */
+    /* Subtle Emma Gradient Overlay - Let photos pop! */
     .memory-slideshow-bg::after {
       content: '';
       position: absolute;
@@ -268,11 +268,11 @@
       height: 100%;
       background: linear-gradient(
         135deg,
-        rgba(139, 92, 246, 0.85) 0%,
-        rgba(236, 72, 153, 0.75) 50%,
-        rgba(6, 182, 212, 0.85) 100%
+        rgba(139, 92, 246, 0.25) 0%,
+        rgba(236, 72, 153, 0.20) 50%,
+        rgba(6, 182, 212, 0.25) 100%
       );
-      mix-blend-mode: multiply;
+      mix-blend-mode: soft-light;
       pointer-events: none;
     }
 
@@ -307,96 +307,120 @@
         0 0 0 1px rgba(139, 92, 246, 0.1);
     }
 
-    /* Memory Icon Circle - Like People Avatar */
-    .memory-icon-circle {
-      width: 120px;
-      height: 120px;
+    /* Memory Card Layout - Photo-focused */
+    .memory-info-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(
+        transparent 0%,
+        rgba(0, 0, 0, 0.4) 50%,
+        rgba(0, 0, 0, 0.8) 100%
+      );
+      padding: 32px 24px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 2;
+    }
+
+    .memory-text-content {
+      flex: 1;
+      text-align: left;
+      margin-right: 16px;
+    }
+
+    .memory-people-avatars {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .memory-person-avatar {
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      margin: 0 auto 24px;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 48px;
-      font-weight: 700;
+      font-size: 0.8rem;
+      font-weight: 600;
       color: white;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 
-        0 0 0 4px rgba(255, 255, 255, 0.2),
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        0 0 80px rgba(139, 92, 246, 0.4);
-      transition: all 0.4s ease;
-      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      transition: all 0.3s ease;
     }
 
-    .memory-card:hover .memory-icon-circle {
-      transform: scale(1.1);
-      box-shadow: 
-        0 0 0 6px rgba(255, 255, 255, 0.3),
-        0 12px 48px rgba(0, 0, 0, 0.4),
-        0 0 120px rgba(236, 72, 153, 0.6);
+    .memory-person-avatar:hover {
+      transform: scale(1.2);
+      border-color: white;
+      z-index: 10;
     }
 
-    /* Memory content styles - matching people page */
+    .memory-person-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Memory content styles - overlay layout */
     .memory-title {
-      font-size: 1.8rem;
+      font-size: 1.4rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: white;
       text-shadow: 
-        0 2px 8px rgba(0, 0, 0, 0.4),
-        0 0 20px rgba(139, 92, 246, 0.5);
-      letter-spacing: -0.02em;
+        0 2px 8px rgba(0, 0, 0, 0.8),
+        0 0 16px rgba(0, 0, 0, 0.6);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
     }
 
     .memory-excerpt {
-      font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.9);
-      line-height: 1.5;
-      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.95);
+      line-height: 1.4;
+      margin-bottom: 8px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      text-align: center;
-      padding: 0 16px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
     }
 
     .memory-date {
-      font-size: 1rem;
+      font-size: 0.85rem;
       color: rgba(255, 255, 255, 0.9);
-      margin-bottom: 16px;
       font-weight: 500;
-      padding: 6px 16px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-      display: inline-block;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
     }
 
     .memory-tags {
       display: flex;
-      gap: 8px;
-      justify-content: center;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-top: auto;
-      padding-top: 16px;
     }
 
     .memory-tag {
-      padding: 6px 12px;
-      background: rgba(139, 92, 246, 0.2);
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 16px;
-      font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.9);
+      padding: 4px 8px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.95);
       transition: all 0.3s ease;
+      text-shadow: none;
     }
 
     .memory-tag:hover {
-      background: rgba(139, 92, 246, 0.3);
-      border-color: rgba(139, 92, 246, 0.5);
+      background: rgba(139, 92, 246, 0.4);
+      border-color: rgba(139, 92, 246, 0.6);
       transform: translateY(-1px);
     }
 
