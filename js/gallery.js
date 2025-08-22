@@ -382,8 +382,11 @@ async function createMemoryCardElement(memory) {
   // Assemble card
   card.appendChild(infoOverlay);
 
-  // Add click handler
-  card.addEventListener('click', () => {
+  // Add click handler with proper event handling
+  card.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('🎯 CARD CLICK: Opening memory:', memory.title || memory.id);
     openMemoryDetail(memory);
   });
 
@@ -584,221 +587,22 @@ function getCategoryIcon(category) {
  * Open memory detail view
  */
 /**
- * Open memory detail modal - Full production implementation
+ * Open memory detail modal - Uses external modal system
  */
 function openMemoryDetail(memory) {
-  // Hide Emma orb while modal is open
-  const emmaOrb = document.getElementById('universal-emma-orb');
-  if (emmaOrb) {
-    emmaOrb.style.display = 'none';
+  console.log('🎯 GALLERY: Opening memory detail for:', memory.title || memory.id);
+  
+  // Prevent event bubbling that might close modal immediately
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  
+  // Use external modal system
+  if (typeof openMemoryDetailModal === 'function') {
+    return openMemoryDetailModal(memory);
+  } else {
+    console.error('❌ GALLERY: Memory modal system not loaded!');
+    alert('Memory detail modal not available. Please refresh the page.');
   }
-
-  // Create modal with beautiful styling
-  const modal = document.createElement('div');
-  modal.className = 'memory-modal';
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s ease;
-  `;
-
-  modal.innerHTML = `
-    <div class="memory-detail-overlay" style="
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-    "></div>
-    
-    <div class="memory-detail-content" style="
-      position: relative;
-      width: 90%;
-      max-width: 900px;
-      max-height: 90vh;
-      background: linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 40, 0.95));
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(134, 88, 255, 0.3);
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    ">
-      <!-- Header -->
-      <div class="memory-detail-header" style="
-        padding: 24px 32px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
-      ">
-        <div style="flex: 1;">
-          <input type="text" id="memory-title-input" value="${escapeHtml(memory.title || '')}" placeholder="Enter memory title..." style="
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            width: 100%;
-            outline: none;
-          "/>
-        </div>
-        <div style="display: flex; gap: 12px;">
-          <button class="btn btn-danger" style="
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-          ">🗑️ Delete</button>
-          <button class="btn btn-primary" style="
-            background: linear-gradient(135deg, #8658ff, #f093fb);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-          ">💾 Save</button>
-        </div>
-        <button class="close-btn" onclick="this.closest('.memory-modal').remove(); document.getElementById('universal-emma-orb').style.display='block';" style="
-          background: none;
-          border: none;
-          color: white;
-          font-size: 24px;
-          cursor: pointer;
-          padding: 8px;
-        ">&times;</button>
-      </div>
-
-      <!-- Tabs -->
-      <div class="memory-detail-tabs" style="
-        display: flex;
-        padding: 0 32px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.02);
-      ">
-        <button class="tab-btn active" data-tab="overview" style="
-          background: none;
-          border: none;
-          color: white;
-          padding: 16px 20px;
-          cursor: pointer;
-          border-bottom: 2px solid #f093fb;
-        ">Overview</button>
-        <button class="tab-btn" data-tab="media" style="
-          background: none;
-          border: none;
-          color: rgba(255,255,255,0.6);
-          padding: 16px 20px;
-          cursor: pointer;
-          border-bottom: 2px solid transparent;
-        ">Media <span style="
-          background: rgba(118, 75, 162, 0.3);
-          color: #f093fb;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-          margin-left: 4px;
-        ">${memory.mediaItems ? memory.mediaItems.length : 0}</span></button>
-        <button class="tab-btn" data-tab="people" style="
-          background: none;
-          border: none;
-          color: rgba(255,255,255,0.6);
-          padding: 16px 20px;
-          cursor: pointer;
-          border-bottom: 2px solid transparent;
-        ">People <span style="
-          background: rgba(118, 75, 162, 0.3);
-          color: #f093fb;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-          margin-left: 4px;
-        ">${memory.metadata?.people ? memory.metadata.people.length : 0}</span></button>
-      </div>
-
-      <!-- Body -->
-      <div class="memory-detail-body" style="
-        flex: 1;
-        overflow-y: auto;
-        padding: 24px 32px;
-      ">
-        <div class="tab-content" data-tab-content="overview">
-          <textarea style="
-            width: 100%;
-            min-height: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 16px;
-            color: white;
-            font-size: 14px;
-            line-height: 1.6;
-            resize: vertical;
-            outline: none;
-          " placeholder="Share your memory...">${escapeHtml(memory.content || memory.excerpt || '')}</textarea>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div>
-              <label style="display: block; color: rgba(255,255,255,0.8); margin-bottom: 8px;">Date</label>
-              <input type="date" value="${new Date(memory.date).toISOString().split('T')[0]}" style="
-                width: 100%;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 8px;
-                padding: 12px;
-                color: white;
-              "/>
-            </div>
-            <div>
-              <label style="display: block; color: rgba(255,255,255,0.8); margin-bottom: 8px;">Category</label>
-              <select style="
-                width: 100%;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 8px;
-                padding: 12px;
-                color: white;
-              ">
-                <option value="family" ${memory.category === 'family' ? 'selected' : ''}>👨‍👩‍👧‍👦 Family</option>
-                <option value="friends" ${memory.category === 'friends' ? 'selected' : ''}>👥 Friends</option>
-                <option value="travel" ${memory.category === 'travel' ? 'selected' : ''}>✈️ Travel</option>
-                <option value="celebration" ${memory.category === 'celebration' ? 'selected' : ''}>🎉 Celebrations</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-  
-  // Store reference
-  window.currentMemory = memory;
-  
-  // Focus title input
-  setTimeout(() => {
-    const titleInput = modal.querySelector('#memory-title-input');
-    if (titleInput) titleInput.focus();
-  }, 100);
-
-  return modal;
 }
 
 /**
