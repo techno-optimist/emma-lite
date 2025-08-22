@@ -47,8 +47,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 4px;
-  margin: 0 -4px;
+  padding: 20px 20px; /* SPACING: Equal left/right padding to match input area */
+  margin: 0;
   scroll-behavior: smooth;
   min-height: 300px;
   max-height: 500px;
@@ -83,6 +83,7 @@
   justify-content: center;
   flex-shrink: 0;
   position: relative;
+  margin-left: 4px; /* SPACING: Add subtle left padding for Emma orb breathing room */
 }
 
 /* User Messages */
@@ -152,7 +153,7 @@
 
 .emma-chat-input {
   flex-shrink: 0;
-  padding: 20px 0 24px 0; /* PADDING: Add bottom padding to prevent cutoff */
+  padding: 20px 20px 24px 20px; /* PADDING: Equal left/right padding to match top/bottom */
   border-top: 2px solid rgba(139, 92, 246, 0.2);
 }
 

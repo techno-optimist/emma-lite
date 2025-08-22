@@ -9,7 +9,7 @@
 
 .emma-chat-studio {
   position: relative;
-  padding: 12px 20px 12px 20px;
+  padding: 20px 20px 20px 20px; /* PADDING: Equal padding on all sides for balanced spacing */
   margin: 0;
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px);
@@ -35,7 +35,7 @@
   align-items: center;
   gap: 12px;
   text-align: center;
-  padding-top: 0;
+  padding: 0 8px 0 8px; /* SPACING: Add subtle left/right padding for Emma orb breathing room */
   flex-shrink: 0;
 }
 
