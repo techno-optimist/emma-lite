@@ -196,6 +196,78 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
         <span>Emma is thinking...</span>
       </div>
+
+      <!-- Emma Chat Settings Modal -->
+      <div class="emma-settings-modal" id="chat-settings-modal" style="display: none;">
+        <div class="settings-content">
+          <div class="settings-header">
+            <h3 class="settings-title">🧠 Emma Chat Settings</h3>
+            <button class="chat-close-btn" id="settings-close-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="settings-section">
+            <h4>🔑 OpenAI API Configuration</h4>
+            <p class="settings-description">
+              Enable advanced AI responses by providing your OpenAI API key. 
+              Emma will use intelligent heuristics if no key is provided.
+            </p>
+            <input 
+              type="password" 
+              id="api-key-input" 
+              class="settings-input"
+              placeholder="sk-..." 
+              autocomplete="off"
+            >
+            <small class="input-help">Your API key is stored locally and never transmitted to our servers</small>
+          </div>
+          
+          <div class="settings-section">
+            <h4>🤗 Dementia Care Mode</h4>
+            <p class="settings-description">
+              Specialized responses using validation therapy principles for users with memory impairment.
+            </p>
+            <div class="toggle-group">
+              <label class="toggle-switch">
+                <input type="checkbox" id="dementia-mode-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Enable Dementia Care Mode</span>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h4>🔍 Debug Mode</h4>
+            <p class="settings-description">
+              Show processing details and performance metrics for development.
+            </p>
+            <div class="toggle-group">
+              <label class="toggle-switch">
+                <input type="checkbox" id="debug-mode-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Enable Debug Mode</span>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h4>🧠 Vectorless AI Status</h4>
+            <div class="vectorless-status" id="vectorless-status">
+              <div class="status-indicator" id="status-indicator">⚪</div>
+              <span id="status-text">Initializing...</span>
+            </div>
+          </div>
+          
+          <div class="settings-footer">
+            <button class="settings-btn-secondary" id="reset-settings-btn">Reset to Defaults</button>
+            <button class="settings-btn-primary" id="save-settings-btn">Save Settings</button>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -987,17 +1059,87 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   showChatSettings() {
     console.log('⚙️ Opening Emma chat settings...');
-    this.showToast('⚙️ Chat settings coming soon!', 'info');
-    // TODO: Implement beautiful Emma-branded settings modal
+    const modal = document.getElementById('chat-settings-modal');
+    if (modal) {
+      this.loadSettingsIntoModal();
+      modal.style.display = 'flex';
+      modal.classList.add('show');
+      this.setupSettingsEventListeners();
+    }
   }
 
   /**
-   * Close vectorless settings modal
+   * Setup settings modal event listeners
    */
-  closeVectorlessSettings() {
-    const modal = document.getElementById('vectorless-settings-modal');
+  setupSettingsEventListeners() {
+    // Close button
+    const closeBtn = document.getElementById('settings-close-btn');
+    if (closeBtn) {
+      closeBtn.onclick = () => this.closeChatSettings();
+    }
+    
+    // Save settings button
+    const saveBtn = document.getElementById('save-settings-btn');
+    if (saveBtn) {
+      saveBtn.onclick = () => this.saveSettings();
+    }
+    
+    // Reset settings button
+    const resetBtn = document.getElementById('reset-settings-btn');
+    if (resetBtn) {
+      resetBtn.onclick = () => this.resetSettings();
+    }
+    
+    // Debug mode toggle
+    const debugToggle = document.getElementById('debug-mode-toggle');
+    if (debugToggle) {
+      debugToggle.onchange = (e) => {
+        this.debugMode = e.target.checked;
+        console.log('🔍 Debug mode:', this.debugMode ? 'enabled' : 'disabled');
+      };
+    }
+    
+    // Dementia care mode toggle
+    const dementiaToggle = document.getElementById('dementia-mode-toggle');
+    if (dementiaToggle) {
+      dementiaToggle.onchange = (e) => {
+        this.dementiaMode = e.target.checked;
+        console.log('🤗 Dementia care mode:', this.dementiaMode ? 'enabled' : 'disabled');
+      };
+    }
+    
+    // API key input
+    const apiKeyInput = document.getElementById('api-key-input');
+    if (apiKeyInput) {
+      apiKeyInput.onchange = (e) => {
+        this.apiKey = e.target.value;
+        if (this.apiKey) {
+          this.initializeVectorlessEngine();
+        }
+      };
+    }
+    
+    // Click outside to close
+    const modal = document.getElementById('chat-settings-modal');
     if (modal) {
-      modal.style.display = 'none';
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          this.closeChatSettings();
+        }
+      };
+    }
+  }
+
+  /**
+   * Close chat settings modal
+   */
+  closeChatSettings() {
+    const modal = document.getElementById('chat-settings-modal');
+    if (modal) {
+      modal.classList.remove('show');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
     }
   }
 
@@ -1005,13 +1147,128 @@ class EmmaChatExperience extends ExperiencePopup {
    * Load current settings into modal
    */
   loadSettingsIntoModal() {
+    // Load API key
     const apiKeyInput = document.getElementById('api-key-input');
-    const dementiaToggle = document.getElementById('dementia-mode-toggle');
-    const debugToggle = document.getElementById('debug-mode-toggle');
+    if (apiKeyInput) {
+      apiKeyInput.value = this.apiKey || localStorage.getItem('emma-openai-api-key') || '';
+    }
     
-    if (apiKeyInput) apiKeyInput.value = this.apiKey || '';
-    if (dementiaToggle) dementiaToggle.checked = this.dementiaMode || false;
-    if (debugToggle) debugToggle.checked = this.debugMode || false;
+    // Load debug mode
+    const debugToggle = document.getElementById('debug-mode-toggle');
+    if (debugToggle) {
+      debugToggle.checked = this.debugMode;
+    }
+    
+    // Load dementia care mode
+    const dementiaToggle = document.getElementById('dementia-mode-toggle');
+    if (dementiaToggle) {
+      dementiaToggle.checked = this.dementiaMode;
+    }
+    
+    // Update vectorless status
+    this.updateVectorlessStatus();
+  }
+
+  /**
+   * Save settings
+   */
+  saveSettings() {
+    const apiKey = document.getElementById('api-key-input')?.value || '';
+    const debugMode = document.getElementById('debug-mode-toggle')?.checked || false;
+    const dementiaMode = document.getElementById('dementia-mode-toggle')?.checked || false;
+    
+    // Save to localStorage
+    if (apiKey) {
+      localStorage.setItem('emma-openai-api-key', apiKey);
+    } else {
+      localStorage.removeItem('emma-openai-api-key');
+    }
+    localStorage.setItem('emma-debug-mode', debugMode);
+    localStorage.setItem('emma-dementia-mode', dementiaMode);
+    
+    // Update instance
+    this.apiKey = apiKey;
+    this.debugMode = debugMode;
+    this.dementiaMode = dementiaMode;
+    
+    // Reinitialize vectorless engine if API key changed
+    if (apiKey) {
+      this.initializeVectorlessEngine();
+    }
+    
+    this.showToast('✅ Settings saved successfully!', 'success');
+    this.closeChatSettings();
+  }
+
+  /**
+   * Reset settings to defaults
+   */
+  resetSettings() {
+    if (confirm('🔄 Reset all chat settings to defaults?')) {
+      localStorage.removeItem('emma-openai-api-key');
+      localStorage.removeItem('emma-debug-mode');
+      localStorage.removeItem('emma-dementia-mode');
+      
+      this.apiKey = null;
+      this.debugMode = true;
+      this.dementiaMode = false;
+      
+      this.loadSettingsIntoModal();
+      this.showToast('🔄 Settings reset to defaults', 'info');
+    }
+  }
+
+  /**
+   * Update vectorless AI status display
+   */
+  updateVectorlessStatus() {
+    const indicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    
+    if (indicator && statusText) {
+      if (this.isVectorlessEnabled && this.vectorlessEngine) {
+        indicator.textContent = '🟢';
+        statusText.textContent = 'Vectorless AI Active';
+      } else if (this.apiKey) {
+        indicator.textContent = '🟡';
+        statusText.textContent = 'API Key Set - Initializing...';
+      } else {
+        indicator.textContent = '🔴';
+        statusText.textContent = 'Heuristics Only (No API Key)';
+      }
+    }
+  }
+
+  /**
+   * Show toast notification
+   */
+  showToast(message, type = 'info') {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${type === 'success' ? 'rgba(16, 185, 129, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(59, 130, 246, 0.9)'};
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      z-index: 10002;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      max-width: 300px;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
   }
 
   /**
