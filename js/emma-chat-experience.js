@@ -190,74 +190,235 @@ class EmmaChatExperience extends ExperiencePopup {
         <span>Emma is thinking...</span>
       </div>
 
-      <!-- Emma Chat Settings Modal -->
-      <div class="emma-settings-modal" id="chat-settings-modal" style="display: none;">
-        <div class="settings-content">
-          <div class="settings-header">
-            <h3 class="settings-title">🧠 Emma Chat Settings</h3>
-            <button class="chat-close-btn" id="settings-close-btn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Emma Chat Settings Modal - Responsive within chat -->
+      <div class="emma-settings-modal" id="chat-settings-modal" style="
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+        padding: 20px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      ">
+        <div class="settings-content" style="
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
+          border: 2px solid rgba(139, 92, 246, 0.3);
+          border-radius: 16px;
+          padding: 24px;
+          max-width: 100%;
+          margin: 0 auto;
+          position: relative;
+          backdrop-filter: blur(20px);
+        ">
+          <div class="settings-header" style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          ">
+            <h3 class="settings-title" style="
+              margin: 0;
+              font-size: 20px;
+              font-weight: 600;
+              color: white;
+            ">🧠 Emma Chat Settings</h3>
+            <button class="settings-close-btn" id="settings-close-btn" style="
+              background: rgba(255, 255, 255, 0.1);
+              border: none;
+              border-radius: 50%;
+              color: rgba(255, 255, 255, 0.7);
+              cursor: pointer;
+              transition: all 0.3s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 32px;
+              height: 32px;
+            ">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>
                 <line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
           </div>
           
-          <div class="settings-section">
-            <h4>🔑 OpenAI API Configuration</h4>
-            <p class="settings-description">
+          <div class="settings-section" style="
+            margin: 20px 0;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          ">
+            <h4 style="margin: 0 0 12px 0; color: white; font-size: 16px;">🔑 OpenAI API Configuration</h4>
+            <p style="
+              margin: 0 0 16px 0;
+              color: rgba(255, 255, 255, 0.8);
+              font-size: 14px;
+              line-height: 1.4;
+            ">
               Enable advanced AI responses by providing your OpenAI API key. 
               Emma will use intelligent heuristics if no key is provided.
             </p>
             <input 
               type="password" 
               id="api-key-input" 
-              class="settings-input"
               placeholder="sk-..." 
               autocomplete="off"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                border: 2px solid rgba(139, 92, 246, 0.3);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                font-size: 14px;
+                outline: none;
+                box-sizing: border-box;
+              "
             >
-            <small class="input-help">Your API key is stored locally and never transmitted to our servers</small>
+            <small style="
+              display: block;
+              margin-top: 8px;
+              color: rgba(255, 255, 255, 0.6);
+              font-size: 12px;
+            ">Your API key is stored locally and never transmitted to our servers</small>
           </div>
           
-          <div class="settings-section">
-            <h4>🤗 Dementia Care Mode</h4>
-            <p class="settings-description">
+          <div class="settings-section" style="
+            margin: 20px 0;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          ">
+            <h4 style="margin: 0 0 12px 0; color: white; font-size: 16px;">🤗 Dementia Care Mode</h4>
+            <p style="
+              margin: 0 0 16px 0;
+              color: rgba(255, 255, 255, 0.8);
+              font-size: 14px;
+              line-height: 1.4;
+            ">
               Specialized responses using validation therapy principles for users with memory impairment.
             </p>
-            <div class="toggle-group">
-              <label class="toggle-switch">
-                <input type="checkbox" id="dementia-mode-toggle">
-                <span class="toggle-slider"></span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <label style="
+                position: relative;
+                display: inline-block;
+                width: 50px;
+                height: 24px;
+              ">
+                <input type="checkbox" id="dementia-mode-toggle" style="opacity: 0; width: 0; height: 0;">
+                <span style="
+                  position: absolute;
+                  cursor: pointer;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  background-color: rgba(255, 255, 255, 0.2);
+                  transition: 0.4s;
+                  border-radius: 24px;
+                "></span>
               </label>
-              <span class="toggle-label">Enable Dementia Care Mode</span>
+              <span style="color: white; font-size: 14px;">Enable Dementia Care Mode</span>
             </div>
           </div>
           
-          <div class="settings-section">
-            <h4>🔍 Debug Mode</h4>
-            <p class="settings-description">
+          <div class="settings-section" style="
+            margin: 20px 0;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          ">
+            <h4 style="margin: 0 0 12px 0; color: white; font-size: 16px;">🔍 Debug Mode</h4>
+            <p style="
+              margin: 0 0 16px 0;
+              color: rgba(255, 255, 255, 0.8);
+              font-size: 14px;
+              line-height: 1.4;
+            ">
               Show processing details and performance metrics for development.
             </p>
-            <div class="toggle-group">
-              <label class="toggle-switch">
-                <input type="checkbox" id="debug-mode-toggle" checked>
-                <span class="toggle-slider"></span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <label style="
+                position: relative;
+                display: inline-block;
+                width: 50px;
+                height: 24px;
+              ">
+                <input type="checkbox" id="debug-mode-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span style="
+                  position: absolute;
+                  cursor: pointer;
+                  top: 0;
+                  left: 0;
+                  right: 0;
+                  bottom: 0;
+                  background-color: rgba(139, 92, 246, 0.6);
+                  transition: 0.4s;
+                  border-radius: 24px;
+                "></span>
               </label>
-              <span class="toggle-label">Enable Debug Mode</span>
+              <span style="color: white; font-size: 14px;">Enable Debug Mode</span>
             </div>
           </div>
           
-          <div class="settings-section">
-            <h4>🧠 Vectorless AI Status</h4>
-            <div class="vectorless-status" id="vectorless-status">
-              <div class="status-indicator" id="status-indicator">⚪</div>
-              <span id="status-text">Initializing...</span>
+          <div class="settings-section" style="
+            margin: 20px 0;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          ">
+            <h4 style="margin: 0 0 12px 0; color: white; font-size: 16px;">🧠 Vectorless AI Status</h4>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div id="status-indicator" style="
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: #6b7280;
+              ">⚪</div>
+              <span id="status-text" style="color: rgba(255, 255, 255, 0.8); font-size: 14px;">Initializing...</span>
             </div>
           </div>
           
-          <div class="settings-footer">
-            <button class="settings-btn-secondary" id="reset-settings-btn">Reset to Defaults</button>
-            <button class="settings-btn-primary" id="save-settings-btn">Save Settings</button>
+          <div style="
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+          ">
+            <button id="reset-settings-btn" style="
+              padding: 10px 20px;
+              border: 2px solid rgba(255, 255, 255, 0.3);
+              border-radius: 8px;
+              background: rgba(255, 255, 255, 0.1);
+              color: white;
+              font-size: 14px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.3s ease;
+            ">Reset to Defaults</button>
+            <button id="save-settings-btn" style="
+              padding: 10px 20px;
+              border: none;
+              border-radius: 8px;
+              background: linear-gradient(135deg, #8B5CF6, #F093FB);
+              color: white;
+              font-size: 14px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.3s ease;
+            ">Save Settings</button>
           </div>
         </div>
       </div>
@@ -289,6 +450,10 @@ class EmmaChatExperience extends ExperiencePopup {
     
     // Settings button event listener (if button exists)
     if (this.settingsButton) {
+      // FORCE POSITIONING - cache-busting fix
+      console.log('🔧 FORCE: Applying cache-busting settings button positioning');
+      this.forceSettingsButtonPosition();
+      
       this.settingsButton.addEventListener('click', () => this.showChatSettings());
       
       // Add hover effects to match close button exactly
@@ -303,6 +468,9 @@ class EmmaChatExperience extends ExperiencePopup {
         this.settingsButton.style.color = 'rgba(255, 255, 255, 0.7)';
         this.settingsButton.style.transform = 'scale(1)';
       });
+    } else {
+      console.error('🚨 Settings button not found! Creating emergency fallback...');
+      this.createEmergencySettingsButton();
     }
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
 
@@ -359,6 +527,113 @@ class EmmaChatExperience extends ExperiencePopup {
     textarea.style.height = 'auto';
     const scrollHeight = Math.min(textarea.scrollHeight, 120); // Max 5 lines
     textarea.style.height = scrollHeight + 'px';
+  }
+
+  /**
+   * Force settings button positioning - cache-busting fix
+   */
+  forceSettingsButtonPosition() {
+    const button = this.settingsButton;
+    if (!button) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    const size = isMobile ? '36px' : '40px';
+    const position = isMobile ? '12px' : '16px';
+    
+    // FORCE all styles with JavaScript to override CSS conflicts
+    button.style.cssText = `
+      position: absolute !important;
+      top: ${position} !important;
+      left: ${position} !important;
+      width: ${size} !important;
+      height: ${size} !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: none !important;
+      border-radius: 50% !important;
+      color: rgba(255, 255, 255, 0.7) !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 100 !important;
+      right: auto !important;
+      bottom: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: 0 !important;
+      line-height: 1 !important;
+    `;
+    
+    // Force the gear icon
+    button.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
+      </svg>
+    `;
+    
+    console.log('✅ FORCE: Settings button positioning and icon applied');
+  }
+
+  /**
+   * Create emergency settings button if not found
+   */
+  createEmergencySettingsButton() {
+    const container = this.element;
+    if (!container) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    const size = isMobile ? '36px' : '40px';
+    const position = isMobile ? '12px' : '16px';
+    
+    const emergencyButton = document.createElement('button');
+    emergencyButton.id = 'chat-settings-btn-emergency';
+    emergencyButton.className = 'chat-settings-btn';
+    emergencyButton.title = 'Chat settings';
+    
+    emergencyButton.style.cssText = `
+      position: absolute !important;
+      top: ${position} !important;
+      left: ${position} !important;
+      width: ${size} !important;
+      height: ${size} !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: none !important;
+      border-radius: 50% !important;
+      color: rgba(255, 255, 255, 0.7) !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 100 !important;
+    `;
+    
+    emergencyButton.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
+      </svg>
+    `;
+    
+    // Add event listeners
+    emergencyButton.addEventListener('click', () => this.showChatSettings());
+    emergencyButton.addEventListener('mouseenter', () => {
+      emergencyButton.style.background = 'rgba(255, 255, 255, 0.2)';
+      emergencyButton.style.color = 'white';
+      emergencyButton.style.transform = 'scale(1.1)';
+    });
+    emergencyButton.addEventListener('mouseleave', () => {
+      emergencyButton.style.background = 'rgba(255, 255, 255, 0.1)';
+      emergencyButton.style.color = 'rgba(255, 255, 255, 0.7)';
+      emergencyButton.style.transform = 'scale(1)';
+    });
+    
+    container.appendChild(emergencyButton);
+    this.settingsButton = emergencyButton;
+    
+    console.log('🚨 EMERGENCY: Created fallback settings button');
   }
 
   initializeVoiceRecognition() {
