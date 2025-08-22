@@ -61,29 +61,10 @@ class EmmaChatExperience extends ExperiencePopup {
     await this.initializeVectorlessEngine();
     
     // 💝 Initialize Intelligent Memory Capture
-    console.log('🚨 AUDIT: About to initialize intelligent capture');
     await this.initializeIntelligentCapture();
-    console.log('🚨 AUDIT: Intelligent capture initialization complete. Result:', !!this.intelligentCapture);
     
-    // Set global reference for onclick handlers
+    // Set global reference for onclick handlers (production-safe)
     window.chatExperience = this;
-    
-    // 🚨 AUDIT: Add test function for memory detection
-    window.testMemoryDetection = async (message) => {
-      console.log('🧪 TESTING: Manual memory detection test');
-      if (this.intelligentCapture) {
-        const result = await this.intelligentCapture.analyzeMessage({
-          content: message || 'my dog cutie almost died from a fungus',
-          timestamp: Date.now(),
-          sender: 'user'
-        });
-        console.log('🧪 TEST RESULT:', result);
-        return result;
-      } else {
-        console.log('🧪 TEST FAILED: No intelligent capture available');
-        return null;
-      }
-    };
     
     this.enableFocusMode();
   }
@@ -622,7 +603,9 @@ class EmmaChatExperience extends ExperiencePopup {
         behavior: 'smooth'
       });
       
-      console.log('📜 SCROLL: Auto-scrolled to bottom - scrollHeight:', messagesContainer.scrollHeight);
+      if (this.debugMode) {
+        console.log('📜 SCROLL: Auto-scrolled to bottom - scrollHeight:', messagesContainer.scrollHeight);
+      }
     } else {
       console.warn('📜 SCROLL: Messages container not found');
     }
@@ -1471,51 +1454,33 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async initializeIntelligentCapture() {
     try {
-      console.log('🚨 AUDIT: Checking EmmaIntelligentCapture availability:', typeof EmmaIntelligentCapture);
-      
-      // Check if EmmaIntelligentCapture is available
+      // Load EmmaIntelligentCapture if not available
       if (typeof EmmaIntelligentCapture === 'undefined') {
-        console.log('🚨 AUDIT: EmmaIntelligentCapture not available, loading script...');
         await this.loadIntelligentCaptureScript();
-        
-        // Wait for script to fully initialize
         await new Promise(resolve => setTimeout(resolve, 200));
-        console.log('🚨 AUDIT: After script loading, EmmaIntelligentCapture type:', typeof EmmaIntelligentCapture);
       }
       
-      // Double-check that the class is now available
       if (typeof EmmaIntelligentCapture === 'undefined') {
-        console.error('🚨 AUDIT: EmmaIntelligentCapture still not available after loading - CRITICAL FAILURE');
+        console.error('💬 Failed to load intelligent capture module');
         this.intelligentCapture = null;
         return;
       }
       
-      console.log('🚨 AUDIT: About to create EmmaIntelligentCapture instance');
-      
-      // Initialize capture engine (works with or without vectorless)
-      console.log('🧠 CHAT: Initializing intelligent capture with vault manager:', {
-        hasVaultManager: !!window.emmaWebVault,
-        vaultIsOpen: window.emmaWebVault?.isOpen,
-        vaultHasData: !!window.emmaWebVault?.vaultData,
-        memoryCount: Object.keys(window.emmaWebVault?.vaultData?.content?.memories || {}).length
-      });
-      
+      // Initialize capture engine
       this.intelligentCapture = new EmmaIntelligentCapture({
         vectorlessEngine: this.vectorlessEngine || null,
         vaultManager: window.emmaWebVault || null,
         dementiaMode: this.dementiaMode || false,
-        debug: true // Force debug for audit
+        debug: this.debugMode || false
       });
       
-      console.log('🚨 AUDIT: EmmaIntelligentCapture created successfully:', !!this.intelligentCapture);
-      
-      const mode = this.vectorlessEngine ? 'with vectorless engine' : 'with heuristics only';
-      console.log(`💝 Intelligent Memory Capture initialized ${mode}`);
+      if (this.debugMode) {
+        const mode = this.vectorlessEngine ? 'with vectorless engine' : 'with heuristics only';
+        console.log(`💝 Intelligent Memory Capture initialized ${mode}`);
+      }
       
     } catch (error) {
-      console.error('🚨 AUDIT: CRITICAL - Failed to initialize Intelligent Capture:', error);
-      console.error('🚨 AUDIT: Error stack:', error.stack);
-      // Gracefully disable intelligent capture
+      console.error('💬 Failed to initialize intelligent capture:', error);
       this.intelligentCapture = null;
     }
   }
@@ -2775,6 +2740,18 @@ class EmmaChatExperience extends ExperiencePopup {
 
   /**
    * Generate stage-specific acknowledgment for enrichment
+   */
+  generateStageAcknowledgment(stage, collectedData) {
+    const acknowledgments = {
+      who: "Thank you for sharing who was there with you.",
+      when: "That timing helps me understand the context better.",
+      where: "The setting adds such important detail to your memory.",
+      emotion: "Those feelings are such an important part of this memory.",
+      media: "Thank you for letting me know about photos and videos."
+    };
+    
+    return acknowledgments[stage] || "Thank you for sharing that detail.";
+  }
 
   cleanup() {
     // Save chat history before closing
