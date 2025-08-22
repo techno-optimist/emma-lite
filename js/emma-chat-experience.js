@@ -1914,6 +1914,13 @@ class EmmaChatExperience extends ExperiencePopup {
         return;
       }
       
+      // NUCLEAR DEBUG: Check what attachments we're actually passing
+      console.log('🔥 SAVE DEBUG: About to save memory with attachments:', {
+        memoryId: memory.id,
+        attachmentCount: memory.attachments?.length || 0,
+        attachments: memory.attachments || []
+      });
+      
       // Save to vault
       if (window.emmaWebVault && window.emmaWebVault.isOpen) {
         await window.emmaWebVault.addMemory({
