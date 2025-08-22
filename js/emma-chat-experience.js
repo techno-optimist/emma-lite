@@ -655,8 +655,12 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
     
-    // 🧠 Use Vectorless AI if available, otherwise fallback to dynamic responses
-    if (this.isVectorlessEnabled && this.vectorlessEngine) {
+    // 💜 PRIORITIZE DYNAMIC RESPONSES for natural conversation
+    // Only use vectorless for specific memory search queries, not general chat
+    const isMemorySearchQuery = /\b(find|search|show|what|who|when|where)\b.*\b(memory|memories|remember)\b/i.test(userMessage);
+    
+    if (isMemorySearchQuery && this.isVectorlessEnabled && this.vectorlessEngine) {
+      console.log('🔍 MEMORY SEARCH: Using vectorless for specific memory query');
       try {
         const result = await this.vectorlessEngine.processQuestion(userMessage);
         
@@ -665,14 +669,15 @@ class EmmaChatExperience extends ExperiencePopup {
           this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
           return;
         } else {
-          console.warn('💬 Vectorless processing failed, using fallback:', result.error);
+          console.warn('💬 Vectorless processing failed, using dynamic fallback:', result.error);
         }
       } catch (error) {
         console.error('💬 Vectorless AI error:', error);
       }
     }
     
-    // Dynamic fallback generation for contextual, non-scripted replies
+    // 💜 DEFAULT: Use dynamic, contextual responses for natural conversation
+    console.log('💬 DYNAMIC: Using contextual Emma response for natural conversation');
     const response = this.generateDynamicEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
   }
