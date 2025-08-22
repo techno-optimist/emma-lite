@@ -258,6 +258,17 @@ class EmmaWebVault {
    * Add memory (IDENTICAL API to desktop version!)
    */
   async addMemory({ content, metadata = {}, attachments = [] }) {
+    // NUCLEAR DEBUG: Check vault state at start of addMemory
+    console.log('🔥 NUCLEAR DEBUG: addMemory called with:', {
+      isOpen: this.isOpen,
+      hasPassphrase: !!this.passphrase,
+      sessionActive: sessionStorage.getItem('emmaVaultActive'),
+      sessionPassphrase: !!sessionStorage.getItem('emmaVaultPassphrase'),
+      sessionName: sessionStorage.getItem('emmaVaultName'),
+      attachmentCount: attachments.length,
+      hasVaultData: !!this.vaultData
+    });
+    
     // Extension mode: Route through extension instead of web app vault
     if (this.extensionAvailable) {
       console.log('🔗 Extension mode: Routing memory save through extension');
@@ -316,46 +327,50 @@ class EmmaWebVault {
     }
     
     // Check if we need passphrase for encryption and don't have it
-    if (attachments.length > 0 && !this.passphrase) {
-      // FIRST: Try to restore passphrase from session storage
-      const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
-      console.log('🔐 CRITICAL: SessionStorage passphrase check:', {
-        hasSessionPassphrase: !!sessionPassphrase,
-        currentPassphrase: !!this.passphrase,
-        sessionStorageKeys: Object.keys(sessionStorage),
-        isVaultOpen: this.isOpen
-      });
-      
-      if (sessionPassphrase) {
-        this.passphrase = sessionPassphrase;
-        console.log('🔐 SUCCESS: Restored passphrase from sessionStorage - no prompt needed!');
-      } else {
-        console.error('🔐 CRITICAL: No passphrase in sessionStorage - this should not happen!');
+    if (attachments.length > 0) {
+      // NUCLEAR FIX: Always ensure passphrase is available for media encryption
+      if (!this.passphrase) {
+        // FIRST: Try to restore passphrase from session storage
+        const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
+        console.log('🔐 CRITICAL: SessionStorage passphrase check:', {
+          hasSessionPassphrase: !!sessionPassphrase,
+          currentPassphrase: !!this.passphrase,
+          sessionStorageKeys: Object.keys(sessionStorage),
+          isVaultOpen: this.isOpen
+        });
         
-        // Only prompt if we still don't have passphrase after session check
-        console.log('🔐 Passphrase needed for media encryption - requesting from user');
-        console.log('🔐 Modal available?', !!window.cleanSecurePasswordModal);
-        
-        if (window.cleanSecurePasswordModal) {
-          try {
-            this.passphrase = await window.cleanSecurePasswordModal.show({
-              title: 'Unlock Vault for Media',
-              message: 'Enter your vault passphrase to encrypt media attachments',
-              placeholder: 'Enter vault passphrase...'
-            });
-            console.log('🔐 Passphrase obtained via secure modal');
-          } catch (error) {
-            console.error('🔐 Secure modal failed:', error);
-            // Fallback to browser prompt
-            this.passphrase = prompt('Enter your vault passphrase to encrypt media:');
-          }
+        if (sessionPassphrase) {
+          this.passphrase = sessionPassphrase;
+          console.log('🔐 SUCCESS: Restored passphrase from sessionStorage - no prompt needed!');
         } else {
-          console.warn('🔐 Secure modal not available - using browser prompt');
-          this.passphrase = prompt('Enter your vault passphrase to encrypt media:');
-        }
-        
-        if (!this.passphrase) {
-          throw new Error('Passphrase is required to encrypt media attachments');
+          console.error('🔐 CRITICAL: No passphrase in sessionStorage - vault unlock may have failed!');
+          
+          // Emergency prompt with clear explanation
+          console.log('🔐 EMERGENCY: Requesting passphrase from user...');
+          if (window.cleanSecurePasswordModal) {
+            try {
+              this.passphrase = await window.cleanSecurePasswordModal.show({
+                title: 'Vault Passphrase Required',
+                message: 'Your vault session may have expired. Please re-enter your passphrase to save this memory.',
+                placeholder: 'Enter vault passphrase...'
+              });
+              
+              // Restore sessionStorage after emergency unlock
+              if (this.passphrase) {
+                sessionStorage.setItem('emmaVaultPassphrase', this.passphrase);
+                console.log('🔐 EMERGENCY: Passphrase restored to sessionStorage');
+              }
+            } catch (error) {
+              console.error('🔐 Secure modal failed:', error);
+              this.passphrase = prompt('Enter your vault passphrase to save this memory:');
+            }
+          } else {
+            this.passphrase = prompt('Enter your vault passphrase to save this memory:');
+          }
+          
+          if (!this.passphrase) {
+            throw new Error('Passphrase is required to encrypt media attachments');
+          }
         }
       }
     }
