@@ -575,6 +575,11 @@ function getCategoryIcon(category) {
  * Open memory detail view
  */
 function openMemoryDetail(memory) {
+  // TEMPORARY: Simple alert until modal is fully refactored
+  alert(`Memory: ${memory.title}\n\nContent: ${memory.content || memory.excerpt || 'No content'}\n\nThis modal is being refactored to be fully responsive with CSS classes.`);
+  return;
+  
+  // OLD FUNCTION - BEING REFACTORED:
 
   const emmaOrb = document.getElementById('universal-emma-orb');
   if (emmaOrb) {
@@ -605,54 +610,122 @@ function openMemoryDetail(memory) {
   modal.appendChild(overlay);
   modal.appendChild(content);
 
-  // Create modal content
-  content.innerHTML = `
-
-      <!-- Header with editable title and actions -->
-      <div class="memory-detail-header">
-        <div class="memory-title-container">
-          <input id="memory-title-input" value="${escapeHtml(memory.title)}" placeholder="Enter memory title..." />
-        </div>
-        
-        <div class="header-actions">
-          <div id="save-status">
-            <span id="save-status-text">Saved</span>
-          </div>
-          <button class="btn" id="memory-delete-btn" style="
-            background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-            border: none !important;
-            color: white !important;
-            padding: 10px 16px !important;
-            border-radius: 8px !important;
-            cursor: pointer !important;
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            transition: all 0.2s ease !important;
-          " onmouseover="this.style.background='linear-gradient(135deg, #dc2626, #b91c1c)'" onmouseout="this.style.background='linear-gradient(135deg, #ef4444, #dc2626)'">🗑️ Delete</button>
-          <button class="btn" id="memory-save-btn" style="
-            background: var(--emma-gradient-1) !important;
-            border: none !important;
-            color: white !important;
-            padding: 10px 16px !important;
-            border-radius: 8px !important;
-            cursor: pointer !important;
-            font-size: 14px !important;
-            font-weight: 600 !important;
-          ">💾 Save</button>
-        </div>
-
-        <button class="close-btn" onclick="
-          const emmaOrb = document.getElementById('universal-emma-orb');
-          if (emmaOrb) {
-            emmaOrb.style.display = 'block';
-
-          }
-          this.closest('.memory-modal').remove();
-        " style="
-          background: none !important;
-          border: none !important;
-          font-size: 24px !important;
-          color: rgba(255, 255, 255, 0.7) !important;
+  // Create modal content using DOM elements and CSS classes
+  
+  // Header
+  const header = document.createElement('div');
+  header.className = 'memory-detail-header';
+  
+  const titleContainer = document.createElement('div');
+  titleContainer.className = 'memory-title-container';
+  
+  const titleInput = document.createElement('input');
+  titleInput.id = 'memory-title-input';
+  titleInput.value = memory.title;
+  titleInput.placeholder = 'Enter memory title...';
+  titleContainer.appendChild(titleInput);
+  
+  const headerActions = document.createElement('div');
+  headerActions.className = 'header-actions';
+  
+  const saveStatus = document.createElement('div');
+  saveStatus.id = 'save-status';
+  const saveStatusText = document.createElement('span');
+  saveStatusText.id = 'save-status-text';
+  saveStatusText.textContent = 'Saved';
+  saveStatus.appendChild(saveStatusText);
+  
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
+  deleteBtn.id = 'memory-delete-btn';
+  deleteBtn.innerHTML = '🗑️ Delete';
+  
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-primary';
+  saveBtn.id = 'memory-save-btn';
+  saveBtn.innerHTML = '💾 Save';
+  
+  headerActions.appendChild(saveStatus);
+  headerActions.appendChild(deleteBtn);
+  headerActions.appendChild(saveBtn);
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.onclick = () => {
+    const emmaOrb = document.getElementById('universal-emma-orb');
+    if (emmaOrb) {
+      emmaOrb.style.display = 'block';
+    }
+    modal.remove();
+  };
+  
+  header.appendChild(titleContainer);
+  header.appendChild(headerActions);
+  header.appendChild(closeBtn);
+  
+  // Create tabs navigation
+  const tabs = document.createElement('div');
+  tabs.className = 'memory-detail-tabs';
+  
+  const tabButtons = [
+    { id: 'overview', label: 'Overview', active: true },
+    { id: 'meta', label: 'Meta' },
+    { id: 'media', label: 'Media', count: memory.mediaItems ? memory.mediaItems.length : 0 },
+    { id: 'people', label: 'People', count: memory.metadata && memory.metadata.people ? memory.metadata.people.length : 0 },
+    { id: 'related', label: 'Related', count: 0 }
+  ];
+  
+  tabButtons.forEach(tab => {
+    const btn = document.createElement('button');
+    btn.className = `tab-btn${tab.active ? ' active' : ''}`;
+    btn.setAttribute('data-tab', tab.id);
+    btn.innerHTML = tab.label;
+    
+    if (tab.count !== undefined) {
+      const badge = document.createElement('span');
+      badge.textContent = tab.count;
+      btn.appendChild(badge);
+    }
+    
+    tabs.appendChild(btn);
+  });
+  
+  // Create body content container
+  const body = document.createElement('div');
+  body.className = 'memory-detail-body';
+  
+  // Assemble the modal
+  content.appendChild(header);
+  content.appendChild(tabs);
+  content.appendChild(body);
+  
+  // Create a simple overview content for now
+  const overviewSection = document.createElement('div');
+  overviewSection.className = 'detail-section';
+  
+  const contentTitle = document.createElement('h3');
+  contentTitle.className = 'section-title';
+  contentTitle.textContent = 'Memory Content';
+  
+  const contentArea = document.createElement('div');
+  contentArea.className = 'detail-item';
+  
+  const contentLabel = document.createElement('label');
+  contentLabel.className = 'detail-label';
+  contentLabel.textContent = 'Content:';
+  
+  const contentTextarea = document.createElement('textarea');
+  contentTextarea.className = 'form-input';
+  contentTextarea.value = memory.content || memory.excerpt || '';
+  contentTextarea.rows = 6;
+  
+  contentArea.appendChild(contentLabel);
+  contentArea.appendChild(contentTextarea);
+  
+  overviewSection.appendChild(contentTitle);
+  overviewSection.appendChild(contentArea);
+  body.appendChild(overviewSection);
           cursor: pointer !important;
           width: 40px !important;
           height: 40px !important;
