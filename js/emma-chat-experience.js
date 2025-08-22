@@ -84,7 +84,6 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     };
     
-    this.startWithWelcomeMessage();
     this.enableFocusMode();
   }
 
@@ -139,20 +138,13 @@ class EmmaChatExperience extends ExperiencePopup {
     `;
     
     contentElement.innerHTML = `
-      <!-- Emma Chat Header with Real Orb -->
-      <div class="emma-chat-header">
-        <div class="emma-orb-chat" id="chat-emma-orb"></div>
-        <div class="emma-chat-intro">
-          <h2 class="emma-chat-title">Chat with Emma</h2>
-          <p class="emma-chat-subtitle">Your Intelligent Memory Companion</p>
-        </div>
-        <button class="chat-close-btn" id="chat-close-btn">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
+      <!-- Close Button Only -->
+      <button class="chat-close-btn" id="chat-close-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
 
       <!-- Chat Messages -->
       <div class="emma-chat-messages" id="chat-messages">
@@ -467,13 +459,7 @@ class EmmaChatExperience extends ExperiencePopup {
     
     if (sender === 'emma') {
       messageDiv.innerHTML = `
-        <div class="emma-avatar">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v6m0 6v6"/>
-            <path d="M1 12h6m6 0h6"/>
-          </svg>
-        </div>
+        <div class="emma-orb-avatar" id="emma-orb-msg-${messageId}"></div>
         <div class="message-content">
           <p>${this.formatMessageContent(content)}</p>
           <span class="message-time">${messageTime}</span>
@@ -492,6 +478,23 @@ class EmmaChatExperience extends ExperiencePopup {
     messageDiv.style.opacity = '0';
     messageDiv.style.transform = 'translateY(10px)';
     this.messageContainer.appendChild(messageDiv);
+
+    // Initialize Emma orb for Emma messages
+    if (sender === 'emma') {
+      const orbContainer = document.getElementById(`emma-orb-msg-${messageId}`);
+      if (orbContainer && window.EmmaOrb) {
+        try {
+          new window.EmmaOrb(orbContainer, {
+            size: 40,
+            interactive: false,
+            theme: 'purple'
+          });
+        } catch (error) {
+          console.warn('⚠️ Emma orb fallback for message avatar');
+          orbContainer.style.background = 'radial-gradient(circle, rgba(139, 92, 246, 0.8), rgba(240, 147, 251, 0.6))';
+        }
+      }
+    }
 
     // Trigger animation
     requestAnimationFrame(() => {
@@ -685,18 +688,7 @@ class EmmaChatExperience extends ExperiencePopup {
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
-  startWithWelcomeMessage() {
-    setTimeout(() => {
-      const welcomeMessages = [
-        "Hi there! I'm Emma, your memory companion. What's on your mind today?",
-        "Hello! I'm Emma. I'm here to help you with your memories and moments. How can I assist you?",
-        "Welcome! I'm Emma, and I love helping people with their precious memories. What would you like to explore?"
-      ];
-      
-      const welcomeMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-      this.addMessage(welcomeMessage, 'emma');
-    }, 500);
-  }
+
 
   loadChatHistory() {
     // Load previous chat messages from session storage

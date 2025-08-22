@@ -12,66 +12,13 @@
  */
 
 /* ================================
-   CHAT HEADER - Emma Orb + Title
+   CLOSE BUTTON - Top Right Only
    ================================ */
 
-.emma-chat-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid rgba(139, 92, 246, 0.2);
-  flex-shrink: 0;
-  position: relative;
-}
-
-.emma-orb-chat {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  /* CLEAN: No background gradient - only real Emma orb */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-@keyframes emma-pulse {
-  0%, 100% { 
-    box-shadow: 
-      0 0 20px rgba(139, 92, 246, 0.6),
-      0 0 40px rgba(240, 147, 251, 0.3);
-  }
-  50% { 
-    box-shadow: 
-      0 0 30px rgba(139, 92, 246, 0.8),
-      0 0 60px rgba(240, 147, 251, 0.5);
-  }
-}
-
-.emma-chat-intro {
-  flex: 1;
-  min-width: 0;
-}
-
-.emma-chat-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: white;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-  /* READABILITY: Use solid white instead of gradient for better contrast */
-}
-
-.emma-chat-subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 16px 0; /* PADDING: Add bottom spacing */
-  font-weight: 500;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
 .chat-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
   width: 40px;
   height: 40px;
   border: none;
@@ -83,7 +30,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  z-index: 10;
 }
 
 .chat-close-btn:hover {
@@ -100,11 +47,11 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 4px;
+  padding: 20px 4px;
   margin: 0 -4px;
   scroll-behavior: smooth;
-  min-height: 200px;
-  max-height: 400px;
+  min-height: 300px;
+  max-height: 500px;
 }
 
 .emma-chat-messages::-webkit-scrollbar {
@@ -125,18 +72,17 @@
   background: rgba(139, 92, 246, 0.6);
 }
 
-/* Message Avatars */
-.emma-avatar {
-  width: 36px;
-  height: 36px;
+/* Emma Orb Avatar - Real Orb */
+.emma-orb-avatar {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
-  border: 2px solid rgba(139, 92, 246, 0.4);
+  /* CLEAN: Container for real Emma orb - no background */
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
   flex-shrink: 0;
+  position: relative;
 }
 
 /* User Messages */
