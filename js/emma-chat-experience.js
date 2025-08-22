@@ -51,6 +51,9 @@ class EmmaChatExperience extends ExperiencePopup {
     this.initializeEmmaOrb();
     this.setupChatInterface();
     this.setupKeyboardShortcuts();
+    
+    // Add initial Emma welcome message (single clean bubble)
+    this.addInitialWelcomeMessage();
     this.loadChatHistory();
     
     // 🧠 Initialize Vectorless AI Engine
@@ -153,19 +156,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
       <!-- Chat Messages -->
       <div class="emma-chat-messages" id="chat-messages">
-        <div class="emma-welcome-message">
-          <div class="emma-avatar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v6m0 6v6"/>
-              <path d="M1 12h6m6 0h6"/>
-            </svg>
-          </div>
-          <div class="message-content">
-            <p>Welcome! I'm Emma, and I love helping people with their precious memories. What would you like to explore?</p>
-            <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-          </div>
-        </div>
+        <!-- Messages will be added dynamically -->
       </div>
 
       <!-- Chat Input -->
@@ -985,6 +976,17 @@ class EmmaChatExperience extends ExperiencePopup {
     
     // Load current settings into modal
     this.loadSettingsIntoModal();
+  }
+
+  /**
+   * Add initial Emma welcome message (single clean bubble)
+   */
+  addInitialWelcomeMessage() {
+    console.log('💬 Adding Emma welcome message...');
+    this.addMessage(
+      "Welcome! I'm Emma, and I love helping people with their precious memories. What would you like to explore?",
+      'emma'
+    );
   }
 
   /**

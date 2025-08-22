@@ -29,19 +29,10 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(139, 92, 246, 0.9) 0%,
-    rgba(118, 75, 162, 0.8) 40%,
-    rgba(240, 147, 251, 0.9) 100%
-  );
-  box-shadow: 
-    0 0 20px rgba(139, 92, 246, 0.6),
-    0 0 40px rgba(240, 147, 251, 0.3);
+  /* CLEAN: No background gradient - only real Emma orb */
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: emma-pulse 3s ease-in-out infinite;
   flex-shrink: 0;
 }
 
@@ -66,19 +57,18 @@
 .emma-chat-title {
   font-size: 24px;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   color: white;
-  background: linear-gradient(135deg, #8B5CF6, #F093FB);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  /* READABILITY: Use solid white instead of gradient for better contrast */
 }
 
 .emma-chat-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 16px 0; /* PADDING: Add bottom spacing */
   font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .chat-close-btn {
@@ -135,19 +125,10 @@
   background: rgba(139, 92, 246, 0.6);
 }
 
-/* Welcome Message */
-.emma-welcome-message {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 16px 0;
-  margin-bottom: 16px;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
-}
-
+/* Message Avatars */
 .emma-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(240, 147, 251, 0.3));
   border: 2px solid rgba(139, 92, 246, 0.4);
@@ -156,24 +137,6 @@
   justify-content: center;
   color: white;
   flex-shrink: 0;
-}
-
-.message-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.message-content p {
-  margin: 0 0 8px 0;
-  line-height: 1.5;
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.message-time {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 500;
 }
 
 /* User Messages */
@@ -227,13 +190,14 @@
   color: rgba(255, 255, 255, 0.9);
   font-size: 15px;
   line-height: 1.4;
-  margin: 0 0 4px 0;
+  margin: 0 0 6px 0;
 }
 
-.emma-message .message-time {
+.emma-message .message-content .message-time {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
+  display: block;
 }
 
 /* ================================
