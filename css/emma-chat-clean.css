@@ -1172,3 +1172,219 @@
 @keyframes dialogSlideIn {
   to { transform: scale(1); }
 }
+
+/* ================================
+   MEMORY CAPSULE PREVIEW - INLINE CHAT
+   ================================ */
+
+.memory-capsule-preview {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 12px 0;
+  backdrop-filter: blur(10px);
+  animation: capsuleSlideIn 0.5s ease;
+}
+
+.capsule-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.capsule-icon {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 4px rgba(139, 92, 246, 0.3));
+}
+
+.capsule-title {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.memory-title {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  line-height: 1.3;
+}
+
+.memory-story {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+  font-style: italic;
+}
+
+.memory-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.detail-label {
+  color: rgba(139, 92, 246, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.detail-value {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Media Grid */
+.memory-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+  max-width: 100%;
+}
+
+.media-thumbnail {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.media-thumbnail:hover {
+  transform: scale(1.05);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.media-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-thumbnail video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.file-thumbnail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 8px;
+}
+
+.file-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.file-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.more-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px dashed rgba(139, 92, 246, 0.4);
+}
+
+.more-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(139, 92, 246, 0.9);
+}
+
+.more-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* Capsule Actions */
+.capsule-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.capsule-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.capsule-btn.primary {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  color: white;
+  box-shadow: 0 3px 10px rgba(139, 92, 246, 0.3);
+}
+
+.capsule-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, #9333EA, #F472B6);
+}
+
+.capsule-btn.secondary {
+  background: rgba(139, 92, 246, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+.capsule-btn.secondary:hover {
+  background: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+@keyframes capsuleSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

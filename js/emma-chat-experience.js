@@ -538,10 +538,13 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     if (sender === 'emma') {
+      // Handle HTML content vs regular text
+      const messageContent = options.isHtml ? content : `<p>${this.formatMessageContent(content)}</p>`;
+      
       messageDiv.innerHTML = `
         <div class="emma-orb-avatar" id="emma-orb-msg-${messageId}"></div>
         <div class="message-content">
-          <p>${this.formatMessageContent(content)}</p>
+          ${messageContent}
           <span class="message-time">${messageTime}</span>
         </div>
       `;
@@ -1735,49 +1738,108 @@ class EmmaChatExperience extends ExperiencePopup {
   showMemoryPreviewDialog(memory) {
     console.log('🎯 PREVIEW: Showing memory preview dialog for:', memory);
     
-    const dialog = document.createElement('div');
-    dialog.className = 'memory-preview-dialog';
-    dialog.innerHTML = `
-      <div class="dialog-backdrop"></div>
-      <div class="dialog-content">
-        <div class="dialog-header">
-          <h3>💝 Memory Preview</h3>
-          <button class="dialog-close" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+    // BEAUTIFUL EMMA-STYLE: Create as chat message instead of dialog
+    const previewHTML = `
+      <div class="memory-capsule-preview">
+        <div class="capsule-header">
+          <div class="capsule-icon">💝</div>
+          <div class="capsule-title">Your Memory Capsule</div>
         </div>
-        <div class="dialog-body">
-          <div class="memory-preview">
-            <h4>${memory.title}</h4>
-            <p>${memory.content}</p>
-            <div class="memory-metadata">
-              ${memory.metadata.people.length > 0 ? `<span class="meta-item">👥 ${memory.metadata.people.join(', ')}</span>` : ''}
-              ${memory.metadata.emotions.length > 0 ? `<span class="meta-item">💭 ${memory.metadata.emotions.join(', ')}</span>` : ''}
-              <span class="meta-item">📅 ${new Date(memory.metadata.date).toLocaleDateString()}</span>
-              <span class="meta-item">⭐ ${memory.metadata.importance} importance</span>
+        
+        <div class="capsule-content">
+          <h3 class="memory-title">${memory.title || 'Untitled Memory'}</h3>
+          <p class="memory-story">${memory.content}</p>
+          
+          ${memory.metadata?.people?.length > 0 ? `
+            <div class="memory-detail">
+              <span class="detail-label">👥 People:</span>
+              <span class="detail-value">${memory.metadata.people.join(', ')}</span>
             </div>
-          </div>
+          ` : ''}
+          
+          ${memory.metadata?.emotions?.length > 0 ? `
+            <div class="memory-detail">
+              <span class="detail-label">💭 Emotions:</span>
+              <span class="detail-value">${memory.metadata.emotions.join(', ')}</span>
+            </div>
+          ` : ''}
+          
+          ${memory.metadata?.location ? `
+            <div class="memory-detail">
+              <span class="detail-label">📍 Location:</span>
+              <span class="detail-value">${memory.metadata.location}</span>
+            </div>
+          ` : ''}
+          
+          ${memory.attachments?.length > 0 ? `
+            <div class="memory-detail">
+              <span class="detail-label">📷 Media:</span>
+              <span class="detail-value">${memory.attachments.length} ${memory.attachments.length === 1 ? 'file' : 'files'} attached</span>
+            </div>
+            <div class="memory-media-grid">
+              ${memory.attachments.slice(0, 4).map(attachment => `
+                <div class="media-thumbnail">
+                  ${attachment.type?.startsWith('image/') ? `
+                    <img src="${attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                  ` : attachment.type?.startsWith('video/') ? `
+                    <video src="${attachment.dataUrl || attachment.url}" muted>
+                      <div class="video-overlay">🎥</div>
+                    </video>
+                  ` : `
+                    <div class="file-thumbnail">
+                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                      <div class="file-name">${attachment.name}</div>
+                    </div>
+                  `}
+                </div>
+              `).join('')}
+              ${memory.attachments.length > 4 ? `
+                <div class="media-thumbnail more-indicator">
+                  <div class="more-count">+${memory.attachments.length - 4}</div>
+                  <div class="more-text">more</div>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
         </div>
-                  <div class="dialog-footer">
-            <button class="button-secondary" onclick="window.chatExperience.addPhotosToMemory('${memory.id}')">
-              📸 Add Photos
-            </button>
-            <button class="button-secondary" onclick="window.chatExperience.editMemory('${memory.id}')">
-              ✏️ Edit Details
-            </button>
-            <button class="button-primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
-              💾 Save to Vault
-            </button>
-          </div>
+        
+        <div class="capsule-actions">
+          <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
+            ✨ Save to Vault
+          </button>
+          <button class="capsule-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
+            ✏️ Edit
+          </button>
+        </div>
       </div>
     `;
     
-    console.log('🎯 PREVIEW: Adding dialog to DOM...');
+    // Create proper overlay dialog with highest z-index
+    const dialog = document.createElement('div');
+    dialog.className = 'memory-preview-dialog';
+    dialog.style.zIndex = '10003'; // Higher than chat modal
+    dialog.innerHTML = `
+      <div class="dialog-backdrop" onclick="this.parentElement.remove()"></div>
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>💝 Your Memory Capsule</h3>
+          <button class="dialog-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+        <div class="dialog-body">
+          ${previewHTML}
+        </div>
+      </div>
+    `;
+    
+    console.log('🎯 PREVIEW: Adding memory dialog to DOM with z-index 10003...');
     document.body.appendChild(dialog);
-    console.log('🎯 PREVIEW: Dialog added to DOM successfully');
     
     // Animate in
-    requestAnimationFrame(() => {
-      dialog.classList.add('show');
-    });
+    setTimeout(() => {
+      dialog.style.opacity = '1';
+    }, 100);
+    
+    console.log('🎯 PREVIEW: Memory preview dialog should now be visible on top');
   }
 
   /**
@@ -1975,11 +2037,18 @@ class EmmaChatExperience extends ExperiencePopup {
     const delay = this.dementiaMode ? 2500 : 1500;
     
     setTimeout(() => {
-      this.addMessage(question, 'emma', { 
+      const messageId = this.addMessage(question, 'emma', { 
         type: 'enrichment-question',
         memoryId: memoryId,
         stage: nextStage
       });
+      
+      // If asking for media, show elegant file upload interface
+      if (nextStage === 'media') {
+        setTimeout(() => {
+          this.showMediaUploadInterface(messageId, memoryId);
+        }, 800);
+      }
       
       if (this.debugMode) {
         console.log(`🎯 ENRICHMENT FSM: Asked ${nextStage} question for memory ${memoryId}`);
