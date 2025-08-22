@@ -686,58 +686,141 @@ class EmmaChatExperience extends ExperiencePopup {
    * Generate a dynamic, contextual Emma fallback response without LLM
    */
   generateDynamicEmmaResponse(userMessage) {
-    const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-    const emojis = ['💜','✨','🌟','🫶','💡'];
-    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-
-    const lower = (userMessage || '').toLowerCase();
-    const wantsToSave = /(\bsave\b|\bremember\b|\bmemory\b|\bcapture\b|\brecord\b)/.test(lower);
-    const pastTense = /(i\s+remember\b|\bwas\b|\bwere\b|\bdid\b|\bwent\b|\bhad\b|\bsaw\b|\btold\b|\blearned\b)/.test(lower);
-
-    let contextSnippet = '';
+    console.log('🎭 GENERATING TRULY DYNAMIC RESPONSE for:', userMessage);
+    
+    const lower = (userMessage || '').toLowerCase().trim();
+    
+    // Handle very short or unclear messages with gentle encouragement
+    if (!lower || lower.length < 3) {
+      const responses = [
+        "I'm here with you. What's on your mind?",
+        "Take your time... I'm listening.",
+        "I'm here whenever you're ready to share something.",
+        "What would you like to talk about?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    
+    // Analyze the user's intent and emotional context
+    const isQuestion = /^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/.test(lower);
+    const isGreeting = /(hello|hi|hey|good morning|good afternoon|good evening|how are you)/.test(lower);
+    const isHelp = /(help|what are you|who are you|what can you do)/.test(lower);
+    const isSharing = /(tell you|share|want to say|need to talk)/.test(lower);
+    const isConfused = /(confused|don't understand|not sure|unclear)/.test(lower);
+    const isAppreciation = /(thank|thanks|appreciate|grateful)/.test(lower);
+    
+    // Get conversation context - how many messages have we exchanged?
+    const messageHistory = document.querySelectorAll('.message-bubble').length;
+    const isEarlyConversation = messageHistory < 6;
+    
+    // Get vault insights for personalization (without canned snippets)
+    let vaultInsights = null;
     try {
-      const vd = window.emmaWebVault?.vaultData?.content?.memories || {};
-      const ids = Object.keys(vd);
-      if (ids.length > 0) {
-        const last = vd[ids[ids.length - 1]];
-        const lastWhen = new Date(last?.created || Date.now()).toLocaleDateString();
-        contextSnippet = ` I can also see your latest saved memory from ${lastWhen}.`;
+      const vault = window.emmaWebVault?.vaultData?.content;
+      if (vault?.memories) {
+        const memoryIds = Object.keys(vault.memories);
+        const memories = memoryIds.map(id => vault.memories[id]);
+        const people = vault.people ? Object.values(vault.people) : [];
+        const recentMemory = memories[memories.length - 1];
+        
+        vaultInsights = {
+          hasMemories: memories.length > 0,
+          memoryCount: memories.length,
+          hasPeople: people.length > 0,
+          peopleNames: people.map(p => p.name),
+          recentMemory,
+          oldestMemory: memories[0],
+          themes: this.extractThemesFromMemories(memories)
+        };
       }
-    } catch (_) {}
-
-    const openers = [
-      `Good ${timeGreeting}! ${emoji}`,
-      `I’m here with you ${emoji}`,
-      `Thanks for sharing that ${emoji}`,
-      `I’m listening ${emoji}`
-    ];
-    const opener = openers[Math.floor(Math.random() * openers.length)];
-
-    if (wantsToSave) {
-      const prompts = [
-        "Want me to help turn that into a memory now? Share who was there and roughly when.",
-        "Let’s capture it—who was part of it and where did it happen?",
-        "Beautiful. To save it, tell me who was there, where, and how it felt."
-      ];
-      return `${opener} That sounds meaningful.${contextSnippet} ${prompts[Math.floor(Math.random() * prompts.length)]}`;
+    } catch (e) {
+      console.log('🔍 Vault context unavailable');
     }
-
-    if (pastTense) {
-      const prompts = [
-        "Would you like to save this moment?",
-        "If you'd like, I can turn this into a memory capsule.",
-        "Shall we keep this in your vault so it doesn’t get lost?"
-      ];
-      return `${opener} That’s a special moment.${contextSnippet} ${prompts[Math.floor(Math.random() * prompts.length)]}`;
+    
+    // Generate truly contextual responses based on intent and vault
+    if (isHelp) {
+      if (vaultInsights?.hasMemories) {
+        const peopleContext = vaultInsights.hasPeople ? ` I can see you've shared stories about ${vaultInsights.peopleNames.slice(0,2).join(' and ')}${vaultInsights.peopleNames.length > 2 ? ' and others' : ''}.` : '';
+        return `I'm Emma, and I'm here to help you explore and capture your memories.${peopleContext} You can share new stories with me, ask me about memories you've saved, or just have a conversation. What feels right today?`;
+      }
+      return "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. When you share something meaningful, I can help turn it into a memory capsule. What brings you here today?";
     }
-
-    const followups = [
-      "Tell me a little more—who was with you?",
-      "When did this happen, roughly?",
-      "Where were you, and how did it make you feel?"
+    
+    if (isGreeting) {
+      const hour = new Date().getHours();
+      if (vaultInsights?.recentMemory && isEarlyConversation) {
+        const daysSince = Math.floor((Date.now() - vaultInsights.recentMemory.created) / (1000 * 60 * 60 * 24));
+        if (daysSince === 0) {
+          return "Hello again! I was just thinking about that memory you shared earlier today. How are you feeling?";
+        } else if (daysSince < 7) {
+          return `Hi there! It's nice to see you again. I've been holding onto that memory from ${daysSince === 1 ? 'yesterday' : `${daysSince} days ago`}. What's been on your mind?`;
+        }
+      }
+      
+      if (hour < 12) return "Good morning! What's stirring in your heart today?";
+      if (hour < 17) return "Good afternoon! I'm here if you'd like to share what's on your mind.";
+      return "Good evening! Sometimes evenings bring up the most meaningful thoughts. I'm here to listen.";
+    }
+    
+    if (isAppreciation) {
+      return "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
+    }
+    
+    if (isConfused) {
+      return "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
+    }
+    
+    if (isSharing) {
+      return "I'm all ears. Take your time and share whatever feels important to you right now.";
+    }
+    
+    // For questions, try to be genuinely curious and personal
+    if (isQuestion) {
+      if (vaultInsights?.themes?.length > 0) {
+        const theme = vaultInsights.themes[0];
+        return `That's such a thoughtful question. You know, it makes me think about ${theme} - something I've noticed comes up in your stories. What's behind your curiosity about this?`;
+      }
+      return "That's a really interesting question. I find that the questions we ask often connect to experiences we've had. What made you think of this?";
+    }
+    
+    // Default: Be genuinely curious and encouraging without templates
+    const curiosityResponses = [
+      "I'm genuinely curious about that. Tell me more?",
+      "That sounds like there's a story there. I'd love to hear it.",
+      "What's behind that thought? I'm here and listening.",
+      "That's interesting to me. Can you help me understand better?",
+      "I'd love to know more about what you're thinking.",
+      "That catches my attention. What's the fuller picture?"
     ];
-    return `${opener} I’m here.${contextSnippet} ${followups[Math.floor(Math.random() * followups.length)]}`;
+    
+    return curiosityResponses[Math.floor(Math.random() * curiosityResponses.length)];
+  }
+  
+  // Helper method to extract themes from memories for contextual responses
+  extractThemesFromMemories(memories) {
+    if (!memories || memories.length === 0) return [];
+    
+    const themes = [];
+    const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 'is', 'was', 'were', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they']);
+    
+    const wordCounts = {};
+    memories.forEach(memory => {
+      const content = memory.content || '';
+      const words = content.toLowerCase().match(/\b\w+\b/g) || [];
+      words.forEach(word => {
+        if (word.length > 3 && !commonWords.has(word)) {
+          wordCounts[word] = (wordCounts[word] || 0) + 1;
+        }
+      });
+    });
+    
+    // Get most frequent meaningful words as themes
+    const sortedWords = Object.entries(wordCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([word]) => word);
+    
+    return sortedWords;
   }
 
   async generateMemoryCaptureResponse(userMessage) {
@@ -1159,62 +1242,89 @@ class EmmaChatExperience extends ExperiencePopup {
    * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
   addInitialWelcomeMessage() {
-    console.log('💬 Adding Emma welcome message...');
+    console.log('💬 GENERATING TRULY UNIQUE WELCOME MESSAGE...');
     
-    // Get time-based greeting
+    // Get current session context
     const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const isWeekend = [0, 6].includes(new Date().getDay());
     
-    // Check vault for personalization
-    const hasVault = window.emmaWebVault?.isOpen;
-    const memoryCount = window.emmaWebVault?.vaultData?.content?.memories?.length || 0;
-    const lastMemory = window.emmaWebVault?.vaultData?.content?.memories?.[memoryCount - 1];
+    // Analyze vault deeply for personalization
+    let vaultContext = null;
+    try {
+      const vault = window.emmaWebVault?.vaultData?.content;
+      if (vault?.memories && window.emmaWebVault?.isOpen) {
+        const memoryIds = Object.keys(vault.memories);
+        const memories = memoryIds.map(id => vault.memories[id]);
+        const people = vault.people ? Object.values(vault.people) : [];
+        
+        // Get time-based insights
+        const now = Date.now();
+        const recentMemories = memories.filter(m => now - m.created < 7 * 24 * 60 * 60 * 1000);
+        const oldMemories = memories.filter(m => now - m.created > 30 * 24 * 60 * 60 * 1000);
+        
+        vaultContext = {
+          totalMemories: memories.length,
+          recentCount: recentMemories.length,
+          oldCount: oldMemories.length,
+          favoritePersons: people.slice(0, 2),
+          lastMemoryAge: memories.length > 0 ? Math.floor((now - memories[memories.length - 1].created) / (1000 * 60 * 60 * 24)) : null,
+          hasPhotos: memories.some(m => m.attachments?.length > 0)
+        };
+      }
+    } catch (e) {
+      console.log('🔍 No vault context for welcome message');
+    }
     
-    // Create dynamic welcome based on context
+    // Generate completely unique welcome based on actual context
     let welcomeMessage;
     
-    if (!hasVault) {
-      // No vault - focus on getting started
-      const greetings = [
-        `${timeGreeting}! I'm Emma. I'd love to help you capture and explore your precious memories. Would you like to create your first memory capsule?`,
-        `Hi there! I'm Emma, your memory companion. Tell me about a moment that makes you smile - I'd love to help you preserve it.`,
-        `${timeGreeting}! I'm Emma. Every memory is a treasure waiting to be discovered. What story would you like to share today?`
-      ];
-      welcomeMessage = greetings[Math.floor(Math.random() * greetings.length)];
-    } else if (memoryCount === 0) {
-      // Empty vault - encourage first memory
-      welcomeMessage = `${timeGreeting}! I see you've created your vault - that's wonderful! Let's add your first memory. Tell me about something special that happened to you.`;
-    } else if (lastMemory && Date.now() - lastMemory.capturedAt < 86400000) {
-      // Recent activity - reference it
-      const recentPerson = lastMemory.people?.[0];
-      welcomeMessage = recentPerson 
-        ? `${timeGreeting}! I loved learning about ${recentPerson} in your last memory. What other stories would you like to share?`
-        : `${timeGreeting}! Your last memory was beautiful. What else has been on your mind?`;
+    if (!vaultContext) {
+      // First time user - warm and inviting
+      if (hour < 10) {
+        welcomeMessage = "Good morning! I'm Emma. There's something magical about morning conversations - they often bring up the most beautiful memories. What's been on your mind?";
+      } else if (hour > 20) {
+        welcomeMessage = "Good evening! I'm Emma. Evening light has a way of bringing back special moments. I'm here to listen to whatever you'd like to share.";
+      } else if (isWeekend) {
+        welcomeMessage = `Happy ${dayOfWeek}! I'm Emma. Weekends often stir up memories of family, adventures, or quiet moments. What story would you like to tell?`;
+      } else {
+        welcomeMessage = "Hello! I'm Emma, and I'm genuinely excited to meet you. I help people capture the stories that matter most. What brings you here today?";
+      }
+    } else if (vaultContext.totalMemories === 0) {
+      // Has vault but no memories yet
+      welcomeMessage = "I can see you're ready to start capturing memories - how exciting! The first memory is always special. What moment would you like to preserve forever?";
+    } else if (vaultContext.lastMemoryAge === 0) {
+      // Added memory today
+      welcomeMessage = "I'm still thinking about that memory you shared today. It really touched me. Has anything else been coming to mind?";
+    } else if (vaultContext.lastMemoryAge === 1) {
+      // Yesterday
+      welcomeMessage = "Since we talked yesterday, I've been holding onto that story you shared. Sometimes memories connect to each other in unexpected ways. What's been stirring for you?";
+    } else if (vaultContext.recentCount > 0) {
+      // Recent activity
+      const person = vaultContext.favoritePersons[0];
+      if (person) {
+        welcomeMessage = `I've been thinking about ${person.name} and the stories you've shared about them. Relationships hold so many layers of memory, don't they? What's been on your heart?`;
+      } else {
+        welcomeMessage = `You've been sharing some beautiful memories recently. I love how each story reveals something new. What's been floating through your thoughts?`;
+      }
     } else {
-      // Established user - warm, personal
-      const topics = [
-        `${timeGreeting}! What memories have been floating through your mind today?`,
-        `Hello again! I've been thinking about all the wonderful stories you've shared. What would you like to explore today?`,
-        `${timeGreeting}! Your vault has ${memoryCount} beautiful memories. Would you like to add another or explore what you've captured?`,
-        `Welcome back! Sometimes old memories surface in unexpected ways. Has anything from your past come to mind recently?`
-      ];
-      welcomeMessage = topics[Math.floor(Math.random() * topics.length)];
+      // Returning user with established vault
+      if (vaultContext.hasPhotos) {
+        welcomeMessage = `Welcome back! I was looking at some of the photos in your memories - they hold such stories. What's been bringing back memories for you lately?`;
+      } else if (vaultContext.totalMemories > 10) {
+        welcomeMessage = `Hello again! Your collection of memories has grown into something really beautiful. Sometimes I wonder which story means the most to you. What's been on your mind?`;
+      } else {
+        const person = vaultContext.favoritePersons[0];
+        if (person) {
+          welcomeMessage = `Hi there! I was just thinking about ${person.name} and how they appear in your stories. People shape our memories in such profound ways. What would you like to share today?`;
+        } else {
+          welcomeMessage = `Welcome back! Every time we talk, I discover something new about the moments that have shaped you. What story is calling to you today?`;
+        }
+      }
     }
     
     this.addMessage(welcomeMessage, 'emma');
-    
-    // Add a contextual follow-up hint after a brief pause
-    if (this.dementiaMode) {
-      setTimeout(() => {
-        const hints = [
-          "Take your time... there's no rush. 💜",
-          "I'm here whenever you're ready to share.",
-          "Even small moments can hold big meanings."
-        ];
-        const hint = hints[Math.floor(Math.random() * hints.length)];
-        this.addMessage(hint, 'emma', { subtle: true });
-      }, 3000);
-    }
+    console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
   }
 
   /**
