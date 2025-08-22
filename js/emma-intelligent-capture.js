@@ -492,6 +492,17 @@ class EmmaIntelligentCapture {
     try {
       const vault = this.options.vaultManager && this.options.vaultManager.vaultData;
       const memories = (vault && vault.content && vault.content.memories) ? Object.values(vault.content.memories) : [];
+      
+      if (this.options.debug) {
+        console.log('🔍 NOVELTY DEBUG:', {
+          hasVaultManager: !!this.options.vaultManager,
+          vaultManagerIsOpen: this.options.vaultManager?.isOpen,
+          hasVaultData: !!vault,
+          memoryCount: memories.length,
+          vaultStructure: vault ? Object.keys(vault) : 'no vault'
+        });
+      }
+      
       if (!memories || memories.length === 0) return 0;
 
       const inputBigrams = this.getBigrams(content.toLowerCase());

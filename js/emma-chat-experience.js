@@ -883,10 +883,11 @@ class EmmaChatExperience extends ExperiencePopup {
       // Try to get vault data from extension or web vault
       let vaultData = null;
       
-      // Check if we have web vault available
-      if (window.emmaWebVault && window.emmaWebVault.extensionAvailable && window.emmaWebVault.isOpen) {
-        // Request vault data for vectorless processing
-        vaultData = await this.requestVaultDataFromExtension();
+      // Check if we have web vault available (PURE WEB APP MODE)
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        // Get vault data directly from web app (no extension needed)
+        vaultData = window.emmaWebVault.vaultData;
+        console.log('🧠 CHAT: Got vault data directly from web app:', !!vaultData);
       }
       
       if (vaultData && this.vectorlessEngine) {
@@ -1477,6 +1478,13 @@ class EmmaChatExperience extends ExperiencePopup {
       console.log('🚨 AUDIT: About to create EmmaIntelligentCapture instance');
       
       // Initialize capture engine (works with or without vectorless)
+      console.log('🧠 CHAT: Initializing intelligent capture with vault manager:', {
+        hasVaultManager: !!window.emmaWebVault,
+        vaultIsOpen: window.emmaWebVault?.isOpen,
+        vaultHasData: !!window.emmaWebVault?.vaultData,
+        memoryCount: Object.keys(window.emmaWebVault?.vaultData?.content?.memories || {}).length
+      });
+      
       this.intelligentCapture = new EmmaIntelligentCapture({
         vectorlessEngine: this.vectorlessEngine || null,
         vaultManager: window.emmaWebVault || null,
