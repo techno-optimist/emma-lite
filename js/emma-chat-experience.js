@@ -1814,10 +1814,11 @@ class EmmaChatExperience extends ExperiencePopup {
       </div>
     `;
     
-    // Create proper overlay dialog with highest z-index
+    // Create proper overlay dialog with FORCED highest z-index
     const dialog = document.createElement('div');
     dialog.className = 'memory-preview-dialog';
-    dialog.style.zIndex = '10003'; // Higher than chat modal
+    dialog.style.zIndex = '99999'; // FORCE HIGHEST
+    dialog.style.position = 'fixed'; // FORCE POSITIONING
     dialog.innerHTML = `
       <div class="dialog-backdrop" onclick="this.parentElement.remove()"></div>
       <div class="dialog-content">
@@ -1840,6 +1841,80 @@ class EmmaChatExperience extends ExperiencePopup {
     }, 100);
     
     console.log('🎯 PREVIEW: Memory preview dialog should now be visible on top');
+  }
+
+  /**
+   * Edit memory details (placeholder for future implementation)
+   */
+  editMemoryDetails(memoryId) {
+    console.log('✏️ EDIT: Edit memory details requested for:', memoryId);
+    this.showToast('✏️ Memory editing coming soon!', 'info');
+    
+    // For now, just close the dialog
+    const dialog = document.querySelector('.memory-preview-dialog');
+    if (dialog) dialog.remove();
+  }
+
+  /**
+   * Confirm and save memory to vault
+   */
+  async confirmSaveMemory(memoryId) {
+    console.log('💾 SAVE: Saving memory to vault:', memoryId);
+    
+    try {
+      // Find the memory from enrichment state or detected memories
+      let memory = null;
+      
+      // Check enrichment state first
+      for (const [id, state] of this.enrichmentState) {
+        if (state.memory && state.memory.id === memoryId) {
+          memory = state.memory;
+          break;
+        }
+      }
+      
+      // Fallback to detected memories
+      if (!memory) {
+        for (const [msgId, analysis] of this.detectedMemories) {
+          if (analysis.memory && analysis.memory.id === memoryId) {
+            memory = analysis.memory;
+            break;
+          }
+        }
+      }
+      
+      if (!memory) {
+        this.showToast('❌ Memory not found', 'error');
+        return;
+      }
+      
+      // Save to vault
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        await window.emmaWebVault.addMemory({
+          content: memory.content,
+          metadata: memory.metadata,
+          attachments: memory.attachments || []
+        });
+        
+        this.showToast('✅ Memory saved to vault successfully!', 'success');
+        console.log('💾 SAVE: Memory saved to vault successfully');
+        
+        // Close dialog
+        const dialog = document.querySelector('.memory-preview-dialog');
+        if (dialog) dialog.remove();
+        
+        // Add confirmation message
+        this.addMessage("Perfect! Your memory has been saved to your vault. It's now part of your permanent collection! 💜", 'emma');
+        
+      } else {
+        this.showToast('❌ Vault not available', 'error');
+        console.error('💾 SAVE: Vault not available for saving');
+      }
+      
+    } catch (error) {
+      console.error('💾 SAVE: Error saving memory:', error);
+      this.showToast('❌ Failed to save memory', 'error');
+    }
   }
 
   /**

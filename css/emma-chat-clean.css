@@ -1010,7 +1010,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 10002; /* Higher than chat modal (10001) */
+  z-index: 99999; /* FORCE HIGHEST - Above everything */
   display: flex;
   align-items: center;
   justify-content: center;
