@@ -320,16 +320,43 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   toggleVoiceInput() {
-    if (!this.SpeechRecognition) {
+    if (!EmmaVoiceTranscription.isSupported()) {
       this.showToast('Voice input not supported in this browser', 'error');
       return;
     }
-
-    if (this.isListening) {
-      this.stopVoiceInput();
-    } else {
-      this.startVoiceInput();
-    }
+    
+    console.log('🎤 Starting Emma voice transcription experience...');
+    
+    // Create beautiful voice transcription experience
+    const voiceTranscription = new EmmaVoiceTranscription({
+      onTranscriptionComplete: (text) => {
+        console.log('🎤 Voice transcription completed:', text);
+        
+        // Add the transcribed text to the input field
+        this.inputField.value = text;
+        this.autoResizeTextarea();
+        
+        // Update Emma orb state
+        if (this.webglOrb && this.webglOrb.options) {
+          this.webglOrb.options.forceHoverState = true;
+        }
+        
+        // Focus input for editing/sending
+        this.inputField.focus();
+        this.inputField.setSelectionRange(text.length, text.length);
+      },
+      
+      onTranscriptionCancel: () => {
+        console.log('🎤 Voice transcription cancelled');
+      },
+      
+      showPreview: true,
+      autoSend: false, // Let user review before sending
+      placeholder: "Speak to Emma about your memories..."
+    });
+    
+    // Start the beautiful transcription experience
+    voiceTranscription.startTranscription();
   }
 
   startVoiceInput() {
