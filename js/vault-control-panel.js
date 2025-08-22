@@ -44,40 +44,27 @@ class EmmaVaultControlPanel {
     shieldIcon.id = 'vaultControlShield';
     shieldIcon.style.cssText = `
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, #8B5CF6, #F093FB);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      bottom: 24px;
+      right: 24px;
       cursor: pointer;
-      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
       transition: all 0.3s ease;
       z-index: 9999;
       font-size: 24px;
-      color: white;
+      color: rgba(139, 92, 246, 0.8);
+      padding: 8px;
     `;
-    shieldIcon.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
-    `;
+    shieldIcon.innerHTML = `🛡️`;
     shieldIcon.title = 'Vault Control Panel';
     
-    // Hover effects
+    // Clean hover effects
     shieldIcon.addEventListener('mouseenter', () => {
-      shieldIcon.style.transform = 'scale(1.1)';
-      shieldIcon.style.boxShadow = '0 12px 48px rgba(139, 92, 246, 0.6)';
+      shieldIcon.style.transform = 'scale(1.2)';
+      shieldIcon.style.color = 'rgba(139, 92, 246, 1)';
     });
     
     shieldIcon.addEventListener('mouseleave', () => {
       shieldIcon.style.transform = 'scale(1)';
-      shieldIcon.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.4)';
+      shieldIcon.style.color = 'rgba(139, 92, 246, 0.8)';
     });
     
     // Click to open control panel
