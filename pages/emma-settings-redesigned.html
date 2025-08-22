@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Settings - Your Intelligent Memory Companion</title>
+  
+  <!-- Emma Core Systems -->
+  <script src="../js/emma-input-modal.js"></script>
+  <script src="../js/clean-password-modal.js"></script>
+  <script src="../js/emma-web-vault.js"></script>
+  
+  <!-- Browser Compatibility Layer -->
+  <script src="../emma-browser-compatibility-fix.js"></script>
+  
+  <!-- Mobile UI Fixes -->
+  <script src="../emma-mobile-ui-fixes.js"></script>
+  
+  <style>
+    /* Emma Brand Variables */
+    :root {
+      --emma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --emma-purple: #8B5CF6;
+      --emma-pink: #F093FB;
+      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+      --emma-glass: rgba(255, 255, 255, 0.1);
+      --emma-border: rgba(255, 255, 255, 0.2);
+      --emma-text: #ffffff;
+      --emma-text-secondary: rgba(255, 255, 255, 0.8);
+      --emma-text-tertiary: rgba(255, 255, 255, 0.6);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--emma-gradient);
+      color: var(--emma-text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .settings-container {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .settings-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .emma-logo {
+      font-size: 48px;
+      font-weight: 300;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--emma-purple), var(--emma-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .settings-subtitle {
+      font-size: 18px;
+      color: var(--emma-text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .back-button {
+      position: absolute;
+      top: -10px;
+      left: 0;
+      background: var(--emma-glass);
+      border: 2px solid var(--emma-border);
+      color: var(--emma-text);
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .back-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .settings-section {
+      background: var(--emma-glass);
+      backdrop-filter: blur(20px);
+      border: 2px solid var(--emma-border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--emma-text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-description {
+      font-size: 16px;
+      color: var(--emma-text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .setting-label {
+      flex: 1;
+    }
+
+    .setting-label strong {
+      display: block;
+      color: var(--emma-text);
+      margin-bottom: 4px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .setting-label span {
+      color: var(--emma-text-secondary);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: 0.4s;
+      border-radius: 30px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked + .toggle-slider {
+      background: linear-gradient(135deg, var(--emma-purple), var(--emma-pink));
+      border-color: var(--emma-purple);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(30px);
+    }
+
+    .api-key-input {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--emma-text);
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    }
+
+    .api-key-input:focus {
+      border-color: var(--emma-purple);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .api-key-input::placeholder {
+      color: var(--emma-text-tertiary);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #6b7280;
+      transition: all 0.3s ease;
+    }
+
+    .status-dot.active {
+      background: var(--emma-purple);
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+    }
+
+    .save-button {
+      background: linear-gradient(135deg, var(--emma-purple), var(--emma-pink));
+      border: none;
+      color: white;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 32px;
+    }
+
+    .save-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+    }
+
+    .help-text {
+      font-size: 13px;
+      color: var(--emma-text-tertiary);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
+
+      .settings-section {
+        padding: 24px 20px;
+        margin-bottom: 24px;
+      }
+
+      .section-title {
+        font-size: 20px;
+      }
+
+      .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px 0;
+      }
+
+      .toggle-switch {
+        align-self: flex-end;
+      }
+
+      .back-button {
+        position: static;
+        margin-bottom: 20px;
+        align-self: flex-start;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .settings-section {
+      animation: fadeIn 0.6s ease;
+    }
+
+    .settings-section:nth-child(2) { animation-delay: 0.1s; }
+    .settings-section:nth-child(3) { animation-delay: 0.2s; }
+    .settings-section:nth-child(4) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <a href="../working-desktop-dashboard.html" class="back-button">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m12 19-7-7 7-7"/>
+        <path d="m19 12H5"/>
+      </svg>
+      Back to Emma
+    </a>
+
+    <div class="settings-header">
+      <h1 class="emma-logo">emma</h1>
+      <p class="settings-subtitle">Configure your intelligent memory companion</p>
+    </div>
+
+    <!-- AI Configuration -->
+    <div class="settings-section">
+      <h2 class="section-title">
+        🧠 Artificial Intelligence
+      </h2>
+      <p class="section-description">
+        Configure Emma's AI capabilities for intelligent memory analysis and conversation.
+      </p>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>OpenAI API Key</strong>
+          <span>Enable advanced AI responses with your OpenAI API key. Emma uses intelligent heuristics if no key is provided.</span>
+        </div>
+      </div>
+      <input 
+        type="password" 
+        id="api-key-input" 
+        class="api-key-input"
+        placeholder="sk-proj-..." 
+        autocomplete="off"
+      >
+      <div class="help-text">
+        🔒 Your API key is stored locally and never transmitted to our servers
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Vectorless AI Status</strong>
+          <span>Real-time status of Emma's intelligent memory processing system.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot" id="ai-status-dot"></div>
+          <span id="ai-status-text">Initializing...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Memory & Care -->
+    <div class="settings-section">
+      <h2 class="section-title">
+        💜 Memory & Care
+      </h2>
+      <p class="section-description">
+        Specialized features for memory preservation and dementia care support.
+      </p>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Dementia Care Mode</strong>
+          <span>Enables validation therapy principles and specialized responses for users with memory impairment. Designed with love for Debbe.</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="dementia-mode-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Memory Auto-Capture</strong>
+          <span>Automatically detect and suggest capturing meaningful moments during conversations.</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-capture-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Privacy & Security -->
+    <div class="settings-section">
+      <h2 class="section-title">
+        🔒 Privacy & Security
+      </h2>
+      <p class="section-description">
+        Emma prioritizes your privacy with local-only processing and secure vault encryption.
+      </p>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Local Processing</strong>
+          <span>All memory analysis happens on your device. No data is sent to external servers.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span>Always Enabled</span>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Vault Encryption</strong>
+          <span>Your .emma files are protected with AES-256 encryption and PBKDF2 key derivation.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span>Always Enabled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Developer Options -->
+    <div class="settings-section">
+      <h2 class="section-title">
+        🔧 Developer Options
+      </h2>
+      <p class="section-description">
+        Advanced options for development and debugging.
+      </p>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Debug Mode</strong>
+          <span>Show detailed processing information and performance metrics in the console.</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="debug-mode-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Browser Compatibility</strong>
+          <span>View detailed browser compatibility information and run diagnostic tests.</span>
+        </div>
+        <button onclick="window.open('../browser-compatibility-test.html', '_blank')" style="
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.3s ease;
+        ">Test Compatibility</button>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <button class="save-button" id="save-all-settings">
+      ✨ Save All Settings
+    </button>
+  </div>
+
+  <script>
+    /**
+     * Emma Settings Manager
+     * Clean, modern settings interface with Emma branding
+     */
+    class EmmaSettingsManager {
+      constructor() {
+        this.settings = {};
+        this.loadSettings();
+        this.setupEventListeners();
+        this.updateUI();
+        
+        console.log('⚙️ Emma Settings Manager initialized');
+      }
+      
+      loadSettings() {
+        try {
+          // Load from localStorage
+          const saved = localStorage.getItem('emmaSettings');
+          this.settings = saved ? JSON.parse(saved) : {
+            apiKey: '',
+            dementiaMode: false,
+            autoCapture: true,
+            debugMode: true
+          };
+          
+          console.log('⚙️ Settings loaded:', this.settings);
+        } catch (error) {
+          console.error('⚙️ Failed to load settings:', error);
+          this.settings = {
+            apiKey: '',
+            dementiaMode: false,
+            autoCapture: true,
+            debugMode: true
+          };
+        }
+      }
+      
+      saveSettings() {
+        try {
+          localStorage.setItem('emmaSettings', JSON.stringify(this.settings));
+          console.log('⚙️ Settings saved:', this.settings);
+          this.showToast('✅ Settings saved successfully!', 'success');
+        } catch (error) {
+          console.error('⚙️ Failed to save settings:', error);
+          this.showToast('❌ Failed to save settings', 'error');
+        }
+      }
+      
+      updateUI() {
+        // Update form elements
+        document.getElementById('api-key-input').value = this.settings.apiKey || '';
+        document.getElementById('dementia-mode-toggle').checked = this.settings.dementiaMode || false;
+        document.getElementById('auto-capture-toggle').checked = this.settings.autoCapture !== false;
+        document.getElementById('debug-mode-toggle').checked = this.settings.debugMode !== false;
+        
+        // Update AI status
+        this.updateAIStatus();
+      }
+      
+      updateAIStatus() {
+        const statusDot = document.getElementById('ai-status-dot');
+        const statusText = document.getElementById('ai-status-text');
+        
+        if (this.settings.apiKey) {
+          statusDot.classList.add('active');
+          statusText.textContent = 'AI Enhanced (OpenAI)';
+        } else {
+          statusDot.classList.remove('active');
+          statusText.textContent = 'Heuristics Mode (Local)';
+        }
+      }
+      
+      setupEventListeners() {
+        // API Key input
+        document.getElementById('api-key-input').addEventListener('input', (e) => {
+          this.settings.apiKey = e.target.value.trim();
+          this.updateAIStatus();
+        });
+        
+        // Toggle switches
+        document.getElementById('dementia-mode-toggle').addEventListener('change', (e) => {
+          this.settings.dementiaMode = e.target.checked;
+        });
+        
+        document.getElementById('auto-capture-toggle').addEventListener('change', (e) => {
+          this.settings.autoCapture = e.target.checked;
+        });
+        
+        document.getElementById('debug-mode-toggle').addEventListener('change', (e) => {
+          this.settings.debugMode = e.target.checked;
+        });
+        
+        // Save button
+        document.getElementById('save-all-settings').addEventListener('click', () => {
+          this.saveSettings();
+        });
+        
+        // Auto-save on changes
+        document.addEventListener('change', () => {
+          setTimeout(() => this.saveSettings(), 500);
+        });
+      }
+      
+      showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: ${type === 'success' ? 'rgba(16, 185, 129, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(59, 130, 246, 0.9)'};
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          z-index: 10000;
+          backdrop-filter: blur(10px);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          transform: translateX(100%);
+          transition: transform 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+        setTimeout(() => {
+          toast.style.transform = 'translateX(100%)';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+    }
+    
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      window.emmaSettingsManager = new EmmaSettingsManager();
+    });
+  </script>
+</body>
+</html>
