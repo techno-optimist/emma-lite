@@ -127,6 +127,7 @@ class EmmaMobileUIFixes {
         /* Chat Input Area */
         .emma-chat-input {
           padding: 16px !important;
+          padding-bottom: 20px !important; /* Extra bottom spacing */
           margin: 0 !important;
         }
         
@@ -182,7 +183,7 @@ class EmmaMobileUIFixes {
         .chat-settings-btn {
           position: absolute !important;
           top: 12px !important;
-          right: 56px !important; /* 12px + 36px + 8px gap */
+          left: 12px !important; /* Top-left corner, mirrored to close button */
           width: 36px !important;
           height: 36px !important;
           background: rgba(255, 255, 255, 0.1) !important;
@@ -426,6 +427,7 @@ class EmmaMobileUIFixes {
         
         .emma-chat-input {
           padding: 16px !important;
+          padding-bottom: 24px !important; /* Extra bottom spacing for desktop */
           margin: 0 !important;
         }
         
@@ -477,7 +479,7 @@ class EmmaMobileUIFixes {
         .chat-settings-btn {
           position: absolute !important;
           top: 16px !important;
-          right: 64px !important; /* 16px + 40px + 8px gap */
+          left: 16px !important; /* Top-left corner, mirrored to close button */
           width: 40px !important;
           height: 40px !important;
           background: rgba(255, 255, 255, 0.1) !important;
