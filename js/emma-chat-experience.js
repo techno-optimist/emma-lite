@@ -727,11 +727,21 @@ class EmmaChatExperience extends ExperiencePopup {
           hasMemories: memories.length > 0,
           memoryCount: memories.length,
           hasPeople: people.length > 0,
-          peopleNames: people.map(p => p.name),
+          peopleNames: people.map(p => p.name).filter(Boolean),
           recentMemory,
           oldestMemory: memories[0],
           themes: this.extractThemesFromMemories(memories)
         };
+        
+        // NUCLEAR DEBUG: Log people data structure
+        console.log('🔍 VAULT PEOPLE DEBUG:', {
+          peopleCount: people.length,
+          peopleArray: people,
+          peopleNames: vaultInsights.peopleNames,
+          firstPerson: people[0],
+          hasMarkInPeople: people.some(p => p.name?.toLowerCase().includes('mark')),
+          hasMarkInNames: vaultInsights.peopleNames.some(name => name?.toLowerCase().includes('mark'))
+        });
       }
     } catch (e) {
       console.log('🔍 Vault context unavailable');
@@ -1309,6 +1319,15 @@ class EmmaChatExperience extends ExperiencePopup {
           lastMemoryAge: memories.length > 0 ? Math.floor((now - memories[memories.length - 1].created) / (1000 * 60 * 60 * 24)) : null,
           hasPhotos: memories.some(m => m.attachments?.length > 0)
         };
+        
+        // NUCLEAR DEBUG: Log people data for welcome message
+        console.log('🔍 WELCOME PEOPLE DEBUG:', {
+          peopleCount: people.length,
+          peopleArray: people,
+          favoritePersons: vaultContext.favoritePersons,
+          firstPersonName: people[0]?.name,
+          allPeopleNames: people.map(p => p.name).filter(Boolean)
+        });
       }
     } catch (e) {
       console.log('🔍 No vault context for welcome message');
