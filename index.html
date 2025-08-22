@@ -10,6 +10,9 @@
   <script src="js/clean-password-modal.js"></script>
   <script src="js/emma-web-vault.js"></script>
   
+  <!-- Browser Compatibility Layer -->
+  <script src="emma-browser-compatibility-fix.js"></script>
+  
     <!-- Emma Orb System -->
     <script src="js/base-orb.js"></script>
     <script src="js/emma-orb.js"></script>
@@ -696,10 +699,20 @@
 
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
-            // Wait for Emma systems to load
+            // Wait for Emma systems to load (including compatibility layer)
             setTimeout(() => {
                 window.cleanEmmaApp = new CleanEmmaApp();
-            }, 500);
+                
+                // Show browser compatibility status
+                if (window.emmaBrowserCompatibility) {
+                    const report = window.emmaBrowserCompatibility.getCompatibilityReport();
+                    console.log('🌐 EMMA: Browser compatibility report:', report);
+                    
+                    if (report.compatibility.issues.length > 0) {
+                        console.warn('⚠️ EMMA: Compatibility issues detected for', report.browser.name);
+                    }
+                }
+            }, 600); // Slightly longer to ensure compatibility layer loads
     });
   </script>
 </body>
