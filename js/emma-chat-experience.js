@@ -2190,13 +2190,22 @@ class EmmaChatExperience extends ExperiencePopup {
           dataUrlStart: mediaItem.dataUrl ? mediaItem.dataUrl.substring(0, 50) : 'none'
         });
         
-        return {
+        const convertedItem = {
           id: mediaItem.id,
           name: mediaItem.name,
           type: mediaItem.type,
           size: mediaItem.size,
-          data: mediaItem.dataUrl // Convert dataUrl to data property
+          data: mediaItem.dataUrl || mediaItem.data // Try both dataUrl and data properties
         };
+        
+        console.log('🔥 CONVERSION RESULT:', {
+          originalHasDataUrl: !!mediaItem.dataUrl,
+          originalHasData: !!mediaItem.data,
+          convertedHasData: !!convertedItem.data,
+          dataType: typeof convertedItem.data
+        });
+        
+        return convertedItem;
       })
     };
     
