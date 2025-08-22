@@ -317,29 +317,35 @@ class EmmaWebVault {
     
     // Check if we need passphrase for encryption and don't have it
     if (attachments.length > 0 && !this.passphrase) {
-      console.log('🔐 Passphrase needed for media encryption - requesting from user');
-      console.log('🔐 Modal available?', !!window.cleanSecurePasswordModal);
-      
-      if (window.cleanSecurePasswordModal) {
-        try {
-          this.passphrase = await window.cleanSecurePasswordModal.show({
-            title: 'Unlock Vault for Media',
-            message: 'Enter your vault passphrase to encrypt media attachments',
-            placeholder: 'Enter vault passphrase...'
-          });
-          console.log('🔐 Passphrase obtained via secure modal');
-        } catch (error) {
-          console.error('🔐 Secure modal failed:', error);
-          // Fallback to browser prompt
-          this.passphrase = prompt('Enter your vault passphrase to encrypt media:');
-        }
-      } else {
-        console.warn('🔐 Secure modal not available - using browser prompt');
-        this.passphrase = prompt('Enter your vault passphrase to encrypt media:');
-      }
+      // FIRST: Try to restore passphrase from session storage
+      this.passphrase = sessionStorage.getItem('emmaVaultPassphrase');
+      console.log('🔐 CRITICAL: Attempting to restore passphrase from session:', !!this.passphrase);
       
       if (!this.passphrase) {
-        throw new Error('Passphrase is required to encrypt media attachments');
+        console.log('🔐 Passphrase needed for media encryption - requesting from user');
+        console.log('🔐 Modal available?', !!window.cleanSecurePasswordModal);
+        
+        if (window.cleanSecurePasswordModal) {
+          try {
+            this.passphrase = await window.cleanSecurePasswordModal.show({
+              title: 'Unlock Vault for Media',
+              message: 'Enter your vault passphrase to encrypt media attachments',
+              placeholder: 'Enter vault passphrase...'
+            });
+            console.log('🔐 Passphrase obtained via secure modal');
+          } catch (error) {
+            console.error('🔐 Secure modal failed:', error);
+            // Fallback to browser prompt
+            this.passphrase = prompt('Enter your vault passphrase to encrypt media:');
+          }
+        } else {
+          console.warn('🔐 Secure modal not available - using browser prompt');
+          this.passphrase = prompt('Enter your vault passphrase to encrypt media:');
+        }
+        
+        if (!this.passphrase) {
+          throw new Error('Passphrase is required to encrypt media attachments');
+        }
       }
     }
     
@@ -861,7 +867,9 @@ class EmmaWebVault {
     // Restore passphrase from session if missing
     if (!this.passphrase) {
       this.passphrase = sessionStorage.getItem('emmaVaultPassphrase');
-      console.log('🔐 MEDIA: Restored passphrase from session storage');
+      console.log('🔐 MEDIA: Restored passphrase from session storage:', !!this.passphrase);
+    } else {
+      console.log('🔐 MEDIA: Passphrase already available in memory');
     }
     
     if (!this.passphrase) {
