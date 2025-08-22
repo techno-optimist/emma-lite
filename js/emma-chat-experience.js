@@ -808,10 +808,25 @@ class EmmaChatExperience extends ExperiencePopup {
     if (isQuestion) {
       // Check if asking about a specific person in the vault
       if (vaultInsights?.peopleNames?.length > 0) {
+        console.log('🔍 PERSON MATCHING DEBUG:', {
+          userMessage: lower,
+          availablePeople: vaultInsights.peopleNames,
+          searchingFor: 'mark',
+          includesMarkTest: lower.includes('mark'),
+          peopleNameMatches: vaultInsights.peopleNames.map(name => ({
+            name: name,
+            lowerName: name?.toLowerCase(),
+            includesInMessage: lower.includes(name?.toLowerCase()),
+            firstNameMatch: lower.includes(name?.toLowerCase().split(' ')[0])
+          }))
+        });
+        
         const askedAboutPerson = vaultInsights.peopleNames.find(name => 
           lower.includes(name.toLowerCase()) || 
           lower.includes(name.toLowerCase().split(' ')[0]) // First name match
         );
+        
+        console.log('🔍 PERSON MATCH RESULT:', { askedAboutPerson, foundMatch: !!askedAboutPerson });
         
         if (askedAboutPerson) {
           // Find memories about this person
