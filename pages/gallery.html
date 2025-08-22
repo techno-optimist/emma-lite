@@ -313,6 +313,7 @@
       bottom: 0;
       left: 0;
       right: 0;
+      width: 100%; /* Ensure full width */
       background: linear-gradient(
         transparent 0%,
         rgba(0, 0, 0, 0.3) 40%,
@@ -325,12 +326,45 @@
       align-items: flex-end;
       z-index: 2;
       border-radius: 0 0 20px 20px; /* Match card border radius */
+      box-sizing: border-box; /* Include padding in width */
     }
 
     .memory-text-content {
       flex: 1;
       text-align: left;
       margin-right: 16px;
+      min-width: 0; /* Allow flex shrinking */
+    }
+
+    /* Responsive improvements for smaller screens */
+    @media (max-width: 768px) {
+      .memory-info-overlay {
+        padding: 30px 16px 16px; /* Reduced padding for mobile */
+      }
+      
+      .memory-text-content {
+        margin-right: 12px; /* Less margin on mobile */
+      }
+      
+      .memory-card-title {
+        font-size: 16px !important; /* Smaller title on mobile */
+        line-height: 1.3 !important;
+      }
+      
+      .memory-card-excerpt {
+        font-size: 13px !important; /* Smaller excerpt on mobile */
+        line-height: 1.4 !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .memory-info-overlay {
+        padding: 24px 12px 12px; /* Even more compact for very small screens */
+      }
+      
+      .memory-text-content {
+        margin-right: 8px;
+      }
     }
 
     .memory-people-avatars {

@@ -36,15 +36,33 @@ function openMemoryDetailModal(memory) {
     animation: fadeIn 0.3s ease;
   `;
 
+  // Create overlay first
+  const overlay = document.createElement('div');
+  overlay.className = 'memory-detail-overlay';
+  overlay.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 1;
+  `;
+
   // Create modal content
-  const modalContent = createModalContent(memory);
-  modal.appendChild(modalContent);
+  const content = createModalContent(memory);
+  content.style.zIndex = '2';
+  content.style.position = 'relative';
+
+  // Add both to modal
+  modal.appendChild(overlay);
+  modal.appendChild(content);
 
   // Add to DOM
   document.body.appendChild(modal);
   
   // Setup event handlers
-  setupModalEventHandlers(modal, memory);
+  setupModalEventHandlers(modal, memory, overlay, content);
   
   // Store reference
   window.currentMemory = memory;
@@ -68,17 +86,6 @@ function openMemoryDetailModal(memory) {
  * @returns {HTMLElement} - The modal content element
  */
 function createModalContent(memory) {
-  const overlay = document.createElement('div');
-  overlay.className = 'memory-detail-overlay';
-  overlay.style.cssText = `
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-  `;
-
   const content = document.createElement('div');
   content.className = 'memory-detail-content';
   content.style.cssText = `
@@ -264,11 +271,7 @@ function createModalContent(memory) {
     </div>
   `;
 
-  const container = document.createElement('div');
-  container.appendChild(overlay);
-  container.appendChild(content);
-  
-  return container;
+  return content;
 }
 
 /**
@@ -276,27 +279,39 @@ function createModalContent(memory) {
  * @param {HTMLElement} modal - The modal element
  * @param {Object} memory - The memory object
  */
-function setupModalEventHandlers(modal, memory) {
+function setupModalEventHandlers(modal, memory, overlay, content) {
+  console.log('🎪 MODAL: Setting up event handlers');
+  
   // Prevent modal from closing when clicking inside content
-  const content = modal.querySelector('.memory-detail-content');
   if (content) {
     content.addEventListener('click', (e) => {
+      console.log('🎪 MODAL: Content clicked - preventing propagation');
       e.stopPropagation(); // Prevent bubbling to overlay
     });
   }
 
   // Close modal when clicking overlay
-  const overlay = modal.querySelector('.memory-detail-overlay');
   if (overlay) {
-    overlay.addEventListener('click', () => {
+    overlay.addEventListener('click', (e) => {
+      console.log('🎪 MODAL: Overlay clicked - closing modal');
+      e.stopPropagation();
       closeModal(modal);
     });
   }
 
+  // Also add click handler to modal background
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      console.log('🎪 MODAL: Modal background clicked - closing modal');
+      closeModal(modal);
+    }
+  });
+
   // Close button
-  const closeBtn = modal.querySelector('.modal-close-btn');
+  const closeBtn = content.querySelector('.modal-close-btn');
   if (closeBtn) {
     closeBtn.addEventListener('click', (e) => {
+      console.log('🎪 MODAL: Close button clicked');
       e.preventDefault();
       e.stopPropagation();
       closeModal(modal);
