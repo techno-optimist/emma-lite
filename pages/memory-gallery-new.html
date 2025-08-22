@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Memory Gallery - Emma</title>
+  <link rel="stylesheet" href="../css/memory-detail-modal.css">
   <style>
     /* Emma Brand Variables */
     :root {
@@ -59,54 +60,27 @@
       50% { transform: translate(-20px, -20px) rotate(180deg); }
     }
 
-    /* Header */
+    /* Gallery Title - Simple like People Page */
     .gallery-header {
       text-align: center;
-      padding: 48px 20px 32px;
-      background: var(--emma-card-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--emma-border);
-      border-radius: 24px;
-      margin: 20px auto 40px;
-      max-width: 1200px;
-      position: relative;
-      overflow: hidden;
+      margin-bottom: 40px;
     }
 
-    .gallery-header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: var(--emma-gradient-1);
-    }
-
-    .header-title {
-      font-size: 48px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    .gallery-title {
+      font-size: 3.5rem;
+      font-weight: 300;
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #06b6d4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
     }
 
-    .header-subtitle {
-      font-size: 18px;
-      color: var(--emma-text-secondary);
+    .gallery-subtitle {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.7);
       font-weight: 300;
-      letter-spacing: 0.5px;
-      margin-bottom: 32px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
     }
 
     /* Beautiful Buttons */
@@ -148,11 +122,15 @@
       font-size: 20px;
     }
 
-    /* Memory Gallery Grid */
+    /* Memory Gallery Container - Fullscreen like people page */
     .gallery-container {
-      max-width: 1200px;
-      margin: 0 auto;
+      position: relative;
+      min-height: 100vh;
       padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
     }
 
     .gallery-filters {
@@ -189,33 +167,119 @@
       transform: translateY(-1px);
     }
 
-    /* Memory Cards Grid */
+    /* Memory Cards Grid - Responsive Fullscreen like People Page */
     .memories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 400px));
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
       gap: 32px;
-      justify-content: center;
+      width: 100%;
+      max-width: 100vw;
+      padding: 0 40px;
+      margin-bottom: 40px;
+      grid-auto-rows: minmax(400px, 1fr);
     }
 
+    /* Responsive grid adjustments - same as people page */
+    @media (min-width: 768px) {
+      .memories-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .memories-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .memories-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* Memory Card - Matching People Card Design */
     .memory-card {
-      background: var(--emma-card-bg);
+      background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(20px);
-      border: 1px solid var(--emma-border);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 20px;
-      overflow: hidden;
-      transition: all 0.4s ease;
+      padding: 48px 32px;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       position: relative;
-      z-index: 999999;
-      pointer-events: auto;
-      max-width: 400px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
       width: 100%;
     }
 
-    .memory-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 60px rgba(118, 75, 162, 0.3);
-      border-color: rgba(240, 147, 251, 0.5);
+    /* Memory Photo Slideshow Background */
+    .memory-slideshow-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.4;
+      transition: opacity 1s ease;
+    }
+
+    .memory-card:hover .memory-slideshow-bg {
+      opacity: 1;
+    }
+
+    /* Touch devices - always show slideshow */
+    @media (hover: none) and (pointer: coarse) {
+      .memory-slideshow-bg {
+        opacity: 0.7;
+      }
+    }
+
+    .memory-slide-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 2s ease-in-out;
+    }
+
+    .memory-slide-bg.active {
+      opacity: 1;
+    }
+
+    /* Emma Gradient Overlay - same as people page */
+    .memory-slideshow-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        135deg,
+        rgba(139, 92, 246, 0.85) 0%,
+        rgba(236, 72, 153, 0.75) 50%,
+        rgba(6, 182, 212, 0.85) 100%
+      );
+      mix-blend-mode: multiply;
+      pointer-events: none;
+    }
+
+    /* Ensure content stays above slideshow */
+    .memory-card > *:not(.memory-slideshow-bg) {
+      position: relative;
+      z-index: 1;
     }
 
     .memory-card::before {
@@ -224,93 +288,116 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: var(--emma-gradient-1);
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
       opacity: 0;
       transition: opacity 0.3s ease;
+      border-radius: 20px;
     }
 
     .memory-card:hover::before {
       opacity: 1;
     }
 
-    .memory-image {
-      width: 100%;
-      height: 200px;
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(240, 147, 251, 0.2));
+    .memory-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(139, 92, 246, 0.3);
+      box-shadow:
+        0 20px 40px rgba(139, 92, 246, 0.2),
+        0 0 0 1px rgba(139, 92, 246, 0.1);
+    }
+
+    /* Memory Icon Circle - Like People Avatar */
+    .memory-icon-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto 24px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 48px;
-      color: var(--emma-text-tertiary);
+      font-weight: 700;
+      color: white;
       position: relative;
       overflow: hidden;
+      box-shadow: 
+        0 0 0 4px rgba(255, 255, 255, 0.2),
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        0 0 80px rgba(139, 92, 246, 0.4);
+      transition: all 0.4s ease;
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
     }
 
-    .memory-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .memory-card:hover .memory-icon-circle {
+      transform: scale(1.1);
+      box-shadow: 
+        0 0 0 6px rgba(255, 255, 255, 0.3),
+        0 12px 48px rgba(0, 0, 0, 0.4),
+        0 0 120px rgba(236, 72, 153, 0.6);
     }
 
-    .memory-image::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 50%;
-      background: linear-gradient(transparent, rgba(26, 16, 51, 0.7));
-    }
-
-    .memory-content {
-      padding: 24px;
-    }
-
+    /* Memory content styles - matching people page */
     .memory-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--emma-text);
+      font-size: 1.8rem;
+      font-weight: 700;
       margin-bottom: 8px;
-      line-height: 1.3;
+      color: white;
+      text-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.4),
+        0 0 20px rgba(139, 92, 246, 0.5);
+      letter-spacing: -0.02em;
     }
 
     .memory-excerpt {
-      font-size: 14px;
-      color: var(--emma-text-secondary);
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.9);
       line-height: 1.5;
       margin-bottom: 16px;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-    }
-
-    .memory-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--emma-text-tertiary);
+      text-align: center;
+      padding: 0 16px;
     }
 
     .memory-date {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 16px;
+      font-weight: 500;
+      padding: 6px 16px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      display: inline-block;
     }
 
     .memory-tags {
       display: flex;
       gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: auto;
+      padding-top: 16px;
     }
 
     .memory-tag {
-      padding: 4px 8px;
-      background: rgba(118, 75, 162, 0.2);
-      border-radius: 12px;
-      font-size: 10px;
-      color: var(--emma-pink);
+      padding: 6px 12px;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 16px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.9);
+      transition: all 0.3s ease;
+    }
+
+    .memory-tag:hover {
+      background: rgba(139, 92, 246, 0.3);
+      border-color: rgba(139, 92, 246, 0.5);
+      transform: translateY(-1px);
     }
 
     /* Empty State */
@@ -447,25 +534,52 @@
       margin-top: 40px;
     }
 
-    /* Responsive Design */
+    /* Responsive - iPad and smaller */
     @media (max-width: 768px) {
-      .header-title {
-        font-size: 36px;
+      .gallery-title {
+        font-size: 2.5rem;
       }
-      
+
+      .gallery-container {
+        padding: 20px 16px;
+      }
+
       .memories-grid {
-        grid-template-columns: 1fr;
-        gap: 24px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding: 0 20px;
+        grid-auto-rows: minmax(350px, 1fr);
+      }
+
+      .memory-card {
+        min-height: 350px;
+        padding: 32px 24px;
+      }
+
+      .memory-icon-circle {
+        width: 100px;
+        height: 100px;
+        font-size: 40px;
+      }
+
+      .memory-title {
+        font-size: 1.5rem;
       }
       
       .gallery-filters {
-        flex-direction: column;
-        align-items: center;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0 20px;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
       }
-      
-      .header-actions {
-        flex-direction: column;
-        align-items: center;
+    }
+
+    /* Mobile phones */
+    @media (max-width: 480px) {
+      .memories-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
       }
     }
 
@@ -525,6 +639,11 @@
 </head>
 <body>
   <div class="gallery-container">
+    <!-- Header -->
+    <div class="gallery-header">
+      <h1 class="gallery-title">emma</h1>
+      <p class="gallery-subtitle">Your Treasured Memories</p>
+    </div>
 
     <!-- Memory Grid -->
     <div class="memories-grid" id="memories-grid">

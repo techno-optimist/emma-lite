@@ -273,7 +273,7 @@ function renderMemories() {
 }
 
 /**
- * Create a beautiful memory card HTML
+ * Create a beautiful memory card HTML - matching people page design
  */
 function createMemoryCard(memory) {
   const date = new Date(memory.date);
@@ -286,25 +286,108 @@ function createMemoryCard(memory) {
   const categoryIcon = getCategoryIcon(memory.category);
   const favoriteIcon = memory.favorite ? '❤️' : '';
 
-  return `
-    <div class="memory-card" data-memory-id="${memory.id}">
-      <div class="memory-image">
-        ${memory.image && memory.image.startsWith('data:') ? `<img src="${memory.image}" alt="${memory.title}">` : `<div class="category-icon">${categoryIcon}</div>`}
-      </div>
-      <div class="memory-content">
-        <h3 class="memory-title">${escapeHtml(memory.title)} ${favoriteIcon}</h3>
-        <p class="memory-excerpt">${escapeHtml(cleanExcerptForPreview(memory.excerpt))}</p>
-        <div class="memory-meta">
-          <div class="memory-date">
-            <span>${formattedDate}</span>
-          </div>
-          <div class="memory-tags">
-            ${memory.tags.slice(0, 2).map(tag => `<span class="memory-tag">${escapeHtml(tag)}</span>`).join('')}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+  // Create card element
+  const card = document.createElement('div');
+  card.className = 'memory-card';
+  card.setAttribute('data-memory-id', memory.id);
+
+  // Create slideshow background if memory has images
+  if (memory.mediaItems && memory.mediaItems.length > 0) {
+    const slideshow = createMemorySlideshow(memory);
+    if (slideshow) {
+      card.appendChild(slideshow);
+    }
+  }
+
+  // Memory icon circle (like people avatar)
+  const iconCircle = document.createElement('div');
+  iconCircle.className = 'memory-icon-circle';
+  iconCircle.textContent = categoryIcon;
+
+  // Memory content
+  const title = document.createElement('h3');
+  title.className = 'memory-title';
+  title.innerHTML = escapeHtml(memory.title) + ' ' + favoriteIcon;
+
+  const excerpt = document.createElement('p');
+  excerpt.className = 'memory-excerpt';
+  excerpt.textContent = cleanExcerptForPreview(memory.excerpt);
+
+  const dateDiv = document.createElement('div');
+  dateDiv.className = 'memory-date';
+  dateDiv.textContent = formattedDate;
+
+  // Tags
+  const tagsDiv = document.createElement('div');
+  tagsDiv.className = 'memory-tags';
+  memory.tags.slice(0, 3).forEach(tag => {
+    const tagSpan = document.createElement('span');
+    tagSpan.className = 'memory-tag';
+    tagSpan.textContent = tag;
+    tagsDiv.appendChild(tagSpan);
+  });
+
+  // Assemble card
+  card.appendChild(iconCircle);
+  card.appendChild(title);
+  card.appendChild(excerpt);
+  card.appendChild(dateDiv);
+  if (memory.tags.length > 0) {
+    card.appendChild(tagsDiv);
+  }
+
+  return card.outerHTML;
+}
+
+/**
+ * Create memory slideshow background
+ */
+function createMemorySlideshow(memory) {
+  try {
+    // Get image attachments
+    const images = memory.mediaItems.filter(item => 
+      item.type && item.type.startsWith('image/') && item.url
+    );
+
+    if (images.length === 0) return null;
+
+    // Create slideshow container
+    const slideshow = document.createElement('div');
+    slideshow.className = 'memory-slideshow-bg';
+
+    // Create slides (limit to 3 for performance)
+    images.slice(0, 3).forEach((image, index) => {
+      const slide = document.createElement('div');
+      slide.className = 'memory-slide-bg';
+      slide.style.backgroundImage = `url(${image.url})`;
+      
+      // First slide active
+      if (index === 0) {
+        slide.classList.add('active');
+      }
+      
+      slideshow.appendChild(slide);
+    });
+
+    // Start carousel if multiple slides
+    if (images.length > 1) {
+      let currentSlide = 0;
+      setInterval(() => {
+        const slides = slideshow.querySelectorAll('.memory-slide-bg');
+        if (slides.length > 1) {
+          slides[currentSlide].classList.remove('active');
+          currentSlide = (currentSlide + 1) % slides.length;
+          slides[currentSlide].classList.add('active');
+        }
+      }, 4000); // Change slide every 4 seconds
+    }
+
+    return slideshow;
+
+  } catch (error) {
+    console.error('❌ Error creating memory slideshow:', error);
+    return null;
+  }
 }
 
 /**
@@ -2506,7 +2589,4 @@ function downloadQRCode(qrDataUrl, memoryTitle) {
 // Global access
 window.openQRShareModal = openQRShareModal;
 
-<<<<<<< Current (Your changes)
 console.log('💝 Beautiful Memory Gallery: Ready to honor precious moments');
-=======
->>>>>>> Incoming (Background Agent changes)
