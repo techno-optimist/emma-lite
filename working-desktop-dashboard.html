@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emma - Your Intelligent Memory Companion</title>
   
+  <!-- Cache busting meta tags -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
   <!-- Load Emma Web Vault System -->
   <script src="js/emma-input-modal.js"></script>
   <script src="js/clean-password-modal.js"></script>
@@ -1807,18 +1812,10 @@
         </div>
       </div>
 
-  <!-- Bottom Left Utility Icons -->
+  <!-- Bottom Left Utility Icons - Clean interface -->
   <div class="utility-icons">
-    <div class="utility-item" data-action="search">
-      <div class="utility-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-      </div>
-      <div class="utility-label">Search</div>
-    </div>
-    <div class="utility-item" data-action="settings">
+    <!-- Search removed - clean interface -->
+    <div class="utility-item" onclick="window.location.href='pages/emma-settings-redesigned.html'">
       <div class="utility-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
@@ -3453,12 +3450,11 @@
         console.log('🔧 Utility action:', action);
         
         switch(action) {
-          case 'search':
-            this.showToast('🔍 Search coming soon!', 'info');
-            break;
           case 'settings':
-            window.location.href = 'pages/options.html';
+            window.location.href = 'pages/emma-settings-redesigned.html';
             break;
+          default:
+            console.log('🔧 Unknown utility action:', action);
         }
       }
 
