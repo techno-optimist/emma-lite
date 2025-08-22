@@ -374,17 +374,13 @@ async function loadMemories() {
     // ✅ VAULT-ONLY ACCESS - Single source of truth via VaultGuardian
 
     try {
-      // Import VaultGuardian if not already available
-      if (!window.VaultGuardian) {
-        const module = await import('../lib/vault-guardian.js');
-        window.VaultGuardian = module.default;
+      // Use EmmaWebVault instead of legacy VaultGuardian
+      if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+        console.warn('🔸 EmmaWebVault not available for vault status');
+        return { available: false, reason: 'Vault not unlocked' };
       }
 
-      // Initialize VaultGuardian
-      await window.VaultGuardian.initialize();
-
-      // Force refresh VaultGuardian status to ensure we have the latest state
-      await window.VaultGuardian.getStatus();
+      // Get vault status from EmmaWebVault (already checked above)
 
       // CRITICAL FIX: Check vault status using new extension FSM system
       const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' ||

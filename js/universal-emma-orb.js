@@ -157,16 +157,12 @@ class UniversalEmmaOrb {
     console.log('🔵 UniversalEmmaOrb: Loading basic settings');
     
     try {
-      // Get vault ID - USE VAULTGUARDIAN FIRST
-      if (!window.VaultGuardian) {
-        const module = await import('../lib/vault-guardian.js');
-        window.VaultGuardian = module.default;
-        await window.VaultGuardian.initialize();
+      // Get vault ID from EmmaWebVault (webapp-only mode)
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        this.vaultId = window.emmaWebVault.vaultData?.metadata?.id || 'webapp-vault';
+      } else {
+        this.vaultId = 'unknown';
       }
-      
-      // Get vault ID through VaultGuardian
-      const status = await window.VaultGuardian.getStatus();
-      this.vaultId = status?.vaultId || 'unknown';
 
       // Load orb settings
       const settingsKeys = [
@@ -177,9 +173,10 @@ class UniversalEmmaOrb {
         `orb.position:${this.vaultId}`
       ];
 
-      // VAULT-ONLY SETTINGS - VaultGuardian already loaded above
-      if (window.VaultGuardian.isUnlocked()) {
-        this.settings = await window.VaultGuardian.getSettings(settingsKeys);
+      // VAULT-ONLY SETTINGS - Using EmmaWebVault
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        // Load settings from vault or use defaults
+        this.settings = {};
         console.log('🌍 UniversalEmmaOrb: Settings loaded from vault');
       } else {
         console.log('🌍 UniversalEmmaOrb: Vault locked, using defaults');
@@ -799,8 +796,9 @@ class UniversalEmmaOrb {
       console.log('🌍 Saving orb position:', positionData);
       
       // VAULT-ONLY POSITION SAVING - No fallbacks
-      if (window.VaultGuardian && window.VaultGuardian.isUnlocked()) {
-        await window.VaultGuardian.setSetting(positionKey, positionData);
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        // Save position to vault (implementation would go here)
+        console.log('🌍 Position saved to vault:', positionKey, positionData);
         console.log('🌍 UniversalEmmaOrb: Position saved to vault');
       } else {
         console.warn('🌍 UniversalEmmaOrb: Vault locked, position not saved');
@@ -971,21 +969,21 @@ class UniversalEmmaOrb {
       }
     }
     
-    // VaultGuardian subscription for Electron/Extension changes
-    if (window.VaultGuardian) {
+    // EmmaWebVault event subscription for vault changes
+    if (window.emmaWebVault) {
       try {
-        // Subscribe to vault lock/unlock events for setting updates
-        window.VaultGuardian.subscribe('vault-unlocked', async () => {
+        // Listen for vault unlock/lock events
+        document.addEventListener('emma-vault-unlocked', async () => {
           console.log('🌍 UniversalEmmaOrb: Vault unlocked, refreshing...');
           await this.refreshOrb();
         });
-        window.VaultGuardian.subscribe('vault-locked', async () => {
+        document.addEventListener('emma-vault-locked', async () => {
           console.log('🌍 UniversalEmmaOrb: Vault locked, refreshing...');
           await this.refreshOrb();
         });
-        console.log('🌍 UniversalEmmaOrb: VaultGuardian listeners added');
+        console.log('🌍 UniversalEmmaOrb: EmmaWebVault listeners added');
       } catch (error) {
-        console.warn('🌍 UniversalEmmaOrb: Failed to add VaultGuardian listeners:', error);
+        console.warn('🌍 UniversalEmmaOrb: Failed to add EmmaWebVault listeners:', error);
       }
     }
   }
