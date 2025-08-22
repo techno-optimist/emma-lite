@@ -253,6 +253,7 @@ class EmmaWebVault {
   async addMemory({ content, metadata = {}, attachments = [] }) {
 
     // Add memory to vault
+    console.log('Adding memory to vault:', {
       isOpen: this.isOpen,
       hasPassphrase: !!this.passphrase,
       sessionActive: sessionStorage.getItem('emmaVaultActive'),
