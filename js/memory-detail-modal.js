@@ -67,14 +67,20 @@ function openMemoryDetailModal(memory) {
   // Store reference
   window.currentMemory = memory;
   
-  // Focus title input
+  // Focus title input after modal is fully rendered
+  // Delay focus to ensure modal is stable
   setTimeout(() => {
-    const titleInput = modal.querySelector('#memory-title-input');
-    if (titleInput) {
-      titleInput.focus();
-      titleInput.select();
+    try {
+      const titleInput = modal.querySelector('#memory-title-input');
+      if (titleInput && modal.parentNode) {
+        console.log('🎪 MODAL: Focusing title input');
+        titleInput.focus();
+        titleInput.select();
+      }
+    } catch (error) {
+      console.warn('🎪 MODAL: Could not focus title input:', error);
     }
-  }, 100);
+  }, 300); // Longer delay to ensure modal is stable
 
   console.log('✨ MODAL: Memory detail modal opened successfully');
   return modal;

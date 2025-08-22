@@ -286,8 +286,12 @@ class ExperiencePopup {
         console.log('🔥 POPUP CLICK DEBUG: Ignoring orb click');
         return;
       }
-      // Don't close if clicking on any modal (password, input, etc.)
-      if (e.target.closest('.clean-modal-overlay') || e.target.closest('.emma-input-modal-overlay')) {
+      // Don't close if clicking on any modal (password, input, memory detail, etc.)
+      if (e.target.closest('.clean-modal-overlay') || 
+          e.target.closest('.emma-input-modal-overlay') || 
+          e.target.closest('.memory-modal') ||
+          e.target.closest('[role="dialog"]') ||
+          e.target.closest('.modal')) {
         console.log('🔥 POPUP CLICK DEBUG: Clicked on modal - not closing popup');
         return;
       }
