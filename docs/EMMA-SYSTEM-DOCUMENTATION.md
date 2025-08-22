@@ -288,7 +288,7 @@ addMedia({ type, data, name, file })
 getMedia(mediaId)
 ```
 
-#### **2. Memory Gallery** (`js/memory-gallery-new.js`)
+#### **2. Memory Gallery** (`js/gallery.js`)
 **Purpose**: Memory visualization and interaction
 - **Gallery Rendering**: Beautiful memory card grid
 - **Modal System**: Detailed memory viewing and editing
@@ -806,11 +806,11 @@ emma-lite-extension/
 │   └── emma-orb.js          # Orb component
 ├── js/                      # Web app JavaScript
 │   ├── emma-web-vault.js    # Vault API
-│   ├── memory-gallery-new.js # Gallery system
+│   ├── gallery.js # Gallery system
 │   └── unified-memory-wizard.js # Memory creation
 ├── pages/                   # Web app pages
 │   ├── people-emma.html     # People directory
-│   └── memory-gallery-new.html # Memory gallery
+│   └── gallery.html # Memory gallery
 ├── dashboard.html # Main dashboard
 └── index.html              # Entry point
 ```
