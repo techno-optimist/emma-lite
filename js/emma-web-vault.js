@@ -318,10 +318,21 @@ class EmmaWebVault {
     // Check if we need passphrase for encryption and don't have it
     if (attachments.length > 0 && !this.passphrase) {
       // FIRST: Try to restore passphrase from session storage
-      this.passphrase = sessionStorage.getItem('emmaVaultPassphrase');
-      console.log('🔐 CRITICAL: Attempting to restore passphrase from session:', !!this.passphrase);
+      const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
+      console.log('🔐 CRITICAL: SessionStorage passphrase check:', {
+        hasSessionPassphrase: !!sessionPassphrase,
+        currentPassphrase: !!this.passphrase,
+        sessionStorageKeys: Object.keys(sessionStorage),
+        isVaultOpen: this.isOpen
+      });
       
-      if (!this.passphrase) {
+      if (sessionPassphrase) {
+        this.passphrase = sessionPassphrase;
+        console.log('🔐 SUCCESS: Restored passphrase from sessionStorage - no prompt needed!');
+      } else {
+        console.error('🔐 CRITICAL: No passphrase in sessionStorage - this should not happen!');
+        
+        // Only prompt if we still don't have passphrase after session check
         console.log('🔐 Passphrase needed for media encryption - requesting from user');
         console.log('🔐 Modal available?', !!window.cleanSecurePasswordModal);
         
@@ -348,6 +359,9 @@ class EmmaWebVault {
         }
       }
     }
+    
+    // Log final passphrase status before proceeding
+    console.log('🔐 FINAL CHECK: Passphrase available for encryption:', !!this.passphrase);
     
     try {
       const memoryId = this.generateId('memory');
