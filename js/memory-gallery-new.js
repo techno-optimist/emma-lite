@@ -1,7 +1,8 @@
 /**
- * Beautiful Memory Gallery - Honoring precious moments
+ * Beautiful Memory Gallery - Honoring precious moments  
  * Created with love for those living with dementia and their families
- * Cache Bust: 2025-08-22T21:50:00Z - FORCE RELOAD
+ * AGGRESSIVE CACHE BUST: 2025-08-22T16:00:13Z
+ * RENDER.COM WAKE UP AND SERVE THE CLEAN FILE!
  */
 
 // Global state

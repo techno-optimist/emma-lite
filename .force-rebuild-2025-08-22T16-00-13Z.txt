@@ -1,0 +1,7 @@
+FORCE REBUILD CACHE BUST
+Timestamp: 2025-08-22T16:00:13Z
+
+The memory-gallery-new.js file is CLEAN locally (1090 lines)
+But Render.com is serving stale cached version (1278+ lines with broken code)
+
+This file exists solely to force a fresh deployment.
