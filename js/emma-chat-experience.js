@@ -431,7 +431,13 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = document.getElementById('send-btn');
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
-    this.settingsButton = document.getElementById('chat-settings-btn'); // Now in top-right
+    this.settingsButton = document.getElementById('chat-settings-btn'); // Now in top-left
+    
+    console.log('🔧 SETTINGS DEBUG: Found settings button?', !!this.settingsButton);
+    if (this.settingsButton) {
+      console.log('🔧 SETTINGS DEBUG: Button classes:', this.settingsButton.className);
+      console.log('🔧 SETTINGS DEBUG: Button computed styles:', getComputedStyle(this.settingsButton));
+    }
     
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
       console.error('💬 Critical chat interface elements not found');
@@ -530,7 +536,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Force settings button positioning - cache-busting fix
+   * Force settings button positioning - NUCLEAR OPTION for cache-busting
    */
   forceSettingsButtonPosition() {
     const button = this.settingsButton;
@@ -540,7 +546,13 @@ class EmmaChatExperience extends ExperiencePopup {
     const size = isMobile ? '36px' : '40px';
     const position = isMobile ? '12px' : '16px';
     
-    // FORCE all styles with JavaScript to override CSS conflicts
+    console.log('🔧 NUCLEAR: Applying nuclear-level CSS override for settings button');
+    
+    // NUCLEAR OPTION: Remove all classes to prevent CSS conflicts
+    button.className = '';
+    button.removeAttribute('class');
+    
+    // FORCE all styles with JavaScript - NUCLEAR OVERRIDE
     button.style.cssText = `
       position: absolute !important;
       top: ${position} !important;
@@ -556,24 +568,64 @@ class EmmaChatExperience extends ExperiencePopup {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      z-index: 100 !important;
+      z-index: 1000 !important;
       right: auto !important;
       bottom: auto !important;
       margin: 0 !important;
       padding: 0 !important;
       font-size: 0 !important;
       line-height: 1 !important;
+      min-width: ${size} !important;
+      min-height: ${size} !important;
+      max-width: ${size} !important;
+      max-height: ${size} !important;
+      box-sizing: border-box !important;
+      outline: none !important;
+      text-decoration: none !important;
+      vertical-align: baseline !important;
+      float: none !important;
+      clear: none !important;
     `;
     
-    // Force the gear icon
-    button.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
-      </svg>
-    `;
+    // NUCLEAR: Force the gear icon with complete replacement
+    button.innerHTML = '';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '20');
+    svg.setAttribute('height', '20');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
     
-    console.log('✅ FORCE: Settings button positioning and icon applied');
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', '12');
+    circle.setAttribute('cy', '12');
+    circle.setAttribute('r', '3');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'm12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z');
+    
+    svg.appendChild(circle);
+    svg.appendChild(path);
+    button.appendChild(svg);
+    
+    // Force position update every 100ms for 2 seconds to ensure it sticks
+    let forceCount = 0;
+    const forceInterval = setInterval(() => {
+      button.style.top = position;
+      button.style.left = position;
+      button.style.position = 'absolute';
+      button.style.zIndex = '1000';
+      
+      forceCount++;
+      if (forceCount >= 20) {
+        clearInterval(forceInterval);
+      }
+    }, 100);
+    
+    console.log('✅ NUCLEAR: Settings button nuclear override applied');
   }
 
   /**

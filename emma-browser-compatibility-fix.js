@@ -280,58 +280,125 @@ class EmmaBrowserCompatibility {
   }
   
   /**
-   * Show Brave-specific user guidance
+   * Show subtle Brave alert icon instead of intrusive popup
    */
   showBraveCompatibilityGuidance() {
-    const guidance = document.createElement('div');
-    guidance.id = 'brave-guidance';
-    guidance.style.cssText = `
+    // Check if alert already exists
+    if (document.getElementById('brave-alert-icon')) {
+      return; // Don't create duplicate
+    }
+    
+    const alertIcon = document.createElement('div');
+    alertIcon.id = 'brave-alert-icon';
+    alertIcon.style.cssText = `
       position: fixed;
       top: 20px;
       right: 20px;
+      width: 40px;
+      height: 40px;
       background: linear-gradient(135deg, #ff6b35, #f7931e);
-      color: white;
-      padding: 20px;
-      border-radius: 12px;
-      max-width: 300px;
-      z-index: 10000;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+      transition: all 0.3s ease;
       border: 2px solid rgba(255, 255, 255, 0.2);
     `;
     
+    alertIcon.innerHTML = `
+      <span style="font-size: 20px; color: white;">🛡️</span>
+    `;
+    
+    // Click to show full guidance
+    alertIcon.addEventListener('click', () => {
+      this.showFullBraveGuidance();
+    });
+    
+    // Hover effects
+    alertIcon.addEventListener('mouseenter', () => {
+      alertIcon.style.transform = 'scale(1.1)';
+      alertIcon.style.boxShadow = '0 6px 20px rgba(255, 107, 53, 0.6)';
+    });
+    
+    alertIcon.addEventListener('mouseleave', () => {
+      alertIcon.style.transform = 'scale(1)';
+      alertIcon.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.4)';
+    });
+    
+    document.body.appendChild(alertIcon);
+    
+    console.log('🛡️ BRAVE: Subtle alert icon created');
+  }
+  
+  /**
+   * Show full Brave guidance when alert icon is clicked
+   */
+  showFullBraveGuidance() {
+    const guidance = document.createElement('div');
+    guidance.id = 'brave-guidance-modal';
+    guidance.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(10px);
+    `;
+    
     guidance.innerHTML = `
-      <div style="display: flex; align-items: center; margin-bottom: 10px;">
-        <span style="font-size: 24px; margin-right: 10px;">🛡️</span>
-        <strong>Brave Browser Detected</strong>
-      </div>
-      <p style="margin-bottom: 15px; font-size: 14px;">
-        For the best Emma experience, please:
-      </p>
-      <ol style="font-size: 13px; margin-bottom: 15px; padding-left: 20px;">
-        <li>Click the Brave shield icon in the address bar</li>
-        <li>Turn off "Block scripts" for this site</li>
-        <li>Refresh the page</li>
-      </ol>
-      <button onclick="this.parentElement.remove()" style="
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+      <div style="
+        background: linear-gradient(135deg, #ff6b35, #f7931e);
         color: white;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 12px;
-      ">Got it!</button>
+        padding: 30px;
+        border-radius: 16px;
+        max-width: 400px;
+        margin: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+      ">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+          <span style="font-size: 32px; margin-right: 15px;">🛡️</span>
+          <strong style="font-size: 20px;">Brave Browser Setup</strong>
+        </div>
+        <p style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">
+          For the best Emma experience, please:
+        </p>
+        <ol style="font-size: 15px; margin-bottom: 25px; padding-left: 25px; line-height: 1.6;">
+          <li>Click the <strong>Brave shield icon</strong> in the address bar</li>
+          <li>Turn off <strong>"Block scripts"</strong> for this site</li>
+          <li><strong>Refresh</strong> the page</li>
+        </ol>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+          ">Got it!</button>
+        </div>
+      </div>
     `;
     
     document.body.appendChild(guidance);
     
-    // Auto-remove after 10 seconds
-    setTimeout(() => {
-      if (document.getElementById('brave-guidance')) {
+    // Click outside to close
+    guidance.addEventListener('click', (e) => {
+      if (e.target === guidance) {
         guidance.remove();
       }
-    }, 10000);
+    });
   }
   
   /**
