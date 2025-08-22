@@ -292,40 +292,32 @@ class EmmaBrowserCompatibility {
     alertIcon.id = 'brave-alert-icon';
     alertIcon.style.cssText = `
       position: fixed;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
-      background: linear-gradient(135deg, #ff6b35, #f7931e);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      top: 24px;
+      right: 24px;
       cursor: pointer;
       z-index: 9999;
-      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
       transition: all 0.3s ease;
-      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 107, 53, 0.8);
+      font-size: 24px;
+      padding: 8px;
     `;
     
-    alertIcon.innerHTML = `
-      <span style="font-size: 20px; color: white;">🛡️</span>
-    `;
+    alertIcon.innerHTML = `🛡️`;
     
     // Click to show full guidance
     alertIcon.addEventListener('click', () => {
       this.showFullBraveGuidance();
     });
     
-    // Hover effects
+    // Hover effects - clean and simple
     alertIcon.addEventListener('mouseenter', () => {
-      alertIcon.style.transform = 'scale(1.1)';
-      alertIcon.style.boxShadow = '0 6px 20px rgba(255, 107, 53, 0.6)';
+      alertIcon.style.transform = 'scale(1.2)';
+      alertIcon.style.color = 'rgba(255, 107, 53, 1)';
     });
     
     alertIcon.addEventListener('mouseleave', () => {
       alertIcon.style.transform = 'scale(1)';
-      alertIcon.style.boxShadow = '0 4px 12px rgba(255, 107, 53, 0.4)';
+      alertIcon.style.color = 'rgba(255, 107, 53, 0.8)';
     });
     
     document.body.appendChild(alertIcon);

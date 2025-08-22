@@ -1812,17 +1812,26 @@
         </div>
       </div>
 
-  <!-- Bottom Left Utility Icons - Clean interface -->
-  <div class="utility-icons">
-    <!-- Search removed - clean interface -->
-    <div class="utility-item" onclick="window.location.href='pages/emma-settings-redesigned.html'">
-      <div class="utility-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
-        </svg>
-      </div>
-      <div class="utility-label">Settings</div>
+  <!-- Bottom Left Clean Icons -->
+  <div class="clean-icons" style="
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    display: flex;
+    gap: 16px;
+    z-index: 1000;
+  ">
+    <!-- Clean Settings Gear Icon -->
+    <div onclick="window.location.href='pages/emma-settings-redesigned.html'" style="
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.7);
+      transition: all 0.3s ease;
+      padding: 8px;
+    " onmouseover="this.style.color='white'; this.style.transform='scale(1.1)'" onmouseout="this.style.color='rgba(255, 255, 255, 0.7)'; this.style.transform='scale(1)'">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="m12 1 1.09 3.26L16 5.64l-1.64 3.36L17 12l-2.64 2.64L16 18.36l-3.26-1.09L12 23l-1.09-3.26L8 18.36l1.64-3.36L7 12l2.64-2.64L8 5.64l3.26 1.09z"/>
+      </svg>
     </div>
   </div>
 
