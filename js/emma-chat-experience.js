@@ -3060,7 +3060,4 @@ class EmmaChatExperience extends ExperiencePopup {
 
 // Export for use in other modules
 window.EmmaChatExperience = EmmaChatExperience;
-<<<<<<< Current (Your changes)
 console.log('💬 Emma Chat Experience: Module loaded successfully');
-=======
->>>>>>> Incoming (Background Agent changes)
