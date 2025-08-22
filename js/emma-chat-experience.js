@@ -1814,23 +1814,42 @@ class EmmaChatExperience extends ExperiencePopup {
       </div>
     `;
     
-    // Create proper overlay dialog with FORCED highest z-index
+    // Create proper overlay dialog with NUCLEAR z-index
     const dialog = document.createElement('div');
     dialog.className = 'memory-preview-dialog';
-    dialog.style.zIndex = '99999'; // FORCE HIGHEST
-    dialog.style.position = 'fixed'; // FORCE POSITIONING
+    dialog.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 2147483647 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      opacity: 0;
+      animation: dialogFadeIn 0.3s ease forwards;
+      background: rgba(0, 0, 0, 0.8) !important;
+      backdrop-filter: blur(15px) !important;
+    `;
     dialog.innerHTML = `
-      <div class="dialog-backdrop" onclick="this.parentElement.remove()"></div>
-      <div class="dialog-content">
+      <div class="dialog-content" style="position: relative; z-index: 2147483647 !important;">
         <div class="dialog-header">
           <h3>💝 Your Memory Capsule</h3>
-          <button class="dialog-close" onclick="this.parentElement.parentElement.remove()">×</button>
+          <button class="dialog-close" onclick="this.remove()" style="z-index: 2147483647 !important;">×</button>
         </div>
         <div class="dialog-body">
           ${previewHTML}
         </div>
       </div>
     `;
+    
+    // NUCLEAR: Click anywhere on dialog background to close
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        dialog.remove();
+      }
+    });
     
     console.log('🎯 PREVIEW: Adding memory dialog to DOM with z-index 10003...');
     document.body.appendChild(dialog);
@@ -1903,8 +1922,19 @@ class EmmaChatExperience extends ExperiencePopup {
         const dialog = document.querySelector('.memory-preview-dialog');
         if (dialog) dialog.remove();
         
-        // Add confirmation message
-        this.addMessage("Perfect! Your memory has been saved to your vault. It's now part of your permanent collection! 💜", 'emma');
+        // Add confirmation message and redirect to constellation
+        this.addMessage("Perfect! Your memory has been saved to your vault. Let me show you how it connects to your other memories! 🌟", 'emma');
+        
+        // Redirect to constellation after brief delay
+        setTimeout(() => {
+          console.log('🌟 REDIRECT: Opening constellation to show new memory...');
+          window.location.href = '#constellation';
+          
+          // Close chat experience
+          if (this.close) {
+            this.close();
+          }
+        }, 2000);
         
       } else {
         this.showToast('❌ Vault not available', 'error');
@@ -2467,6 +2497,284 @@ class EmmaChatExperience extends ExperiencePopup {
       this.activeCapture = null;
     }
   }
+
+  /**
+   * Show media upload interface when Emma asks for photos/videos
+   */
+  showMediaUploadInterface(messageId, memoryId) {
+    console.log('📷 UPLOAD: Showing media upload interface for message:', messageId, 'memory:', memoryId);
+    
+    const messageEl = document.getElementById(messageId);
+    if (!messageEl) {
+      console.error('📷 UPLOAD: Message element not found:', messageId);
+      return;
+    }
+
+    const uploadId = `upload-${Date.now()}`;
+    const uploadHTML = `
+      <div class="emma-file-upload" id="${uploadId}">
+        <input type="file" 
+               class="file-input-hidden" 
+               id="${uploadId}-input"
+               multiple 
+               accept="image/*,video/*,audio/*"
+               onchange="window.chatExperience.handleEnrichmentFileSelect(event, '${memoryId}', '${uploadId}')">
+        
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">Add Photos & Videos</div>
+        <div class="upload-hint">Drag & drop files here or click to browse</div>
+        <div class="upload-formats">JPG, PNG, MP4, MOV, etc.</div>
+        
+        <div class="file-preview-area" id="${uploadId}-preview" style="display: none;">
+          <!-- File previews will appear here -->
+        </div>
+        
+        <div class="upload-actions" style="display: none;" id="${uploadId}-actions">
+          <button class="upload-action-btn" onclick="window.chatExperience.confirmMediaUpload('${memoryId}', '${uploadId}')">
+            ✅ Add to Memory
+          </button>
+          <button class="upload-action-btn secondary" onclick="window.chatExperience.skipMediaUpload('${memoryId}')">
+            ⏭️ Skip for Now
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Add to Emma's message content
+    const contentContainer = messageEl.querySelector('.message-content');
+    if (contentContainer) {
+      contentContainer.insertAdjacentHTML('beforeend', uploadHTML);
+      console.log('📷 UPLOAD: File upload interface added to message');
+      
+      // Setup drag and drop functionality
+      const uploadArea = document.getElementById(uploadId);
+      if (uploadArea) {
+        this.setupFileUploadDragDrop(uploadArea, memoryId, uploadId);
+        console.log('📷 UPLOAD: Drag & drop setup complete');
+      }
+      
+      // Auto-scroll to show upload area
+      setTimeout(() => this.scrollToBottom(), 300);
+    } else {
+      console.error('📷 UPLOAD: Content container not found in message');
+    }
+  }
+
+  /**
+   * Setup drag and drop for file upload
+   */
+  setupFileUploadDragDrop(uploadArea, memoryId, uploadId) {
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        this.processEnrichmentFiles(files, memoryId, uploadId);
+      }
+    });
+
+    uploadArea.addEventListener('click', () => {
+      const fileInput = uploadArea.querySelector('.file-input-hidden');
+      if (fileInput) fileInput.click();
+    });
+  }
+
+  /**
+   * Handle file selection from input
+   */
+  async handleEnrichmentFileSelect(event, memoryId, uploadId) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    await this.processEnrichmentFiles(files, memoryId, uploadId);
+  }
+
+  /**
+   * Process files for enrichment
+   */
+  async processEnrichmentFiles(files, memoryId, uploadId) {
+    const state = this.enrichmentState.get(memoryId);
+    if (!state) return;
+
+    const previewArea = document.getElementById(`${uploadId}-preview`);
+    const actionsArea = document.getElementById(`${uploadId}-actions`);
+    
+    if (!state.collectedData.media) {
+      state.collectedData.media = [];
+    }
+
+    for (const file of Array.from(files)) {
+      try {
+        // Validate file type
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !file.type.startsWith('audio/')) {
+          this.showToast(`❌ "${file.name}" is not a supported media file`, 'error');
+          continue;
+        }
+
+        this.showToast(`📷 Processing ${file.name}...`, 'info');
+
+        // Convert to data URL
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Add to collected media
+        const mediaItem = {
+          id: 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: dataUrl,
+          uploadedAt: Date.now()
+        };
+
+        state.collectedData.media.push(mediaItem);
+        this.enrichmentState.set(memoryId, state);
+
+        // Show preview
+        this.addFilePreview(mediaItem, `${uploadId}-preview`);
+        
+        this.showToast(`✅ ${file.name} ready to add!`, 'success');
+
+      } catch (error) {
+        console.error('📷 Error processing file:', error);
+        this.showToast(`❌ Failed to process ${file.name}`, 'error');
+      }
+    }
+
+    // Show preview area and actions if files were added
+    if (state.collectedData.media.length > 0) {
+      previewArea.style.display = 'block';
+      actionsArea.style.display = 'flex';
+      setTimeout(() => this.scrollToBottom(), 300);
+    }
+  }
+
+  /**
+   * Add file preview item
+   */
+  addFilePreview(mediaItem, previewAreaId) {
+    const previewArea = document.getElementById(previewAreaId);
+    if (!previewArea) return;
+
+    const previewHTML = `
+      <div class="file-preview-item" id="preview-${mediaItem.id}">
+        <div class="file-preview-icon">
+          ${mediaItem.type.startsWith('image/') 
+            ? `<img src="${mediaItem.dataUrl}" alt="${mediaItem.name}">` 
+            : mediaItem.type.startsWith('video/')
+            ? '🎥'
+            : '🎵'}
+        </div>
+        <div class="file-preview-info">
+          <div class="file-preview-name">${mediaItem.name}</div>
+          <div class="file-preview-size">${this.formatFileSize(mediaItem.size)}</div>
+        </div>
+        <button class="file-remove-btn" onclick="window.chatExperience.removeEnrichmentFile('${mediaItem.id}', '${previewAreaId}')">
+          ✕
+        </button>
+      </div>
+    `;
+
+    previewArea.insertAdjacentHTML('beforeend', previewHTML);
+  }
+
+  /**
+   * Format file size for display
+   */
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Remove file from enrichment
+   */
+  removeEnrichmentFile(mediaId, previewAreaId) {
+    // Remove from all enrichment states
+    for (const [memoryId, state] of this.enrichmentState) {
+      if (state.collectedData.media) {
+        state.collectedData.media = state.collectedData.media.filter(m => m.id !== mediaId);
+        this.enrichmentState.set(memoryId, state);
+      }
+    }
+
+    // Remove preview element
+    const previewElement = document.getElementById(`preview-${mediaId}`);
+    if (previewElement) {
+      previewElement.remove();
+    }
+
+    // Hide preview area if no files left
+    const previewArea = document.getElementById(previewAreaId);
+    if (previewArea && previewArea.children.length === 0) {
+      previewArea.style.display = 'none';
+    }
+  }
+
+  /**
+   * Confirm media upload and continue enrichment
+   */
+  async confirmMediaUpload(memoryId, uploadId) {
+    const state = this.enrichmentState.get(memoryId);
+    if (!state) return;
+
+    const mediaCount = state.collectedData.media?.length || 0;
+    
+    if (mediaCount > 0) {
+      this.addMessage(`Perfect! I've added ${mediaCount} ${mediaCount === 1 ? 'file' : 'files'} to your memory. Let me put together a beautiful memory capsule for you to review.`, 'emma');
+    } else {
+      this.addMessage("No worries! We can always add photos later. Let me create your memory capsule.", 'emma');
+    }
+
+    // Mark media stage as completed and continue
+    state.stagesCompleted.push('media');
+    this.enrichmentState.set(memoryId, state);
+    
+    // Continue to completion
+    setTimeout(() => {
+      this.completeEnrichmentAndShowPreview(memoryId);
+    }, 1500);
+  }
+
+  /**
+   * Skip media upload and continue enrichment
+   */
+  skipMediaUpload(memoryId) {
+    const state = this.enrichmentState.get(memoryId);
+    if (!state) return;
+
+    this.addMessage("That's perfectly fine! Your words paint a beautiful picture. Let me create your memory capsule.", 'emma');
+
+    // Mark media stage as completed and continue
+    state.stagesCompleted.push('media');
+    this.enrichmentState.set(memoryId, state);
+    
+    // Continue to completion
+    setTimeout(() => {
+      this.completeEnrichmentAndShowPreview(memoryId);
+    }, 1500);
+  }
+
+  /**
+   * Generate stage-specific acknowledgment for enrichment
 
   cleanup() {
     // Save chat history before closing
