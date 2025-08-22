@@ -424,7 +424,13 @@ class EmmaWebVault {
           fullAttachment: attachment
         });
         
-        // Fix: Pass the correct parameters to addMedia
+        // NUCLEAR FIX: Check if attachment has valid data
+        if (!attachment.data) {
+          console.error('❌ ATTACHMENT MISSING DATA:', attachment);
+          throw new Error('Attachment missing data - file may not have been uploaded properly');
+        }
+        
+        console.log('🔥 CALLING addMedia with valid attachment data...');
         const mediaId = await this.addMedia({
           name: attachment.name,
           type: attachment.type,
@@ -903,13 +909,16 @@ class EmmaWebVault {
         // Base64 or data URL
         mediaData = this.dataURLToArrayBuffer(data);
       } else {
-        console.error('❌ INVALID DATA FORMAT:', {
+        console.error('❌ INVALID DATA FORMAT - DETAILED ANALYSIS:', {
           hasFile: !!file,
           hasData: !!data,
           dataType: typeof data,
-          dataValue: data
+          dataIsNull: data === null,
+          dataIsUndefined: data === undefined,
+          dataValue: data,
+          parametersReceived: { type, data, name, file }
         });
-        throw new Error('Invalid media data format');
+        throw new Error(`Invalid media data format - got ${typeof data}, expected File object, ArrayBuffer, or string`);
       }
       
       // Encrypt media data
