@@ -141,3 +141,4 @@ window.GooglePhotosCapture = GooglePhotosCapture;
 
 
 
+

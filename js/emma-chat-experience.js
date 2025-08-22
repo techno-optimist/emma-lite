@@ -2014,12 +2014,12 @@ class EmmaChatExperience extends ExperiencePopup {
           // Wait for chat to close, then enter constellation
           setTimeout(() => {
             // Access the dashboard instance and enter constellation mode
-            if (window.dashboard && typeof window.dashboard.enterMemoryConstellation === 'function') {
-              console.log('🌟 CONSTELLATION: Entering memory constellation via dashboard...');
-              window.dashboard.enterMemoryConstellation();
-            } else if (window.parent && window.parent.dashboard && typeof window.parent.dashboard.enterMemoryConstellation === 'function') {
-              console.log('🌟 CONSTELLATION: Entering via parent dashboard...');
-              window.parent.dashboard.enterMemoryConstellation();
+            if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+              console.log('🌟 CONSTELLATION: Entering memory constellation via emmaDashboard...');
+              window.emmaDashboard.enterMemoryConstellation();
+            } else if (window.parent && window.parent.emmaDashboard && typeof window.parent.emmaDashboard.enterMemoryConstellation === 'function') {
+              console.log('🌟 CONSTELLATION: Entering via parent emmaDashboard...');
+              window.parent.emmaDashboard.enterMemoryConstellation();
             } else {
               console.log('🌟 FALLBACK: Trying direct constellation trigger...');
               // Try multiple ways to trigger constellation

@@ -6407,7 +6407,9 @@
         if (constellationWasActive) {
           console.log('🔄 CONSTELLATION: Restoring constellation view after refresh');
           setTimeout(() => {
-            this.enterMemoryConstellation();
+            if (window.emmaDashboard && window.emmaDashboard.enterMemoryConstellation) {
+              window.emmaDashboard.enterMemoryConstellation();
+            }
           }, 1000); // Wait for dashboard to fully initialize
         }
       
