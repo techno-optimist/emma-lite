@@ -1275,8 +1275,17 @@ function debounce(func, wait) {
   overviewSection.appendChild(contentTitle);
   overviewSection.appendChild(contentArea);
   body.appendChild(overviewSection);
-          cursor: pointer !important;
-          width: 40px !important;
+}
+
+// ==========================================
+// LEGACY FUNCTIONS (keeping for compatibility)
+// ==========================================
+
+/**
+ * Render mini slideshow for overview tab
+ */
+function renderMiniSlideshow(memory) {
+  const mediaItems = memory.mediaItems || [];
           height: 40px !important;
           border-radius: 50% !important;
           display: flex !important;
