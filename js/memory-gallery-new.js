@@ -122,6 +122,7 @@ async function loadMemories() {
 
     // Transform vault memories to our format
     if (vaultMemories.length > 0) {
+      console.log('🔍 PEOPLE DEBUG: Processing', vaultMemories.length, 'vault memories for people connections');
 
       memories = await Promise.all(vaultMemories.map(async (memory, index) => {
         // Convert vault attachments to mediaItems format
@@ -171,7 +172,7 @@ async function loadMemories() {
           return item;
         }));
 
-        return {
+        const transformedMemory = {
           id: memory.id || `vault_${index}`,
           title: memory.metadata?.title || memory.title || memory.subject || memory.summary || `Memory ${index + 1}`,
           excerpt: memory.content || memory.description || 'A precious memory...',
@@ -182,8 +183,13 @@ async function loadMemories() {
           // FIXED: Use first attachment URL for gallery card preview
           image: (mediaItems.length > 0 && mediaItems[0].url) ? mediaItems[0].url : memory.thumbnail || memory.image || memory.photo || null,
           favorite: memory.favorite || memory.starred || false,
-          mediaItems: mediaItems // Preserve media items with URL fixing
+          mediaItems: mediaItems, // Preserve media items with URL fixing
+          metadata: memory.metadata || {} // CRITICAL: Preserve metadata for people connections!
         };
+
+        console.log('🔍 PEOPLE DEBUG: Transformed memory', transformedMemory.title, 'metadata:', transformedMemory.metadata);
+        
+        return transformedMemory;
       }));
 
       // Debug: Log media items for each memory
@@ -443,25 +449,39 @@ async function createMemoryPeopleAvatars(memory) {
   avatarsContainer.className = 'memory-people-avatars';
 
   try {
+    console.log('👥 Creating people avatars for memory:', memory.id, memory.title);
+    console.log('👥 Memory metadata:', memory.metadata);
+
     // Get people connected to this memory
     if (!memory.metadata || !memory.metadata.people || !Array.isArray(memory.metadata.people)) {
+      console.log('👥 No people metadata found for memory:', memory.id);
       return avatarsContainer; // Empty container
     }
 
+    console.log('👥 Found people in memory:', memory.metadata.people);
+
     // Load people data from vault
     if (!window.emmaWebVault || !window.emmaWebVault.isOpen || !window.emmaWebVault.vaultData) {
+      console.warn('👥 Vault not available for people lookup');
       return avatarsContainer;
     }
 
     const vaultData = window.emmaWebVault.vaultData;
     const peopleData = vaultData.people || {};
+    
+    console.log('👥 Available people in vault:', Object.keys(peopleData));
 
     // Create avatars for connected people (limit to 3)
     const connectedPeople = memory.metadata.people.slice(0, 3);
     
     for (const personId of connectedPeople) {
       const person = peopleData[personId];
-      if (!person) continue;
+      if (!person) {
+        console.warn('👥 Person not found in vault:', personId);
+        continue;
+      }
+
+      console.log('👥 Creating avatar for:', person.name);
 
       const avatar = document.createElement('div');
       avatar.className = 'memory-person-avatar';
@@ -506,6 +526,7 @@ async function createMemoryPeopleAvatars(memory) {
       avatarsContainer.appendChild(avatar);
     }
 
+    console.log('👥 Created avatars container with', avatarsContainer.children.length, 'avatars');
     return avatarsContainer;
 
   } catch (error) {
@@ -564,24 +585,7 @@ function openMemoryDetail(memory) {
   // Create beautiful modal
   const modal = document.createElement('div');
 
-  modal.style.cssText = `
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(0, 0, 0, 0.8) !important;
-    backdrop-filter: blur(8px) !important;
-    z-index: 2147483650 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 20px !important;
-    animation: fadeIn 0.3s ease !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  `;
+  modal.className = 'memory-modal show';
 
   const date = new Date(memory.date);
   const formattedDate = date.toLocaleDateString('en-US', {
@@ -591,53 +595,27 @@ function openMemoryDetail(memory) {
     day: 'numeric'
   });
 
-  modal.innerHTML = `
-    <div class="memory-detail-overlay" style="
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      background: transparent !important;
-      z-index: 2147483649 !important;
-    "></div>
-    <div class="memory-detail-content" style="
-      background: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%) !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      border-radius: 24px !important;
-      max-width: 900px !important;
-      width: 95% !important;
-      max-height: 90vh !important;
-      overflow: hidden !important;
-      position: relative !important;
-      box-shadow: 0 20px 60px rgba(118, 75, 162, 0.3) !important;
-      z-index: 2147483651 !important;
-      pointer-events: auto !important;
-      display: flex !important;
-      flex-direction: column !important;
-    ">
+  // Create modal structure with CSS classes
+  const overlay = document.createElement('div');
+  overlay.className = 'memory-detail-overlay';
+  
+  const content = document.createElement('div');
+  content.className = 'memory-detail-content';
+  
+  modal.appendChild(overlay);
+  modal.appendChild(content);
+
+  // Create modal content
+  content.innerHTML = `
 
       <!-- Header with editable title and actions -->
-      <div class="memory-detail-header" style="
-        padding: 24px 24px 16px !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 16px !important;
-      ">
-        <input id="memory-title-input" style="
-          flex: 1 !important;
-          background: rgba(255, 255, 255, 0.05) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: 8px !important;
-          padding: 12px 16px !important;
-          color: white !important;
-          font-size: 18px !important;
-          font-weight: 600 !important;
-        " value="${escapeHtml(memory.title)}" placeholder="Enter memory title..." />
-
-        <div class="memory-header-actions" style="display: flex; align-items: center; gap: 12px;">
-          <div id="save-status" class="save-status" style="display: none; color: #4ade80; font-size: 14px;">
+      <div class="memory-detail-header">
+        <div class="memory-title-container">
+          <input id="memory-title-input" value="${escapeHtml(memory.title)}" placeholder="Enter memory title..." />
+        </div>
+        
+        <div class="header-actions">
+          <div id="save-status">
             <span id="save-status-text">Saved</span>
           </div>
           <button class="btn" id="memory-delete-btn" style="
