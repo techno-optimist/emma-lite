@@ -2052,11 +2052,14 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async createCapsulePeopleAvatars(memory) {
     try {
+      console.log('👥 Looking for avatars container:', `capsule-people-${memory.id}`);
       const avatarsContainer = document.getElementById(`capsule-people-${memory.id}`);
       if (!avatarsContainer) {
         console.warn('👥 Avatars container not found for memory:', memory.id);
+        console.log('👥 Available elements:', document.querySelectorAll('[id*="capsule"]'));
         return;
       }
+      console.log('👥 Found avatars container:', avatarsContainer);
 
       // Get people connected to this memory
       if (!memory.metadata?.people?.length) {
@@ -2148,15 +2151,7 @@ class EmmaChatExperience extends ExperiencePopup {
           avatar.title = `${personName} (Adding to vault...)`;
           avatar.textContent = personName.charAt(0).toUpperCase();
         } else {
-          // Existing person - normal styling
-          avatar.style.cssText = baseStyle + `
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          `;
-          avatar.title = person.name;
-          avatar.textContent = person.name.charAt(0).toUpperCase();
-
-          // SIMPLIFIED: Skip corrupted avatar loading, use beautiful letter avatars
-          // Using beautiful letter avatar
+          // Existing person - beautiful gradient styling
           
           // Create beautiful gradient backgrounds based on person's name
           const nameHash = person.name.split('').reduce((a, b) => {
@@ -2174,15 +2169,19 @@ class EmmaChatExperience extends ExperiencePopup {
           ];
           
           const gradientIndex = Math.abs(nameHash) % gradients.length;
-          avatar.style.background = gradients[gradientIndex];
-          avatar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+          const selectedGradient = gradients[gradientIndex];
           
-          // Make letter avatars look more polished
-          avatar.style.fontSize = '16px';
-          avatar.style.fontWeight = '600';
-          avatar.style.textShadow = '0 1px 2px rgba(0,0,0,0.2)';
+          avatar.style.cssText = baseStyle + `
+            background: ${selectedGradient};
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 16px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+          `;
+          avatar.title = person.name;
+          avatar.textContent = person.name.charAt(0).toUpperCase();
           
-          // Skip photo loading entirely for now to avoid errors
+          console.log('👥 Created beautiful avatar for:', person.name, 'with gradient:', selectedGradient);
         }
 
         // Add hover effect
@@ -2411,8 +2410,11 @@ class EmmaChatExperience extends ExperiencePopup {
       
       // Wait a moment for the message to appear, then show preview
       setTimeout(async () => {
-        await this.createCapsulePeopleAvatars(memory);
         this.showMemoryPreviewDialog(memory);
+        // Create avatars after dialog is shown
+        setTimeout(async () => {
+          await this.createCapsulePeopleAvatars(memory);
+        }, 100);
       }, 1000);
       
     } catch (error) {
