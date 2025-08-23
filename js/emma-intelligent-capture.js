@@ -253,7 +253,7 @@ class EmmaIntelligentCapture {
       /\b(grandma|grandpa|grandmother|grandfather)\b/i,
       /\b(sister|brother|sibling)\b/i,
       /\b(friend|best friend)\b/i,
-      /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/, // Names like "John and Mary"
+      // REMOVED: Compound name pattern that was causing duplicates
       /\b(he|she|they)\s+(?:was|were|used to|would)/i // Pronouns with past tense
     ];
     
@@ -269,6 +269,27 @@ class EmmaIntelligentCapture {
     });
     
     console.log('👥 PEOPLE DEBUG: Raw people detected:', signals.people);
+
+    // CRITICAL FIX: Smart compound name handling without adding compound phrases
+    const compoundPattern = /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/g;
+    const compoundMatches = content.match(compoundPattern);
+    if (compoundMatches) {
+      console.log('👥 PEOPLE DEBUG: Found compound phrases:', compoundMatches);
+      compoundMatches.forEach(compound => {
+        // Split compound phrases into individual names
+        const names = compound.split(/\s+(?:and|&)\s+/);
+        names.forEach(name => {
+          const trimmed = name.trim();
+          if (trimmed && /^[A-Z][a-z]+$/.test(trimmed)) {
+            console.log('👥 PEOPLE DEBUG: Individual from compound:', trimmed);
+            if (!signals.people.includes(trimmed)) {
+              signals.people.push(trimmed);
+              signals.score += 1;
+            }
+          }
+        });
+      });
+    }
 
     // Proper-noun name candidates (contextual, no hardcoded names)
     const properNames = this.extractProperNames(content);
