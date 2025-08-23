@@ -1050,7 +1050,7 @@ class EmmaChatExperience extends ExperiencePopup {
       }
 
       const script = document.createElement('script');
-      script.src = '../js/emma-vectorless-engine.js';
+      script.src = './js/emma-vectorless-engine.js';
       script.onload = () => {
 
         resolve();
@@ -1627,6 +1627,16 @@ class EmmaChatExperience extends ExperiencePopup {
         this.apiKey = settings.apiKey || null;
         this.dementiaMode = settings.dementiaMode || false;
         this.debugMode = settings.debugMode || false;
+      }
+      
+      // CRITICAL: Also check for global API key
+      if (!this.apiKey && window.API_KEY) {
+        this.apiKey = window.API_KEY;
+        console.log('💬 Using global API key for Emma responses');
+      }
+      
+      if (!this.apiKey) {
+        console.warn('💬 No API key found - Emma will use intelligent fallbacks');
       }
     } catch (error) {
       console.warn('💬 Could not load vectorless settings:', error);
@@ -3450,7 +3460,7 @@ class EmmaChatExperience extends ExperiencePopup {
     const memory = state.memory;
     const collectedData = state.collectedData;
     
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       // Fallback with minimal context awareness
       const fallbacks = {
         who: `I'd love to know more about who shared this moment with you. Can you tell me about the people who were there?`,
@@ -3498,7 +3508,7 @@ Response (just the question, naturally conversational):`;
    * Generate dynamic, contextual acknowledgment for enrichment
    */
   async generateDynamicAcknowledgment(memory, stage, collectedData) {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       // Warm fallbacks that aren't robotic
       return "Thank you for sharing that - it helps me understand this memory better.";
     }
@@ -3529,7 +3539,7 @@ Just the acknowledgment response:`;
    * Generate dynamic help response
    */
   async generateDynamicHelpResponse() {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       return "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. What brings you here today?";
     }
 
@@ -3558,7 +3568,7 @@ Just the response:`;
    * Generate dynamic greeting response
    */
   async generateDynamicGreeting(vaultInsights, isEarlyConversation) {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       const hour = new Date().getHours();
       if (hour < 12) return "Good morning! What's stirring in your heart today?";
       if (hour < 17) return "Good afternoon! I'm here if you'd like to share what's on your mind.";
@@ -3603,7 +3613,7 @@ Just the greeting:`;
    * Generate dynamic appreciation response
    */
   async generateDynamicAppreciationResponse() {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       return "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
     }
 
@@ -3632,7 +3642,7 @@ Just the response:`;
    * Generate dynamic confusion response
    */
   async generateDynamicConfusionResponse() {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       return "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
     }
 
@@ -3661,7 +3671,7 @@ Just the response:`;
    * Generate dynamic sharing response
    */
   async generateDynamicSharingResponse() {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       return "I'm all ears. Take your time and share whatever feels important to you right now.";
     }
 
@@ -3690,8 +3700,24 @@ Just the response:`;
    * Generate dynamic welcome response based on context
    */
   async generateDynamicWelcomeResponse() {
-    if (!this.vectorlessEngine || !window.API_KEY) {
-      return "I'm here with you. What's on your mind?";
+    if (!this.vectorlessEngine || !this.apiKey) {
+      // Even without AI, generate warm, time-aware fallbacks
+      const hour = new Date().getHours();
+      const fallbacks = [
+        "I'm here with you. What story is stirring in your heart today?",
+        "Hello! I sense you have something meaningful to share. What's been on your mind?", 
+        "I'm ready to listen. What moment would you like to talk about?",
+        "Something brought you here today. I'd love to hear what's in your thoughts."
+      ];
+      
+      // Add time-based warmth
+      let timeGreeting = "";
+      if (hour < 12) timeGreeting = "Good morning! ";
+      else if (hour < 17) timeGreeting = "Good afternoon! ";
+      else timeGreeting = "Good evening! ";
+      
+      const randomFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      return timeGreeting + randomFallback;
     }
 
     try {
@@ -3732,8 +3758,22 @@ Just the welcoming response:`;
    * Generate dynamic memory capture prompt with people context
    */
   async generateDynamicMemoryCapturePrompt(userMessage, memory = null, peopleContext = null) {
-    if (!this.vectorlessEngine || !window.API_KEY) {
-      return "I'd love to help you capture this memory! Tell me more about what happened.";
+    if (!this.vectorlessEngine || !this.apiKey) {
+      // Intelligent fallbacks that still feel warm and personal
+      const fallbacks = [
+        "This sounds really meaningful to me. I'd love to hear more about what happened.",
+        "I can sense there's something special about this moment. Tell me more about it.",
+        "That catches my attention as something worth remembering. What else can you share?",
+        "I feel like there's a beautiful story here. Help me understand what made this moment special."
+      ];
+      
+      // Add people context even without AI
+      if (peopleContext && peopleContext.newPeople.length > 0) {
+        const newPerson = peopleContext.newPeople[0];
+        return `${fallbacks[Math.floor(Math.random() * fallbacks.length)]} I noticed you mentioned ${newPerson} - should I remember them for future conversations?`;
+      }
+      
+      return fallbacks[Math.floor(Math.random() * fallbacks.length)];
     }
 
     try {
@@ -3783,7 +3823,7 @@ Just the response:`;
    * Generate dynamic follow-up questions based on memory analysis
    */
   async generateDynamicFollowUp(memory, signals, context) {
-    if (!this.vectorlessEngine || !window.API_KEY) {
+    if (!this.vectorlessEngine || !this.apiKey) {
       // Smart fallbacks based on what's missing
       if (!context.hasPeople) return "Who else was part of this moment with you?";
       if (context.needsLocation) return "Where did this take place?";
