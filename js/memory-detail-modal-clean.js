@@ -312,17 +312,50 @@ async function loadPeopleInTab() {
             }
           };
           
-          // Save to vault using Emma API
-          let saveResult = null;
+          // Debug: Check what APIs are available
+          console.log('🔍 SAVE DEBUG: Available APIs:');
+          console.log('- window.emmaAPI?.vault?.updateMemory:', typeof window.emmaAPI?.vault?.updateMemory);
+          console.log('- window.emmaAPI?.vault?.storeMemory:', typeof window.emmaAPI?.vault?.storeMemory);
+          console.log('- window.emmaWebVault?.updateMemory:', typeof window.emmaWebVault?.updateMemory);
+          console.log('- window.emmaWebVault?.storeMemory:', typeof window.emmaWebVault?.storeMemory);
+          console.log('- window.emma?.vault?.storeMemory:', typeof window.emma?.vault?.storeMemory);
           
-          if (window.emmaAPI?.vault?.updateMemory) {
-            // Try new API first
+          // Save to vault using available APIs
+          let saveResult = null;
+          let apiUsed = 'none';
+          
+          if (window.emmaAPI?.vault?.storeMemory) {
+            // Try Emma API storeMemory (most likely to work)
+            console.log('🔄 SAVE: Trying emmaAPI.vault.storeMemory...');
+            apiUsed = 'emmaAPI.vault.storeMemory';
+            const mtapMemory = {
+              id: updatedMemory.id,
+              header: { id: updatedMemory.id, created: Date.now(), title: updatedMemory.title, protocol: 'MTAP/1.0' },
+              core: { content: updatedMemory.content },
+              metadata: { ...updatedMemory.metadata, people: peopleIds },
+              semantic: {},
+              relations: {}
+            };
+            saveResult = await window.emmaAPI.vault.storeMemory({ mtapMemory });
+          } else if (window.emmaWebVault?.storeMemory) {
+            // Try web vault storeMemory
+            console.log('🔄 SAVE: Trying emmaWebVault.storeMemory...');
+            apiUsed = 'emmaWebVault.storeMemory';
+            saveResult = await window.emmaWebVault.storeMemory(updatedMemory);
+          } else if (window.emmaAPI?.vault?.updateMemory) {
+            // Try new updateMemory API
+            console.log('🔄 SAVE: Trying emmaAPI.vault.updateMemory...');
+            apiUsed = 'emmaAPI.vault.updateMemory';
             saveResult = await window.emmaAPI.vault.updateMemory(updatedMemory);
           } else if (window.emmaWebVault?.updateMemory) {
-            // Fallback to web vault
+            // Fallback to web vault update
+            console.log('🔄 SAVE: Trying emmaWebVault.updateMemory...');
+            apiUsed = 'emmaWebVault.updateMemory';
             saveResult = await window.emmaWebVault.updateMemory(updatedMemory.id, updatedMemory);
           } else if (window.emma?.vault?.storeMemory) {
             // Legacy API fallback
+            console.log('🔄 SAVE: Trying legacy emma.vault.storeMemory...');
+            apiUsed = 'legacy.emma.vault.storeMemory';
             const mtapMemory = {
               id: updatedMemory.id,
               header: { id: updatedMemory.id, created: Date.now(), title: updatedMemory.title, protocol: 'MTAP/1.0' },
@@ -332,7 +365,12 @@ async function loadPeopleInTab() {
               relations: {}
             };
             saveResult = await window.emma.vault.storeMemory({ mtapMemory });
+          } else {
+            throw new Error('No vault API available for saving');
           }
+          
+          console.log(`🔍 SAVE: Used API: ${apiUsed}`);
+          console.log('🔍 SAVE: Result:', saveResult);
           
           if (saveResult && saveResult.success) {
             // Success feedback
