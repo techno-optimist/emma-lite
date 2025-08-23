@@ -2410,15 +2410,208 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Edit memory details (placeholder for future implementation)
+   * Edit memory details with proper modal
    */
   editMemoryDetails(memoryId) {
+    const memory = this.temporaryMemories.get(memoryId);
+    if (!memory) {
+      this.showToast('❌ Memory not found!', 'error');
+      return;
+    }
 
-    this.showToast('✏️ Memory editing coming soon!', 'info');
-
-    // For now, just close the dialog
+    // Close the preview dialog first
     const dialog = document.querySelector('.memory-preview-dialog');
     if (dialog) dialog.remove();
+
+    // Create edit modal
+    const editModal = document.createElement('div');
+    editModal.className = 'memory-edit-modal';
+    editModal.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 15000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(0, 0, 0, 0.9) !important;
+      backdrop-filter: blur(20px) !important;
+    `;
+
+    editModal.innerHTML = `
+      <div class="edit-modal-content" style="
+        background: linear-gradient(135deg, rgba(147, 112, 219, 0.95), rgba(123, 104, 238, 0.95));
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: white;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">✏️ Edit Memory</h2>
+          <button class="close-edit-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Title:</label>
+          <input type="text" class="edit-title-input" value="${memory.metadata?.title || memory.title || ''}" style="
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+          " placeholder="Enter memory title...">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Content:</label>
+          <textarea class="edit-content-textarea" style="
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+          " placeholder="Describe this memory...">${memory.content || ''}</textarea>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Attachments (${memory.attachments?.length || 0}):</label>
+          <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
+            ${(memory.attachments || []).map((attachment, index) => `
+              <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
+                <img src="${attachment.url || attachment.dataUrl || attachment.data}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}">
+                <button class="remove-attachment-btn" data-index="${index}" style="
+                  position: absolute;
+                  top: 4px;
+                  right: 4px;
+                  background: rgba(255, 0, 0, 0.8);
+                  border: none;
+                  color: white;
+                  width: 20px;
+                  height: 20px;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  font-size: 12px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                ">×</button>
+              </div>
+            `).join('')}
+            <div style="
+              aspect-ratio: 1;
+              border: 2px dashed rgba(255, 255, 255, 0.4);
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              background: rgba(255, 255, 255, 0.05);
+              transition: all 0.3s ease;
+            " class="add-media-btn">
+              <span style="font-size: 24px; color: rgba(255, 255, 255, 0.6);">+</span>
+            </div>
+          </div>
+          <input type="file" class="media-file-input" multiple accept="image/*,video/*" style="display: none;">
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: flex-end;">
+          <button class="cancel-edit-btn" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+          ">Cancel</button>
+          <button class="save-edit-btn" style="
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+          ">💾 Save Changes</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(editModal);
+
+    // Add event listeners
+    const titleInput = editModal.querySelector('.edit-title-input');
+    const contentTextarea = editModal.querySelector('.edit-content-textarea');
+    const saveBtn = editModal.querySelector('.save-edit-btn');
+    const cancelBtn = editModal.querySelector('.cancel-edit-btn');
+    const closeBtn = editModal.querySelector('.close-edit-btn');
+    const addMediaBtn = editModal.querySelector('.add-media-btn');
+    const fileInput = editModal.querySelector('.media-file-input');
+
+    // Close handlers
+    const closeModal = () => editModal.remove();
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    editModal.addEventListener('click', (e) => {
+      if (e.target === editModal) closeModal();
+    });
+
+    // Add media handler
+    addMediaBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      // Handle file uploads (simplified for now)
+      this.showToast('📎 File upload feature coming soon!', 'info');
+    });
+
+    // Remove attachment handlers
+    editModal.querySelectorAll('.remove-attachment-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        memory.attachments.splice(index, 1);
+        // Re-render attachments grid
+        this.editMemoryDetails(memoryId);
+      });
+    });
+
+    // Save handler
+    saveBtn.addEventListener('click', async () => {
+      const title = titleInput.value.trim() || 'Untitled Memory';
+      const content = contentTextarea.value.trim();
+
+      // Update memory object
+      memory.metadata = memory.metadata || {};
+      memory.metadata.title = title;
+      memory.title = title;
+      memory.content = content;
+
+      this.showToast('💾 Changes saved!', 'success');
+      closeModal();
+      
+      // Refresh preview if user wants to see it again
+      setTimeout(() => {
+        this.showMemoryPreviewDialog(memory);
+      }, 300);
+    });
+
+    // Focus title input
+    setTimeout(() => titleInput.focus(), 100);
   }
 
   /**

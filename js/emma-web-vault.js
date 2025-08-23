@@ -882,7 +882,31 @@ class EmmaWebVault {
         mediaData = data;
       } else if (typeof data === 'string') {
         console.log('📝 Using string data (base64/dataURL)');
-        // Base64 or data URL
+        // SPECIAL CASE: For extension captures, store data URLs directly without encryption
+        if (data.startsWith('data:')) {
+          console.log('🔧 EXTENSION CAPTURE: Storing data URL directly without encryption');
+          const media = {
+            id: mediaId,
+            name: name,
+            type: type,
+            size: data.length,
+            created: new Date().toISOString(),
+            encrypted: false, // Mark as unencrypted
+            data: data // Store data URL directly
+          };
+
+          // Ensure media storage exists
+          if (!this.vaultData.content.media) {
+            this.vaultData.content.media = {};
+          }
+
+          this.vaultData.content.media[mediaId] = media;
+          this.vaultData.stats.mediaCount++;
+          this.vaultData.stats.totalSize += data.length;
+
+          return mediaId;
+        }
+        // Base64 or data URL - convert to ArrayBuffer for encryption
         mediaData = this.dataURLToArrayBuffer(data);
       } else {
         console.error('❌ INVALID DATA FORMAT - DETAILED ANALYSIS:', {
@@ -951,22 +975,48 @@ class EmmaWebVault {
         throw new Error('Media not found');
       }
 
-      let salt = this.vaultData.encryption.salt;
-      if (salt && typeof salt === 'object' && !(salt instanceof Uint8Array)) {
-        // Convert plain object back to Uint8Array
-        salt = new Uint8Array(Object.values(salt));
+      // CRITICAL FIX: Handle both encrypted and unencrypted media
+      if (media.encrypted === false || typeof media.data === 'string') {
+        // Unencrypted data (base64 data URL) - return directly
+        console.log('📸 MEDIA: Returning unencrypted media data:', mediaId);
+        
+        if (media.data.startsWith('data:')) {
+          // Already a data URL - return as is
+          return media.data;
+        } else {
+          // Base64 string - convert to data URL
+          return `data:${media.type};base64,${media.data}`;
+        }
+      } else {
+        // Encrypted data - decrypt first
+        console.log('🔐 MEDIA: Decrypting encrypted media data:', mediaId);
+        
+        let salt = this.vaultData.encryption.salt;
+        if (salt && typeof salt === 'object' && !(salt instanceof Uint8Array)) {
+          // Convert plain object back to Uint8Array
+          salt = new Uint8Array(Object.values(salt));
+        }
 
+        // Decrypt media data using vault salt and passphrase
+        const decryptedData = await this.decryptData(media.data, salt, this.passphrase);
+
+        // Convert to blob URL for display
+        const blob = new Blob([decryptedData], { type: media.type });
+        return URL.createObjectURL(blob);
       }
-
-      // Decrypt media data using vault salt and passphrase
-      const decryptedData = await this.decryptData(media.data, salt, this.passphrase);
-
-      // Convert to blob URL for display
-      const blob = new Blob([decryptedData], { type: media.type });
-      return URL.createObjectURL(blob);
 
     } catch (error) {
       console.error('❌ Failed to get media:', error);
+      // Fallback: if decryption fails, try treating as unencrypted
+      const media = this.vaultData.content.media[mediaId];
+      if (media && typeof media.data === 'string') {
+        console.log('🔄 MEDIA: Decryption failed, trying as unencrypted data');
+        if (media.data.startsWith('data:')) {
+          return media.data;
+        } else {
+          return `data:${media.type};base64,${media.data}`;
+        }
+      }
       throw error;
     }
   }
