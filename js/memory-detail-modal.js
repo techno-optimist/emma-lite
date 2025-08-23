@@ -123,6 +123,22 @@ function openMemoryDetailModal(memory) {
 
   console.log('✨ MODAL: Memory detail modal opened successfully');
   
+  // CRITICAL FIX: Load content for all tabs on modal open for smooth Emma experience
+  setTimeout(() => {
+    console.log('🎪 MODAL: Pre-loading tab content for perfect Emma experience');
+    if (modal.parentNode) {
+      try {
+        loadMediaContent(modal, memory);
+        loadPeopleContent(modal, memory);
+        console.log('✅ MODAL: Tab content pre-loaded successfully');
+      } catch (error) {
+        console.error('❌ MODAL: Error pre-loading tab content:', error);
+      }
+    } else {
+      console.error('🎪 MODAL: Cannot load tab content - modal not in DOM');
+    }
+  }, 400);
+  
   // DEBUG: Verify modal exists in DOM
   setTimeout(() => {
     const modalCheck = document.querySelector('.memory-modal');
