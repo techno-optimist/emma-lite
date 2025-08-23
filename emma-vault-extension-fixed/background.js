@@ -1,11 +1,14 @@
 /**
  * Emma Vault Bridge - Background Service Worker
- * Enables real-time synchronization between Emma Web App and local .emma files
+ * WEBAPP-FIRST: Enables secure communication between Emma Web App and extension
  * Built with love for Debbe
  */
 
-// Track active vault connections
+console.log('🔗 Extension Background: WEBAPP-FIRST Service Worker starting');
+
+// WEBAPP-FIRST: Simplified state tracking
 const vaultConnections = new Map();
+let webappTabId = null;
 
 // File System Access API handle storage
 let fileHandle = null;

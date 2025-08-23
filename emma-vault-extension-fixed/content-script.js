@@ -16,6 +16,94 @@ let syncDebounceTimer = null;
 let lastSyncHash = null;
 
 /**
+ * WEBAPP-FIRST: Handle extension popup vault status requests
+ */
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'checkVaultStatus') {
+    console.log('🔐 Content Script: Checking webapp vault status');
+    
+    // Check if webapp vault is unlocked by looking for vault indicators
+    const vaultStatus = getWebappVaultStatus();
+    console.log('🔐 Content Script: Vault status:', vaultStatus);
+    
+    sendResponse(vaultStatus);
+    return true; // Keep message channel open for async response
+  }
+});
+
+/**
+ * Get current webapp vault status by checking DOM/localStorage
+ */
+function getWebappVaultStatus() {
+  try {
+    // Method 1: Check sessionStorage for unlocked vault
+    const vaultUnlocked = sessionStorage.getItem('vaultUnlocked');
+    const vaultName = sessionStorage.getItem('vaultName');
+    
+    if (vaultUnlocked === 'true' && vaultName) {
+      return {
+        isUnlocked: true,
+        vaultName: vaultName,
+        source: 'sessionStorage'
+      };
+    }
+    
+    // Method 2: Check localStorage for vault state
+    const webVaultState = localStorage.getItem('emmaWebVaultState');
+    if (webVaultState) {
+      try {
+        const parsed = JSON.parse(webVaultState);
+        if (parsed.isUnlocked && parsed.vaultName) {
+          return {
+            isUnlocked: true,
+            vaultName: parsed.vaultName,
+            source: 'localStorage'
+          };
+        }
+      } catch (e) {
+        console.log('🔐 Content Script: Error parsing web vault state', e);
+      }
+    }
+    
+    // Method 3: Check for Emma web vault object
+    if (window.emmaWebVault && window.emmaWebVault.isUnlocked) {
+      return {
+        isUnlocked: true,
+        vaultName: window.emmaWebVault.vaultName || 'Emma Vault',
+        source: 'webVaultObject'
+      };
+    }
+    
+    // Method 4: Check DOM for vault indicators
+    const vaultIndicator = document.querySelector('[data-vault-status]');
+    if (vaultIndicator) {
+      const status = vaultIndicator.getAttribute('data-vault-status');
+      if (status === 'unlocked') {
+        return {
+          isUnlocked: true,
+          vaultName: vaultIndicator.getAttribute('data-vault-name') || 'Emma Vault',
+          source: 'domIndicator'
+        };
+      }
+    }
+    
+    // Default: vault is locked
+    return {
+      isUnlocked: false,
+      source: 'default'
+    };
+    
+  } catch (error) {
+    console.error('🔐 Content Script: Error checking vault status:', error);
+    return {
+      isUnlocked: false,
+      error: error.message,
+      source: 'error'
+    };
+  }
+}
+
+/**
  * Initialize connection with Emma Web App
  */
 function initializeEmmaConnection() {
