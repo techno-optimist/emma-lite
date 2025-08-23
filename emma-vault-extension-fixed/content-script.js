@@ -1149,6 +1149,25 @@ async function waitForWebappVault(timeoutMs = 10000) {
         return;
       }
       
+      // ENHANCED FIX: Try to restore vault if it exists but isn't open
+      if (window.emmaWebVault && 
+          !window.emmaWebVault.isOpen && 
+          typeof window.emmaWebVault.restoreVaultState === 'function') {
+        console.log('🔧 Content Script: Vault exists but not open, attempting restore...');
+        try {
+          await window.emmaWebVault.restoreVaultState();
+          console.log('🔧 Content Script: Vault restore attempted');
+          // Check again after restore attempt
+          if (window.emmaWebVault.isOpen) {
+            console.log('✅ Content Script: Vault restored and ready!');
+            resolve(window.emmaWebVault);
+            return;
+          }
+        } catch (restoreError) {
+          console.warn('🔧 Content Script: Vault restore failed:', restoreError);
+        }
+      }
+      
       // Check for timeout
       if (Date.now() - startTime > timeoutMs) {
         console.error('❌ Content Script: Webapp vault timeout after', timeoutMs, 'ms');
