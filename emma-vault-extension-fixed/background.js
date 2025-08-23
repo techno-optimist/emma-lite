@@ -126,7 +126,9 @@ chrome.runtime.onStartup.addListener(async () => {
  * Handle messages from content script
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Received message:', request.action);
+  console.log('🎯 BACKGROUND: *** MESSAGE RECEIVED ***', request.action);
+  console.log('🎯 BACKGROUND: Full request:', request);
+  console.log('🎯 BACKGROUND: Sender info:', sender);
   
   switch (request.action) {
     case 'SET_LLM_KEY':
