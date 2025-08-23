@@ -31,11 +31,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'getVaultStats') {
-    console.log('📊 Content Script: Getting webapp vault statistics');
+    console.log('🎯 Content Script: *** PROCESSING getVaultStats REQUEST ***');
+    console.log('🎯 Content Script: Request received from popup extension');
+    console.log('🎯 Content Script: About to call getWebappVaultStats()...');
     
     // Get detailed vault statistics from webapp
     const vaultStats = getWebappVaultStats();
-    console.log('📊 Content Script: Vault stats:', vaultStats);
+    console.log('🎯 Content Script: *** VAULT STATS RESULT ***:', vaultStats);
+    console.log('🎯 Content Script: Sending response back to popup');
     
     sendResponse(vaultStats);
     return true; // Keep message channel open for async response
