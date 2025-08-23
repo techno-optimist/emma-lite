@@ -2688,43 +2688,61 @@ class EmmaChatExperience extends ExperiencePopup {
         // Add confirmation message and redirect to constellation
         this.addMessage("Perfect! Your memory has been saved to your vault. Let me show you how it connects to your other memories! 🌟", 'emma');
 
-        // Redirect to constellation after brief delay to show new memory
+        // CRITICAL: Refresh constellation IMMEDIATELY after memory save
         setTimeout(() => {
-
           // Close chat experience first
           if (this.close) {
             this.close();
           }
 
-          // Wait for chat to close, then enter constellation
+          // FORCE CONSTELLATION REFRESH after memory save
           setTimeout(() => {
-            // Access the dashboard instance and enter constellation mode
-            if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
-
-              window.emmaDashboard.enterMemoryConstellation();
-            } else if (window.parent && window.parent.emmaDashboard && typeof window.parent.emmaDashboard.enterMemoryConstellation === 'function') {
-
-              window.parent.emmaDashboard.enterMemoryConstellation();
-            } else {
-
-              // Try multiple ways to trigger constellation
+            console.log('🔄 EMMA CHAT: Forcing constellation refresh after memory save');
+            
+            // Method 1: Direct dashboard refresh if available
+            if (window.emmaDashboard) {
+              // Force reload memories first
+              if (typeof window.emmaDashboard.loadMemoriesForConstellation === 'function') {
+                window.emmaDashboard.loadMemoriesForConstellation().then(() => {
+                  console.log('🔄 EMMA CHAT: Memories reloaded for constellation');
+                  
+                  // Then enter constellation mode
+                  if (typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+                    window.emmaDashboard.enterMemoryConstellation();
+                    console.log('🔄 EMMA CHAT: Constellation mode entered with fresh data');
+                  }
+                });
+              } else if (typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+                // Fallback: just enter constellation
+                window.emmaDashboard.enterMemoryConstellation();
+              }
+            }
+            
+            // Method 2: Force full page refresh if dashboard not available
+            else {
+              console.log('🔄 EMMA CHAT: Dashboard not available, triggering manual constellation refresh');
+              
+              // Dispatch custom event to force refresh
+              window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+                detail: { 
+                  action: 'refresh_constellation',
+                  source: 'emma_chat',
+                  timestamp: new Date().toISOString()
+                }
+              }));
+              
+              // Try to click constellation button as backup
               const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]') ||
                                      document.querySelector('[data-action="memories"]') ||
                                      document.querySelector('.radial-item[data-action="memories"]');
 
               if (constellationBtn) {
-
                 constellationBtn.click();
-              } else {
-
-                // Show success message on dashboard
-                if (window.showToast) {
-                  window.showToast('✅ Memory saved! Check the constellation view to see it connected to your other memories.', 'success');
-                }
+                console.log('🔄 EMMA CHAT: Clicked constellation button to refresh');
               }
             }
           }, 500);
-        }, 2000);
+        }, 1500);
 
       } else {
         console.warn('💾 EMMA CHAT: Vault save failed - debugging info:');
