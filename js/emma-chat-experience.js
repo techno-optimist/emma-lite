@@ -1936,13 +1936,6 @@ class EmmaChatExperience extends ExperiencePopup {
           <h3 class="memory-title">${memory.title || 'Untitled Memory'}</h3>
           <p class="memory-story" id="memory-story-${memory.id}">${memory.content}</p>
 
-          ${memory.metadata?.people?.length > 0 ? `
-            <div class="memory-detail">
-              <span class="detail-label">👥 People:</span>
-              <div class="detail-people-avatars" id="capsule-people-${memory.id}"></div>
-            </div>
-          ` : ''}
-
           ${memory.metadata?.emotions?.length > 0 ? `
             <div class="memory-detail">
               <span class="detail-label">💭 Emotions:</span>
@@ -2019,10 +2012,42 @@ class EmmaChatExperience extends ExperiencePopup {
       backdrop-filter: blur(15px) !important;
     `;
     dialog.innerHTML = `
+      <style>
+        .memory-person-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+          overflow: hidden;
+          position: relative;
+          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: white;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+        .memory-person-avatar:hover {
+          transform: scale(1.2);
+          border-color: white;
+          z-index: 10;
+        }
+        .memory-person-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      </style>
       <div class="dialog-content" style="position: relative; z-index: 10001 !important;">
-        <div class="dialog-header">
-          <h3>💝 Your Memory Capsule</h3>
-          <button class="dialog-close" onclick="this.remove()" style="z-index: 10002 !important;">×</button>
+        <div class="dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <h3 style="margin: 0; color: white;">💝 Memory Capsule</h3>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="memory-people-avatars" id="capsule-people-${memory.id}" style="display: flex; gap: 4px; flex-shrink: 0;"></div>
+            <button class="dialog-close" onclick="this.remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+          </div>
         </div>
         <div class="dialog-body">
           ${previewHTML}
@@ -2102,119 +2127,84 @@ class EmmaChatExperience extends ExperiencePopup {
         flex-wrap: wrap;
       `;
 
-      // Create avatars for connected people
-      for (const personId of memory.metadata.people) {
+      // Use EXACT constellation avatar code for consistency
+      const connectedPeople = memory.metadata.people.slice(0, 3); // Limit to 3 like constellation
+      
+      for (const personId of connectedPeople) {
         // Check if this is a new person (temp ID)
         const isNewPerson = personId.startsWith('temp_');
         let person = null;
-        let personName = null;
 
         if (isNewPerson) {
-          // Extract name from temp ID (e.g., "temp_william" -> "William")
-          personName = personId.replace('temp_', '');
-          personName = personName.charAt(0).toUpperCase() + personName.slice(1);
-          // Creating avatar for new person
+          // Create temporary person object for new people
+          const tempName = personId.replace('temp_', '');
+          person = {
+            id: personId,
+            name: tempName.charAt(0).toUpperCase() + tempName.slice(1),
+            isNew: true
+          };
         } else {
           person = peopleData[personId];
           if (!person) {
             console.warn('👥 Person not found in vault:', personId);
             continue;
           }
-          personName = person.name;
-          // Creating avatar for existing person
         }
 
-        // Create avatar element
+        console.log('👥 Creating constellation-style avatar for:', person.name);
+
+        // Create avatar with EXACT constellation styling
         const avatar = document.createElement('div');
-        const baseStyle = `
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 14px;
-          margin-right: 4px;
-          cursor: pointer;
-          transition: transform 0.2s;
-        `;
-        
-        if (isNewPerson) {
-          // New person - special styling
-          avatar.style.cssText = baseStyle + `
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
-            border: 2px solid #ffeb3b;
-            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
-          `;
-          avatar.title = `${personName} (Adding to vault...)`;
-          avatar.textContent = personName.charAt(0).toUpperCase();
-        } else {
-          // Existing person - beautiful gradient styling
-          
-          // Create beautiful gradient backgrounds based on person's name
-          const nameHash = person.name.split('').reduce((a, b) => {
-            a = ((a << 5) - a) + b.charCodeAt(0);
-            return a & a;
-          }, 0);
-          
-          const gradients = [
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Purple-blue
-            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Pink-coral  
-            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // Blue-cyan
-            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', // Peach
-            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', // Mint-pink
-            'linear-gradient(135deg, #ff8a80 0%, #ffab40 100%)', // Orange-amber
-          ];
-          
-          const gradientIndex = Math.abs(nameHash) % gradients.length;
-          const selectedGradient = gradients[gradientIndex];
-          
-          avatar.style.cssText = baseStyle + `
-            background: ${selectedGradient};
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-size: 16px;
-            font-weight: 600;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-          `;
-          avatar.title = person.name;
-          avatar.textContent = person.name.charAt(0).toUpperCase();
-          
-          console.log('👥 Created beautiful avatar for:', person.name, 'with gradient:', selectedGradient);
+        avatar.className = 'memory-person-avatar';
+        avatar.title = person.name + (person.isNew ? ' (NEW)' : '');
+
+        // Start with letter (constellation style)
+        avatar.textContent = person.name.charAt(0).toUpperCase();
+
+        // Apply NEW person styling if needed
+        if (person.isNew) {
+          avatar.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%)';
+          avatar.style.border = '2px solid #ffeb3b';
+          avatar.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.5)';
         }
 
-        // Add hover effect
-        avatar.onmouseenter = () => avatar.style.transform = 'scale(1.1)';
-        avatar.onmouseleave = () => avatar.style.transform = 'scale(1)';
+        // Try to load person's avatar if they have one (existing people)
+        if (!person.isNew && person.avatarUrl) {
+          const img = document.createElement('img');
+          img.src = person.avatarUrl;
+          img.alt = `${person.name} avatar`;
+          img.onload = () => {
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
+          };
+          img.onerror = () => {
+            // Keep letter fallback
+          };
+        } else if (!person.isNew && person.avatarId) {
+          try {
+            // Load from vault (exact constellation code)
+            window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
+              if (avatarData) {
+                const blob = new Blob([avatarData], { type: 'image/jpeg' });
+                const url = URL.createObjectURL(blob);
+                
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = `${person.name} avatar`;
+                img.onload = () => {
+                  avatar.innerHTML = '';
+                  avatar.appendChild(img);
+                };
+              }
+            }).catch(error => {
+              console.error('❌ Failed to load person avatar:', error);
+            });
+          } catch (error) {
+            console.error('❌ Failed to load person avatar:', error);
+          }
+        }
 
         avatarsContainer.appendChild(avatar);
-
-        // Add name label with crystal clear styling for new people
-        const nameLabel = document.createElement('span');
-        if (isNewPerson) {
-          nameLabel.innerHTML = `${personName} <span style="
-            background: linear-gradient(135deg, #ff6b6b, #ffeb3b);
-            color: #000;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: bold;
-            margin-left: 4px;
-            text-shadow: none;
-          ">NEW</span>`;
-        } else {
-          nameLabel.textContent = personName;
-        }
-        nameLabel.style.cssText = `
-          font-size: 12px;
-          color: #fff;
-          margin-right: 12px;
-          display: flex;
-          align-items: center;
-          ${isNewPerson ? 'font-weight: bold;' : ''}
-        `;
-        avatarsContainer.appendChild(nameLabel);
       }
 
     } catch (error) {
