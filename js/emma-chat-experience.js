@@ -671,14 +671,14 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // 💜 DEFAULT: Use dynamic, contextual responses for natural conversation
 
-    const response = this.generateDynamicEmmaResponse(userMessage);
+    const response = await this.generateDynamicEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
   }
 
   /**
    * Generate a dynamic, contextual Emma fallback response without LLM
    */
-  generateDynamicEmmaResponse(userMessage) {
+  async generateDynamicEmmaResponse(userMessage) {
 
     try {
       const vault = window.emmaWebVault?.vaultData?.content;
@@ -880,7 +880,7 @@ class EmmaChatExperience extends ExperiencePopup {
   /**
    * Generate intelligent memory response directly from analysis
    */
-  generateIntelligentMemoryResponse(memory, userMessage) {
+  async generateIntelligentMemoryResponse(memory, userMessage) {
     console.log('💬 INTELLIGENT RESPONSE: Generating response for memory:', memory.title);
     console.log('💬 INTELLIGENT RESPONSE: Memory metadata:', memory.metadata);
     
@@ -1949,7 +1949,7 @@ class EmmaChatExperience extends ExperiencePopup {
         console.log('🔧 MEMORY STORAGE DEBUG: enrichmentState size:', this.enrichmentState.size);
         
         // Generate the single best response immediately using the analysis we just got
-        const intelligentResponse = this.generateIntelligentMemoryResponse(analysis.memory, message);
+        const intelligentResponse = await this.generateIntelligentMemoryResponse(analysis.memory, message);
 
         // Add the message with confirmation buttons.
         this.addMessage(intelligentResponse, 'emma', {
@@ -3027,7 +3027,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.enrichmentState.set(memoryId, state);
 
     // Acknowledge the response with validation (dementia-friendly)
-    const acknowledgment = await this.generateStageAcknowledgment(currentStage, state.collectedData, state.memory);
+    const acknowledgment = await this.generateDynamicAcknowledgment(state.memory, currentStage, state.collectedData);
 
     setTimeout(() => {
       this.addMessage(acknowledgment, 'emma', { type: 'enrichment-acknowledgment' });
