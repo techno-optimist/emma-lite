@@ -484,10 +484,22 @@ class EmmaChatExperience extends ExperiencePopup {
       // Handle HTML content vs regular text
       const messageContent = options.isHtml ? content : `<p>${this.formatMessageContent(content)}</p>`;
 
+      // "DEBBE STANDARD" UX FIX: Add confirmation buttons directly to the intelligent prompt
+      let confirmationHtml = '';
+      if (options.requiresConfirmation && options.memoryId) {
+        confirmationHtml = `
+          <div class="memory-confirmation-buttons">
+            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${options.memoryId}')">✨ Yes, save this memory</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.declineSaveMemory('${options.memoryId}')">Maybe later</button>
+          </div>
+        `;
+      }
+
       messageDiv.innerHTML = `
         <div class="emma-orb-avatar" id="emma-orb-msg-${messageId}"></div>
         <div class="message-content">
           ${messageContent}
+          ${confirmationHtml}
           <span class="message-time">${messageTime}</span>
         </div>
       `;
@@ -1704,9 +1716,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Reinitialize engine
     if (this.vectorlessEngine) {
-      this.vectorlessEngine.options.apiKey = null;
-      this.vectorlessEngine.options.dementiaMode = false;
-      this.vectorlessEngine.options.debug = false;
+      this.vectorlessEngine = null;
     }
 
     this.updateVectorlessStatus();
@@ -1847,36 +1857,31 @@ class EmmaChatExperience extends ExperiencePopup {
       }
 
       if (analysis.isMemoryWorthy) {
-        // Store detected memory
-        this.detectedMemories.set(messageId, analysis);
-
-        // Show memory detection indicator with new confidence
-        this.showMemoryDetectionIndicator(messageId, analysis);
-
         if (this.debugMode) {
           console.log(`💝 Memory detected! FinalScore: ${analysis.finalScore?.toFixed(3)}, AutoCapture: ${analysis.autoCapture}, Confidence: ${analysis.confidence}%`);
           console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
 
-        // NEW FSM LOGIC: Always start enrichment for memory-worthy content
-        // Auto-capture (≥0.70) gets quick suggestion + enrichment
-        // Regular memory-worthy (0.40-0.69) gets enrichment only
+        // "DEBE STANDARD" UX REVOLUTION: One single, intelligent prompt.
+        // No more confusing delays or separate paths.
+        this.enrichmentState[analysis.memory.id] = {
+            memory: analysis.memory,
+            analysis: analysis,
+            state: 'awaiting-confirmation',
+            collectedData: {}
+        };
+        
+        // Generate the single best response immediately.
+        const intelligentResponse = this.generateMemoryCaptureResponse(message, analysis.memory, analysis);
 
-        if (analysis.autoCapture) {
-          // High-confidence: Show quick capture option + start enrichment
-          setTimeout(() => {
-            this.suggestMemoryCapture(analysis);
-          }, 1500);
-
-          setTimeout(() => {
-            this.startStructuredEnrichment(analysis, messageId);
-          }, 3000);
-        } else {
-          // Medium-confidence: Start enrichment conversation immediately
-          setTimeout(() => {
-            this.startStructuredEnrichment(analysis, messageId);
-          }, 2000);
-        }
+        // Add the message with confirmation buttons.
+        this.addMessage('emma', intelligentResponse, {
+            memory: analysis.memory,
+            analysis: analysis,
+            isMemoryCapturePrompt: true,
+            requiresConfirmation: true, // This flag will trigger the UI to show "Save" / "Maybe Later"
+            memoryId: analysis.memory.id
+        });
 
       } else {
         if (this.debugMode) {
