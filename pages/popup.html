@@ -9,6 +9,40 @@
   <link rel="stylesheet" href="../css/vault-locked-overlay.css">
 </head>
 <body>
+  <!-- WEBAPP-FIRST: Vault Locked Overlay -->
+  <div id="vault-locked-overlay" class="vault-locked-overlay hidden">
+    <div class="vault-locked-branding">
+      <!-- Emma Orb with Lock -->
+      <div class="vault-locked-orb"></div>
+      
+      <!-- Emma Title -->
+      <h1 class="vault-locked-title">emma</h1>
+      <p class="vault-locked-subtitle">intelligent memory</p>
+      
+      <!-- Status Message -->
+      <div class="vault-locked-message">
+        <h3>Vault Locked</h3>
+        <p>Your Emma vault needs to be unlocked in the webapp to access memory features. This keeps your memories secure and encrypted.</p>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="vault-locked-actions">
+        <button type="button" id="unlock-webapp-btn" class="vault-unlock-btn">
+          🌐 Open Webapp to Unlock
+        </button>
+        <button type="button" id="vault-help-btn" class="vault-help-btn">
+          ❓ How does this work?
+        </button>
+      </div>
+      
+      <!-- Status Indicator -->
+      <div id="vault-status-indicator" class="vault-status-indicator">
+        <span class="vault-checking-spinner"></span>
+        <span>Checking vault status...</span>
+      </div>
+    </div>
+  </div>
+
   <div class="popup-container">
     <!-- Header -->
     <header class="popup-header">
@@ -595,6 +629,9 @@
     }
   </script>
   
+  <!-- WEBAPP-FIRST: Load vault status checker before popup -->
+  <script src="../js/vault-status-checker.js"></script>
+  <script src="../js/popup-vault-integration.js"></script>
   <script src="../js/popup.js"></script>
 </body>
 </html>

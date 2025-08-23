@@ -18,9 +18,19 @@ let hmlSync = {
   pollHandle: null
 };
 
+// WEBAPP-FIRST: Vault status management
+let vaultStatusChecker = null;
+let isVaultUnlocked = false;
+
 // Populate DOM elements after DOM is ready
 function populateElements() {
   elements = {
+    // WEBAPP-FIRST: Vault overlay elements
+    vaultLockedOverlay: document.getElementById('vault-locked-overlay'),
+    unlockWebappBtn: document.getElementById('unlock-webapp-btn'),
+    vaultHelpBtn: document.getElementById('vault-help-btn'),
+    vaultStatusIndicator: document.getElementById('vault-status-indicator'),
+    
     // Stats elements
     totalMemories: document.getElementById('total-memories'),
     storageUsed: document.getElementById('storage-used'),
@@ -96,8 +106,20 @@ function populateElements() {
 // Initialize popup
 async function init() {
 
-  // First populate DOM elements
-  populateElements();  try {
+  try {
+    // First populate DOM elements
+    populateElements();
+    
+    console.log('🔧 DOM elements populated successfully');
+
+    // WEBAPP-FIRST: Initialize vault status checker FIRST
+    if (window.popupVaultIntegration) {
+      await window.popupVaultIntegration.initializeVaultStatusChecker();
+      console.log('🔧 Vault status checker initialized');
+    } else {
+      console.warn('🔧 Vault integration not available');
+    }
+    
     // Check vault status and determine if setup is needed
     const vaultStatus = await checkVaultSetupStatus();
 

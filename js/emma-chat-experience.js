@@ -1033,7 +1033,7 @@ class EmmaChatExperience extends ExperiencePopup {
       
       // Adjust path based on context
       if (currentPath.includes('/pages/')) {
-        scriptPath = '../js/emma-vectorless-engine.js';
+        scriptPath = './js/emma-vectorless-engine.js';
       } else if (isExtension || isLocalFile) {
         scriptPath = 'js/emma-vectorless-engine.js';
       }

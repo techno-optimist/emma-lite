@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Emma Vault Bridge",
-  "version": "1.0.0",
-  "description": "Enables real-time synchronization between Emma Web App and local .emma vault files",
+  "version": "2.0.0",
+  "description": "WEBAPP-FIRST: Enables secure communication between Emma Web App and extension for memory capture",
   "author": "Emma Team - In honor of Debbe",
   
   "permissions": [
@@ -14,6 +14,7 @@
   ],
   
   "host_permissions": [
+    "https://emma-lite-extension.onrender.com/*",
     "https://emma-hjjc.onrender.com/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
@@ -27,6 +28,7 @@
   "content_scripts": [
     {
       "matches": [
+        "https://emma-lite-extension.onrender.com/*",
         "https://emma-hjjc.onrender.com/*",
         "http://localhost/*",
         "http://127.0.0.1/*"
@@ -36,6 +38,7 @@
     },
     {
       "matches": [
+        "https://emma-lite-extension.onrender.com/*", 
         "https://emma-hjjc.onrender.com/*",
         "http://localhost/*",
         "http://127.0.0.1/*"
@@ -69,6 +72,7 @@
     {
       "resources": ["icons/*"],
       "matches": [
+        "https://emma-lite-extension.onrender.com/*",
         "https://emma-hjjc.onrender.com/*",
         "http://localhost/*",
         "http://127.0.0.1/*"

@@ -11,6 +11,9 @@ class EmmaVaultExtension {
     this.vaultData = null;
     this.isVaultOpen = false;
     this.recentVaults = [];
+    
+    // WEBAPP-FIRST: Extension features are gated by webapp vault status
+    this.webappVaultUnlocked = false;
 
     
     // DOM Elements

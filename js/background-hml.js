@@ -1,19 +1,22 @@
 // js/background-hml.js - HML-enhanced background script for Emma Lite
 console.log('🚀 HML Background script loading...');
 
+// EMERGENCY FIX: Temporarily disable HML imports until lib directory is restored
 // Import existing Emma components
-import { memoryDB } from '../lib/database-mtap.js';
-import { mtapAdapter } from '../lib/mtap-adapter.js';
+// import { memoryDB } from '../lib/database-mtap.js';
+// import { mtapAdapter } from '../lib/mtap-adapter.js';
 import { registerVaultMessageHandlers, VaultService } from './vault/service.js';
 // WEBAPP-FIRST: Vault manager deprecated - removed vault manager dependency
-import { vaultStorage } from '../lib/vault-storage.js';
-import { vaultBackup } from '../lib/vault-backup.js';
+// import { vaultStorage } from '../lib/vault-storage.js';
+// import { vaultBackup } from '../lib/vault-backup.js';
 
 // Import new HML components
-import { hmlAdapter, initializeHMLAdapter } from '../lib/hml-adapter.js';
-import { HMLCapsule } from '../lib/hml-capsule.js';
-import { HMLCanonicalizer } from '../lib/hml-canonicalizer.js';
-import { HMLCryptography } from '../lib/hml-crypto.js';
+// import { hmlAdapter, initializeHMLAdapter } from '../lib/hml-adapter.js';
+// import { HMLCapsule } from '../lib/hml-capsule.js';
+
+console.warn('🚨 EMERGENCY: HML imports disabled - lib directory missing after vault cleanup');
+// import { HMLCanonicalizer } from '../lib/hml-canonicalizer.js';
+// import { HMLCryptography } from '../lib/hml-crypto.js';
 
 console.log('✅ HML Background imports successful');
 

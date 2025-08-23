@@ -5,8 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emma - Your Intelligent Memory Companion</title>
   <link rel="stylesheet" href="popup-emma-brand.css">
+  <link rel="stylesheet" href="popup-vault-locked.css">
 </head>
 <body>
+  <!-- WEBAPP-FIRST: Vault Locked Overlay -->
+  <div id="vault-locked-overlay" class="vault-locked-overlay">
+    <div class="vault-locked-content">
+      <!-- Emma Orb with Lock -->
+      <div class="vault-locked-orb"></div>
+      
+      <!-- Emma Branding -->
+      <h1 class="vault-locked-title">emma</h1>
+      <p class="vault-locked-subtitle">intelligent memory</p>
+      
+      <!-- Status Message -->
+      <div class="vault-locked-message">
+        <h3>Vault Locked</h3>
+        <p>Open the Emma webapp to unlock your vault and access memory features.</p>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="vault-locked-actions">
+        <button type="button" id="unlock-webapp-btn" class="vault-unlock-btn">
+          🌐 Open Emma Webapp
+        </button>
+        <button type="button" id="vault-help-btn" class="vault-help-btn">
+          ❓ How this works
+        </button>
+      </div>
+      
+      <!-- Status Indicator -->
+      <div id="vault-status-indicator" class="vault-status-indicator checking">
+        <span class="vault-checking-spinner"></span>
+        <span>Checking vault...</span>
+      </div>
+    </div>
+  </div>
+
   <div class="popup-container">
     <!-- Top spacing for better visual balance -->
     <div class="popup-header-spacer"></div>
@@ -232,6 +267,7 @@
 
   <script src="emma-orb.js"></script>
   <script src="vault-state-monitor.js"></script>
+  <script src="popup-vault-checker.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
