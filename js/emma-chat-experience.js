@@ -995,10 +995,18 @@ class EmmaChatExperience extends ExperiencePopup {
 
       // Check if EmmaVectorlessEngine is available
       if (typeof EmmaVectorlessEngine === 'undefined') {
-        if (this.debugMode) {
-          console.warn('💬 EmmaVectorlessEngine not available, loading...');
+        console.warn('💬 EmmaVectorlessEngine not available, attempting to load...');
+        
+        try {
+          await this.loadVectorlessEngine();
+          console.log('✅ EmmaVectorlessEngine loaded successfully!');
+        } catch (loadError) {
+          console.warn('⚠️ Could not load EmmaVectorlessEngine:', loadError.message);
+          console.log('💬 Continuing with intelligent fallbacks - Emma will still work beautifully!');
+          this.isVectorlessEnabled = false;
+          this.updateVectorlessStatus('Intelligent Fallbacks - Emma responds dynamically');
+          return; // Exit gracefully, fallbacks will handle everything
         }
-        await this.loadVectorlessEngine();
       }
 
       // Initialize the engine
@@ -1012,17 +1020,13 @@ class EmmaChatExperience extends ExperiencePopup {
       await this.loadVaultForVectorless();
 
       this.updateVectorlessStatus();
-
-      if (this.debugMode) {
-
-      }
+      console.log('✅ Full Vectorless AI system initialized!');
 
     } catch (error) {
-      if (this.debugMode) {
-        console.error('🧠 Failed to initialize Vectorless AI:', error);
-      }
+      console.warn('⚠️ Vectorless AI initialization failed, using intelligent fallbacks:', error.message);
       this.isVectorlessEnabled = false;
-      this.updateVectorlessStatus('Heuristics mode - ' + (error.message || 'No vault'));
+      this.updateVectorlessStatus('Intelligent Fallbacks - Emma responds dynamically');
+      // Don't throw - let the fallbacks handle everything
     }
   }
 
@@ -1032,17 +1036,43 @@ class EmmaChatExperience extends ExperiencePopup {
   async loadVectorlessEngine() {
     return new Promise((resolve, reject) => {
       if (typeof EmmaVectorlessEngine !== 'undefined') {
+        console.log('💬 EmmaVectorlessEngine already available - using existing instance');
         resolve();
         return;
       }
 
+      console.log('💬 Loading EmmaVectorlessEngine script from:', './js/emma-vectorless-engine.js');
+      
+      // Try to detect what context we're running in
+      const currentPath = window.location.pathname;
+      const isExtension = window.location.protocol === 'chrome-extension:';
+      const isLocalFile = window.location.protocol === 'file:';
+      
+      let scriptPath = './js/emma-vectorless-engine.js';
+      
+      // Adjust path based on context
+      if (currentPath.includes('/pages/')) {
+        scriptPath = '../js/emma-vectorless-engine.js';
+      } else if (isExtension || isLocalFile) {
+        scriptPath = 'js/emma-vectorless-engine.js';
+      }
+      
+      console.log('💬 Adjusted script path for context:', scriptPath, 'Current path:', currentPath);
+      
       const script = document.createElement('script');
-      script.src = './js/emma-vectorless-engine.js';
+      script.src = scriptPath;
       script.onload = () => {
-
-        resolve();
+        console.log('💬 Script loaded successfully');
+        if (typeof EmmaVectorlessEngine !== 'undefined') {
+          console.log('✅ EmmaVectorlessEngine now available!');
+          resolve();
+        } else {
+          console.error('❌ Script loaded but EmmaVectorlessEngine still not defined');
+          reject(new Error('EmmaVectorlessEngine not defined after script load'));
+        }
       };
-      script.onerror = () => {
+      script.onerror = (error) => {
+        console.error('❌ Failed to load vectorless engine script:', error);
         reject(new Error('Failed to load vectorless engine script'));
       };
       document.head.appendChild(script);
