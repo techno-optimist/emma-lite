@@ -458,28 +458,31 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     if (sender === 'emma') {
+      // SAFETY: Ensure options exists
+      const safeOptions = options || {};
+      
       // Handle HTML content vs regular text
-      const messageContent = options.isHtml ? content : `<p>${this.formatMessageContent(content)}</p>`;
+      const messageContent = safeOptions.isHtml ? content : `<p>${this.formatMessageContent(content || '')}</p>`;
 
       // "DEBBE STANDARD" UX FIX: Add confirmation buttons directly to the intelligent prompt
       let confirmationHtml = '';
-      if (options.requiresConfirmation && options.memoryId) {
+      if (safeOptions.requiresConfirmation && safeOptions.memoryId) {
         confirmationHtml = `
           <div class="memory-confirmation-buttons">
-            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${options.memoryId}')">✨ Yes, save this memory</button>
-            <button class="capsule-btn secondary" onclick="window.chatExperience.declineSaveMemory('${options.memoryId}')">Maybe later</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${safeOptions.memoryId}')">✨ Yes, save this memory</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.declineSaveMemory('${safeOptions.memoryId}')">Maybe later</button>
           </div>
         `;
       }
 
       // NEW PERSON RELATIONSHIP SELECTION
-      if (options.requiresRelationshipSelection && options.memoryId && options.personName) {
+      if (safeOptions.requiresRelationshipSelection && safeOptions.memoryId && safeOptions.personName) {
         confirmationHtml = `
           <div class="relationship-selection-buttons">
-            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${options.memoryId}', '${options.personName}', 'family')">👨‍👩‍👧‍👦 Family</button>
-            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${options.memoryId}', '${options.personName}', 'friend')">👥 Friend</button>
-            <button class="capsule-btn secondary" onclick="window.chatExperience.addPersonToVault('${options.memoryId}', '${options.personName}', 'acquaintance')">🤝 Acquaintance</button>
-            <button class="capsule-btn secondary" onclick="window.chatExperience.skipPersonAddition('${options.memoryId}')">⏭️ Skip for now</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'family')">👨‍👩‍👧‍👦 Family</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'friend')">👥 Friend</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'acquaintance')">🤝 Acquaintance</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.skipPersonAddition('${safeOptions.memoryId}')">⏭️ Skip for now</button>
           </div>
         `;
       }
