@@ -62,26 +62,24 @@ function getWebappVaultStatus() {
       };
     }
     
-    // Method 3: Check for Emma web vault object
-    if (window.emmaWebVault && window.emmaWebVault.isUnlocked) {
+    // Method 3: Check global vault status object
+    if (window.currentVaultStatus && window.currentVaultStatus.isUnlocked) {
+      console.log('🔐 Content Script: Found vault status in window.currentVaultStatus:', window.currentVaultStatus.name);
       return {
         isUnlocked: true,
-        vaultName: window.emmaWebVault.vaultName || 'Emma Vault',
-        source: 'webVaultObject'
+        vaultName: window.currentVaultStatus.name || 'Emma Vault',
+        source: 'currentVaultStatus'
       };
     }
     
-    // Method 4: Check DOM for vault indicators
-    const vaultIndicator = document.querySelector('[data-vault-status]');
-    if (vaultIndicator) {
-      const status = vaultIndicator.getAttribute('data-vault-status');
-      if (status === 'unlocked') {
-        return {
-          isUnlocked: true,
-          vaultName: vaultIndicator.getAttribute('data-vault-name') || 'Emma Vault',
-          source: 'domIndicator'
-        };
-      }
+    // Method 4: Check for Emma web vault object
+    if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+      console.log('🔐 Content Script: Found open vault in window.emmaWebVault');
+      return {
+        isUnlocked: true,
+        vaultName: window.emmaWebVault.vaultData?.metadata?.name || 'Emma Vault',
+        source: 'webVaultObject'
+      };
     }
     
     // Default: vault is locked
