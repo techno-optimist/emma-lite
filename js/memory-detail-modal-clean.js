@@ -390,6 +390,17 @@ async function loadPeopleInTab() {
                   saveResult = { success: true };
                   apiUsed = 'in-memory-only';
                 }
+                
+                // CRITICAL: Also update vaultData.memories so people dialogs see the connections
+                if (window.emmaWebVault?.vaultData?.memories) {
+                  if (window.emmaWebVault.vaultData.memories[updatedMemory.id]) {
+                    window.emmaWebVault.vaultData.memories[updatedMemory.id] = updatedMemory;
+                    console.log('✅ SAVE: Updated memory in vaultData - people dialogs will now see connections');
+                  } else {
+                    console.log('⚠️ SAVE: Memory not found in vaultData, but localStorage updated');
+                  }
+                }
+                
               } catch (localStorageError) {
                 console.log('⚠️ SAVE: localStorage failed, but memory updated in-memory:', localStorageError);
                 saveResult = { success: true };
@@ -411,13 +422,38 @@ async function loadPeopleInTab() {
             // Update the global current memory
             window.currentMemory = updatedMemory;
             
-            // Refresh the gallery to show updated connections
-            if (typeof window.refreshMemoryGallery === 'function') {
-              setTimeout(() => {
+            // Refresh all views to show updated connections
+            setTimeout(() => {
+              // Refresh gallery
+              if (typeof window.refreshMemoryGallery === 'function') {
                 window.refreshMemoryGallery();
                 console.log('🔄 Gallery refreshed to show updated connections');
-              }, 500);
-            }
+              }
+              
+              // Refresh people constellation if it exists
+              if (window.memoryConstellation && typeof window.memoryConstellation.loadPeopleForConstellation === 'function') {
+                window.memoryConstellation.loadPeopleForConstellation().then(() => {
+                  console.log('🔄 Constellation refreshed to show updated connections');
+                });
+              }
+              
+              // Refresh people page if it's open (people-emma.html)
+              if (typeof window.loadPeople === 'function') {
+                window.loadPeople();
+                console.log('🔄 People page refreshed to show updated connections');
+              }
+              
+              // Dispatch a custom event so any other components can listen for connection updates
+              window.dispatchEvent(new CustomEvent('emmaPeopleConnectionsUpdated', {
+                detail: { 
+                  memoryId: updatedMemory.id,
+                  connectedPeople: peopleIds,
+                  updatedMemory: updatedMemory
+                }
+              }));
+              console.log('📡 Dispatched emmaPeopleConnectionsUpdated event');
+              
+            }, 500);
             
             console.log('✅ Successfully saved people connections to memory');
             
