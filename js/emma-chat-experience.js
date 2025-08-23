@@ -2427,6 +2427,38 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async finalizeMemorySave(memory, memoryId) {
     try {
+      // Start enrichment conversation instead of immediately saving
+      console.log('💾 EMMA CHAT: Starting enrichment conversation for memory:', memoryId);
+      
+      // Initialize enrichment state for this memory
+      const state = this.enrichmentState.get(memoryId);
+      if (state) {
+        state.state = 'enriching';
+        state.collectedData = {
+          people: memory.metadata.people || [],
+          when: null,
+          where: null,
+          emotion: null,
+          media: []
+        };
+        this.enrichmentState.set(memoryId, state);
+      }
+      
+      // Start enrichment conversation
+      await this.startEnrichmentConversation(memoryId);
+      
+    } catch (error) {
+      console.error('💾 EMMA CHAT: Error starting enrichment:', error);
+      // Fallback to direct save if enrichment fails
+      await this.saveMemoryDirectly(memory, memoryId);
+    }
+  }
+
+  /**
+   * Save memory directly to vault (fallback or final save)
+   */
+  async saveMemoryDirectly(memory, memoryId) {
+    try {
       // Save to vault (webapp-only mode)
       if (window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true') {
         console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
@@ -2495,6 +2527,34 @@ class EmmaChatExperience extends ExperiencePopup {
       console.error('💾 SAVE: Error saving memory:', error);
       this.showToast('❌ Failed to save memory', 'error');
     }
+  }
+
+  /**
+   * Start enrichment conversation for memory capsule creation
+   */
+  async startEnrichmentConversation(memoryId) {
+    console.log('💝 EMMA CHAT: Starting enrichment conversation for memory:', memoryId);
+    
+    // Get the state
+    const state = this.enrichmentState.get(memoryId);
+    if (!state) {
+      console.error('💝 EMMA CHAT: No enrichment state found for memory:', memoryId);
+      return;
+    }
+
+    // Initialize enrichment stages
+    if (!state.stagesCompleted) {
+      state.stagesCompleted = [];
+    }
+    
+    // Update state
+    this.enrichmentState.set(memoryId, state);
+
+    // Start with first enrichment question
+    this.addMessage("Now let me help you create a beautiful memory capsule! I'd love to gather some more details to make this memory really special.", 'emma');
+    
+    // Ask the first enrichment question
+    this.askNextEnrichmentQuestion(memoryId);
   }
 
   /**
