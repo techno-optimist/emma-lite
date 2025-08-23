@@ -5662,9 +5662,9 @@
             backdrop-filter: blur(30px);
             border: 1px solid rgba(134, 88, 255, 0.4);
             border-radius: 24px;
-            max-width: 700px;
-            width: 90%;
-            max-height: 85vh;
+            max-width: 600px;
+            width: 85%;
+            max-height: 80vh;
             overflow: hidden;
             box-shadow:
               0 32px 80px rgba(0, 0, 0, 0.6),
@@ -5733,124 +5733,25 @@
                   </div>
                 </div>
 
-                <!-- Right: People Avatars + Close Button -->
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                  ${(() => {
-                    const people = memory.metadata?.people || memory.people || [];
-                    if (!people || people.length === 0) return '';
-
-                    // Get people data from vault to resolve IDs to names/avatars
-                    const vaultPeople = window.emmaWebVault?.vaultData?.content?.people || {};
-                    
-                    const connectedPeopleAvatars = people.slice(0, 3).map((personId, index) => {
-                      const person = vaultPeople[personId];
-                      if (!person) return '';
-                      
-                      const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-                      const hasAvatar = person.avatarUrl || person.profilePicture;
-                      
-                      return `
-                        <div style="
-                          position: relative;
-                          margin-left: ${index > 0 ? '-8px' : '0'};
-                          z-index: ${10 - index};
-                          cursor: pointer;
-                          transition: all 0.2s ease;
-                        " 
-                        title="${person.name || 'Unknown Person'}"
-                        onmouseover="this.style.transform='scale(1.1)'; this.style.zIndex='20'"
-                        onmouseout="this.style.transform='scale(1)'; this.style.zIndex='${10 - index}'">
-                          ${hasAvatar ? `
-                            <img src="${person.avatarUrl || person.profilePicture}" 
-                                 alt="${person.name}" 
-                                 style="
-                                   width: 40px; 
-                                   height: 40px; 
-                                   border-radius: 50%; 
-                                   object-fit: cover;
-                                   border: 3px solid rgba(255, 255, 255, 0.3);
-                                   background: linear-gradient(135deg, #8658ff, #f093fb);
-                                 "
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                            <div style="
-                              width: 40px; 
-                              height: 40px; 
-                              border-radius: 50%; 
-                              background: linear-gradient(135deg, #8658ff, #f093fb);
-                              border: 3px solid rgba(255, 255, 255, 0.3);
-                              display: none;
-                              align-items: center; 
-                              justify-content: center; 
-                              color: white; 
-                              font-size: 16px; 
-                              font-weight: 600;
-                            ">${initials}</div>
-                          ` : `
-                            <div style="
-                              width: 40px; 
-                              height: 40px; 
-                              border-radius: 50%; 
-                              background: linear-gradient(135deg, #8658ff, #f093fb);
-                              border: 3px solid rgba(255, 255, 255, 0.3);
-                              display: flex;
-                              align-items: center; 
-                              justify-content: center; 
-                              color: white; 
-                              font-size: 16px; 
-                              font-weight: 600;
-                            ">${initials}</div>
-                          `}
-                        </div>
-                      `;
-                    }).join('');
-
-                    // Add overflow indicator if more than 3 people
-                    const overflowIndicator = people.length > 3 ? `
-                      <div style="
-                        width: 40px; 
-                        height: 40px; 
-                        border-radius: 50%; 
-                        background: rgba(255, 255, 255, 0.1);
-                        border: 3px solid rgba(255, 255, 255, 0.3);
-                        display: flex;
-                        align-items: center; 
-                        justify-content: center; 
-                        color: white; 
-                        font-size: 14px; 
-                        font-weight: 600;
-                        margin-left: -8px;
-                        z-index: 5;
-                      " title="${people.length - 3} more people">+${people.length - 3}</div>
-                    ` : '';
-
-                    return `
-                      <div style="
-                        display: flex; 
-                        align-items: center;
-                        margin-right: 8px;
-                      ">
-                        ${connectedPeopleAvatars}
-                        ${overflowIndicator}
-                      </div>
-                    `;
-                  })()}
-
-
-                  <button onclick="dashboard.closeMemoryDialog()" style="
-                    background: rgba(255, 255, 255, 0.1);
-                    border: none;
-                    color: rgba(255, 255, 255, 0.7);
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    cursor: pointer;
-                    font-size: 18px;
-                    transition: all 0.2s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                  " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.color='white'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.color='rgba(255, 255, 255, 0.7)'">✕</button>
-                </div>
+                <!-- Right: Close Button Only -->
+                <button onclick="dashboard.closeMemoryDialog()" style="
+                  position: absolute;
+                  top: 20px;
+                  right: 20px;
+                  background: rgba(255, 255, 255, 0.1);
+                  border: none;
+                  color: rgba(255, 255, 255, 0.7);
+                  width: 36px;
+                  height: 36px;
+                  border-radius: 50%;
+                  cursor: pointer;
+                  font-size: 18px;
+                  transition: all 0.2s ease;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  z-index: 1000;
+                " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.color='white'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.color='rgba(255, 255, 255, 0.7)'">✕</button>
               </div>
 
             <!-- Content Area -->
@@ -6067,6 +5968,114 @@
               ` : ''}
 
             </div>
+
+            <!-- People Connected to this Memory -->
+            ${(() => {
+              const people = memory.metadata?.people || memory.people || [];
+              if (!people || people.length === 0) return '';
+
+              // Get people data from vault to resolve IDs to names/avatars
+              const vaultPeople = window.emmaWebVault?.vaultData?.content?.people || {};
+              
+              const connectedPeopleAvatars = people.map((personId, index) => {
+                const person = vaultPeople[personId];
+                if (!person) return '';
+                
+                const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+                const hasAvatar = person.avatarUrl || person.profilePicture;
+                
+                return `
+                  <div style="
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    text-align: center;
+                  " 
+                  title="View ${person.name || 'Unknown Person'}'s profile"
+                  onclick="dashboard.openPersonDialog('${personId}')"
+                  onmouseover="this.style.transform='scale(1.05)'"
+                  onmouseout="this.style.transform='scale(1)'">
+                    ${hasAvatar ? `
+                      <img src="${person.avatarUrl || person.profilePicture}" 
+                           alt="${person.name}" 
+                           style="
+                             width: 64px; 
+                             height: 64px; 
+                             border-radius: 50%; 
+                             object-fit: cover;
+                             border: 3px solid rgba(134, 88, 255, 0.4);
+                             background: linear-gradient(135deg, #8658ff, #f093fb);
+                             margin-bottom: 8px;
+                           "
+                           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                      <div style="
+                        width: 64px; 
+                        height: 64px; 
+                        border-radius: 50%; 
+                        background: linear-gradient(135deg, #8658ff, #f093fb);
+                        border: 3px solid rgba(134, 88, 255, 0.4);
+                        display: none;
+                        align-items: center; 
+                        justify-content: center; 
+                        color: white; 
+                        font-size: 24px; 
+                        font-weight: 600;
+                        margin-bottom: 8px;
+                      ">${initials}</div>
+                    ` : `
+                      <div style="
+                        width: 64px; 
+                        height: 64px; 
+                        border-radius: 50%; 
+                        background: linear-gradient(135deg, #8658ff, #f093fb);
+                        border: 3px solid rgba(134, 88, 255, 0.4);
+                        display: flex;
+                        align-items: center; 
+                        justify-content: center; 
+                        color: white; 
+                        font-size: 24px; 
+                        font-weight: 600;
+                        margin-bottom: 8px;
+                      ">${initials}</div>
+                    `}
+                    <div style="
+                      color: white;
+                      font-size: 14px;
+                      font-weight: 600;
+                      max-width: 80px;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    ">${person.name || 'Unknown'}</div>
+                  </div>
+                `;
+              }).filter(Boolean).join('');
+
+              return `
+                <div style="
+                  padding: 24px 40px;
+                  border-top: 1px solid rgba(255, 255, 255, 0.1);
+                  background: linear-gradient(135deg, rgba(134, 88, 255, 0.05), rgba(240, 147, 251, 0.05));
+                ">
+                  <h3 style="
+                    color: white;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin: 0 0 16px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                  ">👥 People in this Memory</h3>
+                  <div style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+                    gap: 16px;
+                    justify-items: center;
+                  ">
+                    ${connectedPeopleAvatars}
+                  </div>
+                </div>
+              `;
+            })()}
 
             <!-- Emma Branded Actions -->
             <div class="memory-actions" style="
