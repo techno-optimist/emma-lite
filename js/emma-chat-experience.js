@@ -660,8 +660,12 @@ class EmmaChatExperience extends ExperiencePopup {
    * Generate a dynamic, contextual Emma fallback response without LLM
    */
   async generateDynamicEmmaResponse(userMessage) {
-
     try {
+      // Safety check for null/undefined inputs
+      if (!userMessage) {
+        return "I'm here to help! What would you like to do?";
+      }
+
       const vault = window.emmaWebVault?.vaultData?.content;
       if (vault?.people) {
         const people = Object.values(vault.people);
@@ -1747,7 +1751,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Generate dynamic response for media requests
       const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
-      await this.addMessage(response, 'emma', null, 'response');
+      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', null, 'response');
 
       // Create a basic memory from the request
       const memory = {
@@ -2138,8 +2142,14 @@ class EmmaChatExperience extends ExperiencePopup {
    * Show enhanced memory preview with media upload and people selection
    */
   showEnhancedMemoryPreview(memory) {
-    // Create enhanced dialog
-    const dialog = document.createElement('div');
+    try {
+      if (!memory || !memory.id) {
+        console.error('❌ Invalid memory object for enhanced preview');
+        return;
+      }
+
+      // Create enhanced dialog
+      const dialog = document.createElement('div');
     dialog.className = 'memory-preview-dialog enhanced';
     dialog.style.cssText = `
       position: fixed;
@@ -2243,6 +2253,12 @@ class EmmaChatExperience extends ExperiencePopup {
     
     // Setup drag and drop
     this.setupEnhancedDragDrop(memory.id);
+
+    } catch (error) {
+      console.error('❌ Error showing enhanced memory preview:', error);
+      // Fallback to simple alert
+      alert("I'd love to help you save photos! Please try the regular memory capture for now.");
+    }
   }
 
   /**
