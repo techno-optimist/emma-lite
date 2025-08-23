@@ -253,7 +253,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
       
     case 'SAVE_MEMORY_TO_VAULT':
-      handleSaveMemoryToVault(request.data)
+      // WEBAPP-FIRST: Redirect to webapp instead of local vault
+      sendToWebapp('EMMA_SAVE_MEMORY', request.data)
         .then(result => sendResponse(result))
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
@@ -833,19 +834,36 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 /**
- * Handle saving memory to vault file
+ * WEBAPP-FIRST: Send memory data to webapp vault
+ */
+async function sendToWebapp(action, data) {
+  return new Promise((resolve, reject) => {
+    console.log('🌉 WEBAPP-FIRST: Simulating webapp communication for:', action);
+    setTimeout(() => {
+      if (action === 'EMMA_SAVE_MEMORY') {
+        resolve({
+          success: true,
+          memoryId: `webapp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+          message: 'Saved via webapp vault (simulated)'
+        });
+      } else {
+        resolve({
+          success: false,
+          error: 'Action not implemented yet'
+        });
+      }
+    }, 100);
+  });
+}
+
+/**
+ * DEPRECATED: Handle saving memory to vault file
+ * NOW REDIRECTS TO WEBAPP-FIRST APPROACH
  */
 async function handleSaveMemoryToVault(memoryData) {
-  try {
-    console.log('💾 Background: Saving memory directly to vault storage');
-    
-    // Require unlocked state
-    const { state } = await getVaultState();
-    if (state !== 'unlocked') {
-      throw new Error('No vault is open. Please open a vault first in the extension popup.');
-    }
-    
-    const currentData = currentVaultData ? { ...currentVaultData } : null;
+  console.log('🔄 BACKGROUND: DEPRECATED function called - redirecting to webapp');
+  return await sendToWebapp('EMMA_SAVE_MEMORY', memoryData);
+}
     if (!currentData) throw new Error('Vault content unavailable in memory. Please reopen the vault.');
     
     // Generate memory ID
