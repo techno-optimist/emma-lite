@@ -8,24 +8,28 @@
 function openMemoryDetailModal(memory) {
   console.log('🎯 CLEAN MODAL: openMemoryDetailModal called for:', memory.title || memory.id);
   
-  // Store current memory globally
-  window.currentMemory = memory;
-  
-  // Create modal
+  try {
+    // Store current memory globally
+    window.currentMemory = memory;
+    
+    console.log('🎯 CLEAN MODAL: Creating modal element...');
+    
+    // Create modal
   const modal = document.createElement('div');
   modal.className = 'memory-modal';
   modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    z-index: 2147483647;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
   `;
 
   modal.innerHTML = `
@@ -75,8 +79,21 @@ function openMemoryDetailModal(memory) {
     document.getElementById('people-tab').style.display = tabName === 'people' ? 'block' : 'none';
   };
 
+  console.log('🎯 CLEAN MODAL: Appending modal to body...');
   document.body.appendChild(modal);
+  
+  console.log('🎯 CLEAN MODAL: Modal appended! Checking if visible...');
+  console.log('🎯 CLEAN MODAL: Modal display:', modal.style.display);
+  console.log('🎯 CLEAN MODAL: Modal z-index:', modal.style.zIndex);
+  console.log('🎯 CLEAN MODAL: Modal in DOM:', document.contains(modal));
+  
   return modal;
+  
+  } catch (error) {
+    console.error('❌ CLEAN MODAL ERROR:', error);
+    alert('Modal creation failed: ' + error.message);
+    throw error;
+  }
 }
 
 /**
