@@ -26,16 +26,7 @@ function initializeGallery() {
 
   // Debug: Check what Emma API methods are available
   if (window.emmaAPI) {
-    console.log('💝 GALLERY: Emma API available, methods:', Object.keys(window.emmaAPI));
-    if (window.emmaAPI.vault) {
-      console.log('💝 GALLERY: Vault API methods:', Object.keys(window.emmaAPI.vault));
-    }
-    if (window.emmaAPI.memory) {
-      console.log('💝 GALLERY: Memory API methods:', Object.keys(window.emmaAPI.memory));
-    }
-    if (window.emmaAPI.storage) {
-      console.log('💝 GALLERY: Storage API methods:', Object.keys(window.emmaAPI.storage));
-    }
+        // Emma API detected and ready
   } else {
 
   }
@@ -109,7 +100,7 @@ async function loadMemories() {
     if (vaultMemories.length === 0 && window.emmaAPI) {
       // Try memories.getAll as fallback (old API method)
       if (window.emmaAPI.memories && window.emmaAPI.memories.getAll) {
-        console.log('💝 GALLERY: Trying old API memories.getAll()');
+        // Fallback to legacy API
         const vaultResult = await window.emmaAPI.memories.getAll({ limit: 1000, offset: 0 });
 
         if (vaultResult && Array.isArray(vaultResult)) {
@@ -187,7 +178,7 @@ async function loadMemories() {
           metadata: memory.metadata || {} // CRITICAL: Preserve metadata for people connections!
         };
 
-        console.log('🔍 PEOPLE DEBUG: Transformed memory', transformedMemory.title, 'metadata:', transformedMemory.metadata);
+        // Memory transformed with people metadata
         
         return transformedMemory;
       }));
@@ -195,16 +186,7 @@ async function loadMemories() {
       // Debug: Log media items for each memory
       memories.forEach((memory, index) => {
         if (memory.mediaItems && memory.mediaItems.length > 0) {
-          console.log(`📷 GALLERY: Memory "${memory.title}" has ${memory.mediaItems.length} media items:`,
-            memory.mediaItems.map(item => ({
-              name: item.name,
-              hasUrl: !!item.url,
-              hasDataUrl: !!item.dataUrl,
-              urlPreview: item.url ? item.url.substring(0, 50) + '...' : 'none',
-              isPersisted: item.isPersisted,
-              vaultId: item.vaultId
-            }))
-          );
+          // Media items processed for memory
         }
       });
     } else {
@@ -377,7 +359,7 @@ async function createMemoryCardElement(memory) {
   card.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('🎯 CARD CLICK: Opening memory:', memory.title || memory.id);
+    // Opening memory detail modal
     
     // Increase delay to ensure modal setup completes before any potential close events
     setTimeout(() => {
@@ -456,16 +438,15 @@ async function createMemoryPeopleAvatars(memory) {
   avatarsContainer.className = 'memory-people-avatars';
 
   try {
-    console.log('👥 Creating people avatars for memory:', memory.id, memory.title);
-    console.log('👥 Memory metadata:', memory.metadata);
+    // Creating people avatars for memory connections
 
     // Get people connected to this memory
     if (!memory.metadata || !memory.metadata.people || !Array.isArray(memory.metadata.people)) {
-      console.log('👥 No people metadata found for memory:', memory.id);
+      // No people connected to this memory
       return avatarsContainer; // Empty container
     }
 
-    console.log('👥 Found people in memory:', memory.metadata.people);
+    // Found people connections in memory metadata
 
     // Load people data from vault
     if (!window.emmaWebVault || !window.emmaWebVault.isOpen || !window.emmaWebVault.vaultData) {
@@ -476,7 +457,7 @@ async function createMemoryPeopleAvatars(memory) {
     const vaultData = window.emmaWebVault.vaultData;
     const peopleData = vaultData.people || {};
     
-    console.log('👥 Available people in vault:', Object.keys(peopleData));
+    // Available people loaded from vault
 
     // Create avatars for connected people (limit to 3)
     const connectedPeople = memory.metadata.people.slice(0, 3);
@@ -488,7 +469,7 @@ async function createMemoryPeopleAvatars(memory) {
         continue;
       }
 
-      console.log('👥 Creating avatar for:', person.name);
+      // Creating avatar for person
 
       const avatar = document.createElement('div');
       avatar.className = 'memory-person-avatar';
@@ -533,7 +514,7 @@ async function createMemoryPeopleAvatars(memory) {
       avatarsContainer.appendChild(avatar);
     }
 
-    console.log('👥 Created avatars container with', avatarsContainer.children.length, 'avatars');
+    // Avatars container created successfully
     return avatarsContainer;
 
   } catch (error) {
@@ -585,7 +566,7 @@ function getCategoryIcon(category) {
  * Open memory detail modal - Uses external modal system
  */
 function openMemoryDetail(memory) {
-  console.log('🎯 GALLERY: Opening memory detail for:', memory.title || memory.id);
+  // Opening memory detail modal
   
   // Use external modal system
   if (typeof openMemoryDetailModal === 'function') {
@@ -646,15 +627,15 @@ function renderEmptyState() {
  * Open Emma Chat for creating memories
  */
 function openEmmaChat() {
-  console.log('💬 GALLERY: Opening Emma chat...');
+  // Opening Emma chat interface
   
   // Use the modern Emma chat experience
   if (window.EmmaChatExperience) {
-    console.log('💬 GALLERY: Opening new Emma Chat Experience');
+    // Using modern Emma Chat Experience
     const emmaChatExperience = new window.EmmaChatExperience();
     emmaChatExperience.show();
   } else if (window.OrbExperienceManager) {
-    console.log('💬 GALLERY: Fallback to orb experience manager');
+    // Fallback to orb experience manager
     const experienceManager = window.OrbExperienceManager.getInstance();
     // Create a dummy orb element for the chat to position relative to
     const dummyOrb = document.createElement('div');
@@ -721,4 +702,4 @@ window.memoryGallery = {
   createNewMemory
 };
 
-console.log('💝 Beautiful Memory Gallery: Ready to honor precious moments');
+// Gallery initialized - ready to display memories

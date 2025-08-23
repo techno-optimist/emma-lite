@@ -6,7 +6,7 @@
  * Open memory detail modal - CLEAN VERSION
  */
 function openMemoryDetailModal(memory) {
-  console.log('Opening memory detail for:', memory.title || memory.id);
+  // Opening memory detail modal
   
   // Store current memory globally
   window.currentMemory = memory;
@@ -84,7 +84,7 @@ function openMemoryDetailModal(memory) {
  */
 async function openAddPeopleModalForGallery() {
   try {
-    console.log('Loading people...');
+    // Loading people from vault
     
     // Use EXACT same API as working pages
     const response = await window.emmaAPI.people.list();
