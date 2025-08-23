@@ -1084,7 +1084,37 @@ async function saveToWebappVault(memoryData) {
     const vault = await waitForWebappVault(10000); // 10 second timeout
     
     if (!vault) {
-      throw new Error('Webapp vault failed to initialize within timeout');
+      console.warn('💾 Content Script: Vault timeout - attempting fallback save to localStorage');
+      
+      // FALLBACK: Save to localStorage temporarily
+      const fallbackMemory = {
+        ...memoryData,
+        id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+        created: new Date().toISOString(),
+        source: 'extension_fallback',
+        needsVaultSync: true
+      };
+      
+      // Store in localStorage for later vault sync
+      const existingFallbacks = JSON.parse(localStorage.getItem('emma_fallback_memories') || '[]');
+      existingFallbacks.push(fallbackMemory);
+      localStorage.setItem('emma_fallback_memories', JSON.stringify(existingFallbacks));
+      
+      console.log('💾 Content Script: Memory saved to fallback storage:', fallbackMemory.id);
+      
+      // Trigger constellation refresh even with fallback
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+          detail: { memoryId: fallbackMemory.id, memoryData: fallbackMemory }
+        }));
+      }, 100);
+      
+      return {
+        success: true,
+        memoryId: fallbackMemory.id,
+        message: 'Memory saved to fallback storage - will sync to vault when available',
+        isFallback: true
+      };
     }
     
     console.log('💾 Content Script: Webapp vault is ready!', {
