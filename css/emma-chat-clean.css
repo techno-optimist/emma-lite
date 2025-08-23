@@ -72,18 +72,23 @@
   background: rgba(139, 92, 246, 0.6);
 }
 
-/* Emma Orb Avatar - Real Orb */
+/* Emma Orb Avatar - High-Definition Real Orb */
 .emma-orb-avatar {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  /* CLEAN: Container for real Emma orb - no background */
+  /* HIGH-DEF: Container for real Emma orb - optimized for crisp rendering */
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   position: relative;
   margin-left: 4px; /* SPACING: Add subtle left padding for Emma orb breathing room */
+  /* HIGH-DEF: Ensure crisp rendering at all zoom levels */
+  transform: translateZ(0); /* Force GPU acceleration */
+  backface-visibility: hidden; /* Prevent blurring */
+  image-rendering: -webkit-optimize-contrast; /* Crisp edges */
+  image-rendering: crisp-edges;
 }
 
 /* User Messages */

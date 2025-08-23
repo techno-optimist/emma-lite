@@ -517,14 +517,25 @@ class EmmaChatExperience extends ExperiencePopup {
       const orbContainer = document.getElementById(`emma-orb-msg-${messageId}`);
       if (orbContainer && window.EmmaOrb) {
         try {
+          // Create high-definition Emma orb with proper parameters
           new window.EmmaOrb(orbContainer, {
-            size: 40,
-            interactive: false,
-            theme: 'purple'
+            hue: 270, // Emma's signature purple-pink
+            hoverIntensity: 0.2,
+            rotateOnHover: false,
+            forceHoverState: false,
+            particleCount: 80, // High particle count for crisp rendering
+            resolution: 2 // High DPI rendering for crisp quality
           });
         } catch (error) {
           console.warn('⚠️ Emma orb fallback for message avatar');
-          orbContainer.style.background = 'radial-gradient(circle, rgba(139, 92, 246, 0.8), rgba(240, 147, 251, 0.6))';
+          // High-quality fallback gradient
+          orbContainer.style.cssText = `
+            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          `;
         }
       }
     }
