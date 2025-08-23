@@ -497,6 +497,18 @@ class EmmaChatExperience extends ExperiencePopup {
         `;
       }
 
+      // NEW PERSON RELATIONSHIP SELECTION
+      if (options.requiresRelationshipSelection && options.memoryId && options.personName) {
+        confirmationHtml = `
+          <div class="relationship-selection-buttons">
+            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${options.memoryId}', '${options.personName}', 'family')">👨‍👩‍👧‍👦 Family</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${options.memoryId}', '${options.personName}', 'friend')">👥 Friend</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.addPersonToVault('${options.memoryId}', '${options.personName}', 'acquaintance')">🤝 Acquaintance</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.skipPersonAddition('${options.memoryId}')">⏭️ Skip for now</button>
+          </div>
+        `;
+      }
+
       messageDiv.innerHTML = `
         <div class="emma-orb-avatar" id="emma-orb-msg-${messageId}"></div>
         <div class="message-content">
@@ -2287,7 +2299,123 @@ class EmmaChatExperience extends ExperiencePopup {
         this.showToast('❌ Memory not found', 'error');
         return;
       }
+
+      // CRITICAL "DEBBE STANDARD" FLOW: Check for new people that need to be added
+      const newPeople = memory.metadata.newPeopleDetected || [];
       
+      if (newPeople.length > 0) {
+        console.log('👥 EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
+        await this.startNewPersonOnboarding(memoryId, newPeople);
+        return;
+      }
+
+      // If no new people, proceed directly to memory capsule creation
+      await this.finalizeMemorySave(memory, memoryId);
+    } catch (error) {
+      console.error('💾 EMMA CHAT: Error in confirmSaveMemory:', error);
+      this.showToast('❌ Failed to save memory', 'error');
+    }
+  }
+
+  /**
+   * Start new person onboarding flow
+   */
+  async startNewPersonOnboarding(memoryId, newPeople) {
+    const personName = newPeople[0]; // Handle one at a time for simplicity
+    
+    this.addMessage(`Great! Let me add ${personName} to your vault first. What's your relationship with ${personName}?`, 'emma', {
+      isNewPersonPrompt: true,
+      memoryId: memoryId,
+      personName: personName,
+      requiresRelationshipSelection: true
+    });
+  }
+
+  /**
+   * Add person to vault with specified relationship
+   */
+  async addPersonToVault(memoryId, personName, relationship) {
+    try {
+      console.log(`👥 ADDING PERSON: ${personName} as ${relationship}`);
+      
+      // Add person to vault
+      await window.emmaWebVault.addPerson({
+        name: personName,
+        relationship: relationship,
+        createdAt: new Date().toISOString(),
+        createdBy: 'emma-chat'
+      });
+
+      this.addMessage(`Perfect! I've added ${personName} as a ${relationship} to your vault. Now let me create your memory capsule...`, 'emma');
+
+      // Update the memory metadata to replace temp ID with real ID
+      await this.updateMemoryWithRealPersonId(memoryId, personName);
+
+      // Proceed to finalize memory save
+      const state = this.enrichmentState[memoryId];
+      if (state && state.memory) {
+        await this.finalizeMemorySave(state.memory, memoryId);
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to add person to vault:', error);
+      this.addMessage(`I had trouble adding ${personName} to your vault, but let me save your memory anyway.`, 'emma');
+      
+      const state = this.enrichmentState[memoryId];
+      if (state && state.memory) {
+        await this.finalizeMemorySave(state.memory, memoryId);
+      }
+    }
+  }
+
+  /**
+   * Skip person addition and proceed to memory save
+   */
+  async skipPersonAddition(memoryId) {
+    this.addMessage("No worries! Let me create your memory capsule...", 'emma');
+    
+    const state = this.enrichmentState[memoryId];
+    if (state && state.memory) {
+      await this.finalizeMemorySave(state.memory, memoryId);
+    }
+  }
+
+  /**
+   * Update memory metadata to replace temp person ID with real person ID
+   */
+  async updateMemoryWithRealPersonId(memoryId, personName) {
+    try {
+      const state = this.enrichmentState[memoryId];
+      if (!state || !state.memory) return;
+
+      // Get the newly added person from vault
+      const people = await window.emmaWebVault.listPeople();
+      const newPerson = people.find(p => p.name.toLowerCase() === personName.toLowerCase());
+      
+      if (newPerson) {
+        // Replace temp ID with real ID
+        const tempId = `temp_${personName.toLowerCase()}`;
+        const peopleIds = state.memory.metadata.people || [];
+        const updatedPeopleIds = peopleIds.map(id => id === tempId ? newPerson.id : id);
+        
+        state.memory.metadata.people = updatedPeopleIds;
+        
+        // Remove from newPeopleDetected
+        state.memory.metadata.newPeopleDetected = (state.memory.metadata.newPeopleDetected || [])
+          .filter(name => name.toLowerCase() !== personName.toLowerCase());
+          
+        console.log('✅ Updated memory with real person ID:', newPerson.id);
+      }
+    } catch (error) {
+      console.error('❌ Failed to update memory with real person ID:', error);
+    }
+  }
+
+  /**
+   * Finalize memory save and create capsule
+   */
+  async finalizeMemorySave(memory, memoryId) {
+    try {
       // Save to vault (webapp-only mode)
       if (window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true') {
         console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
