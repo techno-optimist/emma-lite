@@ -1154,25 +1154,34 @@
       // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
       console.log('🔍 PEOPLE: Using existing vault instances (no new creation)');
 
-      // Pure web app mode - Check if vault is loaded in web app
-      if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
-
-        // NO MOCK VAULT! Extension handles all vault operations
-        // Web app just needs to know extension is available
-
-      } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
-        (async () => {
-          try {
-
-            const result = await window.emmaWebVault.restoreVaultState();
-            if (result) {            } else {
-
-            }
-          } catch (error) {
-            console.warn('⚠️ PEOPLE: Could not restore vault state:', error);
+      // Wait for vault scripts to load and check vault state
+      function initializeVaultForPeople() {
+        if (window.emmaWebVault && typeof window.emmaWebVault.restoreVaultState === 'function') {
+          // Try to restore vault state if vault was previously active
+          if (sessionStorage.getItem('emmaVaultActive') === 'true') {
+            console.log('👥 PEOPLE: Attempting to restore vault state...');
+            window.emmaWebVault.restoreVaultState()
+              .then(result => {
+                if (result) {
+                  console.log('✅ PEOPLE: Vault state restored successfully');
+                } else {
+                  console.log('⚠️ PEOPLE: Vault state restore returned false');
+                }
+              })
+              .catch(error => {
+                console.warn('⚠️ PEOPLE: Could not restore vault state:', error);
+              });
+          } else {
+            console.log('👥 PEOPLE: No active vault session found');
           }
-        })();
+        } else {
+          console.log('👥 PEOPLE: Vault not ready yet, waiting...');
+          setTimeout(initializeVaultForPeople, 200);
+        }
       }
+
+      // Start vault initialization
+      setTimeout(initializeVaultForPeople, 100);
     });
 
     // Neural network animation
@@ -1355,17 +1364,36 @@
 
     async function loadPeople() {
       try {
+        console.log('👥 PEOPLE: Starting loadPeople...');
+        console.log('👥 PEOPLE: emmaAPI available?', !!window.emmaAPI);
+        console.log('👥 PEOPLE: emmaAPI.people available?', !!window.emmaAPI?.people);
+        console.log('👥 PEOPLE: emmaAPI.people.list available?', !!window.emmaAPI?.people?.list);
 
+        if (!window.emmaAPI || !window.emmaAPI.people || !window.emmaAPI.people.list) {
+          console.error('❌ PEOPLE: emmaAPI.people.list not available');
+          // Show empty state with instructions to unlock vault
+          people = [];
+          await renderPeople();
+          return;
+        }
+
+        console.log('👥 PEOPLE: Calling emmaAPI.people.list()...');
         const response = await window.emmaAPI.people.list();
+        console.log('👥 PEOPLE: Response received:', response);
 
-        if (response.success) {
+        if (response && response.success) {
           people = response.items || [];
+          console.log(`👥 PEOPLE: Loaded ${people.length} people from vault`);
           await renderPeople();
         } else {
-          console.error('Failed to load people:', response);
+          console.error('❌ PEOPLE: Failed to load people:', response);
+          people = [];
+          await renderPeople();
         }
       } catch (error) {
-        console.error('Error loading people:', error);
+        console.error('❌ PEOPLE: Error loading people:', error);
+        people = [];
+        await renderPeople();
       }
     }
 
@@ -2477,10 +2505,19 @@
     document.addEventListener('DOMContentLoaded', () => {
       initNeuralNetwork();
 
-      // Delay loadPeople to allow vault restoration
-      setTimeout(() => {
-        loadPeople();
-      }, 1000);
+      // FIXED: Wait for vault to be properly initialized before loading people
+      function waitForVaultAndLoadPeople() {
+        if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
+          console.log('👥 PEOPLE: Vault is ready, loading people...');
+          loadPeople();
+        } else {
+          console.log('👥 PEOPLE: Waiting for vault initialization...');
+          setTimeout(waitForVaultAndLoadPeople, 500);
+        }
+      }
+
+      // Start checking after a brief delay
+      setTimeout(waitForVaultAndLoadPeople, 1000);
     });
   </script>
 </body>
