@@ -2667,7 +2667,10 @@ class EmmaChatExperience extends ExperiencePopup {
       // Get people from vault
       let people = [];
       
-      // SAFE ACCESS: Check each method carefully to avoid crashes
+      // FIXED: Use proper vault methods that resolve avatar URLs
+      console.log('👥 PICKER: Loading people with avatars...');
+      
+      // Try EmmaAPI first
       if (window.emmaAPI && 
           typeof window.emmaAPI.people === 'object' && 
           window.emmaAPI.people !== null &&
@@ -2676,33 +2679,70 @@ class EmmaChatExperience extends ExperiencePopup {
           const result = await window.emmaAPI.people.list();
           if (result && result.success && Array.isArray(result.items)) {
             people = result.items;
+            console.log('👥 PICKER: Got people from EmmaAPI:', people.length);
           }
         } catch (apiError) {
           console.log('📝 EmmaAPI people.list failed:', apiError);
         }
       }
       
-      // Fallback to vault method if API failed or doesn't exist
+      // Try vault primary getPeople method (resolves avatars!)
+      if (people.length === 0 && window.emmaVaultPrimary && typeof window.emmaVaultPrimary.getPeople === 'function') {
+        try {
+          people = await window.emmaVaultPrimary.getPeople();
+          console.log('👥 PICKER: Got people from VaultPrimary with avatars:', people.length);
+        } catch (vaultError) {
+          console.log('📝 VaultPrimary getPeople failed:', vaultError);
+        }
+      }
+      
+      // Try web vault method
       if (people.length === 0 && 
           window.emmaWebVault && 
           typeof window.emmaWebVault.listPeople === 'function') {
         try {
           people = await window.emmaWebVault.listPeople();
+          console.log('👥 PICKER: Got people from WebVault listPeople:', people.length);
         } catch (vaultError) {
           console.log('📝 Vault listPeople failed:', vaultError);
         }
       }
       
-      // Last resort: Direct vault data access
+      // Last resort: Manual avatar resolution from raw vault data
       if (people.length === 0 && 
           window.emmaWebVault && 
           window.emmaWebVault.vaultData && 
           window.emmaWebVault.vaultData.content &&
           window.emmaWebVault.vaultData.content.people) {
         try {
-          people = Object.values(window.emmaWebVault.vaultData.content.people) || [];
+          console.log('👥 PICKER: Manually resolving people avatars from raw data...');
+          const rawPeople = Object.values(window.emmaWebVault.vaultData.content.people) || [];
+          const media = window.emmaWebVault.vaultData.content.media || {};
+          
+          // Manually resolve avatars like the vault methods do
+          people = rawPeople.map(person => {
+            let avatarUrl = person.avatarUrl;
+            
+            // Resolve avatar from media if needed
+            if (!avatarUrl && person.avatarId && media[person.avatarId]) {
+              const mediaItem = media[person.avatarId];
+              if (mediaItem && mediaItem.data) {
+                avatarUrl = mediaItem.data.startsWith('data:')
+                  ? mediaItem.data
+                  : `data:${mediaItem.type};base64,${mediaItem.data}`;
+                console.log(`👥 PICKER: Resolved avatar for ${person.name}:`, avatarUrl.substring(0, 50) + '...');
+              }
+            }
+            
+            return {
+              ...person,
+              avatarUrl
+            };
+          });
+          
+          console.log('👥 PICKER: Manually resolved avatars for', people.length, 'people');
         } catch (directError) {
-          console.log('📝 Direct vault people access failed:', directError);
+          console.log('📝 Manual avatar resolution failed:', directError);
         }
       }
 
@@ -2838,30 +2878,55 @@ class EmmaChatExperience extends ExperiencePopup {
           transition: all 0.3s ease;
         `;
         
-        // MATCH APP STYLE: Load avatar exactly like constellation/capsule views
+        // FIXED: Load avatar properly using resolved avatarUrl
         const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         avatar.textContent = initials; // Start with initials
         
-        // Try to load actual avatar photo (same logic as createCapsulePeopleAvatars)
-        if (person.avatarUrl) {
-          // Direct URL (like data: URLs)
+        console.log(`👥 PICKER: Loading avatar for ${person.name}:`, {
+          avatarUrl: person.avatarUrl ? person.avatarUrl.substring(0, 50) + '...' : 'none',
+          avatarId: person.avatarId,
+          avatar: person.avatar ? person.avatar.substring(0, 50) + '...' : 'none'
+        });
+        
+        // Try avatarUrl first (resolved by vault methods)
+        if (person.avatarUrl && person.avatarUrl.startsWith('data:')) {
+          console.log(`📸 PICKER: Using resolved avatarUrl for ${person.name}`);
           const img = document.createElement('img');
           img.src = person.avatarUrl;
           img.alt = `${person.name} avatar`;
           img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
           img.onload = () => {
+            console.log(`✅ PICKER: Avatar loaded successfully for ${person.name}`);
             avatar.innerHTML = '';
             avatar.appendChild(img);
           };
-          img.onerror = () => {
-            // Keep initials fallback
-            console.log(`📸 Avatar URL failed for ${person.name}, using initials`);
+          img.onerror = (error) => {
+            console.log(`❌ PICKER: Avatar URL failed for ${person.name}:`, error);
           };
-        } else if (person.avatarId && window.emmaWebVault) {
-          // Load from vault (same as constellation)
+        } 
+        // Fallback to legacy avatar field
+        else if (person.avatar && person.avatar.startsWith('data:')) {
+          console.log(`📸 PICKER: Using legacy avatar field for ${person.name}`);
+          const img = document.createElement('img');
+          img.src = person.avatar;
+          img.alt = `${person.name} avatar`;
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+          img.onload = () => {
+            console.log(`✅ PICKER: Legacy avatar loaded for ${person.name}`);
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
+          };
+          img.onerror = (error) => {
+            console.log(`❌ PICKER: Legacy avatar failed for ${person.name}:`, error);
+          };
+        }
+        // Final fallback: try to manually resolve avatarId if still needed
+        else if (person.avatarId && window.emmaWebVault) {
+          console.log(`📸 PICKER: Manually loading avatarId for ${person.name}:`, person.avatarId);
           try {
             window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
               if (avatarData) {
+                console.log(`📸 PICKER: Got media data for ${person.name}:`, typeof avatarData);
                 // Handle both ArrayBuffer and data URL responses
                 let imageUrl;
                 if (typeof avatarData === 'string' && avatarData.startsWith('data:')) {
@@ -2877,34 +2942,25 @@ class EmmaChatExperience extends ExperiencePopup {
                   img.alt = `${person.name} avatar`;
                   img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
                   img.onload = () => {
+                    console.log(`✅ PICKER: Manual avatar loaded for ${person.name}`);
                     avatar.innerHTML = '';
                     avatar.appendChild(img);
                   };
-                  img.onerror = () => {
-                    // Keep initials fallback
-                    console.log(`📸 Avatar load failed for ${person.name}, using initials`);
+                  img.onerror = (error) => {
+                    console.log(`❌ PICKER: Manual avatar failed for ${person.name}:`, error);
                   };
                 }
+              } else {
+                console.log(`📸 PICKER: No media data returned for ${person.name}`);
               }
             }).catch(error => {
-              console.log(`📸 Avatar fetch failed for ${person.name}:`, error);
+              console.log(`❌ PICKER: Avatar fetch failed for ${person.name}:`, error);
             });
           } catch (error) {
-            console.log(`📸 Avatar access failed for ${person.name}:`, error);
+            console.log(`❌ PICKER: Avatar access failed for ${person.name}:`, error);
           }
-        } else if (person.avatar && person.avatar.startsWith('data:')) {
-          // Legacy avatar field (data URL)
-          const img = document.createElement('img');
-          img.src = person.avatar;
-          img.alt = `${person.name} avatar`;
-          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
-          img.onload = () => {
-            avatar.innerHTML = '';
-            avatar.appendChild(img);
-          };
-          img.onerror = () => {
-            console.log(`📸 Legacy avatar failed for ${person.name}, using initials`);
-          };
+        } else {
+          console.log(`📸 PICKER: No avatar available for ${person.name}, using initials`);
         }
         
         // Create name label
@@ -3389,7 +3445,10 @@ class EmmaChatExperience extends ExperiencePopup {
       if (!state || !state.memory) return;
 
       // Get the newly added person from vault
-      const people = await window.emmaWebVault.listPeople();
+      let people = [];
+      if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
+        people = await window.emmaWebVault.listPeople();
+      }
       const newPerson = people.find(p => p.name.toLowerCase() === personName.toLowerCase());
       
       if (newPerson) {
@@ -4068,7 +4127,10 @@ class EmmaChatExperience extends ExperiencePopup {
       }
 
       // Get existing people from vault
-      const existingPeople = await window.emmaWebVault.listPeople();
+      let existingPeople = [];
+      if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
+        existingPeople = await window.emmaWebVault.listPeople();
+      }
       console.log('👥 EMMA CHAT: Checking against existing people:', existingPeople?.length || 0);
 
       // Check if person already exists (case-insensitive)

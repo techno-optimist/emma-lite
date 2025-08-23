@@ -1055,7 +1055,10 @@ class EmmaIntelligentCapture {
       }
 
       // Get existing people from vault
-      const existingPeople = await window.emmaWebVault.listPeople();
+      let existingPeople = [];
+      if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
+        existingPeople = await window.emmaWebVault.listPeople();
+      }
       // console.log('🎯 VAULT: Checking against', existingPeople?.length || 0, 'existing people');
 
       // Resolve each detected person

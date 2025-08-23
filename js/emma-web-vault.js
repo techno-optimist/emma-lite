@@ -2446,8 +2446,19 @@ window.emmaAPI = {
 
     list: async () => {
       try {
+        // FIXED: Check if vault exists and is ready
+        if (!window.emmaWebVault) {
+          console.warn('⚠️ EmmaWebVault not available, returning empty people list');
+          return { success: true, items: [] };
+        }
+        
+        if (typeof window.emmaWebVault.listPeople !== 'function') {
+          console.warn('⚠️ listPeople method not available, returning empty people list');
+          return { success: true, items: [] };
+        }
+        
         const people = await window.emmaWebVault.listPeople();
-        return { success: true, items: people };
+        return { success: true, items: people || [] };
       } catch (error) {
         console.error('❌ Failed to list people:', error);
         return { success: false, error: error.message, items: [] };
