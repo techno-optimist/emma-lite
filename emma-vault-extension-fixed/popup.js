@@ -198,7 +198,19 @@ class EmmaVaultExtension {
   }
   
   updateUI() {
-    // Authoritative state from background
+    // WEBAPP-FIRST: Check if webapp vault checker already determined status
+    if (window.extensionVaultChecker && window.extensionVaultChecker.isVaultUnlocked) {
+      console.log('✅ POPUP: WEBAPP-FIRST vault checker reports unlocked, skipping old system');
+      this.isVaultOpen = true;
+      this.hideVaultUnlockOverlay();
+      this.showActiveVaultState();
+      this.elements.vaultStatusIndicator.textContent = '🟢';
+      this.updateRecentVaults();
+      return;
+    }
+
+    // Legacy system only runs if webapp-first hasn't determined status
+    console.log('🔐 POPUP: Using legacy background state check');
     chrome.runtime.sendMessage({ action: 'CHECK_STATE' }, (state) => {
       if (!state || state.state === 'locked') {
         console.log('🔒 POPUP: Background reports locked');
