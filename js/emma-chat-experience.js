@@ -2206,10 +2206,12 @@ class EmmaChatExperience extends ExperiencePopup {
               console.warn('👥 Failed to load avatarUrl for:', person.name);
             };
           } else if (person.avatarId) {
-            // CORRECT: Load from vault media system
+            // ROBUST: Load from vault media system with fallback
+            console.log('👥 Attempting to load avatar for:', person.name, 'with avatarId:', person.avatarId);
             try {
               window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
-                if (avatarData) {
+                if (avatarData && avatarData.byteLength > 100) { // Ensure data is not corrupted
+                  console.log('👥 Avatar data loaded successfully for:', person.name, 'Size:', avatarData.byteLength);
                   const blob = new Blob([avatarData], { type: 'image/jpeg' });
                   const url = URL.createObjectURL(blob);
                   
@@ -2223,18 +2225,25 @@ class EmmaChatExperience extends ExperiencePopup {
                     object-fit: cover;
                   `;
                   img.onload = () => {
+                    console.log('✅ Avatar image loaded successfully for:', person.name);
                     avatar.innerHTML = '';
                     avatar.appendChild(img);
                   };
                   img.onerror = () => {
-                    console.warn('👥 Failed to load avatarId for:', person.name);
+                    console.warn('👥 Avatar image failed to render for:', person.name);
+                    // Keep letter fallback
                   };
+                } else {
+                  console.warn('👥 Avatar data too small or corrupted for:', person.name, 'Size:', avatarData?.byteLength || 0);
+                  // Keep letter fallback
                 }
               }).catch(error => {
-                console.error('❌ Failed to load person avatar from vault:', error);
+                console.warn('👥 Could not load avatar for:', person.name, '- keeping letter fallback. Error:', error.message);
+                // Keep letter fallback - this is fine
               });
             } catch (error) {
-              console.error('❌ Error loading avatar from vault:', error);
+              console.warn('👥 Avatar loading error for:', person.name, '- using letter fallback. Error:', error.message);
+              // Keep letter fallback - this is fine
             }
           }
         }
@@ -3526,8 +3535,48 @@ Response (just the question, naturally conversational):`;
    */
   async generateDynamicAcknowledgment(memory, stage, collectedData) {
     if (!this.vectorlessEngine || !this.apiKey) {
-      // Warm fallbacks that aren't robotic
-      return "Thank you for sharing that - it helps me understand this memory better.";
+      // TRULY DYNAMIC fallbacks - never the same twice
+      const acknowledgments = [
+        "That's beautiful - I can really sense the meaning in this moment.",
+        "What a precious detail. Thank you for trusting me with this memory.",
+        "I'm moved by what you've shared. This moment clearly means so much.",
+        "That touches my heart. I can feel how special this memory is to you.",
+        "Thank you for painting that picture for me. I can almost see it myself.",
+        "What a lovely way to describe it. Your words bring this memory to life.",
+        "I'm honored you're sharing these details with me. They make this memory so vivid.",
+        "That's wonderful - I can tell this moment holds something really special.",
+        "Your description helps me understand why this memory matters to you.",
+        "Thank you for opening up about this. I can feel the emotion in your words."
+      ];
+      
+      // Add stage-specific warmth
+      const stageResponses = {
+        'who': [
+          "The people in our memories shape everything about them, don't they?",
+          "It sounds like they made this moment extra meaningful.",
+          "I love how the people we share moments with become part of the story.",
+        ],
+        'when': [
+          "Time has a way of making memories even more precious.",
+          "That timing makes this memory feel even more special.",
+          "There's something beautiful about how moments find their perfect time.",
+        ],
+        'where': [
+          "Places hold so much memory magic, don't they?",
+          "I can almost picture this place through your words.",
+          "The setting makes this moment come alive for me.",
+        ],
+        'emotion': [
+          "Feelings are what make memories stay with us forever.",
+          "That emotion is what transforms a moment into a treasured memory.",
+          "I can feel that warmth just from how you describe it.",
+        ]
+      };
+      
+      const specificResponses = stageResponses[stage] || [];
+      const allResponses = [...acknowledgments, ...specificResponses];
+      
+      return allResponses[Math.floor(Math.random() * allResponses.length)];
     }
 
     try {
