@@ -359,10 +359,11 @@ async function createMemoryCardElement(memory) {
   card.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
-    // Opening memory detail modal
+    console.log('🎯 CARD CLICKED:', memory.title || memory.id);
     
     // Increase delay to ensure modal setup completes before any potential close events
     setTimeout(() => {
+      console.log('🎯 CALLING openMemoryDetail...');
       openMemoryDetail(memory);
     }, 150);
   });
@@ -566,10 +567,12 @@ function getCategoryIcon(category) {
  * Open memory detail modal - Uses external modal system
  */
 function openMemoryDetail(memory) {
-  // Opening memory detail modal
+  console.log('🎯 GALLERY: openMemoryDetail called for:', memory.title || memory.id);
+  console.log('🎯 GALLERY: openMemoryDetailModal function available?', typeof openMemoryDetailModal);
   
   // Use external modal system
   if (typeof openMemoryDetailModal === 'function') {
+    console.log('🎯 GALLERY: Calling openMemoryDetailModal...');
     return openMemoryDetailModal(memory);
   } else {
     console.error('❌ GALLERY: Memory modal system not loaded!');

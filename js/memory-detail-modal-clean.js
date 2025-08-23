@@ -6,7 +6,7 @@
  * Open memory detail modal - CLEAN VERSION
  */
 function openMemoryDetailModal(memory) {
-  // Opening memory detail modal
+  console.log('🎯 CLEAN MODAL: openMemoryDetailModal called for:', memory.title || memory.id);
   
   // Store current memory globally
   window.currentMemory = memory;
