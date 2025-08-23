@@ -82,10 +82,14 @@ function openMemoryDetailModal(memory) {
   console.log('🎯 CLEAN MODAL: Appending modal to body...');
   document.body.appendChild(modal);
   
-  console.log('🎯 CLEAN MODAL: Modal appended! Checking if visible...');
+  // CRITICAL: Add .show class to make modal visible (CSS has opacity: 0 by default!)
+  console.log('🎯 CLEAN MODAL: Adding .show class for visibility...');
+  modal.classList.add('show');
+  
+  console.log('🎯 CLEAN MODAL: Modal should now be visible!');
+  console.log('🎯 CLEAN MODAL: Modal classes:', modal.className);
   console.log('🎯 CLEAN MODAL: Modal display:', modal.style.display);
   console.log('🎯 CLEAN MODAL: Modal z-index:', modal.style.zIndex);
-  console.log('🎯 CLEAN MODAL: Modal in DOM:', document.contains(modal));
   
   return modal;
   
