@@ -1252,7 +1252,8 @@ function openHmlModal() {
       const fp = input?.value.trim();
       if (!fp) return;
       // Attempt a minimal share to open a connection (viewer permissions)
-      const { getVaultManager } = await import('./vault/vault-manager.js');
+      // WEBAPP-FIRST: Vault manager deprecated - use webapp vault instead
+      console.log('🚀 WEBAPP-FIRST: Vault operations moved to webapp');
       const vm = getVaultManager();
       const st = await vm.getStatus();
       const vaultId = st?.vaultId || 'default';

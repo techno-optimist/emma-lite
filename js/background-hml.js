@@ -5,7 +5,7 @@ console.log('🚀 HML Background script loading...');
 import { memoryDB } from '../lib/database-mtap.js';
 import { mtapAdapter } from '../lib/mtap-adapter.js';
 import { registerVaultMessageHandlers, VaultService } from './vault/service.js';
-import { getVaultManager } from './vault/vault-manager.js';
+// WEBAPP-FIRST: Vault manager deprecated - removed vault manager dependency
 import { vaultStorage } from '../lib/vault-storage.js';
 import { vaultBackup } from '../lib/vault-backup.js';
 

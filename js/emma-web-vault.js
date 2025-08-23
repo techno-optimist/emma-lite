@@ -16,10 +16,11 @@ class EmmaWebVault {
     this.pendingChanges = false;
     this.saveDebounceTimer = null;
 
-    // REVOLUTION: Pure web app mode (no extension dependencies)
-    this.extensionAvailable = false; // Force pure web app mode
+    // WEBAPP-FIRST ARCHITECTURE: Webapp is single source of truth
+    this.extensionAvailable = false; // Extension defers to webapp
     this.extensionSyncEnabled = false;
-    this.pureWebAppMode = true; // Emma works standalone
+    this.pureWebAppMode = true; // Webapp manages all vault operations
+    this.isWebappPrimary = true; // NEW: Webapp-first flag
 
     // CRITICAL FIX: Restore vault state from localStorage on construction
     const vaultActive = localStorage.getItem('emmaVaultActive') === 'true';
@@ -248,125 +249,68 @@ class EmmaWebVault {
   }
 
   /**
-   * Add memory (IDENTICAL API to desktop version!)
+   * Add memory (WEBAPP-FIRST: Single source of truth for all memory operations)
    */
   async addMemory({ content, metadata = {}, attachments = [] }) {
 
-    // Add memory to vault
-    console.log('Adding memory to vault:', {
+    // WEBAPP-FIRST: All memory operations go through webapp vault
+    console.log('🚀 WEBAPP-FIRST: Adding memory to webapp vault:', {
       isOpen: this.isOpen,
       hasPassphrase: !!this.passphrase,
       sessionActive: sessionStorage.getItem('emmaVaultActive'),
       sessionPassphrase: !!sessionStorage.getItem('emmaVaultPassphrase'),
       sessionName: sessionStorage.getItem('emmaVaultName'),
       attachmentCount: attachments.length,
-      hasVaultData: !!this.vaultData
+      hasVaultData: !!this.vaultData,
+      webappPrimary: this.isWebappPrimary
     });
 
-    // Extension mode: Route through extension instead of web app vault
-    if (this.extensionAvailable) {
-
-      // Process attachments to base64 for extension
-      const processedAttachments = [];
-      for (const attachment of attachments) {
-        if (attachment.file) {
-          // Convert file to base64
-          const reader = new FileReader();
-          const base64Data = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(attachment.file);
-          });
-
-          processedAttachments.push({
-            name: attachment.name || attachment.file.name,
-            type: attachment.type || attachment.file.type,
-            size: attachment.size || attachment.file.size,
-            data: base64Data
-          });
-        } else if (attachment.data) {
-          processedAttachments.push({
-            name: attachment.name,
-            type: attachment.type,
-            size: attachment.size || 0,
-            data: attachment.data
-          });
-        }
-      }
-
-      // Send memory to extension for saving to actual vault
-      const memoryData = {
-        content: content,
-        metadata: metadata,
-        attachments: processedAttachments, // Pre-processed attachments
-        created: new Date().toISOString()
-      };
-
-      // Notify extension to save this memory
-      window.postMessage({
-        channel: 'emma-vault-bridge',
-        type: 'SAVE_MEMORY',
-        data: memoryData
-      }, window.location.origin);
-
-      // Return success immediately - extension handles actual saving
-      const memoryId = this.generateId('memory');
-      return { id: memoryId, success: true };
-    }
+    // WEBAPP-FIRST: No extension routing - webapp handles all operations directly
 
     // Normal vault mode
     if (!this.isOpen) {
       throw new Error('No vault is open');
     }
 
-    // Check if we need passphrase for encryption and don't have it
-    if (attachments.length > 0) {
-
+          // EMERGENCY FIX: Always ensure passphrase is available for any memory save
       if (!this.passphrase) {
         // FIRST: Try to restore passphrase from session storage
         const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
-        console.log('🔐 CRITICAL: SessionStorage passphrase check:', {
-          hasSessionPassphrase: !!sessionPassphrase,
-          currentPassphrase: !!this.passphrase,
-          sessionStorageKeys: Object.keys(sessionStorage),
-          isVaultOpen: this.isOpen
-        });
+        console.log('🔐 EMERGENCY FIX: Restoring passphrase for memory save');
 
         if (sessionPassphrase) {
           this.passphrase = sessionPassphrase;
-
+          console.log('✅ EMERGENCY FIX: Passphrase restored from session');
         } else {
-          console.error('🔐 CRITICAL: No passphrase in sessionStorage - vault unlock may have failed!');
+          console.error('🔐 CRITICAL: No passphrase available - emergency re-authentication required');
 
-          // Emergency prompt with clear explanation
-
+          // Emergency prompt - ALWAYS show for missing passphrase
           if (window.cleanSecurePasswordModal) {
             try {
               this.passphrase = await window.cleanSecurePasswordModal.show({
-                title: 'Vault Passphrase Required',
-                message: 'Your vault session may have expired. Please re-enter your passphrase to save this memory.',
+                title: 'Vault Access Required',
+                message: 'Please re-enter your vault passphrase to save this memory.',
                 placeholder: 'Enter vault passphrase...'
               });
 
               // Restore sessionStorage after emergency unlock
               if (this.passphrase) {
                 sessionStorage.setItem('emmaVaultPassphrase', this.passphrase);
-
+                console.log('✅ EMERGENCY FIX: Passphrase restored and cached');
               }
             } catch (error) {
               console.error('🔐 Secure modal failed:', error);
-              this.passphrase = prompt('Enter your vault passphrase to save this memory:');
+              throw new Error('Vault access required to save memories. Please unlock your vault first.');
             }
           } else {
-            this.passphrase = prompt('Enter your vault passphrase to save this memory:');
+            throw new Error('Vault access required. Please reload the page and unlock your vault.');
           }
 
           if (!this.passphrase) {
-            throw new Error('Passphrase is required to encrypt media attachments');
+            throw new Error('Vault passphrase is required to save memories');
           }
         }
       }
-    }
 
     // Log final passphrase status before proceeding
 

@@ -893,7 +893,8 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
     }
 
     // Get current vault info
-    const { getVaultManager } = await import('./vault/vault-manager.js');
+    // WEBAPP-FIRST: Vault manager deprecated - use webapp vault instead
+    console.log('🚀 WEBAPP-FIRST: Vault operations moved to webapp');
     const vaultManager = getVaultManager();
     const status = await vaultManager.getStatus();
     const vaultId = status?.vaultId || 'default';
