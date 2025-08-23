@@ -387,7 +387,11 @@ async function createMemoryCardElement(memory) {
     event.preventDefault();
     event.stopPropagation();
     console.log('🎯 CARD CLICK: Opening memory:', memory.title || memory.id);
-    openMemoryDetail(memory);
+    
+    // Add small delay to prevent immediate modal close
+    setTimeout(() => {
+      openMemoryDetail(memory);
+    }, 50);
   });
 
   return card;
@@ -591,10 +595,6 @@ function getCategoryIcon(category) {
  */
 function openMemoryDetail(memory) {
   console.log('🎯 GALLERY: Opening memory detail for:', memory.title || memory.id);
-  
-  // Prevent event bubbling that might close modal immediately
-  event?.preventDefault?.();
-  event?.stopPropagation?.();
   
   // Use external modal system
   if (typeof openMemoryDetailModal === 'function') {

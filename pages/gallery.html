@@ -3,12 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+=======
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="cache-control" content="no-cache">
+  <meta name="cache-control" content="no-store">
+  <meta name="expires" content="-1">
+>>>>>>> b45d8913bf61ee8126160d3d30ba6eafd388ee3f
 
   <title>Memory Gallery - Emma (v2.0)</title>
-  <link rel="stylesheet" href="../css/memory-detail-modal.css">
+  <link rel="stylesheet" href="../css/memory-detail-modal.css?v=1755909423&t=2025-01-16">
   <style>
     /* Emma Brand Variables */
     :root {
@@ -726,9 +735,9 @@
   <!-- CRITICAL: Load vault system for memory saving -->
   <script src="../js/emma-input-modal.js"></script>
   <script src="../js/clean-password-modal.js"></script>
-  <script src="../js/emma-web-vault.js"></script>
-  <script src="../js/web-vault-status.js"></script>
-  <script src="../js/vault-control-panel.js"></script>
+  <script src="../js/emma-web-vault.js?v=2025-01-16"></script>
+  <script src="../js/web-vault-status.js?v=2025-01-16"></script>
+  <script src="../js/vault-control-panel.js?v=2025-01-16"></script>
   
   <!-- Emma orb system - only load what's needed for chat -->
   <script src="../js/settings-service.js"></script> 
@@ -835,18 +844,59 @@
   </script>
 
   <!-- Universal Vault Modal -->
-  <script src="../js/universal-vault-modal.js"></script>
+  <script src="../js/universal-vault-modal.js?v=2025-01-16"></script>
   
   <!-- Memory Detail Modal -->
-  <script src="../js/memory-detail-modal.js"></script>
+  <script src="../js/memory-detail-modal.js?v=1755909423&t=2025-01-16&cb=force"></script>
   
   <!-- Gallery Script -->
-  <script src="../js/gallery.js"></script>
+  <script src="../js/gallery.js?v=1755909423&t=2025-01-16&cb=force"></script>
   
-  <!-- Home Navigation Script -->
+  <!-- Anti-Reload Protection Script -->
   <script>
+    // CRITICAL: Prevent unwanted reloads for 5 seconds after page load
+    const originalReload = window.location.reload;
+    let reloadBlocked = true;
+    
+    window.location.reload = function(...args) {
+      if (reloadBlocked) {
+        console.warn('🛡️ GALLERY: Blocked automatic reload for stability');
+        console.trace('Reload attempt blocked:');
+        return;
+      }
+      return originalReload.apply(this, args);
+    };
+    
+    // Re-enable reload after 5 seconds
+    setTimeout(() => {
+      reloadBlocked = false;
+      console.log('🛡️ GALLERY: Reload protection disabled after 5 seconds');
+    }, 5000);
+    
+    // DEBUG: Track page lifecycle
+    console.log('🔍 GALLERY DEBUG: Script block starting...');
+    
+    // Track any navigation away from this page
+    window.addEventListener('beforeunload', (e) => {
+      console.log('🔍 GALLERY DEBUG: Page is about to unload!');
+      console.trace('Unload triggered by:');
+    });
+    
+    // Track any window location changes
+    const originalHref = window.location.href;
+    let locationChangeCount = 0;
+    
+    const observer = new MutationObserver(() => {
+      if (window.location.href !== originalHref) {
+        locationChangeCount++;
+        console.log('🔍 GALLERY DEBUG: Location changed!', locationChangeCount, 'from:', originalHref, 'to:', window.location.href);
+      }
+    });
+    
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🏠 HOME NAV: Setting up home button...');
+      console.log('🔍 GALLERY DEBUG: DOM loaded, original href:', originalHref);
+      
       const homeBtn = document.getElementById('home-nav-button');
       console.log('🏠 HOME NAV: Found home button:', homeBtn);
       
@@ -860,6 +910,10 @@
       } else {
         console.error('🏠 HOME NAV: Home button not found!');
       }
+      
+      // Start observing changes
+      observer.observe(document, {subtree: true, childList: true});
+      console.log('🔍 GALLERY DEBUG: Started observing DOM changes');
     });
   </script>
 </body>
