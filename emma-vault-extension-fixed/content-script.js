@@ -1056,6 +1056,46 @@ function handleStorageSync(event) {
 }
 
 /**
+ * Save memory to webapp vault (REAL save)
+ */
+async function saveToWebappVault(memoryData) {
+  try {
+    console.log('💾 Content Script: Saving memory to real webapp vault');
+    
+    // Check if webapp vault is available
+    if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+      throw new Error('Webapp vault not available or not unlocked');
+    }
+    
+    // Use webapp vault's addMemory method
+    const result = await window.emmaWebVault.addMemory(memoryData);
+    
+    console.log('💾 Content Script: Memory saved successfully:', result);
+    
+    // Trigger constellation refresh
+    setTimeout(() => {
+      // Dispatch custom event to refresh constellation
+      window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+        detail: { memoryId: result.id, memoryData: memoryData }
+      }));
+    }, 100);
+    
+    return {
+      success: true,
+      memoryId: result.id,
+      message: 'Memory saved to webapp vault successfully'
+    };
+    
+  } catch (error) {
+    console.error('💾 Content Script: Failed to save to webapp vault:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
  * Add animation styles
  */
 function injectStyles() {

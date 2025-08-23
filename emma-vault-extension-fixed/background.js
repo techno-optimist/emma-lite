@@ -847,28 +847,43 @@ chrome.action.onClicked.addListener((tab) => {
  */
 async function sendToWebapp(action, data) {
   return new Promise((resolve, reject) => {
-    console.log('🌉 WEBAPP-FIRST: Simulating webapp communication for:', action);
+    console.log('🌉 WEBAPP-FIRST: REAL webapp communication for:', action);
     console.log('🌉 WEBAPP-FIRST: Data size:', JSON.stringify(data).length, 'characters');
     
-    setTimeout(() => {
-      console.log('🌉 WEBAPP-FIRST: Timeout completed, sending response...');
-      if (action === 'EMMA_SAVE_MEMORY') {
-        const result = {
-          success: true,
-          memoryId: `webapp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-          message: 'Saved via webapp vault (simulated)'
-        };
-        console.log('🌉 WEBAPP-FIRST: Resolving with result:', result);
-        resolve(result);
-      } else {
-        const error = {
-          success: false,
-          error: 'Action not implemented yet'
-        };
-        console.log('🌉 WEBAPP-FIRST: Resolving with error:', error);
-        resolve(error);
+    // Find Emma webapp tab
+    chrome.tabs.query({}, (tabs) => {
+      const emmaTabs = tabs.filter(tab => 
+        tab.url && (
+          tab.url.includes('emma-lite-extension.onrender.com') ||
+          tab.url.includes('emma-hjjc.onrender.com') ||
+          tab.url.includes('localhost') ||
+          tab.url.includes('127.0.0.1')
+        )
+      );
+      
+      if (emmaTabs.length === 0) {
+        console.log('❌ WEBAPP-FIRST: No Emma webapp tabs found');
+        resolve({ success: false, error: 'No Emma webapp found' });
+        return;
       }
-    }, 500); // Increased timeout to 500ms to be more realistic
+      
+      const emmaTab = emmaTabs[0];
+      console.log('📡 WEBAPP-FIRST: Sending to webapp tab:', emmaTab.url);
+      
+      // Send real message to webapp content script
+      chrome.tabs.sendMessage(emmaTab.id, {
+        action: 'SAVE_MEMORY_TO_WEBAPP_VAULT',
+        memoryData: data
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('❌ WEBAPP-FIRST: Communication failed:', chrome.runtime.lastError);
+          resolve({ success: false, error: chrome.runtime.lastError.message });
+        } else {
+          console.log('✅ WEBAPP-FIRST: Real save response:', response);
+          resolve(response || { success: false, error: 'No response' });
+        }
+      });
+    });
   });
 }
 
