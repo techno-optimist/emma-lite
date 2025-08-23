@@ -75,8 +75,12 @@ class EmmaIntelligentCapture {
       
       // New: Aggregated normalized scoring (0..1) with novelty and optional LLM gating
       const content = message.content || message.text || '';
-      const heuristicsScore = this.calculateHeuristicsScore(content, message); // 0..1
+      
+      // CRITICAL: Resolve people FIRST to inform scoring
+      const resolvedPeople = await this.resolvePeopleToVaultIds(this.extractPeopleNames(signals.people || []));
+      signals.resolvedPeople = resolvedPeople; // Attach for later use
 
+      const heuristicsScore = this.calculateHeuristicsScore(content, message, signals); // Pass signals
       let llmScore = 0; // 0..1
       // ALWAYS try LLM if available (remove gating for now to debug)
       if (this.options.vectorlessEngine && typeof this.options.vectorlessEngine.analyzeMemoryPotential === 'function') {
@@ -396,7 +400,11 @@ class EmmaIntelligentCapture {
       'I','The','A','An','And','But','Or','So','Because','When','While','Before','After',
       'He','She','They','We','You','It','His','Her','Their','Our','Your','Its',
       'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday',
-      'January','February','March','April','May','June','July','August','September','October','November','December'
+      'January','February','March','April','May','June','July','August','September','October','November','December',
+      // CRITICAL FIX: Add common locations to prevent misidentification as people
+      'Montana','California','Texas','Florida','New York','Chicago','London','Paris','Tokyo',
+      'America','Europe','Asia','Africa','Australia',
+      'Beach','Park','Home','Hospital','School','Restaurant','Church','Office','Store','Work'
     ]);
     const names = new Set();
     const tokens = text.split(/([.!?]\s+)/); // keep sentence boundaries
@@ -459,7 +467,7 @@ class EmmaIntelligentCapture {
    * Normalized heuristics-based memory worthiness (0..1)
    * FIXED: Much more sensitive scoring for memory detection
    */
-  calculateHeuristicsScore(text, message) {
+  calculateHeuristicsScore(text, message, signals) {
     const content = (text || '').trim();
     if (!content) return 0;
 
@@ -533,6 +541,15 @@ class EmmaIntelligentCapture {
     if (intentHits > 0) {
       score += 0.30; // Significant boost for explicit memory intent
       console.log('🎯 MEMORY INTENT DETECTED: Boosting score by 0.30');
+    }
+
+    // CRITICAL "DEBBE STANDARD" FIX: Boost score for memories with known people
+    if (signals && signals.resolvedPeople) {
+      const knownPeopleCount = signals.resolvedPeople.peopleIds.filter(id => !id.startsWith('temp_')).length;
+      if (knownPeopleCount > 0) {
+        score += Math.min(0.50, 0.30 + (knownPeopleCount - 1) * 0.10); // 0.30 for 1, 0.40 for 2, 0.50 for 3+
+        console.log(`🎯 KNOWN PEOPLE DETECTED: Boosting score by ${Math.min(0.50, 0.30 + (knownPeopleCount - 1) * 0.10)} for ${knownPeopleCount} person(s)`);
+      }
     }
 
     if (this.options.debug) {
