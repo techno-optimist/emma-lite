@@ -895,34 +895,59 @@ class EmmaChatExperience extends ExperiencePopup {
     console.log('💬 RESPONSE DEBUG: New people:', newPeopleDetected);
     
     if (detectedPeopleNames.length > 0) {
-      // PERSONALIZED: Acknowledge the specific people mentioned by name
-      const peopleNames = detectedPeopleNames.join(' and ');
-      let personalizedResponse = "";
+      // CRITICAL FIX: Create CLEAN, natural responses based on people status
+      const existingPeople = [];
+      const newPeople = [];
       
-      // Check for family relationships first
-      const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
-      const hasFamilyMember = detectedPeopleNames.some(person => familyTerms.includes(person));
-      
-      if (hasFamilyMember) {
-        personalizedResponse = `A walk with ${peopleNames} sounds so special! Family moments like these are truly precious.`;
-      } else {
-        personalizedResponse = `A walk with ${peopleNames} sounds lovely! I'd love to hear more about this moment.`;
-      }
-      
-      // CRITICAL: Ask about new people if any were detected
-      if (newPeopleDetected.length > 0) {
-        const newNames = newPeopleDetected.join(' and ');
-        personalizedResponse += ` I noticed you mentioned ${newNames} - should I add ${newPeopleDetected.length === 1 ? 'them' : 'them'} to your vault so I can remember ${newPeopleDetected.length === 1 ? 'them' : 'them'} for future memories?`;
-      } else {
-        // Add contextual follow-up for existing people
-        if (userMessage.toLowerCase().includes('walk')) {
-          personalizedResponse += " Where did you walk together?";
+      // Categorize people by vault status  
+      detectedPeopleNames.forEach((name, index) => {
+        const peopleId = detectedPeopleIds[index];
+        if (peopleId && !peopleId.startsWith('temp_')) {
+          existingPeople.push(name);
         } else {
-          personalizedResponse += " What made this time together special?";
+          newPeople.push(name);
+        }
+      });
+      
+      console.log('💬 RESPONSE DEBUG: Existing people:', existingPeople);
+      console.log('💬 RESPONSE DEBUG: New people:', newPeople);
+      
+      // Build natural, clean response
+      let response = "";
+      
+      // Acknowledge the memory with people context
+      if (existingPeople.length > 0 && newPeople.length === 0) {
+        // All people are known
+        const names = existingPeople.join(' and ');
+        const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
+        const hasFamily = existingPeople.some(person => familyTerms.includes(person));
+        
+        if (hasFamily) {
+          response = `A walk with ${names} sounds so special! Family moments like these are precious. Where did you walk together?`;
+        } else {
+          response = `A walk with ${names} sounds lovely! What made this time together special?`;
+        }
+      } else if (newPeople.length > 0) {
+        // Some new people detected
+        if (existingPeople.length > 0) {
+          response = `A walk with ${existingPeople.join(' and ')}`;
+          if (newPeople.length === 1) {
+            response += ` and ${newPeople[0]} sounds wonderful! I know ${existingPeople.join(' and ')}, but who is ${newPeople[0]}? Should I add them to your vault?`;
+          } else {
+            response += ` and ${newPeople.join(' and ')} sounds wonderful! I know ${existingPeople.join(' and ')}, but who are ${newPeople.join(' and ')}? Should I add them to your vault?`;
+          }
+        } else {
+          // All people are new
+          const names = newPeople.join(' and ');
+          if (newPeople.length === 1) {
+            response = `A walk with ${names} sounds lovely! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
+          } else {
+            response = `A walk with ${names} sounds wonderful! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
+          }
         }
       }
       
-      return personalizedResponse;
+      return response;
     }
     
     // FALLBACK: Activity-based responses when no people detected

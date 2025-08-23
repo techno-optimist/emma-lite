@@ -1068,27 +1068,49 @@ class EmmaIntelligentCapture {
   }
 
   /**
-   * Helper: Extract people names
+   * Helper: Extract people names with SMART DEDUPLICATION
    */
   extractPeopleNames(peopleRaw) {
     console.log('👥 EXTRACT DEBUG: Input peopleRaw:', peopleRaw);
-    const names = new Set();
+    const individualNames = new Set();
     
     peopleRaw.forEach(person => {
       console.log('👥 EXTRACT DEBUG: Processing person:', person);
-      // Clean up relationship terms
-      const cleaned = person
-        .replace(/\b(my|the|our)\b/gi, '')
-        .replace(/\b(mom|mother|dad|father|parent)\b/gi, match => this.capitalizeFirst(match))
-        .trim();
       
-      console.log('👥 EXTRACT DEBUG: Cleaned person:', cleaned);
-      if (cleaned) names.add(cleaned);
+      // CRITICAL FIX: Handle compound names like "William and Mark"
+      if (person.includes(' and ')) {
+        // Split compound phrases into individual people
+        person.split(' and ').forEach(name => {
+          const cleaned = this.cleanPersonName(name.trim());
+          if (cleaned && cleaned.length > 1) {
+            console.log('👥 EXTRACT DEBUG: Individual from compound:', cleaned);
+            individualNames.add(cleaned);
+          }
+        });
+      } else {
+        // Single person
+        const cleaned = this.cleanPersonName(person);
+        if (cleaned && cleaned.length > 1) {
+          console.log('👥 EXTRACT DEBUG: Individual person:', cleaned);
+          individualNames.add(cleaned);
+        }
+      }
     });
     
-    const result = Array.from(names);
-    console.log('👥 EXTRACT DEBUG: Final people names:', result);
+    const result = Array.from(individualNames);
+    console.log('👥 EXTRACT DEBUG: Deduplicated final names:', result);
     return result;
+  }
+
+  /**
+   * Helper: Clean and normalize person names
+   */
+  cleanPersonName(person) {
+    return person
+      .replace(/\b(my|the|our)\b/gi, '')
+      .replace(/\b(mom|mother|dad|father|parent)\b/gi, match => this.capitalizeFirst(match))
+      .replace(/[,\.]/g, '')
+      .trim();
   }
 
   /**
