@@ -17,7 +17,8 @@
     "https://emma-lite-extension.onrender.com/*",
     "https://emma-hjjc.onrender.com/*",
     "http://localhost/*",
-    "http://127.0.0.1/*"
+    "http://127.0.0.1/*",
+    "https://photos.google.com/*"
   ],
 
   "background": {
@@ -44,6 +45,14 @@
         "http://127.0.0.1/*"
       ],
       "js": ["content-image-simple.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://photos.google.com/*"
+      ],
+      "js": ["google-photos-capture.js"],
       "run_at": "document_idle",
       "all_frames": false
     }
@@ -75,7 +84,8 @@
         "https://emma-lite-extension.onrender.com/*",
         "https://emma-hjjc.onrender.com/*",
         "http://localhost/*",
-        "http://127.0.0.1/*"
+        "http://127.0.0.1/*",
+        "https://photos.google.com/*"
       ]
     }
   ]
