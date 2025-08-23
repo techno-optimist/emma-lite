@@ -1719,9 +1719,71 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
+   * Detect conversational media requests (e.g., "let's save some pictures")
+   */
+  detectMediaRequest(message) {
+    const text = message.toLowerCase().trim();
+    
+    const mediaRequestPatterns = [
+      /let'?s save some (photos?|pictures?|videos?|images?)/i,
+      /save (some|these|those) (photos?|pictures?|videos?|images?)/i,
+      /add (some|these|those) (photos?|pictures?|videos?|images?)/i,
+      /upload (some|these|those) (photos?|pictures?|videos?|images?)/i,
+      /want to (add|save|upload) (photos?|pictures?|videos?|images?)/i,
+      /need to (add|save|upload) (photos?|pictures?|videos?|images?)/i,
+      /should (add|save|upload) (photos?|pictures?|videos?|images?)/i,
+      /can we (add|save|upload) (photos?|pictures?|videos?|images?)/i,
+      /let me (add|save|upload) (photos?|pictures?|videos?|images?)/i,
+      /time to (add|save|upload) (photos?|pictures?|videos?|images?)/i
+    ];
+    
+    return mediaRequestPatterns.some(pattern => pattern.test(text));
+  }
+
+  /**
+   * Handle conversational media requests by showing enhanced memory preview
+   */
+  async handleMediaRequest(message, messageId) {
+    try {
+      // Generate dynamic response for media requests
+      const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
+      await this.addMessage(response, 'emma', null, 'response');
+
+      // Create a basic memory from the request
+      const memory = {
+        id: `memory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        title: 'New Photo Memory',
+        content: message,
+        timestamp: Date.now(),
+        metadata: {
+          people: [],
+          emotions: [],
+          locations: [],
+          mediaUpload: true // Flag to show media interface
+        },
+        attachments: []
+      };
+
+      // Show enhanced memory preview with media upload
+      this.showEnhancedMemoryPreview(memory);
+
+    } catch (error) {
+      console.error('❌ Error handling media request:', error);
+      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
+    }
+  }
+
+  /**
    * Analyze message for memory potential
    */
   async analyzeForMemory(message, messageId) {
+    // 🎯 HANDLE CONVERSATIONAL MEDIA REQUESTS FIRST
+    if (this.detectMediaRequest(message)) {
+      console.log('📷 Detected conversational media request:', message);
+      await this.handleMediaRequest(message, messageId);
+      return { handled: true };
+    }
+
     if (!this.intelligentCapture) {
       if (this.debugMode) {
         // ... existing code ...
@@ -2070,6 +2132,117 @@ class EmmaChatExperience extends ExperiencePopup {
       this.createCapsulePeopleAvatars(memory);
     }, 100);
 
+  }
+
+  /**
+   * Show enhanced memory preview with media upload and people selection
+   */
+  showEnhancedMemoryPreview(memory) {
+    // Create enhanced dialog
+    const dialog = document.createElement('div');
+    dialog.className = 'memory-preview-dialog enhanced';
+    dialog.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10000 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      animation: dialogFadeIn 0.3s ease forwards;
+      background: rgba(0, 0, 0, 0.8) !important;
+      backdrop-filter: blur(15px) !important;
+    `;
+
+    dialog.innerHTML = `
+      <style>
+        .memory-person-avatar {
+          width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
+          overflow: hidden; position: relative; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+          font-weight: 600; color: white; transition: all 0.3s ease; cursor: pointer;
+        }
+        .memory-person-avatar:hover { transform: scale(1.2); border-color: white; z-index: 10; }
+        .memory-person-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .emma-drop-zone {
+          border: 2px dashed rgba(139, 92, 246, 0.6); border-radius: 16px; padding: 40px;
+          text-align: center; background: rgba(139, 92, 246, 0.1); cursor: pointer;
+          transition: all 0.3s ease; margin: 20px 0;
+        }
+        .emma-drop-zone:hover { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
+        .emma-drop-zone.drag-over { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.3); transform: scale(1.02); }
+        
+        .people-selection-grid {
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0;
+        }
+        .person-select-card {
+          background: rgba(255, 255, 255, 0.05); border: 2px solid transparent; border-radius: 12px;
+          padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease;
+        }
+        .person-select-card:hover { background: rgba(255, 255, 255, 0.1); }
+        .person-select-card.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
+        
+        .media-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
+        .media-preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
+        .media-preview-item img, .media-preview-item video { width: 100%; height: 100%; object-fit: cover; }
+        .media-remove { position: absolute; top: 4px; right: 4px; background: rgba(255, 0, 0, 0.8); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; }
+      </style>
+      
+      <div class="dialog-content" style="position: relative; z-index: 10001 !important; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <h3 style="margin: 0; color: white;">📷 Create Photo Memory</h3>
+          <button class="dialog-close" onclick="this.closest('.memory-preview-dialog').remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+        </div>
+        
+        <div class="dialog-body">
+          <!-- Memory Content -->
+          <div style="margin-bottom: 24px;">
+            <label style="display: block; color: white; margin-bottom: 8px; font-weight: 600;">Memory Description:</label>
+            <textarea id="memory-content-${memory.id}" style="width: 100%; min-height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; resize: vertical;" placeholder="Describe this memory...">${memory.content}</textarea>
+          </div>
+
+          <!-- Media Upload Section -->
+          <div style="margin-bottom: 24px;">
+            <h4 style="color: white; margin-bottom: 12px;">📷 Add Photos & Videos</h4>
+            <div class="emma-drop-zone" id="drop-zone-${memory.id}" onclick="document.getElementById('file-input-${memory.id}').click()">
+              <div style="color: white;">
+                <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
+                <div style="font-size: 18px; margin-bottom: 8px;">Drop photos here or click to browse</div>
+                <div style="font-size: 14px; opacity: 0.8;">JPG, PNG, MP4, MOV - Max 50MB per file</div>
+              </div>
+              <input type="file" id="file-input-${memory.id}" multiple accept="image/*,video/*" style="display: none;" onchange="window.chatExperience.handleEnhancedFileSelect(event, '${memory.id}')">
+            </div>
+            <div class="media-preview-grid" id="media-grid-${memory.id}"></div>
+          </div>
+
+          <!-- People Selection Section -->
+          <div style="margin-bottom: 24px;">
+            <h4 style="color: white; margin-bottom: 12px;">👥 Tag People in This Memory</h4>
+            <div class="people-selection-grid" id="people-grid-${memory.id}">
+              <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">Loading people...</div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button onclick="this.closest('.memory-preview-dialog').remove()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
+            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+    
+    // Load people data for selection
+    this.loadPeopleForSelection(memory.id);
+    
+    // Setup drag and drop
+    this.setupEnhancedDragDrop(memory.id);
   }
 
   /**
@@ -3954,6 +4127,232 @@ Just the question:`;
     this.disableFocusMode();
 
     super.cleanup();
+  }
+
+  /**
+   * Load people from vault for selection in enhanced preview
+   */
+  async loadPeopleForSelection(memoryId) {
+    try {
+      const peopleGrid = document.getElementById(`people-grid-${memoryId}`);
+      if (!peopleGrid) return;
+
+      if (!window.emmaWebVault || !window.emmaWebVault.vaultData) {
+        peopleGrid.innerHTML = '<div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">Vault not available</div>';
+        return;
+      }
+
+      const peopleData = window.emmaWebVault.vaultData.content?.people || {};
+      const people = Object.values(peopleData);
+
+      if (people.length === 0) {
+        peopleGrid.innerHTML = `
+          <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">
+            No people in vault yet. <button onclick="window.open('/people.html', '_blank')" style="color: #8b5cf6; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
+          </div>
+        `;
+        return;
+      }
+
+      // Create people cards
+      const peopleCards = people.map(person => {
+        const initials = person.name.charAt(0).toUpperCase();
+        return `
+          <div class="person-select-card" data-person-id="${person.id}" onclick="window.chatExperience.togglePersonSelection('${person.id}', '${memoryId}')">
+            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
+              ${initials}
+            </div>
+            <div style="color: white; font-weight: 600; margin-bottom: 4px;">${person.name}</div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 12px;">${person.relation || 'friend'}</div>
+          </div>
+        `;
+      }).join('');
+
+      peopleGrid.innerHTML = peopleCards;
+
+    } catch (error) {
+      console.error('❌ Error loading people for selection:', error);
+    }
+  }
+
+  /**
+   * Toggle person selection in enhanced preview
+   */
+  togglePersonSelection(personId, memoryId) {
+    const card = document.querySelector(`.person-select-card[data-person-id="${personId}"]`);
+    if (!card) return;
+
+    card.classList.toggle('selected');
+    
+    // Store selection
+    if (!this.enhancedMemoryData) this.enhancedMemoryData = {};
+    if (!this.enhancedMemoryData[memoryId]) this.enhancedMemoryData[memoryId] = { selectedPeople: [], uploadedFiles: [] };
+    
+    const isSelected = card.classList.contains('selected');
+    const selectedPeople = this.enhancedMemoryData[memoryId].selectedPeople;
+    
+    if (isSelected && !selectedPeople.includes(personId)) {
+      selectedPeople.push(personId);
+    } else if (!isSelected) {
+      const index = selectedPeople.indexOf(personId);
+      if (index > -1) selectedPeople.splice(index, 1);
+    }
+  }
+
+  /**
+   * Setup drag and drop for enhanced file upload
+   */
+  setupEnhancedDragDrop(memoryId) {
+    const dropZone = document.getElementById(`drop-zone-${memoryId}`);
+    if (!dropZone) return;
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      
+      const files = Array.from(e.dataTransfer.files);
+      this.handleEnhancedFileSelect({ target: { files } }, memoryId);
+    });
+  }
+
+  /**
+   * Handle file selection in enhanced preview
+   */
+  handleEnhancedFileSelect(event, memoryId) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    // Store files
+    if (!this.enhancedMemoryData) this.enhancedMemoryData = {};
+    if (!this.enhancedMemoryData[memoryId]) this.enhancedMemoryData[memoryId] = { selectedPeople: [], uploadedFiles: [] };
+    
+    files.forEach(file => {
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        alert(`File ${file.name} is too large. Maximum size is 50MB.`);
+        return;
+      }
+      
+      this.enhancedMemoryData[memoryId].uploadedFiles.push(file);
+    });
+
+    this.displayUploadedFiles(memoryId);
+  }
+
+  /**
+   * Display uploaded files in enhanced preview
+   */
+  displayUploadedFiles(memoryId) {
+    const mediaGrid = document.getElementById(`media-grid-${memoryId}`);
+    if (!mediaGrid || !this.enhancedMemoryData[memoryId]) return;
+
+    const files = this.enhancedMemoryData[memoryId].uploadedFiles;
+    
+    mediaGrid.innerHTML = files.map((file, index) => {
+      const url = URL.createObjectURL(file);
+      const isVideo = file.type.startsWith('video/');
+      
+      return `
+        <div class="media-preview-item">
+          ${isVideo ? 
+            `<video src="${url}" muted></video>` : 
+            `<img src="${url}" alt="${file.name}">`
+          }
+          <button class="media-remove" onclick="window.chatExperience.removeUploadedFile(${index}, '${memoryId}')" title="Remove">×</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Remove uploaded file from enhanced preview
+   */
+  removeUploadedFile(index, memoryId) {
+    if (!this.enhancedMemoryData[memoryId]) return;
+    
+    this.enhancedMemoryData[memoryId].uploadedFiles.splice(index, 1);
+    this.displayUploadedFiles(memoryId);
+  }
+
+  /**
+   * Save enhanced memory with media and people
+   */
+  async saveEnhancedMemory(memoryId) {
+    try {
+      const contentTextarea = document.getElementById(`memory-content-${memoryId}`);
+      const content = contentTextarea ? contentTextarea.value.trim() : '';
+      
+      if (!content) {
+        alert('Please add a description for this memory.');
+        return;
+      }
+
+      const memoryData = this.enhancedMemoryData[memoryId] || { selectedPeople: [], uploadedFiles: [] };
+      
+      // Create memory object
+      const memory = {
+        id: memoryId,
+        title: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        content: content,
+        timestamp: Date.now(),
+        metadata: {
+          people: memoryData.selectedPeople,
+          emotions: [],
+          locations: [],
+        },
+        attachments: []
+      };
+
+      // Process uploaded files
+      for (const file of memoryData.uploadedFiles) {
+        const mediaId = `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Store in vault
+        if (window.emmaWebVault) {
+          await window.emmaWebVault.addMedia(mediaId, arrayBuffer, file.type);
+          memory.attachments.push({
+            id: mediaId,
+            type: file.type,
+            name: file.name,
+            size: file.size
+          });
+        }
+      }
+
+      // Save memory to vault
+      if (window.emmaWebVault) {
+        await window.emmaWebVault.addMemory(memory);
+        
+        // Show success and close dialog
+        const dialog = document.querySelector('.memory-preview-dialog.enhanced');
+        if (dialog) {
+          dialog.style.opacity = '0';
+          setTimeout(() => dialog.remove(), 300);
+        }
+        
+        // Clean up
+        delete this.enhancedMemoryData[memoryId];
+        
+        // Show success message
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
+        
+        this.showToast("Memory saved successfully! 💝", "success");
+      }
+
+    } catch (error) {
+      console.error('❌ Error saving enhanced memory:', error);
+      this.showToast("Error saving memory. Please try again.", "error");
+    }
   }
 }
 
