@@ -2404,6 +2404,19 @@
           // Update UI immediately
           this.updateVaultNodeStatus();
         });
+
+        // CRITICAL: Listen for memory additions from Emma Chat
+        window.addEventListener('emmaMemoryAdded', (event) => {
+          console.log('🔄 DASHBOARD: Memory added event received, refreshing constellation');
+          
+          if (this.isConstellationMode) {
+            // Force constellation refresh with new data
+            setTimeout(() => {
+              this.enterMemoryConstellation();
+              console.log('🔄 DASHBOARD: Constellation refreshed after memory addition');
+            }, 200);
+          }
+        });
       }
 
       // Refresh UI elements that depend on vault status
