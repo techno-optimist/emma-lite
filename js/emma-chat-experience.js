@@ -2363,16 +2363,21 @@ class EmmaChatExperience extends ExperiencePopup {
       await this.updateMemoryWithRealPersonId(memoryId, personName);
 
       // Proceed to finalize memory save
-      const state = this.enrichmentState[memoryId];
+      const state = this.enrichmentState.get(memoryId);
+      console.log('🔧 ADD PERSON DEBUG: Found enrichment state:', !!state);
+      console.log('🔧 ADD PERSON DEBUG: State has memory:', !!(state && state.memory));
       if (state && state.memory) {
+        console.log('🔧 ADD PERSON DEBUG: Calling finalizeMemorySave...');
         await this.finalizeMemorySave(state.memory, memoryId);
+      } else {
+        console.error('🔧 ADD PERSON DEBUG: No state or memory found, cannot proceed with enrichment');
       }
       
     } catch (error) {
       console.error('❌ Failed to add person to vault:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault, but let me save your memory anyway.`, 'emma');
       
-      const state = this.enrichmentState[memoryId];
+      const state = this.enrichmentState.get(memoryId);
       if (state && state.memory) {
         await this.finalizeMemorySave(state.memory, memoryId);
       }
@@ -2385,7 +2390,7 @@ class EmmaChatExperience extends ExperiencePopup {
   async skipPersonAddition(memoryId) {
     this.addMessage("No worries! Let me create your memory capsule...", 'emma');
     
-    const state = this.enrichmentState[memoryId];
+    const state = this.enrichmentState.get(memoryId);
     if (state && state.memory) {
       await this.finalizeMemorySave(state.memory, memoryId);
     }
@@ -2396,7 +2401,7 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async updateMemoryWithRealPersonId(memoryId, personName) {
     try {
-      const state = this.enrichmentState[memoryId];
+      const state = this.enrichmentState.get(memoryId);
       if (!state || !state.memory) return;
 
       // Get the newly added person from vault
