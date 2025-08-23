@@ -74,33 +74,9 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   initializeEmmaOrb() {
-    try {
-      const orbContainer = document.getElementById('chat-emma-orb');
-      if (!orbContainer) {
-        console.warn('💬 Chat Emma orb container not found');
-        return;
-      }
-
-      if (window.EmmaOrb) {
-        // Create WebGL Emma Orb for chat interface
-        this.webglOrb = new window.EmmaOrb(orbContainer, {
-          hue: 270, // Emma's signature purple-pink
-          hoverIntensity: 0.3,
-          rotateOnHover: false,
-          forceHoverState: false
-        });
-
-      } else {
-        console.warn('💬 EmmaOrb class not available, using fallback');
-        // Fallback gradient
-        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb)';
-        orbContainer.style.borderRadius = '50%';
-        orbContainer.style.width = '100%';
-        orbContainer.style.height = '100%';
-      }
-    } catch (error) {
-      console.error('🚨 Error initializing Chat Emma Orb:', error);
-    }
+    // Chat experience doesn't need its own orb - the universal orb handles interactions
+    // This is just a placeholder for compatibility
+    console.log('💬 Chat Emma experience initialized - using universal orb for interactions');
   }
 
   renderContent(contentElement) {
