@@ -1963,12 +1963,15 @@ class EmmaChatExperience extends ExperiencePopup {
 
         // "DEBE STANDARD" UX REVOLUTION: One single, intelligent prompt.
         // No more confusing delays or separate paths.
-        this.enrichmentState[analysis.memory.id] = {
+        this.enrichmentState.set(analysis.memory.id, {
             memory: analysis.memory,
             analysis: analysis,
             state: 'awaiting-confirmation',
             collectedData: {}
-        };
+        });
+        
+        console.log('🔧 MEMORY STORAGE DEBUG: Memory stored in enrichmentState with ID:', analysis.memory.id);
+        console.log('🔧 MEMORY STORAGE DEBUG: enrichmentState size:', this.enrichmentState.size);
         
         // Generate the single best response immediately using the analysis we just got
         const intelligentResponse = this.generateIntelligentMemoryResponse(analysis.memory, message);
@@ -2259,6 +2262,9 @@ class EmmaChatExperience extends ExperiencePopup {
    * Confirm and save memory to vault
    */
   async confirmSaveMemory(memoryId) {
+    console.log('🔧 CONFIRM SAVE DEBUG: Looking for memory ID:', memoryId);
+    console.log('🔧 CONFIRM SAVE DEBUG: enrichmentState size:', this.enrichmentState.size);
+    console.log('🔧 CONFIRM SAVE DEBUG: detectedMemories size:', this.detectedMemories.size);
 
     try {
       // Find the ENRICHED memory from enrichment state or detected memories
