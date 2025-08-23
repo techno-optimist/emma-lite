@@ -135,6 +135,13 @@ class ExtensionVaultChecker {
     this.isVaultUnlocked = true;
     this.vaultName = vaultName;
     
+    // 🔧 FIX: Stop polling once vault is unlocked to reduce noise
+    if (this.checkInterval) {
+      console.log('✅ Extension: Stopping vault status polling (vault unlocked)');
+      clearInterval(this.checkInterval);
+      this.checkInterval = null;
+    }
+    
     // CRITICAL FIX: Hide vault locked overlay with better detection
     const overlay = document.getElementById('vault-locked-overlay');
     if (overlay) {
@@ -295,10 +302,17 @@ class ExtensionVaultChecker {
       clearInterval(this.checkInterval);
     }
 
-    // Check every 10 seconds normally
+    // 🔧 FIX: Only poll if vault is still locked to reduce noise
     this.checkInterval = setInterval(() => {
-      this.checkVaultStatus();
-    }, 10000);
+      if (!this.isVaultUnlocked) {
+        console.log('🔍 Extension: Vault still locked, checking again...');
+        this.checkVaultStatus();
+      } else {
+        console.log('✅ Extension: Vault unlocked, stopping periodic checks');
+        clearInterval(this.checkInterval);
+        this.checkInterval = null;
+      }
+    }, 8000); // Reduced frequency to 8 seconds
   }
 
   /**
