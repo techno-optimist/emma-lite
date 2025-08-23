@@ -39,8 +39,7 @@
       "js": [
         "universal-media-capture.js",
         "smart-photo-capture.js", 
-        "emma-intelligent-capture.js",
-        "universal-emma-orb.js"
+        "emma-intelligent-capture.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
