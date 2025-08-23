@@ -311,16 +311,275 @@ function createModalContent(memory) {
       </div>
       
       <div class="tab-content" data-tab-content="media" style="display: none;">
-        <p style="color: rgba(255,255,255,0.6);">Media management coming soon...</p>
+        <div id="media-content">
+          <div class="media-loading">Loading media...</div>
+        </div>
       </div>
       
       <div class="tab-content" data-tab-content="people" style="display: none;">
-        <p style="color: rgba(255,255,255,0.6);">People connections coming soon...</p>
+        <div id="people-content">
+          <div class="people-loading">Loading people...</div>
+        </div>
       </div>
     </div>
   `;
 
   return content;
+}
+
+/**
+ * Switch tab and load content
+ * @param {HTMLElement} modal - The modal element  
+ * @param {string} tabName - The tab to switch to
+ */
+function switchTab(modal, tabName) {
+  const memory = window.currentMemory;
+  if (!memory) return;
+  
+  // Update tab button styles
+  const tabBtns = modal.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => {
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add('active');
+      btn.style.color = 'white';
+      btn.style.borderBottom = '2px solid #f093fb';
+    } else {
+      btn.classList.remove('active');
+      btn.style.color = 'rgba(255,255,255,0.6)';
+      btn.style.borderBottom = '2px solid transparent';
+    }
+  });
+  
+  // Show corresponding content
+  const tabContents = modal.querySelectorAll('.tab-content');
+  tabContents.forEach(content => {
+    content.style.display = content.dataset.tabContent === tabName ? 'block' : 'none';
+  });
+  
+  // Load content for specific tabs
+  if (tabName === 'media') {
+    loadMediaContent(modal, memory);
+  } else if (tabName === 'people') {
+    loadPeopleContent(modal, memory);
+  }
+}
+
+/**
+ * Load media content for the memory
+ */
+function loadMediaContent(modal, memory) {
+  const mediaContainer = modal.querySelector('#media-content');
+  if (!mediaContainer) return;
+  
+  try {
+    const mediaItems = memory.mediaItems || [];
+    console.log('🖼️ MODAL: Loading media for memory:', memory.title, 'Items:', mediaItems.length);
+    
+    if (mediaItems.length === 0) {
+      mediaContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
+          <div style="font-size: 48px; margin-bottom: 16px;">🖼️</div>
+          <h3>No Media Found</h3>
+          <p>This memory doesn't have any photos or media attached yet.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Render media grid
+    const mediaHtml = mediaItems.map((item, index) => {
+      const isImage = item.type && item.type.startsWith('image/');
+      const thumbnail = item.url || item.dataUrl || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2U8L3RleHQ+PC9zdmc+';
+      
+      return `
+        <div class="media-item" data-index="${index}" style="
+          position: relative;
+          aspect-ratio: 1;
+          border-radius: 12px;
+          overflow: hidden;
+          cursor: pointer;
+          background: rgba(255,255,255,0.05);
+          transition: transform 0.2s ease;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          ${isImage ? `
+            <img src="${thumbnail}" alt="${item.name || 'Memory image'}" style="
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            "/>
+          ` : `
+            <div style="
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: rgba(255,255,255,0.1);
+              color: white;
+              font-size: 24px;
+            ">📄</div>
+          `}
+          <div style="
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          ">${item.name || 'Untitled'}</div>
+        </div>
+      `;
+    }).join('');
+    
+    mediaContainer.innerHTML = `
+      <div style="
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px;
+        padding: 20px;
+      ">
+        ${mediaHtml}
+      </div>
+    `;
+    
+    // Add click handlers for media items
+    modal.querySelectorAll('.media-item').forEach((item, index) => {
+      item.addEventListener('click', () => {
+        console.log('🖼️ MODAL: Media item clicked:', index);
+        // TODO: Open slideshow/lightbox
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ MODAL: Error loading media:', error);
+    mediaContainer.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
+        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+        <h3>Error Loading Media</h3>
+        <p>There was an issue loading the media for this memory.</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Load people content for the memory
+ */
+function loadPeopleContent(modal, memory) {
+  const peopleContainer = modal.querySelector('#people-content');
+  if (!peopleContainer) return;
+  
+  try {
+    console.log('👥 MODAL: Loading people for memory:', memory.title);
+    console.log('👥 MODAL: Memory metadata:', memory.metadata);
+    
+    // Get people from memory metadata
+    const connectedPeople = memory.metadata?.people || [];
+    const vaultData = window.emmaWebVault?.vaultData;
+    const allPeople = vaultData?.people || {};
+    
+    console.log('👥 MODAL: Connected people IDs:', connectedPeople);
+    console.log('👥 MODAL: Available people in vault:', Object.keys(allPeople));
+    
+    if (connectedPeople.length === 0) {
+      peopleContainer.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
+          <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
+          <h3>No People Tagged</h3>
+          <p>This memory doesn't have any people tagged yet.</p>
+          <button class="btn btn-primary" style="margin-top: 16px;" onclick="openAddPeopleModal()">
+            <span>👥</span> Add People
+          </button>
+        </div>
+      `;
+      return;
+    }
+    
+    // Render connected people
+    const peopleHtml = connectedPeople.map(personId => {
+      const person = allPeople[personId];
+      if (!person) {
+        return `
+          <div style="padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; text-align: center;">
+            <div style="color: rgba(255,255,255,0.6);">Person not found (${personId})</div>
+          </div>
+        `;
+      }
+      
+      const initials = (person.name || '?').charAt(0).toUpperCase();
+      const avatar = person.avatarUrl ? `
+        <img src="${person.avatarUrl}" alt="${person.name}" style="
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          object-fit: cover;
+        "/>
+      ` : `
+        <div style="
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #8658ff, #f093fb);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 24px;
+          font-weight: 600;
+        ">${initials}</div>
+      `;
+      
+      return `
+        <div class="person-card" data-person-id="${person.id}" style="
+          padding: 20px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 16px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+          ${avatar}
+          <div style="margin-top: 12px; font-weight: 600; color: white;">${person.name || 'Unknown'}</div>
+          <div style="margin-top: 4px; font-size: 14px; color: rgba(255,255,255,0.6);">${person.relationship || 'Connection'}</div>
+        </div>
+      `;
+    }).join('');
+    
+    peopleContainer.innerHTML = `
+      <div style="padding: 20px;">
+        <div style="
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 16px;
+          margin-bottom: 20px;
+        ">
+          ${peopleHtml}
+        </div>
+        <div style="text-align: center;">
+          <button class="btn btn-secondary" onclick="openAddPeopleModal()">
+            <span>👥</span> Add More People
+          </button>
+        </div>
+      </div>
+    `;
+    
+  } catch (error) {
+    console.error('❌ MODAL: Error loading people:', error);
+    peopleContainer.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.6);">
+        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+        <h3>Error Loading People</h3>
+        <p>There was an issue loading the people for this memory.</p>
+      </div>
+    `;
+  }
 }
 
 /**
