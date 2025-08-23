@@ -2287,12 +2287,8 @@ class EmmaWebVault {
   }
 }
 
-if (!window.emmaWebVault) {
-  window.emmaWebVault = new EmmaWebVault();
-
-} else {
-
-}
+// NOTE: Vault instance is now created by dashboard.html to control timing
+// This prevents race conditions during initialization
 
 // Compatibility layer - IDENTICAL API to desktop version!
 window.emmaAPI = {

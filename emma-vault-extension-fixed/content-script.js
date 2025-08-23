@@ -1098,13 +1098,13 @@ async function saveToWebappVault(memoryData) {
     
     console.log('💾 Content Script: Memory saved successfully:', result);
     
-    // Trigger constellation refresh
+    // Trigger constellation refresh with longer delay to ensure vault data is saved
     setTimeout(() => {
       // Dispatch custom event to refresh constellation
       window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
         detail: { memoryId: result.id, memoryData: memoryData }
       }));
-    }, 100);
+    }, 500); // Increased delay to ensure vault save completes
     
     return {
       success: true,
@@ -1140,7 +1140,7 @@ async function waitForWebappVault(timeoutMs = 3000) {
         timeElapsed: Date.now() - startTime
       });
       
-      // Check if vault exists and is ready
+      // Check if vault exists and is ready (FIXED: Don't require vaultData for new memories)
       if (window.emmaWebVault && 
           window.emmaWebVault.isOpen && 
           typeof window.emmaWebVault.addMemory === 'function') {

@@ -2410,11 +2410,11 @@
           console.log('🔄 DASHBOARD: Memory added event received, refreshing constellation');
           
           if (this.isConstellationMode) {
-            // Force constellation refresh with new data
+            // Force constellation refresh with new data - longer delay to ensure vault sync
             setTimeout(() => {
               this.enterMemoryConstellation();
               console.log('🔄 DASHBOARD: Constellation refreshed after memory addition');
-            }, 200);
+            }, 300); // Increased delay for better data consistency
           }
         });
       }
