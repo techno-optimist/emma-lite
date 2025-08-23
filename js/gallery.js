@@ -626,10 +626,61 @@ function renderEmptyState() {
       <div class="empty-icon">💝</div>
       <h2 class="empty-title">Your Memory Gallery is Ready</h2>
       <p class="empty-message">
-        Start capturing your precious memories! Click the <strong>Emma orb</strong> below to create your first memory capsule.
+        Start capturing your precious memories! Use Emma chat to create your first memory capsule.
       </p>
+      
+      <div class="empty-cta-box">
+        <div class="empty-cta-icon">💬</div>
+        <div class="empty-cta-content">
+          <h3 class="empty-cta-title">Chat with Emma</h3>
+          <p class="empty-cta-text">Tell Emma about your memories and she'll help you create beautiful memory capsules</p>
+        </div>
+      </div>
+      
+      <button id="empty-chat-btn" class="btn btn-primary" style="margin-top: 20px;">
+        <span class="btn-icon">💬</span>
+        Chat with Emma
+      </button>
     </div>
   `;
+  
+  // Wire up the chat button to open Emma chat
+  const chatBtn = document.getElementById('empty-chat-btn');
+  if (chatBtn) {
+    chatBtn.addEventListener('click', openEmmaChat);
+  }
+}
+
+/**
+ * Open Emma Chat for creating memories
+ */
+function openEmmaChat() {
+  console.log('💬 GALLERY: Opening Emma chat...');
+  
+  // Use the modern Emma chat experience
+  if (window.EmmaChatExperience) {
+    console.log('💬 GALLERY: Opening new Emma Chat Experience');
+    const emmaChatExperience = new window.EmmaChatExperience();
+    emmaChatExperience.show();
+  } else if (window.OrbExperienceManager) {
+    console.log('💬 GALLERY: Fallback to orb experience manager');
+    const experienceManager = window.OrbExperienceManager.getInstance();
+    // Create a dummy orb element for the chat to position relative to
+    const dummyOrb = document.createElement('div');
+    dummyOrb.style.cssText = 'position: fixed; top: 50%; left: 50%; width: 1px; height: 1px; z-index: -1;';
+    document.body.appendChild(dummyOrb);
+    experienceManager.handleOrbClick('default', dummyOrb);
+    // Clean up dummy orb after a delay
+    setTimeout(() => {
+      if (dummyOrb.parentNode) {
+        dummyOrb.parentNode.removeChild(dummyOrb);
+      }
+    }, 1000);
+  } else {
+    console.warn('💬 GALLERY: No Emma chat system available, navigating to dashboard');
+    // Fallback - navigate back to dashboard where Emma orb is available
+    window.location.href = '../dashboard.html';
+  }
 }
 
 /**
