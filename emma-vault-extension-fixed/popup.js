@@ -80,6 +80,27 @@ class EmmaVaultExtension {
   async init() {
     console.log('🚀 Initializing Emma Vault Extension...');
     
+    // WEBAPP-FIRST: Check if vault checker already handled initialization
+    if (window.extensionVaultChecker && window.extensionVaultChecker.isVaultUnlocked) {
+      console.log('🔐 POPUP: WEBAPP-FIRST system active, using streamlined init');
+      
+      // Set version
+      const manifest = chrome.runtime.getManifest();
+      this.elements.version.textContent = manifest.version;
+      
+      // Minimal setup for webapp-first mode
+      this.setupEventListeners();
+      this.isVaultOpen = true;
+      this.showActiveVaultState();
+      this.elements.vaultStatusIndicator.textContent = '🟢';
+      
+      console.log('✅ Emma Vault Extension ready (WEBAPP-FIRST mode)');
+      return;
+    }
+
+    // Legacy initialization path
+    console.log('🔐 POPUP: Using legacy initialization path');
+    
     // Set version
     const manifest = chrome.runtime.getManifest();
     this.elements.version.textContent = manifest.version;
