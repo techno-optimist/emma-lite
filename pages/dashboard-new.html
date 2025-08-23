@@ -2514,6 +2514,12 @@
         }
       }
 
+      // SAFETY METHOD: Fallback for any lingering render() calls
+      render() {
+        console.warn('🔧 DASHBOARD: render() is deprecated, using animateNeuralNetwork() instead');
+        this.animateNeuralNetwork();
+      }
+
       async startVoiceCapture() {
 
         // Calculate elegant position relative to Emma orb
