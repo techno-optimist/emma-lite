@@ -2491,7 +2491,29 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
 
         <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Attachments (${memory.attachments?.length || 0}):</label>
+          <label style="display: block; margin-bottom: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">👥 Who is in this memory?</label>
+          <div class="people-picker-container" style="
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+          ">
+            <div class="people-picker-grid" style="
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+              gap: 15px;
+              margin-bottom: 15px;
+            ">
+              <!-- People will be loaded here -->
+            </div>
+            <div style="text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+              Loading people from vault...
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">📎 Attachments (${memory.attachments?.length || 0}):</label>
           <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
             ${(memory.attachments || []).map((attachment, index) => `
               <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
@@ -2590,14 +2612,25 @@ class EmmaChatExperience extends ExperiencePopup {
       });
     });
 
+    // Load people for picker
+    this.loadPeopleForPicker(editModal, memory);
+
     // Save handler
     saveBtn.addEventListener('click', async () => {
       const title = titleInput.value.trim() || 'Untitled Memory';
       const content = contentTextarea.value.trim();
 
+      // Get selected people
+      const selectedPeople = Array.from(editModal.querySelectorAll('.person-picker-item.selected'))
+        .map(item => ({
+          id: item.dataset.personId,
+          name: item.dataset.personName
+        }));
+
       // Update memory object
       memory.metadata = memory.metadata || {};
       memory.metadata.title = title;
+      memory.metadata.people = selectedPeople;
       memory.title = title;
       memory.content = content;
 
@@ -2612,6 +2645,483 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Focus title input
     setTimeout(() => titleInput.focus(), 100);
+  }
+
+  /**
+   * Load people from vault for the picker
+   */
+  async loadPeopleForPicker(modal, memory) {
+    const grid = modal.querySelector('.people-picker-grid');
+    const loadingText = modal.querySelector('.people-picker-container div:last-child');
+    
+    try {
+      // Get people from vault
+      let people = [];
+      
+      if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.list) {
+        const result = await window.emmaAPI.people.list();
+        if (result && result.success && Array.isArray(result.items)) {
+          people = result.items;
+        }
+      } else if (window.emmaWebVault && window.emmaWebVault.listPeople) {
+        people = await window.emmaWebVault.listPeople();
+      }
+
+      // Get currently selected people
+      const selectedPeopleIds = (memory.metadata?.people || []).map(p => p.id);
+      
+      if (people.length === 0) {
+        loadingText.textContent = 'No people in vault yet. Add people first!';
+        loadingText.style.color = 'rgba(255, 255, 255, 0.8)';
+        return;
+      }
+
+      // Hide loading text
+      loadingText.style.display = 'none';
+      
+      // Add "Create New Person" option first
+      const addPersonItem = document.createElement('div');
+      addPersonItem.className = 'add-person-item';
+      addPersonItem.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(34, 197, 94, 0.15);
+        border: 2px dashed #22c55e;
+        position: relative;
+      `;
+      
+      // Create add person avatar
+      const addAvatar = document.createElement('div');
+      addAvatar.style.cssText = `
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(34, 197, 94, 0.2);
+        border: 3px dashed #22c55e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: #22c55e;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+      `;
+      addAvatar.textContent = '+';
+      
+      // Create add person label
+      const addLabel = document.createElement('div');
+      addLabel.textContent = 'Add Person';
+      addLabel.style.cssText = `
+        font-size: 14px;
+        font-weight: 600;
+        color: #22c55e;
+        text-align: center;
+        margin-bottom: 4px;
+      `;
+      
+      // Create instruction label
+      const instructionLabel = document.createElement('div');
+      instructionLabel.textContent = 'Click to create';
+      instructionLabel.style.cssText = `
+        font-size: 12px;
+        color: rgba(34, 197, 94, 0.8);
+        text-align: center;
+      `;
+      
+      addPersonItem.appendChild(addAvatar);
+      addPersonItem.appendChild(addLabel);
+      addPersonItem.appendChild(instructionLabel);
+      
+      // Add click handler for new person
+      addPersonItem.addEventListener('click', () => {
+        this.showAddPersonDialog(modal, memory);
+      });
+      
+      // Add hover effects
+      addPersonItem.addEventListener('mouseenter', () => {
+        addPersonItem.style.background = 'rgba(34, 197, 94, 0.25)';
+        addPersonItem.style.transform = 'scale(1.02)';
+        addAvatar.style.background = 'rgba(34, 197, 94, 0.3)';
+        addAvatar.style.transform = 'scale(1.1)';
+      });
+      
+      addPersonItem.addEventListener('mouseleave', () => {
+        addPersonItem.style.background = 'rgba(34, 197, 94, 0.15)';
+        addPersonItem.style.transform = 'scale(1)';
+        addAvatar.style.background = 'rgba(34, 197, 94, 0.2)';
+        addAvatar.style.transform = 'scale(1)';
+      });
+      
+      grid.appendChild(addPersonItem);
+
+      // Create people picker items
+      people.forEach(person => {
+        const isSelected = selectedPeopleIds.includes(person.id);
+        
+        const personItem = document.createElement('div');
+        personItem.className = `person-picker-item ${isSelected ? 'selected' : ''}`;
+        personItem.dataset.personId = person.id;
+        personItem.dataset.personName = person.name;
+        
+        personItem.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 15px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          background: ${isSelected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+          border: 2px solid ${isSelected ? '#22c55e' : 'rgba(255, 255, 255, 0.2)'};
+          transform: ${isSelected ? 'scale(1.05)' : 'scale(1)'};
+        `;
+        
+        // Create large avatar
+        const avatar = document.createElement('div');
+        avatar.style.cssText = `
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          font-weight: bold;
+          color: white;
+          margin-bottom: 8px;
+          border: 3px solid ${isSelected ? '#22c55e' : 'rgba(255, 255, 255, 0.3)'};
+          transition: all 0.3s ease;
+        `;
+        
+        if (person.avatar && person.avatar.startsWith('data:')) {
+          // Has avatar image
+          avatar.innerHTML = `<img src="${person.avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="${person.name}">`;
+        } else {
+          // Use initials
+          const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+          avatar.textContent = initials;
+        }
+        
+        // Create name label
+        const nameLabel = document.createElement('div');
+        nameLabel.textContent = person.name;
+        nameLabel.style.cssText = `
+          font-size: 14px;
+          font-weight: 600;
+          color: white;
+          text-align: center;
+          word-break: break-word;
+          margin-bottom: 4px;
+        `;
+        
+        // Create relation label
+        const relationLabel = document.createElement('div');
+        relationLabel.textContent = person.relation || 'other';
+        relationLabel.style.cssText = `
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.7);
+          text-align: center;
+          text-transform: capitalize;
+        `;
+        
+        // Add selection indicator
+        const selectionIndicator = document.createElement('div');
+        selectionIndicator.className = 'selection-indicator';
+        selectionIndicator.style.cssText = `
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: ${isSelected ? '#22c55e' : 'rgba(255, 255, 255, 0.2)'};
+          border: 2px solid white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          color: white;
+          font-weight: bold;
+          transition: all 0.3s ease;
+        `;
+        selectionIndicator.textContent = isSelected ? '✓' : '';
+        
+        // Make personItem relative for absolute positioning
+        personItem.style.position = 'relative';
+        
+        personItem.appendChild(avatar);
+        personItem.appendChild(nameLabel);
+        personItem.appendChild(relationLabel);
+        personItem.appendChild(selectionIndicator);
+        
+        // Add click handler
+        personItem.addEventListener('click', () => {
+          const isCurrentlySelected = personItem.classList.contains('selected');
+          
+          if (isCurrentlySelected) {
+            // Deselect
+            personItem.classList.remove('selected');
+            personItem.style.background = 'rgba(255, 255, 255, 0.1)';
+            personItem.style.border = '2px solid rgba(255, 255, 255, 0.2)';
+            personItem.style.transform = 'scale(1)';
+            avatar.style.border = '3px solid rgba(255, 255, 255, 0.3)';
+            selectionIndicator.style.background = 'rgba(255, 255, 255, 0.2)';
+            selectionIndicator.textContent = '';
+          } else {
+            // Select
+            personItem.classList.add('selected');
+            personItem.style.background = 'rgba(34, 197, 94, 0.3)';
+            personItem.style.border = '2px solid #22c55e';
+            personItem.style.transform = 'scale(1.05)';
+            avatar.style.border = '3px solid #22c55e';
+            selectionIndicator.style.background = '#22c55e';
+            selectionIndicator.textContent = '✓';
+          }
+        });
+        
+        // Add hover effects
+        personItem.addEventListener('mouseenter', () => {
+          if (!personItem.classList.contains('selected')) {
+            personItem.style.background = 'rgba(255, 255, 255, 0.15)';
+            personItem.style.transform = 'scale(1.02)';
+          }
+        });
+        
+        personItem.addEventListener('mouseleave', () => {
+          if (!personItem.classList.contains('selected')) {
+            personItem.style.background = 'rgba(255, 255, 255, 0.1)';
+            personItem.style.transform = 'scale(1)';
+          }
+        });
+        
+        grid.appendChild(personItem);
+      });
+      
+    } catch (error) {
+      console.error('❌ Error loading people for picker:', error);
+      loadingText.textContent = 'Error loading people from vault';
+      loadingText.style.color = 'rgba(255, 100, 100, 0.8)';
+    }
+  }
+
+  /**
+   * Show dialog to add a new person to the vault
+   */
+  showAddPersonDialog(parentModal, memory) {
+    // Create add person dialog
+    const addPersonDialog = document.createElement('div');
+    addPersonDialog.className = 'add-person-dialog';
+    addPersonDialog.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 20000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(0, 0, 0, 0.95) !important;
+      backdrop-filter: blur(25px) !important;
+    `;
+
+    addPersonDialog.innerHTML = `
+      <div class="add-person-modal-content" style="
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.95));
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        color: white;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        transform: scale(0.9);
+        opacity: 0;
+        transition: all 0.3s ease;
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">👤 Add New Person</h2>
+          <button class="close-add-person-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Person's Name *</label>
+          <input type="text" class="person-name-input" placeholder="Enter their name..." style="
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 18px;
+            box-sizing: border-box;
+            font-weight: 500;
+          ">
+        </div>
+
+        <div style="margin-bottom: 25px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Relationship</label>
+          <select class="person-relation-select" style="
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            cursor: pointer;
+          ">
+            <option value="family" style="background: #333; color: white;">Family</option>
+            <option value="friend" style="background: #333; color: white;">Friend</option>
+            <option value="neighbor" style="background: #333; color: white;">Neighbor</option>
+            <option value="caregiver" style="background: #333; color: white;">Caregiver</option>
+            <option value="doctor" style="background: #333; color: white;">Doctor</option>
+            <option value="other" style="background: #333; color: white;">Other</option>
+          </select>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 15px; margin-bottom: 25px;">
+          <div style="font-size: 14px; color: rgba(255, 255, 255, 0.8); line-height: 1.4;">
+            💡 <strong>Tip:</strong> This person will be saved to your vault and automatically added to this memory!
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 15px; justify-content: flex-end;">
+          <button class="cancel-add-person-btn" style="
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+          ">Cancel</button>
+          <button class="save-person-btn" style="
+            background: linear-gradient(135deg, #ffffff, #f3f4f6);
+            border: none;
+            color: #16a34a;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+          ">✨ Add Person</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(addPersonDialog);
+
+    // Animate in
+    setTimeout(() => {
+      const content = addPersonDialog.querySelector('.add-person-modal-content');
+      content.style.transform = 'scale(1)';
+      content.style.opacity = '1';
+    }, 50);
+
+    // Get elements
+    const nameInput = addPersonDialog.querySelector('.person-name-input');
+    const relationSelect = addPersonDialog.querySelector('.person-relation-select');
+    const saveBtn = addPersonDialog.querySelector('.save-person-btn');
+    const cancelBtn = addPersonDialog.querySelector('.cancel-add-person-btn');
+    const closeBtn = addPersonDialog.querySelector('.close-add-person-btn');
+
+    // Close handlers
+    const closeDialog = () => {
+      const content = addPersonDialog.querySelector('.add-person-modal-content');
+      content.style.transform = 'scale(0.9)';
+      content.style.opacity = '0';
+      setTimeout(() => addPersonDialog.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', closeDialog);
+    cancelBtn.addEventListener('click', closeDialog);
+    addPersonDialog.addEventListener('click', (e) => {
+      if (e.target === addPersonDialog) closeDialog();
+    });
+
+    // Save handler
+    saveBtn.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      const relation = relationSelect.value;
+
+      if (!name) {
+        nameInput.focus();
+        nameInput.style.border = '2px solid #ef4444';
+        this.showToast('❌ Please enter a name!', 'error');
+        return;
+      }
+
+      try {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '💫 Creating...';
+
+        // Create person in vault
+        const newPerson = {
+          name: name,
+          relation: relation,
+          contact: '',
+          notes: '',
+          created: new Date().toISOString()
+        };
+
+        let personResult;
+        if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.add) {
+          personResult = await window.emmaAPI.people.add(newPerson);
+        } else if (window.emmaWebVault && window.emmaWebVault.addPerson) {
+          personResult = await window.emmaWebVault.addPerson(newPerson);
+        }
+
+        if (personResult && (personResult.success || personResult.id)) {
+          const personId = personResult.id || personResult.person?.id;
+          
+          // Auto-select the new person in the memory
+          memory.metadata = memory.metadata || {};
+          memory.metadata.people = memory.metadata.people || [];
+          memory.metadata.people.push({
+            id: personId,
+            name: name
+          });
+
+          this.showToast(`✨ ${name} added to vault and memory!`, 'success');
+          closeDialog();
+
+          // Refresh the people picker
+          setTimeout(() => {
+            this.loadPeopleForPicker(parentModal, memory);
+          }, 500);
+
+        } else {
+          throw new Error('Failed to create person');
+        }
+
+      } catch (error) {
+        console.error('❌ Error adding person:', error);
+        this.showToast('❌ Failed to add person. Please try again.', 'error');
+        saveBtn.disabled = false;
+        saveBtn.textContent = '✨ Add Person';
+      }
+    });
+
+    // Enter key to save
+    nameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && nameInput.value.trim()) {
+        saveBtn.click();
+      }
+    });
+
+    // Focus name input
+    setTimeout(() => nameInput.focus(), 100);
   }
 
   /**
