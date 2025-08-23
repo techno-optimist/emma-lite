@@ -2184,7 +2184,7 @@ class EmmaChatExperience extends ExperiencePopup {
           try {
             // Load from vault (exact constellation code)
             window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
-              if (avatarData) {
+              if (avatarData && avatarData.byteLength > 100) {
                 const blob = new Blob([avatarData], { type: 'image/jpeg' });
                 const url = URL.createObjectURL(blob);
                 
@@ -2195,12 +2195,17 @@ class EmmaChatExperience extends ExperiencePopup {
                   avatar.innerHTML = '';
                   avatar.appendChild(img);
                 };
+                img.onerror = () => {
+                  // Keep beautiful letter fallback
+                };
+              } else {
+                // Data too small or corrupted - keep beautiful letter fallback
               }
             }).catch(error => {
-              console.error('❌ Failed to load person avatar:', error);
+              // Vault photo corrupted - keep beautiful letter fallback
             });
           } catch (error) {
-            console.error('❌ Failed to load person avatar:', error);
+            // Keep beautiful letter fallback
           }
         }
 
