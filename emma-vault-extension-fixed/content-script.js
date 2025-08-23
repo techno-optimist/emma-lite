@@ -36,33 +36,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 function getWebappVaultStatus() {
   try {
-    // Method 1: Check sessionStorage for unlocked vault
-    const vaultUnlocked = sessionStorage.getItem('vaultUnlocked');
-    const vaultName = sessionStorage.getItem('vaultName');
+    // Method 1: Check sessionStorage for vault status (CORRECT KEYS!)
+    const sessionVaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+    const sessionVaultName = sessionStorage.getItem('emmaVaultName');
     
-    if (vaultUnlocked === 'true' && vaultName) {
+    if (sessionVaultActive && sessionVaultName) {
+      console.log('🔐 Content Script: Found active vault in sessionStorage:', sessionVaultName);
       return {
         isUnlocked: true,
-        vaultName: vaultName,
+        vaultName: sessionVaultName,
         source: 'sessionStorage'
       };
     }
     
-    // Method 2: Check localStorage for vault state
-    const webVaultState = localStorage.getItem('emmaWebVaultState');
-    if (webVaultState) {
-      try {
-        const parsed = JSON.parse(webVaultState);
-        if (parsed.isUnlocked && parsed.vaultName) {
-          return {
-            isUnlocked: true,
-            vaultName: parsed.vaultName,
-            source: 'localStorage'
-          };
-        }
-      } catch (e) {
-        console.log('🔐 Content Script: Error parsing web vault state', e);
-      }
+    // Method 2: Check localStorage for vault state (CORRECT KEYS!)
+    const localVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+    const localVaultName = localStorage.getItem('emmaVaultName');
+    
+    if (localVaultActive && localVaultName) {
+      console.log('🔐 Content Script: Found active vault in localStorage:', localVaultName);
+      return {
+        isUnlocked: true,
+        vaultName: localVaultName,
+        source: 'localStorage'
+      };
     }
     
     // Method 3: Check for Emma web vault object
@@ -88,6 +85,7 @@ function getWebappVaultStatus() {
     }
     
     // Default: vault is locked
+    console.log('🔐 Content Script: No vault indicators found - vault is locked');
     return {
       isUnlocked: false,
       source: 'default'
