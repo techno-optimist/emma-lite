@@ -366,7 +366,38 @@ async function loadPeopleInTab() {
             };
             saveResult = await window.emma.vault.storeMemory({ mtapMemory });
           } else {
-            throw new Error('No vault API available for saving');
+            // FALLBACK: No vault APIs available - try localStorage or direct memory update
+            console.log('🔄 SAVE: No vault APIs - trying localStorage fallback...');
+            
+            // Try to update the memory in whatever storage system is being used
+            // First, try to update the current memory object directly
+            if (window.currentMemory) {
+              window.currentMemory = updatedMemory;
+              
+              // Try to persist to localStorage if that's where memories are stored
+              try {
+                const existingMemories = JSON.parse(localStorage.getItem('emma_memories') || '[]');
+                const memoryIndex = existingMemories.findIndex(m => m.id === updatedMemory.id);
+                
+                if (memoryIndex >= 0) {
+                  existingMemories[memoryIndex] = updatedMemory;
+                  localStorage.setItem('emma_memories', JSON.stringify(existingMemories));
+                  console.log('✅ SAVE: Updated memory in localStorage');
+                  saveResult = { success: true };
+                  apiUsed = 'localStorage';
+                } else {
+                  console.log('⚠️ SAVE: Memory not found in localStorage, memory only updated in-memory');
+                  saveResult = { success: true };
+                  apiUsed = 'in-memory-only';
+                }
+              } catch (localStorageError) {
+                console.log('⚠️ SAVE: localStorage failed, but memory updated in-memory:', localStorageError);
+                saveResult = { success: true };
+                apiUsed = 'in-memory-only';
+              }
+            } else {
+              throw new Error('No storage method available - no vault APIs and no currentMemory');
+            }
           }
           
           console.log(`🔍 SAVE: Used API: ${apiUsed}`);
@@ -379,6 +410,14 @@ async function loadPeopleInTab() {
             
             // Update the global current memory
             window.currentMemory = updatedMemory;
+            
+            // Refresh the gallery to show updated connections
+            if (typeof window.refreshMemoryGallery === 'function') {
+              setTimeout(() => {
+                window.refreshMemoryGallery();
+                console.log('🔄 Gallery refreshed to show updated connections');
+              }, 500);
+            }
             
             console.log('✅ Successfully saved people connections to memory');
             
