@@ -497,11 +497,37 @@ function loadPeopleContent(modal, memory) {
     
     // Get people from memory metadata
     const connectedPeople = memory.metadata?.people || [];
+    
+    // Try multiple sources for people data
+    let allPeople = {};
+    
+    // First try web vault
     const vaultData = window.emmaWebVault?.vaultData;
-    const allPeople = vaultData?.people || {};
+    if (vaultData?.people) {
+      allPeople = vaultData.people;
+      console.log('👥 MODAL: Using people from web vault');
+    }
+    
+    // If no people in vault, try chrome storage (for extension mode)
+    if (Object.keys(allPeople).length === 0 && typeof chrome !== 'undefined') {
+      try {
+        const store = await chrome.storage.local.get(['emma_people']);
+        const peopleArray = Array.isArray(store.emma_people) ? store.emma_people : [];
+        // Convert array to object with id as key
+        allPeople = {};
+        peopleArray.forEach(person => {
+          if (person.id) {
+            allPeople[person.id] = person;
+          }
+        });
+        console.log('👥 MODAL: Using people from chrome storage');
+      } catch (error) {
+        console.warn('👥 MODAL: Could not access chrome storage:', error);
+      }
+    }
     
     console.log('👥 MODAL: Connected people IDs:', connectedPeople);
-    console.log('👥 MODAL: Available people in vault:', Object.keys(allPeople));
+    console.log('👥 MODAL: Available people total:', Object.keys(allPeople));
     
     if (connectedPeople.length === 0) {
       peopleContainer.innerHTML = `
@@ -509,7 +535,7 @@ function loadPeopleContent(modal, memory) {
           <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
           <h3>No People Tagged</h3>
           <p>This memory doesn't have any people tagged yet.</p>
-          <button class="btn btn-primary" style="margin-top: 16px;" onclick="openAddPeopleModal()">
+          <button class="btn btn-primary" style="margin-top: 16px;" onclick="window.openAddPeopleModal ? window.openAddPeopleModal() : window.open('../pages/people.html', '_blank')">
             <span>👥</span> Add People
           </button>
         </div>
@@ -579,7 +605,7 @@ function loadPeopleContent(modal, memory) {
           ${peopleHtml}
         </div>
         <div style="text-align: center;">
-          <button class="btn btn-secondary" onclick="openAddPeopleModal()">
+          <button class="btn btn-secondary" onclick="window.openAddPeopleModal ? window.openAddPeopleModal() : window.open('../pages/people.html', '_blank')">
             <span>👥</span> Add More People
           </button>
         </div>
