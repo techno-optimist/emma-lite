@@ -29,6 +29,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse(vaultStatus);
     return true; // Keep message channel open for async response
   }
+  
+  if (request.action === 'getVaultStats') {
+    console.log('📊 Content Script: Getting webapp vault statistics');
+    
+    // Get detailed vault statistics from webapp
+    const vaultStats = getWebappVaultStats();
+    console.log('📊 Content Script: Vault stats:', vaultStats);
+    
+    sendResponse(vaultStats);
+    return true; // Keep message channel open for async response
+  }
 });
 
 /**
@@ -94,6 +105,103 @@ function getWebappVaultStatus() {
     return {
       isUnlocked: false,
       error: error.message,
+      source: 'error'
+    };
+  }
+}
+
+/**
+ * Get detailed vault statistics from webapp
+ */
+function getWebappVaultStats() {
+  try {
+    console.log('📊 Content Script: Extracting vault statistics from webapp');
+    
+    // Method 1: Get stats from EmmaWebVault object
+    if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+      const vaultData = window.emmaWebVault.vaultData;
+      const memories = vaultData.content?.memories || {};
+      const people = vaultData.content?.people || {};
+      
+      // Calculate vault size (rough estimate)
+      const vaultSizeBytes = JSON.stringify(vaultData).length;
+      const vaultSizeKB = Math.round(vaultSizeBytes / 1024);
+      
+      const stats = {
+        success: true,
+        memoryCount: Object.keys(memories).length,
+        peopleCount: Object.keys(people).length,
+        vaultSize: `${vaultSizeKB} KB`,
+        vaultName: vaultData.metadata?.name || window.emmaWebVault.currentVault?.name || 'Emma Vault',
+        lastSync: 'Live',
+        source: 'emmaWebVault'
+      };
+      
+      console.log('📊 Content Script: Stats from EmmaWebVault:', stats);
+      return stats;
+    }
+    
+    // Method 2: Get basic stats from session/localStorage
+    const vaultName = sessionStorage.getItem('emmaVaultName') || 
+                     localStorage.getItem('emmaVaultName') || 
+                     'Emma Vault';
+    
+    const isUnlocked = sessionStorage.getItem('emmaVaultActive') === 'true' || 
+                      localStorage.getItem('emmaVaultActive') === 'true';
+    
+    if (isUnlocked) {
+      // Try to get stats from DOM or global objects
+      let memoryCount = 0;
+      let peopleCount = 0;
+      
+      // Check if dashboard constellation shows memory count
+      const constellationMemories = document.querySelectorAll('.memory-node, .constellation-memory');
+      if (constellationMemories.length > 0) {
+        memoryCount = constellationMemories.length;
+      }
+      
+      // Check for any people indicators
+      const peopleElements = document.querySelectorAll('.people-avatar, .person-node');
+      if (peopleElements.length > 0) {
+        peopleCount = peopleElements.length;
+      }
+      
+      const stats = {
+        success: true,
+        memoryCount: memoryCount,
+        peopleCount: peopleCount,
+        vaultSize: '? KB',
+        vaultName: vaultName,
+        lastSync: 'Live',
+        source: 'sessionStorage'
+      };
+      
+      console.log('📊 Content Script: Stats from sessionStorage/DOM:', stats);
+      return stats;
+    }
+    
+    // Method 3: Default fallback
+    console.log('📊 Content Script: No vault data found, returning defaults');
+    return {
+      success: false,
+      memoryCount: 0,
+      peopleCount: 0,
+      vaultSize: '0 KB',
+      vaultName: 'No Vault',
+      lastSync: 'Never',
+      source: 'default'
+    };
+    
+  } catch (error) {
+    console.error('📊 Content Script: Error getting vault stats:', error);
+    return {
+      success: false,
+      error: error.message,
+      memoryCount: 0,
+      peopleCount: 0,
+      vaultSize: '0 KB',
+      vaultName: 'Error',
+      lastSync: 'Never',
       source: 'error'
     };
   }

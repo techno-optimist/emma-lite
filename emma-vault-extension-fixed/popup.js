@@ -91,6 +91,9 @@ class EmmaVaultExtension {
       // Minimal setup for webapp-first mode
       this.setupEventListeners();
       this.isVaultOpen = true;
+      
+      // WEBAPP-FIRST: Get vault stats from webapp instead of background
+      await this.updateStatsFromWebapp();
       this.showActiveVaultState();
       this.elements.vaultStatusIndicator.textContent = '🟢';
       
@@ -632,6 +635,95 @@ class EmmaVaultExtension {
       this.elements.memoryCount.textContent = memoryCount;
       this.elements.peopleCount.textContent = peopleCount;
     }
+  }
+
+  /**
+   * WEBAPP-FIRST: Get vault statistics from webapp instead of background
+   */
+  async updateStatsFromWebapp() {
+    try {
+      console.log('📊 POPUP: Getting vault stats from webapp (WEBAPP-FIRST mode)');
+      
+      // Get vault stats from the vault checker
+      if (window.extensionVaultChecker && window.extensionVaultChecker.isVaultUnlocked) {
+        // Request vault stats from webapp via content script
+        const vaultStats = await this.requestVaultStatsFromWebapp();
+        
+        if (vaultStats && vaultStats.success) {
+          this.elements.memoryCount.textContent = vaultStats.memoryCount || 0;
+          this.elements.peopleCount.textContent = vaultStats.peopleCount || 0;
+          this.elements.vaultSize.textContent = vaultStats.vaultSize || '0 KB';
+          this.elements.lastSyncTime.textContent = vaultStats.lastSync || 'Live';
+          
+          // Update vault name
+          if (vaultStats.vaultName) {
+            this.elements.activeVaultName.textContent = vaultStats.vaultName;
+            this.elements.activeVaultPath.textContent = vaultStats.vaultName;
+          }
+          
+          console.log('📊 POPUP: WEBAPP-FIRST stats updated:', {
+            memories: vaultStats.memoryCount,
+            people: vaultStats.peopleCount,
+            size: vaultStats.vaultSize,
+            name: vaultStats.vaultName
+          });
+        } else {
+          console.warn('📊 POPUP: Failed to get webapp vault stats, using defaults');
+          this.setDefaultStats();
+        }
+      } else {
+        console.warn('📊 POPUP: Vault checker not available, using defaults');
+        this.setDefaultStats();
+      }
+    } catch (error) {
+      console.error('❌ POPUP: Error getting webapp vault stats:', error);
+      this.setDefaultStats();
+    }
+  }
+
+  /**
+   * Request vault statistics from webapp via content script
+   */
+  async requestVaultStatsFromWebapp() {
+    return new Promise((resolve) => {
+      chrome.tabs.query({}, (tabs) => {
+        const emmaTabs = tabs.filter(tab => 
+          tab.url?.includes('emma-lite-extension.onrender.com') ||
+          tab.url?.includes('emma-hjjc.onrender.com') ||
+          tab.url?.includes('localhost')
+        );
+
+        if (emmaTabs.length === 0) {
+          console.log('📊 POPUP: No Emma webapp tabs found for stats');
+          resolve({ success: false });
+          return;
+        }
+
+        // Send message to first Emma tab
+        const emmaTab = emmaTabs[0];
+        chrome.tabs.sendMessage(emmaTab.id, {
+          action: 'getVaultStats'
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('📊 POPUP: Could not get webapp stats:', chrome.runtime.lastError.message);
+            resolve({ success: false });
+          } else {
+            console.log('📊 POPUP: Received webapp vault stats:', response);
+            resolve(response || { success: false });
+          }
+        });
+      });
+    });
+  }
+
+  /**
+   * Set default vault stats when webapp stats unavailable
+   */
+  setDefaultStats() {
+    this.elements.memoryCount.textContent = '0';
+    this.elements.peopleCount.textContent = '0';
+    this.elements.vaultSize.textContent = '0 KB';
+    this.elements.lastSyncTime.textContent = 'Never';
   }
   
   showActiveVaultState() {
