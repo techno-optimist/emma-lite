@@ -45,9 +45,7 @@ class EmmaIntelligentCapture {
     this.isCapturing = false;
     this.captureSession = null;
     
-    if (this.options.debug) {
-      console.log('🧠 Emma Intelligent Capture initialized');
-    }
+    // Emma Intelligent Capture initialized (production mode)
   }
 
   /**
@@ -87,21 +85,21 @@ class EmmaIntelligentCapture {
         try {
           const ctx = this.getRecentContextText(3);
           if (this.options.debug) {
-            console.log('🧠 LLM: Calling analyzeMemoryPotential with content:', content.substring(0, 100));
+            // console.log('🧠 LLM: Calling analyzeMemoryPotential with content:', content.substring(0, 100));
           }
           const ai = await this.options.vectorlessEngine.analyzeMemoryPotential(content, { context: ctx });
           llmScore = this.normalizeLLMScore(ai && (ai.score0to10 ?? ai.score));
           if (ai && ai.rationale) signals.aiInsights = ai.rationale;
           if (this.options.debug) {
-            console.log('🧠 LLM: Got response:', { score0to10: ai?.score0to10, rationale: ai?.rationale, normalizedScore: llmScore });
+            // console.log('🧠 LLM: Got response:', { score0to10: ai?.score0to10, rationale: ai?.rationale, normalizedScore: llmScore });
           }
         } catch (err) {
           if (this.options.debug) console.warn('⚠️ LLM gating failed, using heuristics only:', err);
         }
       } else {
         if (this.options.debug) {
-          console.log('🧠 LLM: Not available - vectorlessEngine exists?', !!this.options.vectorlessEngine);
-          console.log('🧠 LLM: analyzeMemoryPotential function exists?', typeof this.options.vectorlessEngine?.analyzeMemoryPotential);
+          // console.log('🧠 LLM: Not available - vectorlessEngine exists?', !!this.options.vectorlessEngine);
+          // console.log('🧠 LLM: analyzeMemoryPotential function exists?', typeof this.options.vectorlessEngine?.analyzeMemoryPotential);
         }
       }
 
@@ -117,8 +115,8 @@ class EmmaIntelligentCapture {
       const autoCapture = finalScore >= this.thresholdsNormalized.autoCapture;
 
       if (this.options.debug) {
-        console.log('📊 Memory signals detected:', signals);
-        console.log('🧮 Aggregated scoring:', { heuristicsScore, llmScore, noveltyPenalty, finalScore });
+        // console.log('📊 Memory signals detected:', signals);
+        // console.log('🧮 Aggregated scoring:', { heuristicsScore, llmScore, noveltyPenalty, finalScore });
       }
 
       if (isMemoryWorthy) {
@@ -261,31 +259,31 @@ class EmmaIntelligentCapture {
       /\b(he|she|they)\s+(?:was|were|used to|would)/i // Pronouns with past tense
     ];
     
-    console.log('🔍 PEOPLE DEBUG: Analyzing content for people:', content);
+    // console.log('🔍 PEOPLE DEBUG: Analyzing content for people:', content);
     
     peoplePatterns.forEach((pattern, index) => {
       const matches = content.match(pattern);
       if (matches) {
-        console.log(`👥 PEOPLE DEBUG: Pattern ${index} matched:`, pattern, 'matches:', matches);
+        // console.log(`👥 PEOPLE DEBUG: Pattern ${index} matched:`, pattern, 'matches:', matches);
         signals.score += 2;
         signals.people.push(...matches);
       }
     });
     
-    console.log('👥 PEOPLE DEBUG: Raw people detected:', signals.people);
+    // console.log('👥 PEOPLE DEBUG: Raw people detected:', signals.people);
 
     // CRITICAL FIX: Smart compound name handling without adding compound phrases
     const compoundPattern = /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/g;
     const compoundMatches = content.match(compoundPattern);
     if (compoundMatches) {
-      console.log('👥 PEOPLE DEBUG: Found compound phrases:', compoundMatches);
+      // console.log('👥 PEOPLE DEBUG: Found compound phrases:', compoundMatches);
       compoundMatches.forEach(compound => {
         // Split compound phrases into individual names
         const names = compound.split(/\s+(?:and|&)\s+/);
         names.forEach(name => {
           const trimmed = name.trim();
           if (trimmed && /^[A-Z][a-z]+$/.test(trimmed)) {
-            console.log('👥 PEOPLE DEBUG: Individual from compound:', trimmed);
+            // console.log('👥 PEOPLE DEBUG: Individual from compound:', trimmed);
             if (!signals.people.includes(trimmed)) {
               signals.people.push(trimmed);
               signals.score += 1;
@@ -343,15 +341,15 @@ class EmmaIntelligentCapture {
     
     // Debug output
     if (this.options.debug) {
-      console.log('💝 MEMORY SCORING DEBUG:');
-      console.log('   Content:', content.substring(0, 100) + '...');
-      console.log('   Score:', signals.score);
-      console.log('   Types:', signals.types);
-      console.log('   Emotions:', signals.emotions);
-      console.log('   People:', signals.people);
-      console.log('   Milestones:', signals.milestones);
-      console.log('   Threshold:', this.thresholds.memoryWorthy);
-      console.log('   Is Memory Worthy?', signals.score >= this.thresholds.memoryWorthy);
+      // console.log('💝 MEMORY SCORING DEBUG:');
+      // console.log('   Content:', content.substring(0, 100) + '...');
+      // console.log('   Score:', signals.score);
+      // console.log('   Types:', signals.types);
+      // console.log('   Emotions:', signals.emotions);
+      // console.log('   People:', signals.people);
+      // console.log('   Milestones:', signals.milestones);
+      // console.log('   Threshold:', this.thresholds.memoryWorthy);
+      // console.log('   Is Memory Worthy?', signals.score >= this.thresholds.memoryWorthy);
     }
     
     return signals;
@@ -394,7 +392,7 @@ class EmmaIntelligentCapture {
    * - Return unique list
    */
   extractProperNames(text) {
-    console.log('🔍 PROPER NAMES DEBUG: Input text:', text);
+    // console.log('🔍 PROPER NAMES DEBUG: Input text:', text);
     
     const excluded = new Set([
       'I','The','A','An','And','But','Or','So','Because','When','While','Before','After',
@@ -409,41 +407,41 @@ class EmmaIntelligentCapture {
     const names = new Set();
     const tokens = text.split(/([.!?]\s+)/); // keep sentence boundaries
     
-    console.log('🔍 PROPER NAMES DEBUG: Tokens:', tokens);
+    // console.log('🔍 PROPER NAMES DEBUG: Tokens:', tokens);
     
     for (let i = 0; i < tokens.length; i++) {
       const sentence = tokens[i];
       if (!sentence || /[.!?]\s+/.test(sentence)) continue;
       const words = sentence.split(/\s+/);
       
-      console.log('🔍 PROPER NAMES DEBUG: Processing sentence:', sentence, 'words:', words);
+      // console.log('🔍 PROPER NAMES DEBUG: Processing sentence:', sentence, 'words:', words);
       
       for (let w = 0; w < words.length; w++) {
         const word = words[w].replace(/[^A-Za-z'-]/g, '');
         if (!word) continue;
         
-        console.log(`🔍 PROPER NAMES DEBUG: Word ${w}: "${word}" (first word: ${w === 0})`);
+        // console.log(`🔍 PROPER NAMES DEBUG: Word ${w}: "${word}" (first word: ${w === 0})`);
         
         // Skip first word of sentence to avoid capitalization bias
         if (w === 0) {
-          console.log('🔍 PROPER NAMES DEBUG: Skipping first word:', word);
+          // console.log('🔍 PROPER NAMES DEBUG: Skipping first word:', word);
           continue;
         }
         
         const isProperName = /^[A-Z][a-z'-]{1,}$/.test(word);
         const isExcluded = excluded.has(word);
         
-        console.log(`🔍 PROPER NAMES DEBUG: "${word}" - Proper format: ${isProperName}, Excluded: ${isExcluded}`);
+        // console.log(`🔍 PROPER NAMES DEBUG: "${word}" - Proper format: ${isProperName}, Excluded: ${isExcluded}`);
         
         if (isProperName && !isExcluded) {
           names.add(word);
-          console.log('✅ PROPER NAMES DEBUG: Added name:', word);
+          // console.log('✅ PROPER NAMES DEBUG: Added name:', word);
         }
       }
     }
     
     const result = Array.from(names);
-    console.log('🔍 PROPER NAMES DEBUG: Final result:', result);
+    // console.log('🔍 PROPER NAMES DEBUG: Final result:', result);
     return result;
   }
 
@@ -540,7 +538,7 @@ class EmmaIntelligentCapture {
     });
     if (intentHits > 0) {
       score += 0.30; // Significant boost for explicit memory intent
-      console.log('🎯 MEMORY INTENT DETECTED: Boosting score by 0.30');
+      // console.log('🎯 MEMORY INTENT DETECTED: Boosting score by 0.30');
     }
 
     // CRITICAL "DEBBE STANDARD" FIX: Boost score for memories with known people
@@ -548,12 +546,12 @@ class EmmaIntelligentCapture {
       const knownPeopleCount = signals.resolvedPeople.peopleIds.filter(id => !id.startsWith('temp_')).length;
       if (knownPeopleCount > 0) {
         score += Math.min(0.50, 0.30 + (knownPeopleCount - 1) * 0.10); // 0.30 for 1, 0.40 for 2, 0.50 for 3+
-        console.log(`🎯 KNOWN PEOPLE DETECTED: Boosting score by ${Math.min(0.50, 0.30 + (knownPeopleCount - 1) * 0.10)} for ${knownPeopleCount} person(s)`);
+        // console.log(`🎯 KNOWN PEOPLE DETECTED: Boosting score by ${Math.min(0.50, 0.30 + (knownPeopleCount - 1) * 0.10)} for ${knownPeopleCount} person(s)`);
       }
     }
 
     if (this.options.debug) {
-      console.log('🧮 HEURISTICS DEBUG:', {
+      // console.log('🧮 HEURISTICS DEBUG:', {
         content: content.substring(0, 100),
         firstPersonMatches: firstPersonMatches.length,
         pastTenseHits,
@@ -576,7 +574,7 @@ class EmmaIntelligentCapture {
       const memories = (vault && vault.content && vault.content.memories) ? Object.values(vault.content.memories) : [];
       
       if (this.options.debug) {
-        console.log('🔍 NOVELTY DEBUG:', {
+        // console.log('🔍 NOVELTY DEBUG:', {
           hasVaultManager: !!this.options.vaultManager,
           vaultManagerIsOpen: this.options.vaultManager?.isOpen,
           hasVaultData: !!vault,
@@ -647,12 +645,12 @@ class EmmaIntelligentCapture {
     
     // Extract metadata with VAULT INTEGRATION
     const extractedPeopleNames = this.extractPeopleNames(signals.people || []);
-    console.log('🎯 MEMORY DEBUG: Creating metadata with people names:', extractedPeopleNames);
+    // console.log('🎯 MEMORY DEBUG: Creating metadata with people names:', extractedPeopleNames);
     
     // CRITICAL FIX: Convert people names to vault IDs and handle new people
     const { peopleIds, newPeople } = await this.resolvePeopleToVaultIds(extractedPeopleNames);
-    console.log('🎯 MEMORY DEBUG: Resolved people IDs:', peopleIds);
-    console.log('🎯 MEMORY DEBUG: New people detected:', newPeople);
+    // console.log('🎯 MEMORY DEBUG: Resolved people IDs:', peopleIds);
+    // console.log('🎯 MEMORY DEBUG: New people detected:', newPeople);
     
     const metadata = {
       emotions: signals.emotions || [],
@@ -667,7 +665,7 @@ class EmmaIntelligentCapture {
       aiGenerated: true
     };
     
-    console.log('🎯 MEMORY DEBUG: Final metadata with vault integration:', metadata);
+    // console.log('🎯 MEMORY DEBUG: Final metadata with vault integration:', metadata);
     
     // Additional temporal extraction
     this.detectTemporalSignals(content, signals);
@@ -919,7 +917,7 @@ class EmmaIntelligentCapture {
       const result = await this.options.vaultManager.addMemory(finalMemory);
       
       if (this.options.debug) {
-        console.log('💾 Memory saved successfully:', result);
+        // console.log('💾 Memory saved successfully:', result);
       }
       
       return {
@@ -1076,7 +1074,7 @@ class EmmaIntelligentCapture {
 
       // Get existing people from vault
       const existingPeople = await window.emmaWebVault.listPeople();
-      console.log('🎯 VAULT: Checking against', existingPeople?.length || 0, 'existing people');
+      // console.log('🎯 VAULT: Checking against', existingPeople?.length || 0, 'existing people');
 
       // Resolve each detected person
       for (const personName of peopleNames) {
@@ -1086,10 +1084,10 @@ class EmmaIntelligentCapture {
         );
 
         if (existingPerson) {
-          console.log('✅ VAULT: Found existing person:', personName, '→', existingPerson.id);
+          // console.log('✅ VAULT: Found existing person:', personName, '→', existingPerson.id);
           peopleIds.push(existingPerson.id);
         } else {
-          console.log('🆕 VAULT: New person detected:', personName);
+          // console.log('🆕 VAULT: New person detected:', personName);
           newPeople.push(personName);
           // For now, use the name as placeholder until user confirms
           peopleIds.push(`temp_${personName.toLowerCase()}`);
@@ -1109,11 +1107,11 @@ class EmmaIntelligentCapture {
    * Helper: Extract people names with SMART DEDUPLICATION
    */
   extractPeopleNames(peopleRaw) {
-    console.log('👥 EXTRACT DEBUG: Input peopleRaw:', peopleRaw);
+    // console.log('👥 EXTRACT DEBUG: Input peopleRaw:', peopleRaw);
     const individualNames = new Set();
     
     peopleRaw.forEach(person => {
-      console.log('👥 EXTRACT DEBUG: Processing person:', person);
+      // console.log('👥 EXTRACT DEBUG: Processing person:', person);
       
       // CRITICAL FIX: Handle compound names like "William and Mark"
       if (person.includes(' and ')) {
@@ -1121,7 +1119,7 @@ class EmmaIntelligentCapture {
         person.split(' and ').forEach(name => {
           const cleaned = this.cleanPersonName(name.trim());
           if (cleaned && cleaned.length > 1) {
-            console.log('👥 EXTRACT DEBUG: Individual from compound:', cleaned);
+            // console.log('👥 EXTRACT DEBUG: Individual from compound:', cleaned);
             individualNames.add(cleaned);
           }
         });
@@ -1129,14 +1127,14 @@ class EmmaIntelligentCapture {
         // Single person
         const cleaned = this.cleanPersonName(person);
         if (cleaned && cleaned.length > 1) {
-          console.log('👥 EXTRACT DEBUG: Individual person:', cleaned);
+          // console.log('👥 EXTRACT DEBUG: Individual person:', cleaned);
           individualNames.add(cleaned);
         }
       }
     });
     
     const result = Array.from(individualNames);
-    console.log('👥 EXTRACT DEBUG: Deduplicated final names:', result);
+    // console.log('👥 EXTRACT DEBUG: Deduplicated final names:', result);
     return result;
   }
 

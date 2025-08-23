@@ -1756,7 +1756,11 @@ class EmmaChatExperience extends ExperiencePopup {
             memory: analysis.memory,
             analysis: analysis,
             state: 'awaiting-confirmation',
-            collectedData: {}
+            collectedData: {
+              people: analysis.memory.metadata.people || [],
+              peopleNames: analysis.memory.metadata.peopleNames || [],
+              newPeopleDetected: analysis.memory.metadata.newPeopleDetected || []
+            }
         });
         
         // Memory stored for enrichment flow
@@ -2005,7 +2009,7 @@ class EmmaChatExperience extends ExperiencePopup {
       left: 0 !important;
       width: 100% !important;
       height: 100% !important;
-      z-index: 2147483647 !important;
+      z-index: 10000 !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -2015,10 +2019,10 @@ class EmmaChatExperience extends ExperiencePopup {
       backdrop-filter: blur(15px) !important;
     `;
     dialog.innerHTML = `
-      <div class="dialog-content" style="position: relative; z-index: 2147483647 !important;">
+      <div class="dialog-content" style="position: relative; z-index: 10001 !important;">
         <div class="dialog-header">
           <h3>💝 Your Memory Capsule</h3>
-          <button class="dialog-close" onclick="this.remove()" style="z-index: 2147483647 !important;">×</button>
+          <button class="dialog-close" onclick="this.remove()" style="z-index: 10002 !important;">×</button>
         </div>
         <div class="dialog-body">
           ${previewHTML}
@@ -2400,29 +2404,44 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async finalizeMemorySave(memory, memoryId) {
     try {
-      // Start enrichment conversation instead of immediately saving
-      console.log('💾 EMMA CHAT: Starting enrichment conversation for memory:', memoryId);
+      // Save memory directly to vault when user clicks "Save to Vault"
+      console.log('💾 EMMA CHAT: Saving memory to vault:', memoryId);
       
-      // Initialize enrichment state for this memory
-      const state = this.enrichmentState.get(memoryId);
-      if (state) {
-        state.state = 'enriching';
-        state.collectedData = {
-          people: memory.metadata.people || [],
-          when: null,
-          where: null,
-          emotion: null,
-          media: []
-        };
-        this.enrichmentState.set(memoryId, state);
+      // Prepare memory for vault
+      const memoryToSave = {
+        content: memory.content,
+        metadata: {
+          ...memory.metadata,
+          created: new Date().toISOString(),
+          title: memory.content.substring(0, 50) + (memory.content.length > 50 ? '...' : '')
+        },
+        attachments: memory.attachments || []
+      };
+      
+      // Save to vault
+      const result = await window.emmaWebVault.addMemory(memoryToSave);
+      
+      if (result.success) {
+        this.showToast('✅ Memory saved to vault!', 'success');
+        
+        // Clear enrichment state
+        this.enrichmentState.delete(memoryId);
+        
+        // Add success message
+        this.addMessage(`Perfect! I've saved your memory to your vault. It's now preserved forever! 💜`, 'emma');
+        
+        // Close any preview dialogs
+        const dialogs = document.querySelectorAll('.memory-preview-dialog');
+        dialogs.forEach(dialog => dialog.remove());
+        
+      } else {
+        throw new Error(result.error || 'Failed to save memory');
       }
       
-      // Start enrichment conversation
-      await this.startEnrichmentConversation(memoryId);
-      
     } catch (error) {
-      console.error('💾 EMMA CHAT: Error starting enrichment:', error);
-      // Fallback to direct save if enrichment fails
+      console.error('💾 EMMA CHAT: Error saving memory:', error);
+      this.showToast('❌ Failed to save memory', 'error');
+      this.addMessage(`I had trouble saving your memory to the vault. Please try again, or let me know if you need help! 🤗`, 'emma');
       await this.saveMemoryDirectly(memory, memoryId);
     }
   }
