@@ -135,19 +135,62 @@ class ExtensionVaultChecker {
     this.isVaultUnlocked = true;
     this.vaultName = vaultName;
     
-    // Hide vault locked overlay
+    // CRITICAL FIX: Hide vault locked overlay with better detection
     const overlay = document.getElementById('vault-locked-overlay');
     if (overlay) {
+      console.log('🔓 Extension: Hiding vault locked overlay');
       overlay.classList.add('hidden');
+      overlay.style.display = 'none'; // Force hide
+    } else {
+      console.error('🔓 Extension: vault-locked-overlay element not found!');
     }
     
-    // Show extension features
+    // CRITICAL FIX: Show extension features with better detection
     const mainInterface = document.getElementById('mainInterface');
     if (mainInterface) {
+      console.log('🔓 Extension: Showing main interface');
       mainInterface.style.display = 'block';
+    } else {
+      console.error('🔓 Extension: mainInterface element not found!');
+      
+      // Fallback: show the popup container
+      const popupContainer = document.querySelector('.popup-container');
+      if (popupContainer) {
+        console.log('🔓 Extension: Showing popup container as fallback');
+        popupContainer.style.display = 'block';
+        popupContainer.style.visibility = 'visible';
+      }
     }
     
     this.updateStatusIndicator('unlocked', `Vault "${vaultName}" is unlocked`);
+    
+    // CRITICAL: Force a UI refresh after short delay
+    setTimeout(() => {
+      console.log('🔓 Extension: Forcing UI refresh after vault unlock');
+      this.forceUIRefresh();
+    }, 100);
+  }
+
+  /**
+   * Force a complete UI refresh when vault is unlocked
+   */
+  forceUIRefresh() {
+    // Hide all locked-state elements
+    const lockedElements = document.querySelectorAll('.vault-locked-overlay, [data-vault-state="locked"]');
+    lockedElements.forEach(el => {
+      el.style.display = 'none';
+      el.classList.add('hidden');
+    });
+
+    // Show all unlocked-state elements
+    const unlockedElements = document.querySelectorAll('.popup-container, .main-interface, [data-vault-state="unlocked"]');
+    unlockedElements.forEach(el => {
+      el.style.display = 'block';
+      el.style.visibility = 'visible';
+      el.classList.remove('hidden');
+    });
+
+    console.log('🔓 Extension: UI refresh completed');
   }
 
   /**
