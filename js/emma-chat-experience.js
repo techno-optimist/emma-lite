@@ -6,13 +6,11 @@
  * Privacy-first, local processing with optional cloud LLM enhancement
  */
 
-console.log('💬 CACHE BUST DEBUG: emma-chat-experience.js LOADED at', new Date().toISOString());
+// Emma Chat Experience - Production Ready
 
 class EmmaChatExperience extends ExperiencePopup {
   constructor(position, settings = {}) {
-    console.log('🔧 CONSTRUCTOR START: EmmaChatExperience constructor called');
     super(position, settings);
-    console.log('🔧 CONSTRUCTOR PROGRESS: super() completed');
 
     // Chat-specific properties
     this.messages = [];
@@ -66,17 +64,13 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Set global reference for onclick handlers (production-safe)
     window.chatExperience = this;
-    console.log('🔧 CONSTRUCTOR DEBUG: window.chatExperience set:', typeof window.chatExperience);
-    console.log('🔧 CONSTRUCTOR DEBUG: confirmSaveMemory method exists:', typeof this.confirmSaveMemory);
-
     this.enableFocusMode();
-    console.log('🔧 CONSTRUCTOR END: EmmaChatExperience constructor completed successfully');
   }
 
   initializeEmmaOrb() {
     // Chat experience doesn't need its own orb - the universal orb handles interactions
     // This is just a placeholder for compatibility
-    console.log('💬 Chat Emma experience initialized - using universal orb for interactions');
+    // Chat experience ready
   }
 
   renderContent(contentElement) {
@@ -472,7 +466,7 @@ class EmmaChatExperience extends ExperiencePopup {
       if (options.requiresConfirmation && options.memoryId) {
         confirmationHtml = `
           <div class="memory-confirmation-buttons">
-            <button class="capsule-btn primary" onclick="console.log('🔧 CLICK DEBUG: window.chatExperience exists:', typeof window.chatExperience); window.chatExperience.confirmSaveMemory('${options.memoryId}')">✨ Yes, save this memory</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${options.memoryId}')">✨ Yes, save this memory</button>
             <button class="capsule-btn secondary" onclick="window.chatExperience.declineSaveMemory('${options.memoryId}')">Maybe later</button>
           </div>
         `;
@@ -671,14 +665,12 @@ class EmmaChatExperience extends ExperiencePopup {
       const vault = window.emmaWebVault?.vaultData?.content;
       if (vault?.people) {
         const people = Object.values(vault.people);
-        console.log('🔍 FORCED PEOPLE DEBUG:', {
-          vaultHasPeople: !!vault.people,
-          peopleCount: people.length,
-          peopleArray: people,
+        // Extract people context for response generation
+        const peopleContext = {
           peopleNames: people.map(p => p.name).filter(Boolean),
           markSearch: people.filter(p => p.name?.toLowerCase().includes('mark')),
           allNames: people.map(p => ({ id: p.id, name: p.name }))
-        });
+        };
       } else {
 
       }
@@ -726,14 +718,7 @@ class EmmaChatExperience extends ExperiencePopup {
           themes: this.extractThemesFromMemories(memories)
         };
 
-        console.log('🔍 VAULT PEOPLE DEBUG:', {
-          peopleCount: people.length,
-          peopleArray: people,
-          peopleNames: vaultInsights.peopleNames,
-          firstPerson: people[0],
-          hasMarkInPeople: people.some(p => p.name?.toLowerCase().includes('mark')),
-          hasMarkInNames: vaultInsights.peopleNames.some(name => name?.toLowerCase().includes('mark'))
-        });
+        // Vault insights ready
       }
     } catch (e) {
 
@@ -768,18 +753,7 @@ class EmmaChatExperience extends ExperiencePopup {
     if (isQuestion) {
       // Check if asking about a specific person in the vault
       if (vaultInsights?.peopleNames?.length > 0) {
-        console.log('🔍 PERSON MATCHING DEBUG:', {
-          userMessage: lower,
-          availablePeople: vaultInsights.peopleNames,
-          searchingFor: 'mark',
-          includesMarkTest: lower.includes('mark'),
-          peopleNameMatches: vaultInsights.peopleNames.map(name => ({
-            name: name,
-            lowerName: name?.toLowerCase(),
-            includesInMessage: lower.includes(name?.toLowerCase()),
-            firstNameMatch: lower.includes(name?.toLowerCase().split(' ')[0])
-          }))
-        });
+        // Check for person mentions in message
 
         const askedAboutPerson = vaultInsights.peopleNames.find(name =>
           lower.includes(name.toLowerCase()) ||
@@ -1281,7 +1255,7 @@ class EmmaChatExperience extends ExperiencePopup {
     const resetButton = document.getElementById('reset-settings-button');
 
     if (!modal || !backdrop || !closeButton || !saveButton || !resetButton) {
-      console.error('💬 Settings modal elements not found');
+      // Settings modal not available in this context
       return;
     }
 
@@ -1331,13 +1305,7 @@ class EmmaChatExperience extends ExperiencePopup {
           hasPhotos: memories.some(m => m.attachments?.length > 0)
         };
 
-        console.log('🔍 WELCOME PEOPLE DEBUG:', {
-          peopleCount: people.length,
-          peopleArray: people,
-          favoritePersons: vaultContext.favoritePersons,
-          firstPersonName: people[0]?.name,
-          allPeopleNames: people.map(p => p.name).filter(Boolean)
-        });
+        // Generate welcome with people context
       }
     } catch (e) {
 
@@ -1791,8 +1759,7 @@ class EmmaChatExperience extends ExperiencePopup {
             collectedData: {}
         });
         
-        console.log('🔧 MEMORY STORAGE DEBUG: Memory stored in enrichmentState with ID:', analysis.memory.id);
-        console.log('🔧 MEMORY STORAGE DEBUG: enrichmentState size:', this.enrichmentState.size);
+        // Memory stored for enrichment flow
         
         // Generate the single best response immediately using the analysis we just got
         const intelligentResponse = await this.generateIntelligentMemoryResponse(analysis.memory, message);
@@ -2103,8 +2070,7 @@ class EmmaChatExperience extends ExperiencePopup {
       const vaultData = window.emmaWebVault.vaultData;
       const peopleData = vaultData.content?.people || {};
       
-      console.log('👥 Creating capsule avatars for people:', memory.metadata.people);
-      console.log('👥 Available people in vault:', Object.keys(peopleData));
+      // Create people avatars for memory preview
       
       // Fix the memory content by replacing person IDs with names
       const storyElement = document.getElementById(`memory-story-${memory.id}`);
@@ -2140,7 +2106,7 @@ class EmmaChatExperience extends ExperiencePopup {
           // Extract name from temp ID (e.g., "temp_william" -> "William")
           personName = personId.replace('temp_', '');
           personName = personName.charAt(0).toUpperCase() + personName.slice(1);
-          console.log('👥 Creating avatar for NEW person:', personName);
+          // Creating avatar for new person
         } else {
           person = peopleData[personId];
           if (!person) {
@@ -2148,8 +2114,7 @@ class EmmaChatExperience extends ExperiencePopup {
             continue;
           }
           personName = person.name;
-          console.log('👥 Creating avatar for EXISTING person:', person.name);
-          console.log('👥 Person data structure:', person);
+          // Creating avatar for existing person
         }
 
         // Create avatar element
@@ -2187,7 +2152,7 @@ class EmmaChatExperience extends ExperiencePopup {
           avatar.textContent = person.name.charAt(0).toUpperCase();
 
           // SIMPLIFIED: Skip corrupted avatar loading, use beautiful letter avatars
-          console.log('👥 Using beautiful letter avatar for:', person.name);
+          // Using beautiful letter avatar
           
           // Create beautiful gradient backgrounds based on person's name
           const nameHash = person.name.split('').reduce((a, b) => {
@@ -2270,9 +2235,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Confirm and save memory to vault
    */
   async confirmSaveMemory(memoryId) {
-    console.log('🔧 CONFIRM SAVE DEBUG: Looking for memory ID:', memoryId);
-    console.log('🔧 CONFIRM SAVE DEBUG: enrichmentState size:', this.enrichmentState.size);
-    console.log('🔧 CONFIRM SAVE DEBUG: detectedMemories size:', this.detectedMemories.size);
+    // Confirm and save memory to vault
 
     try {
       // Find the ENRICHED memory from enrichment state or detected memories
@@ -2372,13 +2335,10 @@ class EmmaChatExperience extends ExperiencePopup {
 
       // Proceed to finalize memory save
       const state = this.enrichmentState.get(memoryId);
-      console.log('🔧 ADD PERSON DEBUG: Found enrichment state:', !!state);
-      console.log('🔧 ADD PERSON DEBUG: State has memory:', !!(state && state.memory));
       if (state && state.memory) {
-        console.log('🔧 ADD PERSON DEBUG: Calling finalizeMemorySave...');
         await this.finalizeMemorySave(state.memory, memoryId);
       } else {
-        console.error('🔧 ADD PERSON DEBUG: No state or memory found, cannot proceed with enrichment');
+        console.error('ADD PERSON: No state or memory found, cannot proceed with enrichment');
       }
       
     } catch (error) {

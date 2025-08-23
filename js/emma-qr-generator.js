@@ -3,7 +3,7 @@
  * No external dependencies, bulletproof implementation
  */
 
-console.log('🔗 CACHE BUST DEBUG: emma-qr-generator.js LOADED at', new Date().toISOString());
+// Emma QR Generator - Production Ready
 
 class EmmaQRGenerator {
   constructor() {

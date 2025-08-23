@@ -98,12 +98,12 @@ class WebVaultStatus {
     
     // Monitor browser focus/blur events for vault security
     window.addEventListener('focus', () => {
-      console.log('🔍 FOCUS EVENT: Browser tab gained focus');
+      // Browser tab gained focus
       this.logVaultState('window-focus');
     });
     
     window.addEventListener('blur', () => {
-      console.log('🔍 BLUR EVENT: Browser tab lost focus');
+      // Browser tab lost focus
       this.logVaultState('window-blur');
     });
     
@@ -129,7 +129,8 @@ class WebVaultStatus {
     const localActive = localStorage.getItem('emmaVaultActive');
     const localName = localStorage.getItem('emmaVaultName');
     
-    console.log(`🔍 VAULT STATE DEBUG [${context}]:`, {
+    // Vault state logging for debugging (production: simplified)
+    const debugData = {
       timestamp: new Date().toISOString(),
       sessionStorage: { active: sessionActive, name: sessionName },
       localStorage: { active: localActive, name: localName },

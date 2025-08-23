@@ -2,7 +2,7 @@
  * Base class for Emma experience popups
  */
 
-console.log('🔥🔥🔥 CACHE BUST DEBUG: experience-popup-base.js RELOADED at', new Date().toISOString());
+// Emma Experience Popup Base - Production Ready
 
 class ExperiencePopup {
   constructor(position, settings) {
@@ -280,10 +280,8 @@ class ExperiencePopup {
 
     // Close on outside click
     this.clickHandler = (e) => {
-      console.log('🔥 POPUP CLICK DEBUG: Click detected', e.target);
       // Don't close if clicking on the orb itself
       if (e.target.closest('.universal-emma-orb')) {
-        console.log('🔥 POPUP CLICK DEBUG: Ignoring orb click');
         return;
       }
       // Don't close if clicking on any modal (password, input, memory detail, etc.)
@@ -292,16 +290,13 @@ class ExperiencePopup {
           e.target.closest('.memory-modal') ||
           e.target.closest('[role="dialog"]') ||
           e.target.closest('.modal')) {
-        console.log('🔥 POPUP CLICK DEBUG: Clicked on modal - not closing popup');
+        // Clicked on modal - don't close popup
         return;
       }
       
       // Close when clicking outside the popup
       if (this.element && !this.element.contains(e.target)) {
-        console.log('🔥 POPUP CLICK DEBUG: Clicked outside popup - closing');
         this.close();
-      } else {
-        console.log('🔥 POPUP CLICK DEBUG: Clicked inside popup - not closing');
       }
     };
     // Use setTimeout to ensure this handler is added after any orb handlers

@@ -3,7 +3,7 @@
  * CTO-approved implementation for consistent sharing across Emma
  */
 
-console.log('🔗 CACHE BUST DEBUG: qr-service.js LOADED at', new Date().toISOString());
+// QR Service - Production Ready
 
 class QRService {
   constructor() {
