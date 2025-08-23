@@ -369,6 +369,8 @@ class EmmaIntelligentCapture {
    * - Return unique list
    */
   extractProperNames(text) {
+    console.log('🔍 PROPER NAMES DEBUG: Input text:', text);
+    
     const excluded = new Set([
       'I','The','A','An','And','But','Or','So','Because','When','While','Before','After',
       'He','She','They','We','You','It','His','Her','Their','Our','Your','Its',
@@ -377,21 +379,43 @@ class EmmaIntelligentCapture {
     ]);
     const names = new Set();
     const tokens = text.split(/([.!?]\s+)/); // keep sentence boundaries
+    
+    console.log('🔍 PROPER NAMES DEBUG: Tokens:', tokens);
+    
     for (let i = 0; i < tokens.length; i++) {
       const sentence = tokens[i];
       if (!sentence || /[.!?]\s+/.test(sentence)) continue;
       const words = sentence.split(/\s+/);
+      
+      console.log('🔍 PROPER NAMES DEBUG: Processing sentence:', sentence, 'words:', words);
+      
       for (let w = 0; w < words.length; w++) {
         const word = words[w].replace(/[^A-Za-z'-]/g, '');
         if (!word) continue;
+        
+        console.log(`🔍 PROPER NAMES DEBUG: Word ${w}: "${word}" (first word: ${w === 0})`);
+        
         // Skip first word of sentence to avoid capitalization bias
-        if (w === 0) continue;
-        if (/^[A-Z][a-z'-]{1,}$/.test(word) && !excluded.has(word)) {
+        if (w === 0) {
+          console.log('🔍 PROPER NAMES DEBUG: Skipping first word:', word);
+          continue;
+        }
+        
+        const isProperName = /^[A-Z][a-z'-]{1,}$/.test(word);
+        const isExcluded = excluded.has(word);
+        
+        console.log(`🔍 PROPER NAMES DEBUG: "${word}" - Proper format: ${isProperName}, Excluded: ${isExcluded}`);
+        
+        if (isProperName && !isExcluded) {
           names.add(word);
+          console.log('✅ PROPER NAMES DEBUG: Added name:', word);
         }
       }
     }
-    return Array.from(names);
+    
+    const result = Array.from(names);
+    console.log('🔍 PROPER NAMES DEBUG: Final result:', result);
+    return result;
   }
 
   /**
