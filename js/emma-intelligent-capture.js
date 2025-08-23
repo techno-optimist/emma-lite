@@ -550,17 +550,7 @@ class EmmaIntelligentCapture {
       }
     }
 
-    if (this.options.debug) {
-      // console.log('🧮 HEURISTICS DEBUG:', {
-        content: content.substring(0, 100),
-        firstPersonMatches: firstPersonMatches.length,
-        pastTenseHits,
-        temporalHits,
-        eventHits,
-        length: len,
-        finalHeuristicsScore: score
-      });
-    }
+    // Heuristics calculation complete (debug disabled for production)
 
     return this.clamp01(score);
   }
@@ -573,15 +563,7 @@ class EmmaIntelligentCapture {
       const vault = this.options.vaultManager && this.options.vaultManager.vaultData;
       const memories = (vault && vault.content && vault.content.memories) ? Object.values(vault.content.memories) : [];
       
-      if (this.options.debug) {
-        // console.log('🔍 NOVELTY DEBUG:', {
-          hasVaultManager: !!this.options.vaultManager,
-          vaultManagerIsOpen: this.options.vaultManager?.isOpen,
-          hasVaultData: !!vault,
-          memoryCount: memories.length,
-          vaultStructure: vault ? Object.keys(vault) : 'no vault'
-        });
-      }
+      // Novelty calculation (debug disabled for production)
       
       if (!memories || memories.length === 0) return 0;
 
