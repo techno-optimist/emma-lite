@@ -2140,7 +2140,7 @@ class EmmaChatExperience extends ExperiencePopup {
           ${memory.metadata?.people?.length > 0 ? `
             <div class="memory-detail">
               <span class="detail-label">👥 People:</span>
-              <span class="detail-value">${memory.metadata.people.join(', ')}</span>
+              <div class="detail-people-avatars" id="capsule-people-${memory.id}"></div>
             </div>
           ` : ''}
 
@@ -2242,8 +2242,118 @@ class EmmaChatExperience extends ExperiencePopup {
     // Animate in
     setTimeout(() => {
       dialog.style.opacity = '1';
+      // Create people avatars after dialog is visible
+      this.createCapsulePeopleAvatars(memory);
     }, 100);
 
+  }
+
+  /**
+   * Create beautiful people avatars for memory capsule
+   */
+  async createCapsulePeopleAvatars(memory) {
+    try {
+      const avatarsContainer = document.getElementById(`capsule-people-${memory.id}`);
+      if (!avatarsContainer) {
+        console.warn('👥 Avatars container not found for memory:', memory.id);
+        return;
+      }
+
+      // Get people connected to this memory
+      if (!memory.metadata?.people?.length) {
+        avatarsContainer.innerHTML = '<span style="color: #888;">No people connected</span>';
+        return;
+      }
+
+      // Load people data from vault
+      if (!window.emmaWebVault?.isOpen || !window.emmaWebVault.vaultData) {
+        console.warn('👥 Vault not available for people lookup');
+        avatarsContainer.innerHTML = '<span style="color: #888;">Vault not available</span>';
+        return;
+      }
+
+      const vaultData = window.emmaWebVault.vaultData;
+      const peopleData = vaultData.content?.people || {};
+      
+      console.log('👥 Creating capsule avatars for people:', memory.metadata.people);
+      console.log('👥 Available people in vault:', Object.keys(peopleData));
+      
+      // Clear container
+      avatarsContainer.innerHTML = '';
+      avatarsContainer.style.cssText = `
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      `;
+
+      // Create avatars for connected people
+      for (const personId of memory.metadata.people) {
+        const person = peopleData[personId];
+        if (!person) {
+          console.warn('👥 Person not found in vault:', personId);
+          continue;
+        }
+
+        console.log('👥 Creating avatar for person:', person.name);
+
+        // Create avatar element
+        const avatar = document.createElement('div');
+        avatar.style.cssText = `
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+          margin-right: 4px;
+          cursor: pointer;
+          transition: transform 0.2s;
+        `;
+        avatar.title = person.name;
+        avatar.textContent = person.name.charAt(0).toUpperCase();
+
+        // Add hover effect
+        avatar.onmouseenter = () => avatar.style.transform = 'scale(1.1)';
+        avatar.onmouseleave = () => avatar.style.transform = 'scale(1)';
+
+        // Try to load person's avatar if they have one
+        if (person.avatarUrl) {
+          const img = document.createElement('img');
+          img.src = person.avatarUrl;
+          img.alt = `${person.name} avatar`;
+          img.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+          `;
+          img.onload = () => {
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
+          };
+        }
+
+        avatarsContainer.appendChild(avatar);
+
+        // Add name label
+        const nameLabel = document.createElement('span');
+        nameLabel.textContent = person.name;
+        nameLabel.style.cssText = `
+          font-size: 12px;
+          color: #fff;
+          margin-right: 12px;
+        `;
+        avatarsContainer.appendChild(nameLabel);
+      }
+
+    } catch (error) {
+      console.error('❌ Error creating capsule people avatars:', error);
+    }
   }
 
   /**
