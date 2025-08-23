@@ -4058,48 +4058,288 @@
           return content.includes(personName) || title.includes(personName);
         });
 
-        // Create modal HTML
+        // Create modal HTML with Emma branding and elegant layout
         const modalHTML = `
-          <div class="person-summary-modal-overlay" id="person-summary-overlay" onclick="window.memoryConstellation.closePersonSummaryModal()">
-            <div class="person-summary-modal" onclick="event.stopPropagation()">
-              <button class="modal-close" onclick="window.memoryConstellation.closePersonSummaryModal()">×</button>
+          <div class="person-summary-modal-overlay" id="person-summary-overlay" onclick="window.memoryConstellation.closePersonSummaryModal()" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2147483647;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+          ">
+            <div class="person-summary-modal" onclick="event.stopPropagation()" style="
+              background: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 24px;
+              width: 90%;
+              max-width: 600px;
+              max-height: 80vh;
+              overflow: hidden;
+              color: white;
+              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+              position: relative;
+              animation: scaleIn 0.3s ease;
+            ">
+              <button class="modal-close" onclick="window.memoryConstellation.closePersonSummaryModal()" style="
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                color: white;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 20px;
+                z-index: 10;
+                transition: all 0.2s ease;
+              " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">×</button>
 
-              <div class="person-summary-header">
-                <div class="person-summary-avatar" id="person-summary-avatar">
+              <div class="person-summary-header" style="
+                padding: 32px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                position: relative;
+              ">
+                <div class="person-summary-avatar" id="person-summary-avatar" style="
+                  width: 80px;
+                  height: 80px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #8658ff, #f093fb);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 32px;
+                  font-weight: 600;
+                  color: white;
+                  border: 3px solid rgba(255, 255, 255, 0.2);
+                  flex-shrink: 0;
+                ">
                   ${person.name.charAt(0).toUpperCase()}
                 </div>
-                <div class="person-summary-info">
-                  <h2 class="person-summary-name">${person.name}</h2>
-                  <p class="person-summary-relation">${person.relation || 'other'}</p>
-                  <p class="person-summary-contact">${person.contact || 'No contact info'}</p>
+                <div class="person-summary-info" style="
+                  flex: 1;
+                ">
+                  <h2 class="person-summary-name" style="
+                    margin: 0 0 8px 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                    color: white;
+                  ">${person.name}</h2>
+                  <p class="person-summary-relation" style="
+                    margin: 0 0 4px 0;
+                    font-size: 16px;
+                    color: rgba(255, 255, 255, 0.7);
+                  ">${person.relation || 'Contact'}</p>
+                  <p class="person-summary-contact" style="
+                    margin: 0;
+                    font-size: 14px;
+                    color: rgba(255, 255, 255, 0.5);
+                  ">${person.contact || ''}</p>
+                </div>
+                
+                <!-- Connected Memories Count & Mini Avatars - Elegantly positioned top-right -->
+                <div class="connected-people-avatars" style="
+                  position: absolute;
+                  top: 32px;
+                  right: 80px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: flex-end;
+                  gap: 8px;
+                ">
+                  ${connectedMemories.length > 0 ? `
+                    <div style="
+                      font-size: 12px;
+                      color: rgba(255, 255, 255, 0.6);
+                      text-align: right;
+                      line-height: 1.3;
+                    ">${connectedMemories.length} shared<br/>memor${connectedMemories.length === 1 ? 'y' : 'ies'}</div>
+                    <div style="
+                      display: flex;
+                      gap: -6px;
+                      justify-content: flex-end;
+                      max-width: 100px;
+                    ">
+                      ${connectedMemories.slice(0, 3).map((memory, index) => `
+                        <div style="
+                          width: 28px;
+                          height: 28px;
+                          border-radius: 50%;
+                          background: linear-gradient(135deg, #8658ff, #f093fb);
+                          border: 2px solid rgba(255, 255, 255, 0.3);
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          font-size: 12px;
+                          color: white;
+                          font-weight: 600;
+                          margin-left: ${index > 0 ? '-6px' : '0'};
+                          z-index: ${3 - index};
+                          position: relative;
+                          cursor: pointer;
+                          transition: all 0.2s ease;
+                        " title="${memory.title || 'Untitled Memory'}"
+                           onclick="event.stopPropagation(); window.memoryConstellation.openMemoryFromPerson('${memory.id}')"
+                           onmouseover="this.style.transform='scale(1.2)'; this.style.zIndex='10'"
+                           onmouseout="this.style.transform='scale(1)'; this.style.zIndex='${3 - index}'">
+                          💝
+                        </div>
+                      `).join('')}
+                      ${connectedMemories.length > 3 ? `
+                        <div style="
+                          width: 28px;
+                          height: 28px;
+                          border-radius: 50%;
+                          background: rgba(255, 255, 255, 0.1);
+                          border: 2px solid rgba(255, 255, 255, 0.3);
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          font-size: 10px;
+                          color: white;
+                          font-weight: 600;
+                          margin-left: -6px;
+                        ">+${connectedMemories.length - 3}</div>
+                      ` : ''}
+                    </div>
+                  ` : `
+                    <div style="
+                      font-size: 12px;
+                      color: rgba(255, 255, 255, 0.4);
+                      text-align: right;
+                    ">No shared<br/>memories</div>
+                  `}
                 </div>
               </div>
 
-              <div class="person-summary-content">
-                <h3 class="summary-section-title">Connected Memories</h3>
-                <div class="connected-memories">
+              <div class="person-summary-content" style="
+                padding: 32px;
+                max-height: 400px;
+                overflow-y: auto;
+              ">
+                <h3 class="summary-section-title" style="
+                  margin: 0 0 20px 0;
+                  font-size: 20px;
+                  font-weight: 600;
+                  color: white;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                ">💝 Connected Memories</h3>
+                <div class="connected-memories" style="
+                  display: grid;
+                  gap: 12px;
+                ">
                   ${connectedMemories.length > 0 ?
                     connectedMemories.map(memory => `
-                      <div class="connected-memory-item" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')">
-                        <div class="memory-preview">
-                          ${memory.thumbnail ? `<img src="${memory.thumbnail}" alt="Memory">` : '💝'}
+                      <div class="connected-memory-item" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')" style="
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        border-radius: 16px;
+                        padding: 16px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                      " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'">
+                        <div class="memory-preview" style="
+                          width: 48px;
+                          height: 48px;
+                          border-radius: 12px;
+                          background: linear-gradient(135deg, #8658ff, #f093fb);
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          font-size: 20px;
+                          flex-shrink: 0;
+                        ">
+                          ${memory.thumbnail ? `<img src="${memory.thumbnail}" alt="Memory" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">` : '💝'}
                         </div>
-                        <div class="memory-info">
-                          <div class="memory-title">${memory.title || 'Untitled Memory'}</div>
-                          <div class="memory-date">${new Date(memory.date || memory.timestamp).toLocaleDateString()}</div>
+                        <div class="memory-info" style="
+                          flex: 1;
+                          min-width: 0;
+                        ">
+                          <div class="memory-title" style="
+                            font-size: 16px;
+                            font-weight: 600;
+                            color: white;
+                            margin-bottom: 4px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                          ">${memory.title || 'Untitled Memory'}</div>
+                          <div class="memory-date" style="
+                            font-size: 14px;
+                            color: rgba(255, 255, 255, 0.6);
+                          ">${new Date(memory.date || memory.timestamp).toLocaleDateString()}</div>
                         </div>
                       </div>
                     `).join('') :
-                    '<div class="no-memories">No connected memories yet</div>'
+                    `<div class="no-memories" style="
+                      text-align: center;
+                      padding: 40px 20px;
+                      color: rgba(255, 255, 255, 0.6);
+                    ">
+                      <div style="font-size: 48px; margin-bottom: 16px;">💫</div>
+                      <p style="margin: 0 0 8px 0; font-size: 16px;">No connected memories yet</p>
+                      <p style="margin: 0; font-size: 14px; color: rgba(255, 255, 255, 0.4);">Create beautiful memories together!</p>
+                    </div>`
                   }
                 </div>
 
-                <div class="person-summary-actions">
-                  <button class="btn btn-primary" onclick="window.memoryConstellation.createMemoryWithPersonFromConstellation('${person.id}')">
+                <div class="person-summary-actions" style="
+                  display: flex;
+                  gap: 12px;
+                  margin-top: 24px;
+                  padding-top: 24px;
+                  border-top: 1px solid rgba(255, 255, 255, 0.1);
+                ">
+                  <button class="btn btn-primary" onclick="window.memoryConstellation.createMemoryWithPersonFromConstellation('${person.id}')" style="
+                    background: linear-gradient(135deg, #8658ff, #f093fb);
+                    border: none;
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 600;
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: all 0.2s ease;
+                  " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(134, 88, 255, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                     <span>✨</span>
                     Create Memory Together
                   </button>
-                  <button class="btn btn-secondary" onclick="window.location.href='people-emma.html'">
+                  <button class="btn btn-secondary" onclick="window.location.href='people-emma.html'" style="
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: all 0.2s ease;
+                  " onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
                     <span>👥</span>
                     Manage People
                   </button>
@@ -4108,6 +4348,35 @@
             </div>
           </div>
         `;
+
+        // Add modal animations CSS
+        if (!document.getElementById('emma-constellation-modal-styles')) {
+          const styleElement = document.createElement('style');
+          styleElement.id = 'emma-constellation-modal-styles';
+          styleElement.textContent = `
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes scaleIn {
+              from { 
+                opacity: 0; 
+                transform: scale(0.9) translateY(20px); 
+              }
+              to { 
+                opacity: 1; 
+                transform: scale(1) translateY(0); 
+              }
+            }
+            .person-summary-modal-overlay {
+              animation: fadeIn 0.3s ease;
+            }
+            .person-summary-modal {
+              animation: scaleIn 0.3s ease;
+            }
+          `;
+          document.head.appendChild(styleElement);
+        }
 
         // Add modal to body
         document.body.insertAdjacentHTML('beforeend', modalHTML);
