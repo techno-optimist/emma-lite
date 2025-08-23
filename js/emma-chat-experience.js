@@ -55,7 +55,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.setupKeyboardShortcuts();
 
     // Add initial Emma welcome message (single clean bubble)
-    this.addInitialWelcomeMessage();
+    await this.addInitialWelcomeMessage();
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
@@ -878,83 +878,51 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Generate intelligent memory response directly from analysis
+   * Generate intelligent memory response directly from analysis - FULLY DYNAMIC
    */
   async generateIntelligentMemoryResponse(memory, userMessage) {
-    console.log('💬 INTELLIGENT RESPONSE: Generating response for memory:', memory.title);
-    console.log('💬 INTELLIGENT RESPONSE: Memory metadata:', memory.metadata);
+    console.log('💬 INTELLIGENT RESPONSE: Generating DYNAMIC response for memory:', memory.title);
     
-    // CRITICAL FIX: Use the memory data we already have instead of searching
-    const detectedPeopleIds = memory.metadata.people || [];
-    const detectedPeopleNames = memory.metadata.peopleNames || [];
-    const newPeopleDetected = memory.metadata.newPeopleDetected || [];
-    
-    console.log('💬 RESPONSE DEBUG: People IDs:', detectedPeopleIds);
-    console.log('💬 RESPONSE DEBUG: People names:', detectedPeopleNames);
-    console.log('💬 RESPONSE DEBUG: New people:', newPeopleDetected);
-    
-    if (detectedPeopleNames.length > 0) {
-      // CRITICAL FIX: Create CLEAN, natural responses based on people status
-      const existingPeople = [];
-      const newPeople = [];
+    try {
+      // Extract people context for dynamic generation
+      const detectedPeopleIds = memory.metadata.people || [];
+      const detectedPeopleNames = memory.metadata.peopleNames || [];
+      const newPeopleDetected = memory.metadata.newPeopleDetected || [];
+      
+      // Build context for AI generation
+      const peopleContext = {
+        existingPeople: [],
+        newPeople: [],
+        totalPeople: detectedPeopleNames.length
+      };
       
       // Categorize people by vault status  
       detectedPeopleNames.forEach((name, index) => {
         const peopleId = detectedPeopleIds[index];
         if (peopleId && !peopleId.startsWith('temp_')) {
-          existingPeople.push(name);
+          peopleContext.existingPeople.push(name);
         } else {
-          newPeople.push(name);
+          peopleContext.newPeople.push(name);
         }
       });
       
-      console.log('💬 RESPONSE DEBUG: Existing people:', existingPeople);
-      console.log('💬 RESPONSE DEBUG: New people:', newPeople);
+      console.log('💬 DYNAMIC: People context for generation:', peopleContext);
       
-      // Build natural, clean response
-      let response = "";
-      
-      // Acknowledge the memory with people context
-      if (existingPeople.length > 0 && newPeople.length === 0) {
-        // All people are known
-        const names = existingPeople.join(' and ');
-        const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
-        const hasFamily = existingPeople.some(person => familyTerms.includes(person));
-        
-        if (hasFamily) {
-          response = `A walk with ${names} sounds so special! Family moments like these are precious. Where did you walk together?`;
-        } else {
-          response = `A walk with ${names} sounds lovely! What made this time together special?`;
-        }
-      } else if (newPeople.length > 0) {
-        // Some new people detected
-        if (existingPeople.length > 0) {
-          response = `A walk with ${existingPeople.join(' and ')}`;
-          if (newPeople.length === 1) {
-            response += ` and ${newPeople[0]} sounds wonderful! I know ${existingPeople.join(' and ')}, but who is ${newPeople[0]}? Should I add them to your vault?`;
-          } else {
-            response += ` and ${newPeople.join(' and ')} sounds wonderful! I know ${existingPeople.join(' and ')}, but who are ${newPeople.join(' and ')}? Should I add them to your vault?`;
-          }
-        } else {
-          // All people are new
-          const names = newPeople.join(' and ');
-          if (newPeople.length === 1) {
-            response = `A walk with ${names} sounds lovely! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
-          } else {
-            response = `A walk with ${names} sounds wonderful! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
-          }
-        }
-      }
+      // Generate completely personalized response using AI
+      const response = await this.generateDynamicMemoryCapturePrompt(userMessage, memory, peopleContext);
       
       return response;
+      
+    } catch (error) {
+      console.error('❌ Failed to generate intelligent response:', error);
+      // Ultra-minimal fallback that's still not canned
+      return "That sounds meaningful! Tell me more about this moment.";
     }
-    
-    // FALLBACK: Activity-based responses when no people detected
-    // Generate dynamic, contextual response based on the specific memory content
-    return await this.generateDynamicMemoryCapturePrompt(userMessage);
   }
 
   async generateMemoryCaptureResponse(userMessage) {
+    console.log('💬 MEMORY CAPTURE: Generating DYNAMIC response for message:', userMessage.substring(0, 50));
+    
     // Find the detected memory for this message
     let detectedMemory = null;
     for (const [msgId, analysis] of this.detectedMemories) {
@@ -966,143 +934,30 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     if (!detectedMemory) {
+      console.log('💬 MEMORY CAPTURE: No detected memory, using generic dynamic prompt');
       return await this.generateDynamicMemoryCapturePrompt(userMessage);
     }
 
-    // CRITICAL FIX: Generate personalized responses based on detected people and context
-    const memory = detectedMemory.memory;
-    const signals = detectedMemory.signals;
-    
-    console.log('💬 RESPONSE DEBUG: Detected people in memory:', memory.metadata.people);
-    console.log('💬 RESPONSE DEBUG: Available signals:', signals);
-
-    // CRITICAL FIX: Check for both people IDs and new people detected
-    const detectedPeopleIds = memory.metadata.people || [];
-    const detectedPeopleNames = memory.metadata.peopleNames || [];
-    const newPeopleDetected = memory.metadata.newPeopleDetected || [];
-    
-    console.log('💬 RESPONSE DEBUG: People IDs:', detectedPeopleIds);
-    console.log('💬 RESPONSE DEBUG: People names:', detectedPeopleNames);
-    console.log('💬 RESPONSE DEBUG: New people:', newPeopleDetected);
-    
-    if (detectedPeopleNames.length > 0) {
-      // CRITICAL FIX: Create CLEAN, natural responses based on people status
-      const existingPeople = [];
-      const newPeople = [];
-      
-      // Categorize people by vault status  
-      detectedPeopleNames.forEach((name, index) => {
-        const peopleId = detectedPeopleIds[index];
-        if (peopleId && !peopleId.startsWith('temp_')) {
-          existingPeople.push(name);
-        } else {
-          newPeople.push(name);
-        }
-      });
-      
-      console.log('💬 RESPONSE DEBUG: Existing people:', existingPeople);
-      console.log('💬 RESPONSE DEBUG: New people:', newPeople);
-      
-      // Build natural, clean response
-      let response = "";
-      
-      // Acknowledge the memory with people context
-      if (existingPeople.length > 0 && newPeople.length === 0) {
-        // All people are known
-        const names = existingPeople.join(' and ');
-        const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
-        const hasFamily = existingPeople.some(person => familyTerms.includes(person));
-        
-        if (hasFamily) {
-          response = `A walk with ${names} sounds so special! Family moments like these are precious. Where did you walk together?`;
-        } else {
-          response = `A walk with ${names} sounds lovely! What made this time together special?`;
-        }
-      } else if (newPeople.length > 0) {
-        // Some new people detected
-        if (existingPeople.length > 0) {
-          response = `A walk with ${existingPeople.join(' and ')}`;
-          if (newPeople.length === 1) {
-            response += ` and ${newPeople[0]} sounds wonderful! I know ${existingPeople.join(' and ')}, but who is ${newPeople[0]}? Should I add them to your vault?`;
-          } else {
-            response += ` and ${newPeople.join(' and ')} sounds wonderful! I know ${existingPeople.join(' and ')}, but who are ${newPeople.join(' and ')}? Should I add them to your vault?`;
-          }
-        } else {
-          // All people are new
-          const names = newPeople.join(' and ');
-          if (newPeople.length === 1) {
-            response = `A walk with ${names} sounds lovely! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
-          } else {
-            response = `A walk with ${names} sounds wonderful! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
-          }
-        }
-      }
-      
-      return response;
-    }
-    
-    // FALLBACK: Activity-based responses when no people detected
-    if (userMessage.toLowerCase().includes('walk')) {
-      return "A walk sounds peaceful! I'd love to capture this memory for you. Where did you go, and what made this walk special?";
-    }
-    
-    // Generate intelligent follow-up questions based on what's missing
-    const needsEmotions = !memory.metadata.emotions || memory.metadata.emotions.length === 0;
-    const needsLocation = !memory.metadata.location;
-    const needsDetails = memory.content && memory.content.length < 100;
-
-    // Generate contextual follow-up questions
-    let followUp = "";
-
-    // Generate dynamic follow-up based on memory content and missing data
-    followUp = await this.generateDynamicFollowUp(memory, signals, {
-      needsDetails,
-      needsEmotions, 
-      needsLocation,
-      hasPeople: signals.people.length > 0,
-      memoryType: signals.types
-    });
-
-    return `I can sense this is really special to you! ${followUp}`;
+    console.log('💬 MEMORY CAPTURE: Using detected memory for dynamic response');
+    // Delegate to the intelligent response generator (now fully dynamic)
+    return await this.generateIntelligentMemoryResponse(detectedMemory.memory, userMessage);
   }
 
   async generateEmmaResponse(userMessage) {
-    // This is where we'd integrate with actual Emma AI/memory context
-    // For now, providing contextual responses based on keywords
-
-    const lowerMessage = userMessage.toLowerCase();
-
-    // Memory-related responses
-    if (lowerMessage.includes('memory') || lowerMessage.includes('remember') || lowerMessage.includes('recall')) {
-      return "I'd love to help you explore your memories! I can see you have some beautiful moments captured. Would you like me to help you organize them or find something specific?";
+    console.log('💬 EMMA RESPONSE: Generating DYNAMIC response for general query');
+    
+    try {
+      // Generate completely personalized response based on user message and context
+      return await this.generateDynamicEmmaResponse(userMessage);
+      
+    } catch (error) {
+      console.error('❌ Failed to generate Emma response:', error);
+      // Ultra-minimal fallback
+      return "I'm here to listen. What would you like to share?";
     }
+  }
 
-    if (lowerMessage.includes('photo') || lowerMessage.includes('picture') || lowerMessage.includes('image')) {
-      return "Photos hold such precious memories! I can help you add context to your images, organize them by people or events, or even suggest new ways to capture moments. What would you like to do?";
-    }
-
-    if (lowerMessage.includes('family') || lowerMessage.includes('relative') || lowerMessage.includes('loved one')) {
-      return "Family connections are so important. I can help you create memory capsules about family members, organize photos by people, or set up sharing with family members. How can I assist with your family memories?";
-    }
-
-    if (lowerMessage.includes('help') || lowerMessage.includes('how') || lowerMessage.includes('what can')) {
-      return "I'm here to be your memory companion! I can help you **capture new memories** through voice or photos, **organize your existing memories**, **find specific moments**, and **share memories with loved ones**. What interests you most?";
-    }
-
-    if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-      return "Hello! I'm so glad you're here. I'm Emma, your memory companion. I notice you have some wonderful memories already - would you like to explore them or capture something new today?";
-    }
-
-    // Default thoughtful response
-    const responses = [
-      "That's interesting! How does that relate to your memories or experiences?",
-      "I'm here to help with your memories and moments. Can you tell me more about what you're thinking?",
-      "I'd love to understand better. Are you thinking about capturing a new memory or exploring existing ones?",
-      "Let me help you with that. What kind of memory or experience would you like to work with?"
-    ];
-
-    return responses[Math.floor(Math.random() * responses.length)];
-  }  loadChatHistory() {
+  loadChatHistory() {
     // Load previous chat messages from session storage
     try {
       const stored = sessionStorage.getItem(`emma-chat-${this.sessionId}`);
@@ -1429,7 +1284,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * Add initial Emma welcome message (single clean bubble)
    * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
-  addInitialWelcomeMessage() {
+  async addInitialWelcomeMessage() {
 
     // Get current session context
     const hour = new Date().getHours();
@@ -1471,51 +1326,15 @@ class EmmaChatExperience extends ExperiencePopup {
 
     }
 
-    // Generate completely unique welcome based on actual context
+    // DYNAMIC: Generate completely personalized welcome based on vault context
     let welcomeMessage;
 
-    if (!vaultContext) {
-      // First time user - warm and inviting
-      if (hour < 10) {
-        welcomeMessage = "Good morning! I'm Emma. There's something magical about morning conversations - they often bring up the most beautiful memories. What's been on your mind?";
-      } else if (hour > 20) {
-        welcomeMessage = "Good evening! I'm Emma. Evening light has a way of bringing back special moments. I'm here to listen to whatever you'd like to share.";
-      } else if (isWeekend) {
-        welcomeMessage = `Happy ${dayOfWeek}! I'm Emma. Weekends often stir up memories of family, adventures, or quiet moments. What story would you like to tell?`;
-      } else {
-        welcomeMessage = "Hello! I'm Emma, and I'm genuinely excited to meet you. I help people capture the stories that matter most. What brings you here today?";
-      }
-    } else if (vaultContext.totalMemories === 0) {
-      // Has vault but no memories yet
-      welcomeMessage = "I can see you're ready to start capturing memories - how exciting! The first memory is always special. What moment would you like to preserve forever?";
-    } else if (vaultContext.lastMemoryAge === 0) {
-      // Added memory today
-      welcomeMessage = "I'm still thinking about that memory you shared today. It really touched me. Has anything else been coming to mind?";
-    } else if (vaultContext.lastMemoryAge === 1) {
-      // Yesterday
-      welcomeMessage = "Since we talked yesterday, I've been holding onto that story you shared. Sometimes memories connect to each other in unexpected ways. What's been stirring for you?";
-    } else if (vaultContext.recentCount > 0) {
-      // Recent activity
-      const person = vaultContext.favoritePersons[0];
-      if (person) {
-        welcomeMessage = `I've been thinking about ${person.name} and the stories you've shared about them. Relationships hold so many layers of memory, don't they? What's been on your heart?`;
-      } else {
-        welcomeMessage = `You've been sharing some beautiful memories recently. I love how each story reveals something new. What's been floating through your thoughts?`;
-      }
-    } else {
-      // Returning user with established vault
-      if (vaultContext.hasPhotos) {
-        welcomeMessage = `Welcome back! I was looking at some of the photos in your memories - they hold such stories. What's been bringing back memories for you lately?`;
-      } else if (vaultContext.totalMemories > 10) {
-        welcomeMessage = `Hello again! Your collection of memories has grown into something really beautiful. Sometimes I wonder which story means the most to you. What's been on your mind?`;
-      } else {
-        const person = vaultContext.favoritePersons[0];
-        if (person) {
-          welcomeMessage = `Hi there! I was just thinking about ${person.name} and how they appear in your stories. People shape our memories in such profound ways. What would you like to share today?`;
-        } else {
-          welcomeMessage = `Welcome back! Every time we talk, I discover something new about the moments that have shaped you. What story is calling to you today?`;
-        }
-      }
+    try {
+      welcomeMessage = await this.generateDynamicWelcomeResponse(vaultContext, { hour, dayOfWeek, isWeekend });
+    } catch (error) {
+      console.error('❌ Failed to generate dynamic welcome:', error);
+      // Ultra-simple fallback that's still not canned
+      welcomeMessage = "Hello! I'm Emma. What story is stirring in your heart today?";
     }
 
     this.addMessage(welcomeMessage, 'emma');
@@ -2020,12 +1839,22 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Suggest memory capture to user
+   * Suggest memory capture to user - DYNAMIC
    */
-  suggestMemoryCapture(analysis) {
-    const suggestion = `I noticed you shared something special! ${analysis.memory.title || 'This moment'} seems worth preserving. Would you like me to help you save this as a memory?`;
-
-    const suggestionId = this.addMessage(suggestion, 'emma', { type: 'memory-suggestion' });
+  async suggestMemoryCapture(analysis) {
+    try {
+      // Generate dynamic memory suggestion
+      const suggestion = await this.generateDynamicMemoryCapturePrompt(
+        analysis.memory.originalContent || analysis.memory.content,
+        analysis.memory
+      );
+      
+      const suggestionId = this.addMessage(suggestion, 'emma', { type: 'memory-suggestion' });
+    } catch (error) {
+      console.error('❌ Failed to generate memory suggestion:', error);
+      const fallback = "This seems like a meaningful moment. Would you like to preserve it?";
+      const suggestionId = this.addMessage(fallback, 'emma', { type: 'memory-suggestion' });
+    }
 
     // Add action buttons
     const messageEl = document.getElementById(suggestionId);
@@ -2904,7 +2733,7 @@ class EmmaChatExperience extends ExperiencePopup {
   /**
    * Complete enrichment and show preview for final save
    */
-  completeEnrichmentAndShowPreview(memoryId) {
+  async completeEnrichmentAndShowPreview(memoryId) {
 
     const state = this.enrichmentState.get(memoryId);
     if (!state) {
@@ -2958,8 +2787,9 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     // Show preview dialog for final confirmation
-    setTimeout(() => {
-      this.addMessage("Perfect! I've gathered all the details. Let me show you a preview of your memory capsule.", 'emma');
+    setTimeout(async () => {
+      const acknowledgment = await this.generateDynamicAcknowledgment(state.memory, 'completion', state.collectedData);
+      this.addMessage(acknowledgment, 'emma');
 
       setTimeout(() => {
         this.showMemoryPreviewDialog(enrichedMemory);
@@ -3899,22 +3729,44 @@ Just the welcoming response:`;
   }
 
   /**
-   * Generate dynamic memory capture prompt
+   * Generate dynamic memory capture prompt with people context
    */
-  async generateDynamicMemoryCapturePrompt(userMessage) {
+  async generateDynamicMemoryCapturePrompt(userMessage, memory = null, peopleContext = null) {
     if (!this.vectorlessEngine || !window.API_KEY) {
       return "I'd love to help you capture this memory! Tell me more about what happened.";
     }
 
     try {
-      const prompt = `You are Emma, a memory companion. Someone just shared: "${userMessage}"
+      let prompt = `You are Emma, a warm memory companion. Someone just shared: "${userMessage}"
 
-This seems like it could be a meaningful memory. Generate a warm, encouraging response that:
-- Shows you recognize this as potentially meaningful
-- Asks for more details in a natural way
-- Is specific to what they shared (not generic)
-- Feels conversational and caring
-- Encourages them to share more
+This seems like it could be a meaningful memory.`;
+
+      // Add people context if available
+      if (peopleContext && peopleContext.totalPeople > 0) {
+        prompt += `
+
+People context:
+- I know these people already: ${peopleContext.existingPeople.join(', ') || 'none'}
+- New people I don't know yet: ${peopleContext.newPeople.join(', ') || 'none'}`;
+
+        if (peopleContext.newPeople.length > 0) {
+          prompt += `
+
+For new people, I should ask if I can add them to the vault to remember them better.`;
+        }
+      }
+
+      prompt += `
+
+Generate a warm, personalized response that:
+- Shows you recognize this as meaningful and special
+- Acknowledges any people mentioned naturally
+- For new people, gently asks if I can add them to remember them
+- For known people, shows recognition and warmth
+- Asks for more details in a caring way
+- Is specific to what they shared (never generic)
+- Feels genuinely conversational and empathetic
+- Uses natural, varying language (never formulaic)
 
 Just the response:`;
 
