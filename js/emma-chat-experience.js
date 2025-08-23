@@ -2838,13 +2838,73 @@ class EmmaChatExperience extends ExperiencePopup {
           transition: all 0.3s ease;
         `;
         
-        if (person.avatar && person.avatar.startsWith('data:')) {
-          // Has avatar image
-          avatar.innerHTML = `<img src="${person.avatar}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="${person.name}">`;
-        } else {
-          // Use initials
-          const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-          avatar.textContent = initials;
+        // MATCH APP STYLE: Load avatar exactly like constellation/capsule views
+        const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        avatar.textContent = initials; // Start with initials
+        
+        // Try to load actual avatar photo (same logic as createCapsulePeopleAvatars)
+        if (person.avatarUrl) {
+          // Direct URL (like data: URLs)
+          const img = document.createElement('img');
+          img.src = person.avatarUrl;
+          img.alt = `${person.name} avatar`;
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+          img.onload = () => {
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
+          };
+          img.onerror = () => {
+            // Keep initials fallback
+            console.log(`📸 Avatar URL failed for ${person.name}, using initials`);
+          };
+        } else if (person.avatarId && window.emmaWebVault) {
+          // Load from vault (same as constellation)
+          try {
+            window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
+              if (avatarData) {
+                // Handle both ArrayBuffer and data URL responses
+                let imageUrl;
+                if (typeof avatarData === 'string' && avatarData.startsWith('data:')) {
+                  imageUrl = avatarData;
+                } else if (avatarData.byteLength > 100) {
+                  const blob = new Blob([avatarData], { type: 'image/jpeg' });
+                  imageUrl = URL.createObjectURL(blob);
+                }
+                
+                if (imageUrl) {
+                  const img = document.createElement('img');
+                  img.src = imageUrl;
+                  img.alt = `${person.name} avatar`;
+                  img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+                  img.onload = () => {
+                    avatar.innerHTML = '';
+                    avatar.appendChild(img);
+                  };
+                  img.onerror = () => {
+                    // Keep initials fallback
+                    console.log(`📸 Avatar load failed for ${person.name}, using initials`);
+                  };
+                }
+              }
+            }).catch(error => {
+              console.log(`📸 Avatar fetch failed for ${person.name}:`, error);
+            });
+          } catch (error) {
+            console.log(`📸 Avatar access failed for ${person.name}:`, error);
+          }
+        } else if (person.avatar && person.avatar.startsWith('data:')) {
+          // Legacy avatar field (data URL)
+          const img = document.createElement('img');
+          img.src = person.avatar;
+          img.alt = `${person.name} avatar`;
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+          img.onload = () => {
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
+          };
+          img.onerror = () => {
+            console.log(`📸 Legacy avatar failed for ${person.name}, using initials`);
+          };
         }
         
         // Create name label
