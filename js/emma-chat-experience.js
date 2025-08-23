@@ -2413,8 +2413,17 @@ class EmmaChatExperience extends ExperiencePopup {
    * Edit memory details with proper modal
    */
   editMemoryDetails(memoryId) {
-    const memory = this.temporaryMemories.get(memoryId);
+    // FIXED: Get memory from vault instead of undefined temporaryMemories
+    let memory = null;
+    
+    // Try to get memory from vault
+    if (window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
+      const memories = window.emmaWebVault.vaultData.content.memories || {};
+      memory = memories[memoryId];
+    }
+    
     if (!memory) {
+      console.error('❌ Memory not found with ID:', memoryId);
       this.showToast('❌ Memory not found!', 'error');
       return;
     }
@@ -2658,13 +2667,43 @@ class EmmaChatExperience extends ExperiencePopup {
       // Get people from vault
       let people = [];
       
-      if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.list) {
-        const result = await window.emmaAPI.people.list();
-        if (result && result.success && Array.isArray(result.items)) {
-          people = result.items;
+      // SAFE ACCESS: Check each method carefully to avoid crashes
+      if (window.emmaAPI && 
+          typeof window.emmaAPI.people === 'object' && 
+          window.emmaAPI.people !== null &&
+          typeof window.emmaAPI.people.list === 'function') {
+        try {
+          const result = await window.emmaAPI.people.list();
+          if (result && result.success && Array.isArray(result.items)) {
+            people = result.items;
+          }
+        } catch (apiError) {
+          console.log('📝 EmmaAPI people.list failed:', apiError);
         }
-      } else if (window.emmaWebVault && window.emmaWebVault.listPeople) {
-        people = await window.emmaWebVault.listPeople();
+      }
+      
+      // Fallback to vault method if API failed or doesn't exist
+      if (people.length === 0 && 
+          window.emmaWebVault && 
+          typeof window.emmaWebVault.listPeople === 'function') {
+        try {
+          people = await window.emmaWebVault.listPeople();
+        } catch (vaultError) {
+          console.log('📝 Vault listPeople failed:', vaultError);
+        }
+      }
+      
+      // Last resort: Direct vault data access
+      if (people.length === 0 && 
+          window.emmaWebVault && 
+          window.emmaWebVault.vaultData && 
+          window.emmaWebVault.vaultData.content &&
+          window.emmaWebVault.vaultData.content.people) {
+        try {
+          people = Object.values(window.emmaWebVault.vaultData.content.people) || [];
+        } catch (directError) {
+          console.log('📝 Direct vault people access failed:', directError);
+        }
       }
 
       // Get currently selected people
@@ -3076,10 +3115,34 @@ class EmmaChatExperience extends ExperiencePopup {
         };
 
         let personResult;
-        if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.add) {
-          personResult = await window.emmaAPI.people.add(newPerson);
-        } else if (window.emmaWebVault && window.emmaWebVault.addPerson) {
-          personResult = await window.emmaWebVault.addPerson(newPerson);
+        
+        // SAFE ACCESS: Try different methods to add person to vault
+        if (window.emmaAPI && 
+            typeof window.emmaAPI.people === 'object' && 
+            window.emmaAPI.people !== null &&
+            typeof window.emmaAPI.people.add === 'function') {
+          try {
+            personResult = await window.emmaAPI.people.add(newPerson);
+          } catch (apiError) {
+            console.log('📝 EmmaAPI people.add failed, trying vault method:', apiError);
+          }
+        }
+        
+        // Fallback to vault method if API failed or doesn't exist
+        if (!personResult && 
+            window.emmaWebVault && 
+            typeof window.emmaWebVault.addPerson === 'function') {
+          try {
+            personResult = await window.emmaWebVault.addPerson(newPerson);
+          } catch (vaultError) {
+            console.log('📝 Vault addPerson failed:', vaultError);
+            throw new Error('Failed to add person to vault');
+          }
+        }
+        
+        // If no methods worked, throw error
+        if (!personResult) {
+          throw new Error('No valid method found to add person to vault');
         }
 
         if (personResult && (personResult.success || personResult.id)) {
