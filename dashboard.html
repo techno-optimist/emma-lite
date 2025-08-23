@@ -3623,18 +3623,37 @@
             if (fallbackMemories.length > 0) {
               console.log('💾 CONSTELLATION: Found', fallbackMemories.length, 'fallback memories, adding to constellation');
               
-              // Process fallback memories for constellation display
+              // Process fallback memories for constellation display (SAME as vault processing)
               const processedFallbackMemories = fallbackMemories.map(memory => {
-                const attachments = memory.attachments || [];
-                let thumbnail = memory.thumbnail;
+                // Process attachments to ensure proper URL handling (CRITICAL FIX!)
+                const attachments = (memory.attachments || []).map(attachment => {
+                  // Fallback memories may have dataUrlPreview, dataUrl, url, or base64Data
+                  const imageUrl = attachment.dataUrlPreview || 
+                                   attachment.dataUrl || 
+                                   attachment.url ||
+                                   (attachment.base64Data ? `data:${attachment.type || 'image/jpeg'};base64,${attachment.base64Data}` : null);
+                  
+                  if (imageUrl) {
+                    return {
+                      ...attachment,
+                      url: imageUrl,
+                      dataUrl: imageUrl,
+                      isPersisted: false // Mark as not yet persisted to vault
+                    };
+                  }
+                  return attachment;
+                });
                 
-                // If no thumbnail but has attachments, use first one
+                // Generate thumbnail from first valid attachment
+                let thumbnail = memory.thumbnail;
                 if (!thumbnail && attachments.length > 0 && attachments[0].url) {
                   thumbnail = attachments[0].url;
+                  console.log('💾 CONSTELLATION: Generated thumbnail for fallback memory:', memory.id, thumbnail.substring(0, 50) + '...');
                 }
                 
                 return {
                   ...memory,
+                  attachments, // Include processed attachments
                   thumbnail,
                   isFallbackMemory: true, // Mark as fallback for UI indication
                   needsVaultSync: true,
