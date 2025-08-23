@@ -2186,66 +2186,34 @@ class EmmaChatExperience extends ExperiencePopup {
           avatar.title = person.name;
           avatar.textContent = person.name.charAt(0).toUpperCase();
 
-          // CRITICAL FIX: Load person's photo correctly using vault system
-          if (person.avatarUrl) {
-            // Direct URL (legacy)
-            const img = document.createElement('img');
-            img.src = person.avatarUrl;
-            img.alt = `${person.name} avatar`;
-            img.style.cssText = `
-              width: 100%;
-              height: 100%;
-              border-radius: 50%;
-              object-fit: cover;
-            `;
-            img.onload = () => {
-              avatar.innerHTML = '';
-              avatar.appendChild(img);
-            };
-            img.onerror = () => {
-              console.warn('👥 Failed to load avatarUrl for:', person.name);
-            };
-          } else if (person.avatarId) {
-            // ROBUST: Load from vault media system with fallback
-            console.log('👥 Attempting to load avatar for:', person.name, 'with avatarId:', person.avatarId);
-            try {
-              window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
-                if (avatarData && avatarData.byteLength > 100) { // Ensure data is not corrupted
-                  console.log('👥 Avatar data loaded successfully for:', person.name, 'Size:', avatarData.byteLength);
-                  const blob = new Blob([avatarData], { type: 'image/jpeg' });
-                  const url = URL.createObjectURL(blob);
-                  
-                  const img = document.createElement('img');
-                  img.src = url;
-                  img.alt = `${person.name} avatar`;
-                  img.style.cssText = `
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 50%;
-                    object-fit: cover;
-                  `;
-                  img.onload = () => {
-                    console.log('✅ Avatar image loaded successfully for:', person.name);
-                    avatar.innerHTML = '';
-                    avatar.appendChild(img);
-                  };
-                  img.onerror = () => {
-                    console.warn('👥 Avatar image failed to render for:', person.name);
-                    // Keep letter fallback
-                  };
-                } else {
-                  console.warn('👥 Avatar data too small or corrupted for:', person.name, 'Size:', avatarData?.byteLength || 0);
-                  // Keep letter fallback
-                }
-              }).catch(error => {
-                console.warn('👥 Could not load avatar for:', person.name, '- keeping letter fallback. Error:', error.message);
-                // Keep letter fallback - this is fine
-              });
-            } catch (error) {
-              console.warn('👥 Avatar loading error for:', person.name, '- using letter fallback. Error:', error.message);
-              // Keep letter fallback - this is fine
-            }
-          }
+          // SIMPLIFIED: Skip corrupted avatar loading, use beautiful letter avatars
+          console.log('👥 Using beautiful letter avatar for:', person.name);
+          
+          // Create beautiful gradient backgrounds based on person's name
+          const nameHash = person.name.split('').reduce((a, b) => {
+            a = ((a << 5) - a) + b.charCodeAt(0);
+            return a & a;
+          }, 0);
+          
+          const gradients = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Purple-blue
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Pink-coral  
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // Blue-cyan
+            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', // Peach
+            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', // Mint-pink
+            'linear-gradient(135deg, #ff8a80 0%, #ffab40 100%)', // Orange-amber
+          ];
+          
+          const gradientIndex = Math.abs(nameHash) % gradients.length;
+          avatar.style.background = gradients[gradientIndex];
+          avatar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+          
+          // Make letter avatars look more polished
+          avatar.style.fontSize = '16px';
+          avatar.style.fontWeight = '600';
+          avatar.style.textShadow = '0 1px 2px rgba(0,0,0,0.2)';
+          
+          // Skip photo loading entirely for now to avoid errors
         }
 
         // Add hover effect
@@ -2254,14 +2222,29 @@ class EmmaChatExperience extends ExperiencePopup {
 
         avatarsContainer.appendChild(avatar);
 
-        // Add name label with special styling for new people
+        // Add name label with crystal clear styling for new people
         const nameLabel = document.createElement('span');
-        nameLabel.textContent = isNewPerson ? `${personName} (NEW)` : personName;
+        if (isNewPerson) {
+          nameLabel.innerHTML = `${personName} <span style="
+            background: linear-gradient(135deg, #ff6b6b, #ffeb3b);
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 4px;
+            text-shadow: none;
+          ">NEW</span>`;
+        } else {
+          nameLabel.textContent = personName;
+        }
         nameLabel.style.cssText = `
           font-size: 12px;
-          color: ${isNewPerson ? '#ffeb3b' : '#fff'};
+          color: #fff;
           margin-right: 12px;
-          ${isNewPerson ? 'font-weight: bold; text-shadow: 0 0 5px rgba(255, 235, 59, 0.8);' : ''}
+          display: flex;
+          align-items: center;
+          ${isNewPerson ? 'font-weight: bold;' : ''}
         `;
         avatarsContainer.appendChild(nameLabel);
       }
