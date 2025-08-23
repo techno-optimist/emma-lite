@@ -10,7 +10,9 @@ console.log('💬 CACHE BUST DEBUG: emma-chat-experience.js LOADED at', new Date
 
 class EmmaChatExperience extends ExperiencePopup {
   constructor(position, settings = {}) {
+    console.log('🔧 CONSTRUCTOR START: EmmaChatExperience constructor called');
     super(position, settings);
+    console.log('🔧 CONSTRUCTOR PROGRESS: super() completed');
 
     // Chat-specific properties
     this.messages = [];
@@ -68,6 +70,7 @@ class EmmaChatExperience extends ExperiencePopup {
     console.log('🔧 CONSTRUCTOR DEBUG: confirmSaveMemory method exists:', typeof this.confirmSaveMemory);
 
     this.enableFocusMode();
+    console.log('🔧 CONSTRUCTOR END: EmmaChatExperience constructor completed successfully');
   }
 
   initializeEmmaOrb() {
