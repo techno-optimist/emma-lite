@@ -5159,41 +5159,68 @@ Just the question:`;
         return;
       }
 
-      const memoryData = this.enhancedMemoryData[memoryId] || { selectedPeople: [], uploadedFiles: [] };
+      // FIXED: Check if this is an existing memory from vault or new enhanced memory
+      let memory = null;
+      let isExistingMemory = false;
       
-      // Create memory object
-      const memory = {
-        id: memoryId,
-        title: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
-        content: content,
-        timestamp: Date.now(),
-        metadata: {
-          people: memoryData.selectedPeople,
-          emotions: [],
-          locations: [],
-        },
-        attachments: []
-      };
-
-      // Process uploaded files
-      for (const file of memoryData.uploadedFiles) {
-        const mediaId = `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const arrayBuffer = await file.arrayBuffer();
+      // Try to get existing memory from vault first
+      if (window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
+        const existingMemory = window.emmaWebVault.vaultData.content.memories?.[memoryId];
+        if (existingMemory) {
+          console.log('📝 SAVING: Found existing memory, updating content');
+          memory = { ...existingMemory };
+          memory.content = content;
+          memory.title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+          isExistingMemory = true;
+        }
+      }
+      
+      // If not existing memory, create new one from enhanced data
+      if (!memory) {
+        console.log('📝 SAVING: Creating new enhanced memory');
+        const memoryData = this.enhancedMemoryData?.[memoryId] || { selectedPeople: [], uploadedFiles: [] };
         
-        // Store in vault
-        if (window.emmaWebVault) {
-          await window.emmaWebVault.addMedia(mediaId, arrayBuffer, file.type);
-          memory.attachments.push({
-            id: mediaId,
-            type: file.type,
-            name: file.name,
-            size: file.size
-          });
+        memory = {
+          id: memoryId,
+          title: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+          content: content,
+          timestamp: Date.now(),
+          metadata: {
+            people: memoryData.selectedPeople,
+            emotions: [],
+            locations: [],
+          },
+          attachments: []
+        };
+
+        // Process uploaded files (only for new enhanced memories)
+        if (memoryData.uploadedFiles && memoryData.uploadedFiles.length > 0) {
+          console.log('📎 SAVING: Processing uploaded files:', memoryData.uploadedFiles.length);
+          for (const file of memoryData.uploadedFiles) {
+            try {
+              const mediaId = `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              const arrayBuffer = await file.arrayBuffer();
+              
+              // Store in vault
+              if (window.emmaWebVault && arrayBuffer) {
+                await window.emmaWebVault.addMedia(mediaId, arrayBuffer, file.type, file.name);
+                memory.attachments.push({
+                  id: mediaId,
+                  type: file.type,
+                  name: file.name,
+                  size: file.size
+                });
+              }
+            } catch (fileError) {
+              console.error('❌ Error processing file:', file.name, fileError);
+            }
+          }
         }
       }
 
       // Save memory to vault
-      if (window.emmaWebVault) {
+      if (window.emmaWebVault && memory) {
+        console.log('💾 SAVING: Final memory save to vault');
         await window.emmaWebVault.addMemory(memory);
         
         // Show success and close dialog
@@ -5203,13 +5230,25 @@ Just the question:`;
           setTimeout(() => dialog.remove(), 300);
         }
         
-        // Clean up
-        delete this.enhancedMemoryData[memoryId];
+        // Clean up enhanced memory data (only if it's not an existing memory)
+        if (!isExistingMemory && this.enhancedMemoryData?.[memoryId]) {
+          delete this.enhancedMemoryData[memoryId];
+        }
         
         // Show success message
         await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
         
         this.showToast("Memory saved successfully! 💝", "success");
+        
+        // CRITICAL: Refresh constellation IMMEDIATELY after memory save
+        setTimeout(() => {
+          // Dispatch refresh event for constellation
+          window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+            detail: { memoryId: memory.id, memoryData: memory }
+          }));
+        }, 500);
+      } else {
+        throw new Error('Unable to save memory - vault not available or memory invalid');
       }
 
     } catch (error) {
