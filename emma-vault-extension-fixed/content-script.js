@@ -118,8 +118,24 @@ function getWebappVaultStats() {
     console.log('📊 Content Script: Extracting vault statistics from webapp');
     
     // Method 1: Get stats from EmmaWebVault object
+    console.log('📊 Content Script: Checking EmmaWebVault:', {
+      exists: !!window.emmaWebVault,
+      isOpen: window.emmaWebVault?.isOpen,
+      hasVaultData: !!window.emmaWebVault?.vaultData,
+      vaultDataKeys: window.emmaWebVault?.vaultData ? Object.keys(window.emmaWebVault.vaultData) : 'none'
+    });
+    
     if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
       const vaultData = window.emmaWebVault.vaultData;
+      console.log('📊 Content Script: Vault data structure:', {
+        hasContent: !!vaultData.content,
+        contentKeys: vaultData.content ? Object.keys(vaultData.content) : 'none',
+        memoriesType: typeof vaultData.content?.memories,
+        memoriesKeys: vaultData.content?.memories ? Object.keys(vaultData.content.memories) : 'none',
+        peopleType: typeof vaultData.content?.people,
+        peopleKeys: vaultData.content?.people ? Object.keys(vaultData.content.people) : 'none'
+      });
+      
       const memories = vaultData.content?.memories || {};
       const people = vaultData.content?.people || {};
       
@@ -138,6 +154,8 @@ function getWebappVaultStats() {
       };
       
       console.log('📊 Content Script: Stats from EmmaWebVault:', stats);
+      console.log('📊 Content Script: Raw memories object:', memories);
+      console.log('📊 Content Script: Raw people object:', people);
       return stats;
     }
     
