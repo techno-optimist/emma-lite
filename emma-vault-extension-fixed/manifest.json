@@ -9,16 +9,13 @@
     "storage",
     "tabs",
     "notifications",
-    "downloads",
-    "scripting"
+    "downloads", 
+    "scripting",
+    "activeTab"
   ],
   
   "host_permissions": [
-    "https://emma-lite-extension.onrender.com/*",
-    "https://emma-hjjc.onrender.com/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*",
-    "https://photos.google.com/*"
+    "<all_urls>"
   ],
 
   "background": {
@@ -38,13 +35,13 @@
       "run_at": "document_start"
     },
     {
-      "matches": [
-        "https://emma-lite-extension.onrender.com/*", 
-        "https://emma-hjjc.onrender.com/*",
-        "http://localhost/*",
-        "http://127.0.0.1/*"
+      "matches": ["<all_urls>"],
+      "js": [
+        "universal-media-capture.js",
+        "smart-photo-capture.js", 
+        "emma-intelligent-capture.js",
+        "universal-emma-orb.js"
       ],
-      "js": ["content-image-simple.js"],
       "run_at": "document_idle",
       "all_frames": false
     },
@@ -79,14 +76,12 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["icons/*"],
-      "matches": [
-        "https://emma-lite-extension.onrender.com/*",
-        "https://emma-hjjc.onrender.com/*",
-        "http://localhost/*",
-        "http://127.0.0.1/*",
-        "https://photos.google.com/*"
-      ]
+      "resources": [
+        "icons/*",
+        "*.js",
+        "*.css"
+      ],
+      "matches": ["<all_urls>"]
     }
   ]
 }
