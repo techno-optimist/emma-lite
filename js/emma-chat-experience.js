@@ -1874,7 +1874,7 @@ class EmmaChatExperience extends ExperiencePopup {
         };
         
         // Generate the single best response immediately.
-        const intelligentResponse = this.generateMemoryCaptureResponse(message, analysis.memory, analysis);
+        const intelligentResponse = await this.generateMemoryCaptureResponse(message);
 
         // Add the message with confirmation buttons.
         this.addMessage(intelligentResponse, 'emma', {
