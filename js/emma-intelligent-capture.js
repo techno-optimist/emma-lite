@@ -257,13 +257,18 @@ class EmmaIntelligentCapture {
       /\b(he|she|they)\s+(?:was|were|used to|would)/i // Pronouns with past tense
     ];
     
-    peoplePatterns.forEach(pattern => {
+    console.log('🔍 PEOPLE DEBUG: Analyzing content for people:', content);
+    
+    peoplePatterns.forEach((pattern, index) => {
       const matches = content.match(pattern);
       if (matches) {
+        console.log(`👥 PEOPLE DEBUG: Pattern ${index} matched:`, pattern, 'matches:', matches);
         signals.score += 2;
         signals.people.push(...matches);
       }
     });
+    
+    console.log('👥 PEOPLE DEBUG: Raw people detected:', signals.people);
 
     // Proper-noun name candidates (contextual, no hardcoded names)
     const properNames = this.extractProperNames(content);
@@ -579,9 +584,12 @@ class EmmaIntelligentCapture {
     const importance = this.calculateImportance(signals);
     
     // Extract metadata
+    const extractedPeople = this.extractPeopleNames(signals.people || []);
+    console.log('🎯 MEMORY DEBUG: Creating metadata with people:', extractedPeople);
+    
     const metadata = {
       emotions: signals.emotions || [],
-      people: this.extractPeopleNames(signals.people || []),
+      people: extractedPeople,
       tags: await this.generateAutoTags(content, signals),
       location: this.extractLocation(content),
       date: this.extractOrInferDate(message, content),
@@ -589,6 +597,8 @@ class EmmaIntelligentCapture {
       captureMethod: 'intelligent-conversation',
       aiGenerated: true
     };
+    
+    console.log('🎯 MEMORY DEBUG: Final metadata:', metadata);
     
     // Additional temporal extraction
     this.detectTemporalSignals(content, signals);
@@ -985,19 +995,24 @@ class EmmaIntelligentCapture {
    * Helper: Extract people names
    */
   extractPeopleNames(peopleRaw) {
+    console.log('👥 EXTRACT DEBUG: Input peopleRaw:', peopleRaw);
     const names = new Set();
     
     peopleRaw.forEach(person => {
+      console.log('👥 EXTRACT DEBUG: Processing person:', person);
       // Clean up relationship terms
       const cleaned = person
         .replace(/\b(my|the|our)\b/gi, '')
         .replace(/\b(mom|mother|dad|father|parent)\b/gi, match => this.capitalizeFirst(match))
         .trim();
       
+      console.log('👥 EXTRACT DEBUG: Cleaned person:', cleaned);
       if (cleaned) names.add(cleaned);
     });
     
-    return Array.from(names);
+    const result = Array.from(names);
+    console.log('👥 EXTRACT DEBUG: Final people names:', result);
+    return result;
   }
 
   /**
