@@ -642,7 +642,7 @@ async function openAddPeopleModalForGallery() {
       return;
     }
 
-    // Load all people from vault
+    // Load all people from vault - TRY ALL SOURCES
     let allPeople = [];
     
     // Try web vault first (primary source)
@@ -662,9 +662,25 @@ async function openAddPeopleModalForGallery() {
         console.warn('👥 MODAL: Could not access chrome storage:', error);
       }
     }
+    
+    // Final fallback to localStorage for web context
+    if (allPeople.length === 0) {
+      try {
+        const localPeople = localStorage.getItem('emma_people');
+        if (localPeople) {
+          allPeople = JSON.parse(localPeople);
+          console.log('👥 MODAL: Loaded', allPeople.length, 'people from localStorage');
+        }
+      } catch (error) {
+        console.warn('👥 MODAL: Could not access localStorage:', error);
+      }
+    }
 
     if (allPeople.length === 0) {
-      alert('No people found in your vault. Please add people first in the People section.');
+      const shouldGoToPeople = confirm('No people found in your vault.\n\nWould you like to go to the People section to add some people first?');
+      if (shouldGoToPeople) {
+        window.open('../pages/people.html', '_blank');
+      }
       return;
     }
 
