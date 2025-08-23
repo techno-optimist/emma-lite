@@ -61,10 +61,16 @@ function openMemoryDetailModal(memory) {
   // Add to DOM
   document.body.appendChild(modal);
   
-  // Setup event handlers with delay to prevent immediate close
+  // Setup event handlers with longer delay to prevent immediate close
+  // Add immediate protection against click events
+  modal._isOpening = true;
+  setTimeout(() => {
+    modal._isOpening = false;
+  }, 300);
+  
   setTimeout(() => {
     setupModalEventHandlers(modal, memory, overlay, content);
-  }, 100);
+  }, 150);
   
   // Store reference
   window.currentMemory = memory;
@@ -314,6 +320,10 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
   // Close modal when clicking overlay
   if (overlay) {
     overlay.addEventListener('click', (e) => {
+      if (modal._isOpening) {
+        console.log('🎪 MODAL: Overlay clicked during opening - ignoring');
+        return;
+      }
       console.log('🎪 MODAL: Overlay clicked - closing modal');
       e.stopPropagation();
       closeModal(modal);
@@ -322,6 +332,10 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
 
   // Also add click handler to modal background
   modal.addEventListener('click', (e) => {
+    if (modal._isOpening) {
+      console.log('🎪 MODAL: Modal clicked during opening - ignoring');
+      return;
+    }
     if (e.target === modal) {
       console.log('🎪 MODAL: Modal background clicked - closing modal');
       closeModal(modal);

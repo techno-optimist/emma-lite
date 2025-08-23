@@ -388,10 +388,10 @@ async function createMemoryCardElement(memory) {
     event.stopPropagation();
     console.log('🎯 CARD CLICK: Opening memory:', memory.title || memory.id);
     
-    // Add small delay to prevent immediate modal close
+    // Increase delay to ensure modal setup completes before any potential close events
     setTimeout(() => {
       openMemoryDetail(memory);
-    }, 50);
+    }, 150);
   });
 
   return card;
