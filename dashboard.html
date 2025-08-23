@@ -3561,8 +3561,9 @@
       // Get memories from vault (same API as gallery)
       async getMemories() {
         try {
+          let allMemories = [];
 
-          // Use web app vault data directly (pure web app mode)
+          // 1. FIRST: Get vault memories (if available)
           if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
 
             const vaultMemories = window.emmaWebVault.vaultData.content?.memories || {};
@@ -3590,11 +3591,12 @@
 
               return {
                 ...memory,
-                attachments
+                attachments,
+                isVaultMemory: true
               };
             });
 
-            // FIXED: Add thumbnail from first attachment for constellation display
+            // Add thumbnail from first attachment for constellation display
             const memoriesWithThumbnails = memories.map(memory => {
               const attachments = memory.attachments || [];
               let thumbnail = memory.thumbnail;
@@ -3602,7 +3604,6 @@
               // If no thumbnail but has attachments with URLs, use first attachment
               if (!thumbnail && attachments.length > 0 && attachments[0].url) {
                 thumbnail = attachments[0].url;
-
               }
 
               return {
@@ -3611,11 +3612,46 @@
               };
             });
 
-            return memoriesWithThumbnails;
-          } else {
-
-            return [];
+            allMemories = [...memoriesWithThumbnails];
+            console.log('💝 CONSTELLATION: Loaded', allMemories.length, 'vault memories');
           }
+
+          // 2. SECOND: Get fallback memories from localStorage (CRITICAL FIX!)
+          try {
+            const fallbackMemories = JSON.parse(localStorage.getItem('emma_fallback_memories') || '[]');
+            
+            if (fallbackMemories.length > 0) {
+              console.log('💾 CONSTELLATION: Found', fallbackMemories.length, 'fallback memories, adding to constellation');
+              
+              // Process fallback memories for constellation display
+              const processedFallbackMemories = fallbackMemories.map(memory => {
+                const attachments = memory.attachments || [];
+                let thumbnail = memory.thumbnail;
+                
+                // If no thumbnail but has attachments, use first one
+                if (!thumbnail && attachments.length > 0 && attachments[0].url) {
+                  thumbnail = attachments[0].url;
+                }
+                
+                return {
+                  ...memory,
+                  thumbnail,
+                  isFallbackMemory: true, // Mark as fallback for UI indication
+                  needsVaultSync: true,
+                  title: (memory.title || 'Captured Memory') + ' 📦' // Add fallback indicator
+                };
+              });
+              
+              // Add fallback memories to the list
+              allMemories = [...allMemories, ...processedFallbackMemories];
+              console.log('💾 CONSTELLATION: Total memories (vault + fallback):', allMemories.length);
+            }
+          } catch (fallbackError) {
+            console.warn('💾 CONSTELLATION: Error loading fallback memories:', fallbackError);
+          }
+
+          return allMemories;
+
         } catch (error) {
           console.error('💝 CONSTELLATION: Error loading memories from vault:', error);
           return [];
