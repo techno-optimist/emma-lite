@@ -455,12 +455,14 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     // 💝 Check for memory detection (new messages only)
-
     if (this.intelligentCapture) {
-
-      await this.analyzeForMemory(message, messageId);
+      const analysisResult = await this.analyzeForMemory(message, messageId);
+      // If intelligent capture already produced a response (unified prompt), stop here
+      if (analysisResult && analysisResult.handled) {
+        return;
+      }
     } else {
-
+      // ... existing code ...
     }
 
     // Show typing indicator
@@ -1836,14 +1838,14 @@ class EmmaChatExperience extends ExperiencePopup {
   async analyzeForMemory(message, messageId) {
     if (!this.intelligentCapture) {
       if (this.debugMode) {
-
+        // ... existing code ...
       }
-      return;
+      return { handled: false };
     }
 
     try {
       if (this.debugMode) {
-
+        // ... existing code ...
       }
 
       const analysis = await this.intelligentCapture.analyzeMessage({
@@ -1853,7 +1855,7 @@ class EmmaChatExperience extends ExperiencePopup {
       });
 
       if (this.debugMode) {
-
+        // ... existing code ...
       }
 
       if (analysis.isMemoryWorthy) {
@@ -1883,17 +1885,21 @@ class EmmaChatExperience extends ExperiencePopup {
             memoryId: analysis.memory.id
         });
 
+        return { handled: true };
+
       } else {
         if (this.debugMode) {
           console.log(`💝 Not memory-worthy. FinalScore: ${analysis.finalScore?.toFixed(3)}, Reason: ${analysis.reason}`);
           console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
+        return { handled: false };
       }
 
     } catch (error) {
       if (this.debugMode) {
         console.error('💝 Memory analysis failed:', error);
       }
+      return { handled: false };
     }
   }
 
