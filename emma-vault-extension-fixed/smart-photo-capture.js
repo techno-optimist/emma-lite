@@ -343,24 +343,10 @@ class EmmaSmartPhotoCapture {
     // Update or create progress indicator
     let progressDiv = document.getElementById('emma-photo-progress');
     
+    // SILENT CAPTURE: No visual progress indicator created
     if (!progressDiv) {
-      progressDiv = document.createElement('div');
-      progressDiv.id = 'emma-photo-progress';
-      progressDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(20, 20, 30, 0.95);
-        color: white;
-        padding: 20px;
-        border-radius: 12px;
-        z-index: 999999;
-        font-family: system-ui;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        min-width: 300px;
-      `;
-      document.body.appendChild(progressDiv);
+      console.log('📸 Emma Silent Capture: Starting bulk capture session');
+      return; // Skip visual element creation
     }
 
     const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -377,11 +363,8 @@ class EmmaSmartPhotoCapture {
     `;
 
     if (current >= total && total > 0) {
-      setTimeout(() => {
-        if (progressDiv.parentNode) {
-          progressDiv.parentNode.removeChild(progressDiv);
-        }
-      }, 3000);
+      // SILENT CAPTURE: No visual cleanup needed
+      console.log('📸 Emma Silent Capture: Bulk capture completed');
     }
   }
 }
