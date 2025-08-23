@@ -61,8 +61,10 @@ function openMemoryDetailModal(memory) {
   // Add to DOM
   document.body.appendChild(modal);
   
-  // Setup event handlers
-  setupModalEventHandlers(modal, memory, overlay, content);
+  // Setup event handlers with delay to prevent immediate close
+  setTimeout(() => {
+    setupModalEventHandlers(modal, memory, overlay, content);
+  }, 100);
   
   // Store reference
   window.currentMemory = memory;
