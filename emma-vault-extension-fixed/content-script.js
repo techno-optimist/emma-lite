@@ -1185,14 +1185,18 @@ async function waitForWebappVault(timeoutMs = 10000) {
           typeof window.emmaWebVault.restoreVaultState === 'function') {
         console.log('🔧 Content Script: Vault exists but not open, attempting restore...');
         try {
-          await window.emmaWebVault.restoreVaultState();
-          console.log('🔧 Content Script: Vault restore attempted');
-          // Check again after restore attempt
-          if (window.emmaWebVault.isOpen) {
-            console.log('✅ Content Script: Vault restored and ready!');
-            resolve(window.emmaWebVault);
-            return;
-          }
+          // Use .then() instead of await since we're not in an async function
+          window.emmaWebVault.restoreVaultState().then(() => {
+            console.log('🔧 Content Script: Vault restore attempted');
+            // Check again after restore attempt
+            if (window.emmaWebVault.isOpen) {
+              console.log('✅ Content Script: Vault restored and ready!');
+              resolve(window.emmaWebVault);
+              return;
+            }
+          }).catch(restoreError => {
+            console.warn('🔧 Content Script: Vault restore failed:', restoreError);
+          });
         } catch (restoreError) {
           console.warn('🔧 Content Script: Vault restore failed:', restoreError);
         }
