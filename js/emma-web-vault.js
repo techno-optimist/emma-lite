@@ -463,6 +463,70 @@ class EmmaWebVault {
   }
 
   /**
+   * Update memory (CRITICAL: Missing method causing data loss!)
+   */
+  async updateMemory(memoryId, updates) {
+    console.log('🔄 VAULT: Updating memory:', memoryId, updates);
+
+    // Extension mode: Route through extension
+    if (this.extensionAvailable) {
+      // Send update to extension for saving to actual vault
+      window.postMessage({
+        channel: 'emma-vault-bridge',
+        type: 'UPDATE_MEMORY',
+        data: {
+          memoryId: memoryId,
+          updates: updates
+        }
+      }, window.location.origin);
+
+      return { success: true };
+    }
+
+    // Normal vault mode
+    if (!this.isOpen) {
+      throw new Error('No vault is open');
+    }
+
+    const memory = this.vaultData.content.memories[memoryId];
+    if (!memory) {
+      throw new Error(`Memory not found: ${memoryId}`);
+    }
+
+    try {
+      // Update memory fields
+      const timestamp = new Date().toISOString();
+      
+      // Merge updates into existing memory
+      Object.keys(updates).forEach(key => {
+        if (key === 'metadata') {
+          // Deep merge metadata to preserve existing fields
+          memory.metadata = {
+            ...memory.metadata,
+            ...updates.metadata
+          };
+        } else {
+          memory[key] = updates[key];
+        }
+      });
+      
+      // Always update the timestamp
+      memory.updated = timestamp;
+
+      console.log('✅ VAULT: Memory updated successfully:', memoryId);
+      console.log('📊 VAULT: Updated metadata.people:', memory.metadata?.people);
+
+      // Auto-save the vault
+      await this.autoSave();
+
+      return { success: true, memory: memory };
+    } catch (error) {
+      console.error('❌ VAULT: Failed to update memory:', error);
+      throw error;
+    }
+  }
+
+  /**
    * List memories (IDENTICAL API to desktop version!)
    */
   async listMemories(limit = 50, offset = 0) {

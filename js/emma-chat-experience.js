@@ -2087,22 +2087,40 @@ class EmmaChatExperience extends ExperiencePopup {
   async confirmSaveMemory(memoryId) {
 
     try {
-      // Find the memory from enrichment state or detected memories
+      // Find the ENRICHED memory from enrichment state or detected memories
       let memory = null;
+      let enrichmentState = null;
 
-      // Check enrichment state first
+      // Check enrichment state first for ENRICHED data
       for (const [id, state] of this.enrichmentState) {
         if (state.memory && state.memory.id === memoryId) {
-          memory = state.memory;
+          enrichmentState = state;
+          
+          // CRITICAL FIX: Build enriched memory with all collected data
+          memory = {
+            ...state.memory,
+            metadata: {
+              ...state.memory.metadata,
+              people: state.collectedData.people || [], // Use enriched people data
+              date: state.collectedData.when || state.memory.metadata.date,
+              location: state.collectedData.where || state.memory.metadata.location,
+              emotions: state.collectedData.emotion ? [state.collectedData.emotion] : (state.memory.metadata.emotions || []),
+              enrichmentComplete: true
+            },
+            content: state.collectedData.enrichedContent || state.memory.content
+          };
+          
+          console.log('💾 EMMA CHAT: Using ENRICHED memory with people:', memory.metadata.people);
           break;
         }
       }
 
-      // Fallback to detected memories
+      // Fallback to detected memories (original behavior)
       if (!memory) {
         for (const [msgId, analysis] of this.detectedMemories) {
           if (analysis.memory && analysis.memory.id === memoryId) {
             memory = analysis.memory;
+            console.log('💾 EMMA CHAT: Using detected memory (no enrichment)');
             break;
           }
         }
@@ -2521,7 +2539,8 @@ class EmmaChatExperience extends ExperiencePopup {
     // Extract information based on current stage
     switch (currentStage) {
       case 'who':
-        state.collectedData.people = this.extractPeopleFromResponse(userResponse);
+        // CRITICAL FIX: extractPeopleFromResponse is now async and creates people in vault
+        state.collectedData.people = await this.extractPeopleFromResponse(userResponse);
         break;
       case 'when':
         state.collectedData.when = this.extractTimeFromResponse(userResponse);
@@ -2559,17 +2578,28 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Extract people names from user response
+   * Extract people names from user response and create them in vault if needed
+   * CTO CRITICAL FIX: Actually persist people to vault, don't just extract names!
    */
-  extractPeopleFromResponse(response) {
+  async extractPeopleFromResponse(response) {
     const people = [];
     const text = response.toLowerCase();
 
+    // Handle "no one" or "alone" responses first
+    if (/\b(no one|nobody|alone|just me|by myself)\b/i.test(text)) {
+      return [];
+    }
+
+    const detectedNames = [];
+
     // Common relationship terms
-    const relationships = ['mom', 'dad', 'mother', 'father', 'sister', 'brother', 'friend', 'husband', 'wife', 'son', 'daughter'];
+    const relationships = ['mom', 'dad', 'mother', 'father', 'sister', 'brother', 'friend', 'husband', 'wife', 'son', 'daughter', 'grandmother', 'grandfather', 'grandma', 'grandpa', 'uncle', 'aunt', 'cousin'];
     relationships.forEach(rel => {
       if (text.includes(rel)) {
-        people.push(rel.charAt(0).toUpperCase() + rel.slice(1));
+        detectedNames.push({
+          name: rel.charAt(0).toUpperCase() + rel.slice(1),
+          relationship: rel
+        });
       }
     });
 
@@ -2578,16 +2608,82 @@ class EmmaChatExperience extends ExperiencePopup {
     words.forEach(word => {
       const clean = word.replace(/[^A-Za-z]/g, '');
       if (/^[A-Z][a-z]+$/.test(clean) && clean.length > 2) {
-        people.push(clean);
+        // Skip common non-name words
+        const skipWords = ['The', 'And', 'But', 'For', 'With', 'This', 'That', 'When', 'Where', 'What', 'How', 'Yes', 'His', 'Her', 'She', 'Him'];
+        if (!skipWords.includes(clean)) {
+          detectedNames.push({
+            name: clean,
+            relationship: 'friend' // default relationship
+          });
+        }
       }
     });
 
-    // Handle "no one" or "alone" responses
-    if (/\b(no one|nobody|alone|just me|by myself)\b/i.test(text)) {
-      return [];
+    // Remove duplicates by name
+    const uniqueNames = detectedNames.filter((person, index, self) => 
+      index === self.findIndex(p => p.name.toLowerCase() === person.name.toLowerCase())
+    );
+
+    console.log('👥 EMMA CHAT: Detected people in response:', uniqueNames);
+
+    // Create or find each person in the vault
+    for (const personData of uniqueNames) {
+      try {
+        const personId = await this.findOrCreatePerson(personData.name, personData.relationship);
+        if (personId) {
+          people.push(personId);
+        }
+      } catch (error) {
+        console.error('👥 EMMA CHAT: Failed to create person:', personData.name, error);
+        // Continue with other people if one fails
+      }
     }
 
-    return [...new Set(people)]; // Remove duplicates
+    console.log('👥 EMMA CHAT: Final people IDs for memory:', people);
+    return people;
+  }
+
+  /**
+   * Find existing person or create new one in vault
+   */
+  async findOrCreatePerson(name, relationship = 'friend') {
+    try {
+      // Check if we have vault access
+      if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+        console.warn('👥 EMMA CHAT: No vault access for person creation');
+        return null;
+      }
+
+      // Get existing people from vault
+      const existingPeople = await window.emmaWebVault.listPeople();
+      console.log('👥 EMMA CHAT: Checking against existing people:', existingPeople?.length || 0);
+
+      // Check if person already exists (case-insensitive)
+      const existingPerson = existingPeople.find(person => 
+        person.name && person.name.toLowerCase() === name.toLowerCase()
+      );
+
+      if (existingPerson) {
+        console.log('👥 EMMA CHAT: Found existing person:', existingPerson.name, existingPerson.id);
+        return existingPerson.id;
+      }
+
+      // Create new person
+      console.log('👥 EMMA CHAT: Creating new person:', name, 'with relationship:', relationship);
+      const newPerson = await window.emmaWebVault.addPerson({
+        name: name,
+        relationship: relationship,
+        createdAt: new Date().toISOString(),
+        createdBy: 'emma-chat'
+      });
+
+      console.log('✅ EMMA CHAT: Created new person:', newPerson);
+      return newPerson.id || newPerson.person?.id;
+
+    } catch (error) {
+      console.error('❌ EMMA CHAT: Failed to find/create person:', name, error);
+      return null;
+    }
   }
 
   /**

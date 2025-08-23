@@ -4849,18 +4849,29 @@
         memoryNodes.forEach(memoryNode => {
           const memory = memoryNode.memory;
 
-          // Check if memory has people data (from wizard selections or manual input)
-          if (memory.selectedPeople && Array.isArray(memory.selectedPeople)) {
-            // Connect to people selected in wizard
-            memory.selectedPeople.forEach(personId => {
-              const personNode = peopleNodes.find(pNode => pNode.person.id === personId);
-              if (personNode && !memoryNode.connections.includes(personNode)) {
-                memoryNode.connections.push(personNode);
-                personNode.connections.push(memoryNode);
-
-              }
-            });
+          // Check if memory has people data (from wizard selections, manual input, OR new metadata.people format)
+          let peopleToConnect = [];
+          
+          // NEW FORMAT: Check metadata.people first (preferred)
+          if (memory.metadata && memory.metadata.people && Array.isArray(memory.metadata.people)) {
+            peopleToConnect = memory.metadata.people;
+            console.log('🔗 CONSTELLATION: Using metadata.people format:', peopleToConnect);
           }
+          // LEGACY FORMAT: Fallback to selectedPeople for backward compatibility
+          else if (memory.selectedPeople && Array.isArray(memory.selectedPeople)) {
+            peopleToConnect = memory.selectedPeople;
+            console.log('🔗 CONSTELLATION: Using legacy selectedPeople format:', peopleToConnect);
+          }
+          
+          // Create connections for all people
+          peopleToConnect.forEach(personId => {
+            const personNode = peopleNodes.find(pNode => pNode.person.id === personId);
+            if (personNode && !memoryNode.connections.includes(personNode)) {
+              memoryNode.connections.push(personNode);
+              personNode.connections.push(memoryNode);
+              console.log(`🔗 CONSTELLATION: Connected memory "${memory.title}" to person "${personNode.person.name}"`);
+            }
+          });
 
           // Also check if people are mentioned in memory content/responses
           const memoryText = (memory.content || '').toLowerCase() + ' ' +
