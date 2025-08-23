@@ -2799,7 +2799,7 @@ class EmmaChatExperience extends ExperiencePopup {
    * FSM: Ask next enrichment question based on missing data
    * CTO BEST PRACTICES: Short questions, dementia-friendly, one at a time
    */
-  askNextEnrichmentQuestion(memoryId) {
+  async askNextEnrichmentQuestion(memoryId) {
     const state = this.enrichmentState.get(memoryId);
     if (!state) return;
 
@@ -2812,27 +2812,27 @@ class EmmaChatExperience extends ExperiencePopup {
     // Stage 1: Who was there?
     if (!stagesCompleted.includes('who') && (!collectedData.people || collectedData.people.length === 0)) {
       nextStage = 'who';
-      question = "Who else was there with you during this moment?";
+      question = await this.generateDynamicEnrichmentQuestion(state, 'who');
     }
     // Stage 2: When did this happen?
     else if (!stagesCompleted.includes('when') && !collectedData.when) {
       nextStage = 'when';
-      question = "When did this happen? Can you remember the time period or your age?";
+      question = await this.generateDynamicEnrichmentQuestion(state, 'when');
     }
     // Stage 3: Where were you?
     else if (!stagesCompleted.includes('where') && !collectedData.where) {
       nextStage = 'where';
-      question = "Where did this take place? Paint me a picture of the setting.";
+      question = await this.generateDynamicEnrichmentQuestion(state, 'where');
     }
     // Stage 4: How did it feel?
     else if (!stagesCompleted.includes('emotion') && !collectedData.emotion) {
       nextStage = 'emotion';
-      question = "How did this moment make you feel? What emotions do you remember?";
+      question = await this.generateDynamicEnrichmentQuestion(state, 'emotion');
     }
     // Stage 5: Any photos or media?
     else if (!stagesCompleted.includes('media') && collectedData.media.length === 0) {
       nextStage = 'media';
-      question = "Do you have any photos, videos, or other mementos from this time that you'd like to include?";
+      question = await this.generateDynamicEnrichmentQuestion(state, 'media');
     }
     // Stage 6: Complete - show preview
     else {
@@ -3052,7 +3052,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.enrichmentState.set(memoryId, state);
 
     // Acknowledge the response with validation (dementia-friendly)
-    const acknowledgment = this.generateStageAcknowledgment(currentStage, userResponse);
+    const acknowledgment = await this.generateStageAcknowledgment(currentStage, state.collectedData, state.memory);
 
     setTimeout(() => {
       this.addMessage(acknowledgment, 'emma', { type: 'enrichment-acknowledgment' });
@@ -3272,20 +3272,7 @@ class EmmaChatExperience extends ExperiencePopup {
     return text.length > 10; // Assume longer responses are positive
   }
 
-  /**
-   * Generate stage acknowledgment (dementia-friendly validation)
-   */
-  generateStageAcknowledgment(stage, response) {
-    const acknowledgments = {
-      who: "Thank you for sharing who was there with you.",
-      when: "I appreciate you telling me about the timing.",
-      where: "That helps me picture where this happened.",
-      emotion: "Thank you for sharing how that felt.",
-      media: "I understand about the photos."
-    };
-
-    return acknowledgments[stage] || "Thank you for sharing that detail.";
-  }
+  // OLD HARDCODED FUNCTION REMOVED - Now using dynamic AI-generated responses
 
   /**
    * Handle memory capture continuation
@@ -3593,18 +3580,85 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Generate stage-specific acknowledgment for enrichment
+   * Generate dynamic, contextual enrichment questions - NEVER canned responses!
    */
-  generateStageAcknowledgment(stage, collectedData) {
-    const acknowledgments = {
-      who: "Thank you for sharing who was there with you.",
-      when: "That timing helps me understand the context better.",
-      where: "The setting adds such important detail to your memory.",
-      emotion: "Those feelings are such an important part of this memory.",
-      media: "Thank you for letting me know about photos and videos."
-    };
+  async generateDynamicEnrichmentQuestion(state, stage) {
+    const memory = state.memory;
+    const collectedData = state.collectedData;
+    
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      // Fallback with minimal context awareness
+      const fallbacks = {
+        who: `I'd love to know more about who shared this moment with you. Can you tell me about the people who were there?`,
+        when: `When did this beautiful memory happen? Was it recently, or does it take you back to an earlier time in your life?`,
+        where: `Where were you when this happened? I'd love to picture the place where this memory was made.`,
+        emotion: `How did this moment feel for you? What emotions come back when you think about it?`,
+        media: `Do you happen to have any photos or videos from this time that we could include to make this memory even more special?`
+      };
+      return fallbacks[stage] || "Can you tell me more about this memory?";
+    }
 
-    return acknowledgments[stage] || "Thank you for sharing that detail.";
+    try {
+      const prompt = `You are Emma, a warm, empathetic memory companion talking to someone about their precious memory: "${memory.content}"
+
+Current context: 
+- People already mentioned: ${memory.metadata?.peopleNames?.join(', ') || 'none yet'}
+- Already collected: ${Object.keys(collectedData).filter(k => collectedData[k]).join(', ') || 'just started'}
+
+Generate a warm, personalized question to ask about the "${stage}" aspect of this memory. Be:
+- Warm and conversational, like talking to a dear friend
+- Specific to THEIR memory content, not generic
+- Encouraging and validating
+- Natural, never scripted or robotic
+- One focused question only
+
+Stage to ask about: ${stage}
+${stage === 'who' ? 'Ask about other people who were part of this moment' : ''}
+${stage === 'when' ? 'Ask about the timing, date, or period when this happened' : ''}
+${stage === 'where' ? 'Ask about the location or setting' : ''}
+${stage === 'emotion' ? 'Ask about feelings and emotions from this memory' : ''}
+${stage === 'media' ? 'Ask if they have photos, videos, or mementos to include' : ''}
+
+Response (just the question, naturally conversational):`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || fallbacks[stage] || "Can you tell me more about this memory?";
+      
+    } catch (error) {
+      console.error('Error generating dynamic enrichment question:', error);
+      return `I'd love to hear more about this memory. Can you tell me about the ${stage} aspect of it?`;
+    }
+  }
+
+  /**
+   * Generate dynamic, contextual acknowledgment for enrichment
+   */
+  async generateDynamicAcknowledgment(memory, stage, collectedData) {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      // Warm fallbacks that aren't robotic
+      return "Thank you for sharing that - it helps me understand this memory better.";
+    }
+
+    try {
+      const newInfo = collectedData[stage];
+      const prompt = `You are Emma, a warm memory companion. Someone just shared: "${newInfo}" about their memory: "${memory.content}"
+
+Generate a brief, warm acknowledgment that:
+- Shows you heard and value what they shared
+- Feels personal and contextual to THEIR specific information
+- Is encouraging and validates their memory
+- Sounds natural, never scripted
+- Is 1-2 sentences maximum
+
+Just the acknowledgment response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "Thank you for sharing that beautiful detail with me.";
+      
+    } catch (error) {
+      console.error('Error generating dynamic acknowledgment:', error);
+      return "Thank you for sharing that with me.";
+    }
   }
 
   cleanup() {
