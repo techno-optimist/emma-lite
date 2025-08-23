@@ -79,28 +79,46 @@ class ExtensionVaultChecker {
     return new Promise((resolve) => {
       // Query all tabs to find Emma webapp
       chrome.tabs.query({}, (tabs) => {
+        console.log('🔐 Extension: Checking all tabs for Emma webapp...');
+        console.log('🔐 Extension: Total tabs found:', tabs.length);
+        
+        // Debug: log all tab URLs to see what we're working with
+        tabs.forEach((tab, index) => {
+          if (tab.url) {
+            console.log(`🔐 Extension: Tab ${index}: ${tab.url}`);
+          }
+        });
+        
         const emmaTabs = tabs.filter(tab => 
           tab.url?.includes('emma-lite-extension.onrender.com') ||
           tab.url?.includes('emma-hjjc.onrender.com') ||
           tab.url?.includes('localhost')
         );
 
+        console.log('🔐 Extension: Emma tabs found:', emmaTabs.length);
+        emmaTabs.forEach((tab, index) => {
+          console.log(`🔐 Extension: Emma tab ${index}: ${tab.url}`);
+        });
+
         if (emmaTabs.length === 0) {
-          console.log('🔐 Extension: No Emma webapp tabs found');
+          console.log('🔐 Extension: No Emma webapp tabs found - vault appears locked');
           resolve({ isUnlocked: false });
           return;
         }
 
         // Send message to first Emma tab
         const emmaTab = emmaTabs[0];
+        console.log('🔐 Extension: Sending message to Emma tab:', emmaTab.url);
+        
         chrome.tabs.sendMessage(emmaTab.id, {
           action: 'checkVaultStatus'
         }, (response) => {
           if (chrome.runtime.lastError) {
-            console.log('🔐 Extension: Content script not ready:', chrome.runtime.lastError.message);
+            console.log('🔐 Extension: Content script communication failed:', chrome.runtime.lastError.message);
+            console.log('🔐 Extension: This usually means content script not injected or tab not ready');
             resolve({ isUnlocked: false });
           } else {
-            console.log('🔐 Extension: Vault status from webapp:', response);
+            console.log('🔐 Extension: SUCCESS! Vault status received from webapp:', response);
             resolve(response || { isUnlocked: false });
           }
         });
