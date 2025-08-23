@@ -629,13 +629,336 @@ async function loadPeopleContent(modal, memory) {
 }
 
 /**
- * Simple function to open people selection - JUST FIX THE BUTTON!
+ * CREATE BEAUTIFUL PEOPLE SELECTION GRID - FOR YOUR MOTHER'S MEMORIES
  */
-function openAddPeopleModalForGallery() {
-  console.log('👥 MODAL: Opening simple people selector');
+async function openAddPeopleModalForGallery() {
+  console.log('👥 MODAL: Opening beautiful people selection grid for memory connections');
   
-  // Just redirect to people page for now - we'll fix this properly tomorrow
-  window.open('../pages/people.html', '_blank');
+  try {
+    // Get the current memory we're working with
+    const currentMemory = window.currentMemory;
+    if (!currentMemory) {
+      alert('No memory selected. Please try again.');
+      return;
+    }
+
+    // Load all people from vault
+    let allPeople = [];
+    
+    // Try web vault first (primary source)
+    if (window.emmaWebVault?.vaultData?.people) {
+      const peopleObj = window.emmaWebVault.vaultData.people;
+      allPeople = Object.values(peopleObj);
+      console.log('👥 MODAL: Loaded', allPeople.length, 'people from web vault');
+    }
+    
+    // Fallback to chrome storage if needed
+    if (allPeople.length === 0 && typeof chrome !== 'undefined') {
+      try {
+        const store = await chrome.storage.local.get(['emma_people']);
+        allPeople = Array.isArray(store.emma_people) ? store.emma_people : [];
+        console.log('👥 MODAL: Loaded', allPeople.length, 'people from chrome storage');
+      } catch (error) {
+        console.warn('👥 MODAL: Could not access chrome storage:', error);
+      }
+    }
+
+    if (allPeople.length === 0) {
+      alert('No people found in your vault. Please add people first in the People section.');
+      return;
+    }
+
+    // Get currently connected people to filter them out
+    const currentlyConnected = currentMemory.metadata?.people || [];
+    const connectedIds = new Set(currentlyConnected.map(id => String(id)));
+    
+    // Filter to only show unconnected people
+    const availablePeople = allPeople.filter(person => !connectedIds.has(String(person.id)));
+    
+    if (availablePeople.length === 0) {
+      alert('All people in your vault are already connected to this memory!');
+      return;
+    }
+
+    // Create the beautiful selection overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'people-selection-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    `;
+
+    // Create the elegant people grid
+    const peopleGrid = availablePeople.map(person => {
+      const initials = (person.name || '?').charAt(0).toUpperCase();
+      const hasAvatar = person.avatarUrl || person.profilePicture;
+      
+      return `
+        <div class="person-selector-card" data-person-id="${person.id}" style="
+          position: relative;
+          background: rgba(255, 255, 255, 0.05);
+          border: 2px solid transparent;
+          border-radius: 16px;
+          padding: 20px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+        " onclick="selectPerson(this)" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="updateCardBackground(this)">
+          
+          <div style="
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            background: ${hasAvatar ? 'transparent' : 'linear-gradient(135deg, #8658ff, #f093fb)'};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+          ">
+            ${hasAvatar ? 
+              `<img src="${person.avatarUrl || person.profilePicture}" alt="${person.name}" style="width: 100%; height: 100%; object-fit: cover;" />` :
+              `<span style="color: white; font-size: 32px; font-weight: 600;">${initials}</span>`
+            }
+          </div>
+          
+          <h3 style="
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 8px;
+          ">${person.name || 'Unknown'}</h3>
+          
+          <p style="
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin: 0;
+          ">${person.relationship || 'Connection'}</p>
+          
+          <div class="selection-indicator" style="
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+          ">
+            <span style="color: white; font-size: 14px;">✓</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    overlay.innerHTML = `
+      <div style="
+        background: rgba(26, 16, 51, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 32px;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: white;
+      ">
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding-bottom: 20px;
+        ">
+          <div>
+            <h2 style="margin: 0; font-size: 24px; font-weight: 600;">Connect People to Memory</h2>
+            <p style="margin: 8px 0 0; color: rgba(255, 255, 255, 0.7);">Select people who are part of this memory</p>
+          </div>
+          <button onclick="this.closest('.people-selection-overlay').remove()" style="
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 8px;
+          ">&times;</button>
+        </div>
+        
+        <div id="people-grid" style="
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 20px;
+          margin-bottom: 24px;
+        ">
+          ${peopleGrid}
+        </div>
+        
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          padding-top: 20px;
+        ">
+          <div id="selection-count" style="color: rgba(255, 255, 255, 0.7);">
+            0 people selected
+          </div>
+          <div style="display: flex; gap: 16px;">
+            <button onclick="this.closest('.people-selection-overlay').remove()" style="
+              background: rgba(255, 255, 255, 0.1);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              color: white;
+              padding: 12px 24px;
+              border-radius: 12px;
+              cursor: pointer;
+              font-size: 16px;
+            ">Cancel</button>
+            <button id="connect-people-btn" onclick="connectSelectedPeople()" disabled style="
+              background: linear-gradient(135deg, #8658ff, #f093fb);
+              border: none;
+              color: white;
+              padding: 12px 24px;
+              border-radius: 12px;
+              cursor: pointer;
+              font-size: 16px;
+              opacity: 0.5;
+            ">Connect 0 People</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Add the selection logic
+    const selectedPeople = new Set();
+
+    window.selectPerson = function(card) {
+      const personId = card.dataset.personId;
+      const indicator = card.querySelector('.selection-indicator');
+      const countDiv = document.getElementById('selection-count');
+      const connectBtn = document.getElementById('connect-people-btn');
+      
+      if (selectedPeople.has(personId)) {
+        // Deselect
+        selectedPeople.delete(personId);
+        card.style.border = '2px solid transparent';
+        indicator.style.display = 'none';
+      } else {
+        // Select
+        selectedPeople.add(personId);
+        card.style.border = '2px solid #8658ff';
+        indicator.style.display = 'flex';
+      }
+      
+      // Update UI
+      const count = selectedPeople.size;
+      countDiv.textContent = count === 1 ? '1 person selected' : `${count} people selected`;
+      connectBtn.disabled = count === 0;
+      connectBtn.style.opacity = count === 0 ? '0.5' : '1';
+      connectBtn.textContent = count === 0 ? 'Connect 0 People' : `Connect ${count} People`;
+    };
+
+    window.updateCardBackground = function(card) {
+      const personId = card.dataset.personId;
+      if (!selectedPeople.has(personId)) {
+        card.style.background = 'rgba(255, 255, 255, 0.05)';
+      } else {
+        card.style.background = 'rgba(134, 88, 255, 0.2)';
+      }
+    };
+
+    window.connectSelectedPeople = async function() {
+      if (selectedPeople.size === 0) return;
+      
+      try {
+        const connectBtn = document.getElementById('connect-people-btn');
+        connectBtn.disabled = true;
+        connectBtn.textContent = 'Connecting...';
+        
+        // Update memory metadata with selected people
+        if (!currentMemory.metadata) currentMemory.metadata = {};
+        if (!currentMemory.metadata.people) currentMemory.metadata.people = [];
+        
+        // Add selected people IDs
+        Array.from(selectedPeople).forEach(personId => {
+          if (!currentMemory.metadata.people.includes(personId)) {
+            currentMemory.metadata.people.push(personId);
+          }
+        });
+        
+        // Also update selectedPeople for constellation compatibility
+        if (!currentMemory.selectedPeople) currentMemory.selectedPeople = [];
+        Array.from(selectedPeople).forEach(personId => {
+          if (!currentMemory.selectedPeople.includes(personId)) {
+            currentMemory.selectedPeople.push(personId);
+          }
+        });
+        
+        console.log('👥 MODAL: Updated memory with people connections:', currentMemory.metadata.people);
+        
+        // Save to vault if available
+        if (window.emmaWebVault && currentMemory.id) {
+          try {
+            await window.emmaWebVault.updateMemory(currentMemory.id, {
+              metadata: currentMemory.metadata,
+              selectedPeople: currentMemory.selectedPeople
+            });
+            console.log('💾 MODAL: Saved people connections to vault');
+          } catch (error) {
+            console.warn('💾 MODAL: Could not save to vault:', error);
+          }
+        }
+        
+        // Success notification
+        console.log(`✅ Successfully connected ${selectedPeople.size} people to memory "${currentMemory.title}"`);
+        
+        // Close overlay
+        overlay.remove();
+        
+        // Refresh the People tab to show new connections
+        setTimeout(() => {
+          const memoryModal = document.querySelector('.memory-modal');
+          if (memoryModal && currentMemory) {
+            loadPeopleContent(memoryModal, currentMemory).catch(error => {
+              console.error('❌ Error refreshing people content:', error);
+            });
+          }
+        }, 200);
+        
+      } catch (error) {
+        console.error('❌ Failed to connect people:', error);
+        alert('Failed to connect people: ' + error.message);
+      }
+    };
+
+    // Cleanup function for global variables
+    overlay.addEventListener('remove', () => {
+      delete window.selectPerson;
+      delete window.updateCardBackground;
+      delete window.connectSelectedPeople;
+    });
+
+    console.log('🎪 MODAL: Beautiful people selection grid opened with', availablePeople.length, 'available people');
+
+  } catch (error) {
+    console.error('❌ MODAL: Failed to open people selection:', error);
+    alert('Failed to load people selection. Please try again.');
+  }
 }
 
 /**
