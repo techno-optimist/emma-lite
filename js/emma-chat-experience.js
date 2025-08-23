@@ -64,6 +64,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Set global reference for onclick handlers (production-safe)
     window.chatExperience = this;
+    console.log('🔧 CONSTRUCTOR DEBUG: window.chatExperience set:', typeof window.chatExperience);
+    console.log('🔧 CONSTRUCTOR DEBUG: confirmSaveMemory method exists:', typeof this.confirmSaveMemory);
 
     this.enableFocusMode();
   }
@@ -491,7 +493,7 @@ class EmmaChatExperience extends ExperiencePopup {
       if (options.requiresConfirmation && options.memoryId) {
         confirmationHtml = `
           <div class="memory-confirmation-buttons">
-            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${options.memoryId}')">✨ Yes, save this memory</button>
+            <button class="capsule-btn primary" onclick="console.log('🔧 CLICK DEBUG: window.chatExperience exists:', typeof window.chatExperience); window.chatExperience.confirmSaveMemory('${options.memoryId}')">✨ Yes, save this memory</button>
             <button class="capsule-btn secondary" onclick="window.chatExperience.declineSaveMemory('${options.memoryId}')">Maybe later</button>
           </div>
         `;
