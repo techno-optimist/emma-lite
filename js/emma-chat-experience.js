@@ -1877,7 +1877,7 @@ class EmmaChatExperience extends ExperiencePopup {
         const intelligentResponse = this.generateMemoryCaptureResponse(message, analysis.memory, analysis);
 
         // Add the message with confirmation buttons.
-        this.addMessage('emma', intelligentResponse, {
+        this.addMessage(intelligentResponse, 'emma', {
             memory: analysis.memory,
             analysis: analysis,
             isMemoryCapturePrompt: true,
