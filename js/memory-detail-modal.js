@@ -129,8 +129,10 @@ function openMemoryDetailModal(memory) {
     if (modal.parentNode) {
       try {
         loadMediaContent(modal, memory);
-        loadPeopleContent(modal, memory);
-        console.log('✅ MODAL: Tab content pre-loaded successfully');
+        loadPeopleContent(modal, memory).catch(error => {
+          console.error('❌ MODAL: Error pre-loading people:', error);
+        });
+        console.log('✅ MODAL: Tab content pre-loading started');
       } catch (error) {
         console.error('❌ MODAL: Error pre-loading tab content:', error);
       }
@@ -376,7 +378,9 @@ function switchTab(modal, tabName) {
   if (tabName === 'media') {
     loadMediaContent(modal, memory);
   } else if (tabName === 'people') {
-    loadPeopleContent(modal, memory);
+    loadPeopleContent(modal, memory).catch(error => {
+      console.error('❌ MODAL: Error loading people content:', error);
+    });
   }
 }
 
@@ -487,7 +491,7 @@ function loadMediaContent(modal, memory) {
 /**
  * Load people content for the memory
  */
-function loadPeopleContent(modal, memory) {
+async function loadPeopleContent(modal, memory) {
   const peopleContainer = modal.querySelector('#people-content');
   if (!peopleContainer) return;
   
