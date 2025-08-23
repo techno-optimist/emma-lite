@@ -1990,7 +1990,7 @@ class EmmaChatExperience extends ExperiencePopup {
         </div>
 
         <div class="capsule-actions">
-          <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${memory.id}')">
+          <button class="capsule-btn primary" onclick="window.chatExperience.saveMemoryToVault('${memory.id}')">
             ✨ Save to Vault
           </button>
           <button class="capsule-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
@@ -2400,12 +2400,43 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * Finalize memory save and create capsule
+   * Finalize memory save and create capsule - SHOW PREVIEW
    */
   async finalizeMemorySave(memory, memoryId) {
     try {
-      // Save memory directly to vault when user clicks "Save to Vault"
-      console.log('💾 EMMA CHAT: Saving memory to vault:', memoryId);
+      console.log('💾 EMMA CHAT: Creating memory capsule preview for:', memoryId);
+      
+      // Create beautiful memory capsule with people avatars
+      this.addMessage(`Perfect! Let me show you your beautiful memory capsule before we save it to your vault! 💜`, 'emma');
+      
+      // Wait a moment for the message to appear, then show preview
+      setTimeout(async () => {
+        await this.createCapsulePeopleAvatars(memory);
+        this.showMemoryPreviewDialog(memory);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('💾 EMMA CHAT: Error creating preview:', error);
+      this.showToast('❌ Failed to create memory preview', 'error');
+      this.addMessage(`I had trouble creating your memory preview. Let me save it directly to your vault instead! 🤗`, 'emma');
+      await this.saveMemoryDirectly(memory, memoryId);
+    }
+  }
+
+  /**
+   * Save memory to vault (called from preview dialog)
+   */
+  async saveMemoryToVault(memoryId) {
+    try {
+      // Get the memory from enrichment state
+      const state = this.enrichmentState.get(memoryId);
+      if (!state || !state.memory) {
+        this.showToast('❌ Memory not found', 'error');
+        return;
+      }
+
+      const memory = state.memory;
+      console.log('💾 EMMA CHAT: Saving memory to vault from preview:', memoryId);
       
       // Prepare memory for vault
       const memoryToSave = {
@@ -2439,10 +2470,9 @@ class EmmaChatExperience extends ExperiencePopup {
       }
       
     } catch (error) {
-      console.error('💾 EMMA CHAT: Error saving memory:', error);
+      console.error('💾 EMMA CHAT: Error saving memory to vault:', error);
       this.showToast('❌ Failed to save memory', 'error');
-      this.addMessage(`I had trouble saving your memory to the vault. Please try again, or let me know if you need help! 🤗`, 'emma');
-      await this.saveMemoryDirectly(memory, memoryId);
+      this.addMessage(`I had trouble saving your memory to the vault. Please try again! 🤗`, 'emma');
     }
   }
 
