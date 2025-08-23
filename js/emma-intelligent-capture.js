@@ -607,13 +607,20 @@ class EmmaIntelligentCapture {
     // Determine importance
     const importance = this.calculateImportance(signals);
     
-    // Extract metadata
-    const extractedPeople = this.extractPeopleNames(signals.people || []);
-    console.log('🎯 MEMORY DEBUG: Creating metadata with people:', extractedPeople);
+    // Extract metadata with VAULT INTEGRATION
+    const extractedPeopleNames = this.extractPeopleNames(signals.people || []);
+    console.log('🎯 MEMORY DEBUG: Creating metadata with people names:', extractedPeopleNames);
+    
+    // CRITICAL FIX: Convert people names to vault IDs and handle new people
+    const { peopleIds, newPeople } = await this.resolvePeopleToVaultIds(extractedPeopleNames);
+    console.log('🎯 MEMORY DEBUG: Resolved people IDs:', peopleIds);
+    console.log('🎯 MEMORY DEBUG: New people detected:', newPeople);
     
     const metadata = {
       emotions: signals.emotions || [],
-      people: extractedPeople,
+      people: peopleIds, // Use vault IDs instead of names
+      peopleNames: extractedPeopleNames, // Keep names for reference
+      newPeopleDetected: newPeople, // Track new people for prompts
       tags: await this.generateAutoTags(content, signals),
       location: this.extractLocation(content),
       date: this.extractOrInferDate(message, content),
@@ -622,7 +629,7 @@ class EmmaIntelligentCapture {
       aiGenerated: true
     };
     
-    console.log('🎯 MEMORY DEBUG: Final metadata:', metadata);
+    console.log('🎯 MEMORY DEBUG: Final metadata with vault integration:', metadata);
     
     // Additional temporal extraction
     this.detectTemporalSignals(content, signals);
@@ -1013,6 +1020,51 @@ class EmmaIntelligentCapture {
         hasPhotos: memory.attachments.length > 0
       }
     };
+  }
+
+  /**
+   * CRITICAL: Resolve people names to vault IDs and identify new people
+   */
+  async resolvePeopleToVaultIds(peopleNames) {
+    const peopleIds = [];
+    const newPeople = [];
+    
+    try {
+      // Check if we have vault access
+      if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+        console.warn('🎯 VAULT: No vault access for people resolution - using names only');
+        return { peopleIds: peopleNames, newPeople: [] };
+      }
+
+      // Get existing people from vault
+      const existingPeople = await window.emmaWebVault.listPeople();
+      console.log('🎯 VAULT: Checking against', existingPeople?.length || 0, 'existing people');
+
+      // Resolve each detected person
+      for (const personName of peopleNames) {
+        // Check if person already exists (case-insensitive)
+        const existingPerson = existingPeople.find(person => 
+          person.name && person.name.toLowerCase() === personName.toLowerCase()
+        );
+
+        if (existingPerson) {
+          console.log('✅ VAULT: Found existing person:', personName, '→', existingPerson.id);
+          peopleIds.push(existingPerson.id);
+        } else {
+          console.log('🆕 VAULT: New person detected:', personName);
+          newPeople.push(personName);
+          // For now, use the name as placeholder until user confirms
+          peopleIds.push(`temp_${personName.toLowerCase()}`);
+        }
+      }
+
+      return { peopleIds, newPeople };
+      
+    } catch (error) {
+      console.error('❌ VAULT: Failed to resolve people to IDs:', error);
+      // Fallback to using names
+      return { peopleIds: peopleNames, newPeople: [] };
+    }
   }
 
   /**

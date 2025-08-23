@@ -885,27 +885,41 @@ class EmmaChatExperience extends ExperiencePopup {
     console.log('💬 RESPONSE DEBUG: Detected people in memory:', memory.metadata.people);
     console.log('💬 RESPONSE DEBUG: Available signals:', signals);
 
-    // Generate PERSONALIZED responses based on detected people
-    const detectedPeople = memory.metadata.people || [];
+    // CRITICAL FIX: Check for both people IDs and new people detected
+    const detectedPeopleIds = memory.metadata.people || [];
+    const detectedPeopleNames = memory.metadata.peopleNames || [];
+    const newPeopleDetected = memory.metadata.newPeopleDetected || [];
     
-    if (detectedPeople.length > 0) {
-      // PERSONALIZED: Acknowledge the specific people mentioned
-      const peopleNames = detectedPeople.join(' and ');
+    console.log('💬 RESPONSE DEBUG: People IDs:', detectedPeopleIds);
+    console.log('💬 RESPONSE DEBUG: People names:', detectedPeopleNames);
+    console.log('💬 RESPONSE DEBUG: New people:', newPeopleDetected);
+    
+    if (detectedPeopleNames.length > 0) {
+      // PERSONALIZED: Acknowledge the specific people mentioned by name
+      const peopleNames = detectedPeopleNames.join(' and ');
       let personalizedResponse = "";
       
       // Check for family relationships first
       const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
-      const hasFamilyMember = detectedPeople.some(person => familyTerms.includes(person));
+      const hasFamilyMember = detectedPeopleNames.some(person => familyTerms.includes(person));
       
       if (hasFamilyMember) {
-        personalizedResponse = `A walk with ${peopleNames} sounds so special! Family moments like these are truly precious. Tell me more about what made this time together meaningful to you.`;
+        personalizedResponse = `A walk with ${peopleNames} sounds so special! Family moments like these are truly precious.`;
       } else {
-        personalizedResponse = `A walk with ${peopleNames} sounds lovely! I'd love to hear more about this moment. What made this time together special?`;
+        personalizedResponse = `A walk with ${peopleNames} sounds lovely! I'd love to hear more about this moment.`;
       }
       
-      // Add contextual follow-up based on activity
-      if (userMessage.toLowerCase().includes('walk')) {
-        personalizedResponse += " Where did you walk together?";
+      // CRITICAL: Ask about new people if any were detected
+      if (newPeopleDetected.length > 0) {
+        const newNames = newPeopleDetected.join(' and ');
+        personalizedResponse += ` I noticed you mentioned ${newNames} - should I add ${newPeopleDetected.length === 1 ? 'them' : 'them'} to your vault so I can remember ${newPeopleDetected.length === 1 ? 'them' : 'them'} for future memories?`;
+      } else {
+        // Add contextual follow-up for existing people
+        if (userMessage.toLowerCase().includes('walk')) {
+          personalizedResponse += " Where did you walk together?";
+        } else {
+          personalizedResponse += " What made this time together special?";
+        }
       }
       
       return personalizedResponse;
