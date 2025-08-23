@@ -43,6 +43,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse(vaultStats);
     return true; // Keep message channel open for async response
   }
+  
+  if (request.action === 'SAVE_MEMORY_TO_WEBAPP_VAULT') {
+    console.log('💾 Content Script: *** REAL MEMORY SAVE REQUEST ***');
+    console.log('💾 Content Script: Memory data:', request.memoryData);
+    
+    // Save to real webapp vault
+    saveToWebappVault(request.memoryData)
+      .then(result => {
+        console.log('💾 Content Script: Save result:', result);
+        sendResponse(result);
+      })
+      .catch(error => {
+        console.error('💾 Content Script: Save failed:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    
+    return true; // Keep message channel open for async response
+  }
 });
 
 /**
