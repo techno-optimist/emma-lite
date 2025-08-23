@@ -703,13 +703,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Handle very short or unclear messages with gentle encouragement
     if (!lower || lower.length < 3) {
-      const responses = [
-        "I'm here with you. What's on your mind?",
-        "Take your time... I'm listening.",
-        "I'm here whenever you're ready to share something.",
-        "What would you like to talk about?"
-      ];
-      return responses[Math.floor(Math.random() * responses.length)];
+      // Generate dynamic response based on context, time, and vault state
+      return await this.generateDynamicWelcomeResponse();
     }
 
     // Analyze the user's intent and emotional context
@@ -763,35 +758,23 @@ class EmmaChatExperience extends ExperiencePopup {
         const peopleContext = vaultInsights.hasPeople ? ` I can see you've shared stories about ${vaultInsights.peopleNames.slice(0,2).join(' and ')}${vaultInsights.peopleNames.length > 2 ? ' and others' : ''}.` : '';
         return `I'm Emma, and I'm here to help you explore and capture your memories.${peopleContext} You can share new stories with me, ask me about memories you've saved, or just have a conversation. What feels right today?`;
       }
-      return "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. When you share something meaningful, I can help turn it into a memory capsule. What brings you here today?";
+      return await this.generateDynamicHelpResponse();
     }
 
     if (isGreeting) {
-      const hour = new Date().getHours();
-      if (vaultInsights?.recentMemory && isEarlyConversation) {
-        const daysSince = Math.floor((Date.now() - vaultInsights.recentMemory.created) / (1000 * 60 * 60 * 24));
-        if (daysSince === 0) {
-          return "Hello again! I was just thinking about that memory you shared earlier today. How are you feeling?";
-        } else if (daysSince < 7) {
-          return `Hi there! It's nice to see you again. I've been holding onto that memory from ${daysSince === 1 ? 'yesterday' : `${daysSince} days ago`}. What's been on your mind?`;
-        }
-      }
-
-      if (hour < 12) return "Good morning! What's stirring in your heart today?";
-      if (hour < 17) return "Good afternoon! I'm here if you'd like to share what's on your mind.";
-      return "Good evening! Sometimes evenings bring up the most meaningful thoughts. I'm here to listen.";
+      return await this.generateDynamicGreeting(vaultInsights, isEarlyConversation);
     }
 
     if (isAppreciation) {
-      return "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
+      return await this.generateDynamicAppreciationResponse();
     }
 
     if (isConfused) {
-      return "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
+      return await this.generateDynamicConfusionResponse();
     }
 
     if (isSharing) {
-      return "I'm all ears. Take your time and share whatever feels important to you right now.";
+      return await this.generateDynamicSharingResponse();
     }
 
     // For questions, check if they're asking about someone/something in the vault
@@ -967,11 +950,8 @@ class EmmaChatExperience extends ExperiencePopup {
     }
     
     // FALLBACK: Activity-based responses when no people detected
-    if (userMessage.toLowerCase().includes('walk')) {
-      return "A walk sounds peaceful! I'd love to capture this memory for you. Where did you go, and what made this walk special?";
-    }
-    
-    return "I'd love to help you capture this memory! Tell me more about what happened.";
+    // Generate dynamic, contextual response based on the specific memory content
+    return await this.generateDynamicMemoryCapturePrompt(userMessage);
   }
 
   async generateMemoryCaptureResponse(userMessage) {
@@ -986,7 +966,7 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     if (!detectedMemory) {
-      return "I'd love to help you capture this memory! Tell me more about what happened.";
+      return await this.generateDynamicMemoryCapturePrompt(userMessage);
     }
 
     // CRITICAL FIX: Generate personalized responses based on detected people and context
@@ -1074,19 +1054,14 @@ class EmmaChatExperience extends ExperiencePopup {
     // Generate contextual follow-up questions
     let followUp = "";
 
-    if (signals.types.includes('pet') && needsDetails) {
-      followUp = "Tell me more about your pet! What's their personality like? How did this moment make you feel?";
-    } else if (signals.types.includes('milestone')) {
-      followUp = "What an important moment! Who else was there to share this with you?";
-    } else if (needsEmotions) {
-      followUp = "How did this moment make you feel? What emotions do you remember most?";
-    } else if (needsLocation) {
-      followUp = "Where did this happen? I'd love to include the setting in your memory.";
-    } else if (needsDetails) {
-      followUp = "Can you paint me a picture of this moment? What details would you want to remember forever?";
-    } else {
-      followUp = "This sounds like such a meaningful moment! What other details would make this memory complete?";
-    }
+    // Generate dynamic follow-up based on memory content and missing data
+    followUp = await this.generateDynamicFollowUp(memory, signals, {
+      needsDetails,
+      needsEmotions, 
+      needsLocation,
+      hasPeople: signals.people.length > 0,
+      memoryType: signals.types
+    });
 
     return `I can sense this is really special to you! ${followUp}`;
   }
@@ -3658,6 +3633,280 @@ Just the acknowledgment response:`;
     } catch (error) {
       console.error('Error generating dynamic acknowledgment:', error);
       return "Thank you for sharing that with me.";
+    }
+  }
+
+  /**
+   * Generate dynamic help response
+   */
+  async generateDynamicHelpResponse() {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      return "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. What brings you here today?";
+    }
+
+    try {
+      const prompt = `You are Emma, a warm memory companion. Someone is asking for help or wanting to know what you do.
+
+Generate a brief, helpful response that:
+- Introduces your role as a memory companion
+- Explains you help capture and preserve meaningful stories
+- Invites them to share or ask questions
+- Feels warm and welcoming
+- Is natural, not scripted
+
+Just the response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. What brings you here today?";
+      
+    } catch (error) {
+      console.error('Error generating dynamic help response:', error);
+      return "I'm here to help you capture and explore your meaningful memories. What would you like to know?";
+    }
+  }
+
+  /**
+   * Generate dynamic greeting response
+   */
+  async generateDynamicGreeting(vaultInsights, isEarlyConversation) {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      const hour = new Date().getHours();
+      if (hour < 12) return "Good morning! What's stirring in your heart today?";
+      if (hour < 17) return "Good afternoon! I'm here if you'd like to share what's on your mind.";
+      return "Good evening! Sometimes evenings bring up the most meaningful thoughts. I'm here to listen.";
+    }
+
+    try {
+      const hour = new Date().getHours();
+      const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+      
+      let context = "";
+      if (vaultInsights?.recentMemory && isEarlyConversation) {
+        const daysSince = Math.floor((Date.now() - vaultInsights.recentMemory.created) / (1000 * 60 * 60 * 24));
+        context = `They shared a memory ${daysSince === 0 ? 'earlier today' : daysSince === 1 ? 'yesterday' : `${daysSince} days ago`}`;
+      }
+
+      const prompt = `You are Emma, a memory companion. Someone is greeting you.
+
+Context:
+- Time: ${timeOfDay}
+- ${context || 'Regular greeting'}
+
+Generate a warm greeting that:
+- Acknowledges the time of day naturally
+- ${context ? 'References their recent memory sharing gently' : 'Invites sharing or conversation'}
+- Feels personal and caring
+- Is conversational, not formal
+- Is 1-2 sentences
+
+Just the greeting:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || `Good ${timeOfDay}! What's on your mind?`;
+      
+    } catch (error) {
+      console.error('Error generating dynamic greeting:', error);
+      return "Hello! I'm here and ready to listen to whatever you'd like to share.";
+    }
+  }
+
+  /**
+   * Generate dynamic appreciation response
+   */
+  async generateDynamicAppreciationResponse() {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      return "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
+    }
+
+    try {
+      const prompt = `You are Emma, a memory companion. Someone just thanked you or expressed appreciation.
+
+Generate a heartfelt response that:
+- Shows genuine gratitude for their trust
+- Acknowledges the importance of their stories
+- Feels warm and humble
+- Is personal, not generic
+- Encourages continued sharing
+
+Just the response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
+      
+    } catch (error) {
+      console.error('Error generating dynamic appreciation response:', error);
+      return "Thank you for trusting me with your stories. They mean so much.";
+    }
+  }
+
+  /**
+   * Generate dynamic confusion response
+   */
+  async generateDynamicConfusionResponse() {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      return "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
+    }
+
+    try {
+      const prompt = `You are Emma, a memory companion. Someone seems confused or unclear about how to interact with you.
+
+Generate a reassuring response that:
+- Shows it's perfectly okay to be unsure
+- Gently explains their options
+- Reduces any pressure or anxiety
+- Feels supportive and patient
+- Encourages them to take their time
+
+Just the response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
+      
+    } catch (error) {
+      console.error('Error generating dynamic confusion response:', error);
+      return "That's perfectly okay - there's no wrong way to do this. I'm here to listen however feels comfortable for you.";
+    }
+  }
+
+  /**
+   * Generate dynamic sharing response
+   */
+  async generateDynamicSharingResponse() {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      return "I'm all ears. Take your time and share whatever feels important to you right now.";
+    }
+
+    try {
+      const prompt = `You are Emma, a memory companion. Someone is indicating they want to share something with you.
+
+Generate an encouraging response that:
+- Shows you're fully present and listening
+- Invites them to share at their own pace
+- Creates a safe, welcoming space
+- Feels attentive and caring
+- Encourages them to open up
+
+Just the response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "I'm all ears. Take your time and share whatever feels important to you right now.";
+      
+    } catch (error) {
+      console.error('Error generating dynamic sharing response:', error);
+      return "I'm here and listening. Please share whatever feels right to you.";
+    }
+  }
+
+  /**
+   * Generate dynamic welcome response based on context
+   */
+  async generateDynamicWelcomeResponse() {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      return "I'm here with you. What's on your mind?";
+    }
+
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+      const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+      
+      const vaultInfo = window.emmaWebVault?.vaultData ? {
+        memoryCount: Object.keys(window.emmaWebVault.vaultData.content?.memories || {}).length,
+        peopleCount: Object.keys(window.emmaWebVault.vaultData.content?.people || {}).length
+      } : null;
+
+      const prompt = `You are Emma, a warm memory companion. Generate a brief, welcoming response for someone who just entered the chat with you.
+
+Context:
+- Time: ${timeOfDay}
+- ${vaultInfo ? `They have ${vaultInfo.memoryCount} memories and ${vaultInfo.peopleCount} people in their vault` : 'New user'}
+
+Be:
+- Warm and inviting
+- Present and attentive  
+- Encouraging about sharing
+- Natural, never scripted
+- 1-2 sentences maximum
+
+Just the welcoming response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "I'm here with you. What's on your mind?";
+      
+    } catch (error) {
+      console.error('Error generating dynamic welcome:', error);
+      return "I'm here and ready to listen to whatever you'd like to share.";
+    }
+  }
+
+  /**
+   * Generate dynamic memory capture prompt
+   */
+  async generateDynamicMemoryCapturePrompt(userMessage) {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      return "I'd love to help you capture this memory! Tell me more about what happened.";
+    }
+
+    try {
+      const prompt = `You are Emma, a memory companion. Someone just shared: "${userMessage}"
+
+This seems like it could be a meaningful memory. Generate a warm, encouraging response that:
+- Shows you recognize this as potentially meaningful
+- Asks for more details in a natural way
+- Is specific to what they shared (not generic)
+- Feels conversational and caring
+- Encourages them to share more
+
+Just the response:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "I'd love to help you capture this memory! Tell me more about what happened.";
+      
+    } catch (error) {
+      console.error('Error generating dynamic memory prompt:', error);
+      return "This sounds meaningful to me. I'd love to hear more about what happened.";
+    }
+  }
+
+  /**
+   * Generate dynamic follow-up questions based on memory analysis
+   */
+  async generateDynamicFollowUp(memory, signals, context) {
+    if (!this.vectorlessEngine || !window.API_KEY) {
+      // Smart fallbacks based on what's missing
+      if (!context.hasPeople) return "Who else was part of this moment with you?";
+      if (context.needsLocation) return "Where did this take place?";
+      if (context.needsEmotions) return "How did this moment make you feel?";
+      return "What other details would make this memory complete?";
+    }
+
+    try {
+      const missingAspects = [];
+      if (!context.hasPeople) missingAspects.push('people involved');
+      if (context.needsLocation) missingAspects.push('location/setting');
+      if (context.needsEmotions) missingAspects.push('emotions/feelings');
+      if (context.needsDetails) missingAspects.push('more details');
+
+      const prompt = `You are Emma, helping someone enrich their memory: "${memory.content}"
+
+Memory type: ${context.memoryType.join(', ') || 'general'}
+Missing information: ${missingAspects.join(', ') || 'none'}
+
+Generate ONE focused follow-up question that:
+- Is warm and encouraging
+- Asks about the most important missing aspect
+- Is specific to THEIR memory content
+- Feels natural and conversational
+- Helps complete their memory
+
+Just the question:`;
+
+      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      return response || "What other details would help complete this beautiful memory?";
+      
+    } catch (error) {
+      console.error('Error generating dynamic follow-up:', error);
+      return "What else would you like to include in this memory?";
     }
   }
 
