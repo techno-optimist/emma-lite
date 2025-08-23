@@ -129,18 +129,7 @@ class WebVaultStatus {
     const localActive = localStorage.getItem('emmaVaultActive');
     const localName = localStorage.getItem('emmaVaultName');
     
-    // Vault state logging for debugging (production: simplified)
-    const debugData = {
-      timestamp: new Date().toISOString(),
-      sessionStorage: { active: sessionActive, name: sessionName },
-      localStorage: { active: localActive, name: localName },
-      webVaultStatus: this.status,
-      currentVaultStatus: window.currentVaultStatus,
-      emmaWebVault: window.emmaWebVault ? {
-        isOpen: window.emmaWebVault.isOpen,
-        extensionAvailable: window.emmaWebVault.extensionAvailable
-      } : 'not available'
-    });
+    // Vault state logging simplified for production
   }
 
   // SIMPLIFIED: Check vault status only when needed (no polling)
