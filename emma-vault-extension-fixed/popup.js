@@ -2829,6 +2829,15 @@ let emmaApp;
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('💜 Emma Vault Extension starting...');
   
+  // CRITICAL: Initialize vault checker FIRST (WEBAPP-FIRST architecture)
+  if (window.extensionVaultChecker) {
+    console.log('🔐 Extension: Starting WEBAPP-FIRST vault checker...');
+    await window.extensionVaultChecker.initialize();
+    console.log('🔐 Extension: Vault checker initialized successfully');
+  } else {
+    console.error('🔐 Extension: VaultChecker not found! popup-vault-checker.js not loaded?');
+  }
+  
   emmaApp = new EmmaVaultExtension();
   await emmaApp.init();
   
