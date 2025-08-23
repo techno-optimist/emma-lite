@@ -254,9 +254,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
     case 'SAVE_MEMORY_TO_VAULT':
       // WEBAPP-FIRST: Redirect to webapp instead of local vault
+      console.log('🎯 BACKGROUND: Received SAVE_MEMORY_TO_VAULT request');
       sendToWebapp('EMMA_SAVE_MEMORY', request.data)
-        .then(result => sendResponse(result))
-        .catch(error => sendResponse({ success: false, error: error.message }));
+        .then(result => {
+          console.log('🎯 BACKGROUND: sendToWebapp resolved with:', result);
+          sendResponse(result);
+        })
+        .catch(error => {
+          console.error('🎯 BACKGROUND: sendToWebapp failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
       return true;
       
     case 'UPDATE_MEMORY_IN_VAULT':
@@ -839,20 +846,27 @@ chrome.action.onClicked.addListener((tab) => {
 async function sendToWebapp(action, data) {
   return new Promise((resolve, reject) => {
     console.log('🌉 WEBAPP-FIRST: Simulating webapp communication for:', action);
+    console.log('🌉 WEBAPP-FIRST: Data size:', JSON.stringify(data).length, 'characters');
+    
     setTimeout(() => {
+      console.log('🌉 WEBAPP-FIRST: Timeout completed, sending response...');
       if (action === 'EMMA_SAVE_MEMORY') {
-        resolve({
+        const result = {
           success: true,
           memoryId: `webapp_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
           message: 'Saved via webapp vault (simulated)'
-        });
+        };
+        console.log('🌉 WEBAPP-FIRST: Resolving with result:', result);
+        resolve(result);
       } else {
-        resolve({
+        const error = {
           success: false,
           error: 'Action not implemented yet'
-        });
+        };
+        console.log('🌉 WEBAPP-FIRST: Resolving with error:', error);
+        resolve(error);
       }
-    }, 100);
+    }, 500); // Increased timeout to 500ms to be more realistic
   });
 }
 
