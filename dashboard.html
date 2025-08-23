@@ -2243,8 +2243,12 @@
                 this.neuralCanvas.height = window.innerHeight;
               }
               
-              // Force immediate redraw of connections with new positions
-              this.render();
+              // Force immediate redraw of connections with new positions  
+              if (this.render && typeof this.render === 'function') {
+                this.render();
+              } else if (window.neuralRenderer && window.neuralRenderer.render) {
+                window.neuralRenderer.render();
+              }
             }
           }, 250);
         });

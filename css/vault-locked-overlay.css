@@ -1,0 +1,286 @@
+/**
+ * Emma Vault Locked Overlay - WEBAPP-FIRST Architecture
+ * Beautiful branded overlay when vault needs to be unlocked in webapp
+ */
+
+/* Vault Locked Overlay */
+.vault-locked-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  background: var(--emma-bg-gradient);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.vault-locked-overlay.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+/* Emma Branding Container */
+.vault-locked-branding {
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+}
+
+/* Large Emma Orb */
+.vault-locked-orb {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 30px;
+  border-radius: 50%;
+  background: var(--emma-gradient-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: emma-pulse 2s ease-in-out infinite;
+  box-shadow: 
+    0 0 40px rgba(118, 75, 162, 0.4),
+    0 0 80px rgba(240, 147, 251, 0.2),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.vault-locked-orb::before {
+  content: '🔒';
+  font-size: 48px;
+  opacity: 0.9;
+}
+
+.vault-locked-orb::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: emma-rotate 4s linear infinite;
+}
+
+/* Emma Title */
+.vault-locked-title {
+  font-size: 32px;
+  font-weight: 700;
+  background: var(--emma-gradient-1);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+
+.vault-locked-subtitle {
+  font-size: 14px;
+  color: var(--emma-text-secondary);
+  margin-bottom: 30px;
+  font-weight: 400;
+}
+
+/* Status Message */
+.vault-locked-message {
+  background: var(--emma-card-bg);
+  border: 1px solid var(--emma-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(20px);
+  text-align: center;
+}
+
+.vault-locked-message h3 {
+  font-size: 18px;
+  color: var(--emma-text);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.vault-locked-message p {
+  font-size: 14px;
+  color: var(--emma-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+/* Action Buttons */
+.vault-locked-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.vault-unlock-btn {
+  background: var(--emma-gradient-1);
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.vault-unlock-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 8px 25px rgba(118, 75, 162, 0.3),
+    0 4px 15px rgba(240, 147, 251, 0.2);
+}
+
+.vault-unlock-btn:active {
+  transform: translateY(0);
+}
+
+.vault-unlock-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.vault-unlock-btn:hover::before {
+  left: 100%;
+}
+
+/* Secondary Action */
+.vault-help-btn {
+  background: transparent;
+  border: 1px solid var(--emma-border);
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: var(--emma-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.vault-help-btn:hover {
+  border-color: var(--emma-purple);
+  color: var(--emma-text);
+  background: rgba(118, 75, 162, 0.1);
+}
+
+/* Status Indicator */
+.vault-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 8px 16px;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--emma-error);
+}
+
+.vault-status-indicator.checking {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.2);
+  color: var(--emma-warning);
+}
+
+.vault-status-indicator.unlocked {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.2);
+  color: var(--emma-success);
+}
+
+/* Responsive Design */
+@media (max-width: 400px) {
+  .vault-locked-overlay {
+    padding: 16px;
+  }
+  
+  .vault-locked-orb {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 24px;
+  }
+  
+  .vault-locked-orb::before {
+    font-size: 40px;
+  }
+  
+  .vault-locked-title {
+    font-size: 28px;
+  }
+  
+  .vault-locked-message {
+    padding: 20px;
+  }
+}
+
+/* Animations */
+@keyframes emma-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 40px rgba(118, 75, 162, 0.4),
+      0 0 80px rgba(240, 147, 251, 0.2),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 0 50px rgba(118, 75, 162, 0.6),
+      0 0 100px rgba(240, 147, 251, 0.3),
+      inset 0 0 25px rgba(255, 255, 255, 0.15);
+  }
+}
+
+@keyframes emma-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading spinner for checking status */
+.vault-checking-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

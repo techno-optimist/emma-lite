@@ -1713,7 +1713,7 @@ class EmmaChatExperience extends ExperiencePopup {
       }
 
       const script = document.createElement('script');
-      script.src = '../js/emma-intelligent-capture.js';
+      script.src = './js/emma-intelligent-capture.js';
       script.onload = () => {
 
         resolve();
