@@ -1,0 +1,448 @@
+[1mdiff --git a/.cursor/mcp-config-example.json b/.cursor/mcp-config-example.json[m
+[1mnew file mode 100644[m
+[1mindex 00000000..4a9f9929[m
+[1m--- /dev/null[m
+[1m+++ b/.cursor/mcp-config-example.json[m
+[36m@@ -0,0 +1,10 @@[m
+[32m+[m[32m{[m
+[32m+[m[32m  "mcpServers": {[m
+[32m+[m[32m    "render": {[m
+[32m+[m[32m      "url": "https://mcp.render.com/mcp",[m
+[32m+[m[32m      "headers": {[m
+[32m+[m[32m        "Authorization": "Bearer YOUR_RENDER_API_KEY_HERE"[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/.cursor/mcp.json b/.cursor/mcp.json[m
+[1mnew file mode 100644[m
+[1mindex 00000000..79836ecd[m
+[1m--- /dev/null[m
+[1m+++ b/.cursor/mcp.json[m
+[36m@@ -0,0 +1,10 @@[m
+[32m+[m[32m{[m
+[32m+[m[32m  "mcpServers": {[m
+[32m+[m[32m    "render": {[m
+[32m+[m[32m      "url": "https://mcp.render.com/mcp",[m
+[32m+[m[32m      "headers": {[m
+[32m+[m[32m        "Authorization": "Bearer rnd_NtGsbOGi5JURbrOcX8d1mDZEttWD"[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/.cursor/scratchpad.md b/.cursor/scratchpad.md[m
+[1mindex 6f268a73..932909f5 100644[m
+[1m--- a/.cursor/scratchpad.md[m
+[1m+++ b/.cursor/scratchpad.md[m
+[36m@@ -2,7 +2,7 @@[m
+ [m
+ ## 🚀 VECTORLESS AI INTEGRATION - CTO STRATEGIC INITIATIVE[m
+ [m
+[31m-### Background and Motivation[m
+[32m+[m[32m### Background and Motivation1[m
+ [m
+ Emma's current memory search and chat intelligence relies on basic keyword matching and limited context awareness. The revolutionary [Vectorless AI approach](https://github.com/roe-ai/vectorless) presents a game-changing opportunity to give Emma true intelligence over .emma files without the complexity, cost, and privacy concerns of traditional vector databases.[m
+ [m
+[1mdiff --git a/add-person.html b/add-person.html[m
+[1mnew file mode 100644[m
+[1mindex 00000000..d7c728a7[m
+[1m--- /dev/null[m
+[1m+++ b/add-person.html[m
+[36m@@ -0,0 +1,337 @@[m
+[32m+[m[32m<!DOCTYPE html>[m
+[32m+[m[32m<html lang="en">[m
+[32m+[m[32m<head>[m
+[32m+[m[32m  <meta charset="UTF-8">[m
+[32m+[m[32m  <meta name="viewport" content="width=device-width, initial-scale=1.0">[m
+[32m+[m[32m  <title>Add Person - Emma</title>[m
+[32m+[m[32m  <link rel="stylesheet" href="css/main.css">[m
+[32m+[m[32m  <style>[m
+[32m+[m[32m    .add-person-container {[m
+[32m+[m[32m      max-width: 600px;[m
+[32m+[m[32m      margin: 0 auto;[m
+[32m+[m[32m      padding: 40px 20px;[m
+[32m+[m[32m      min-height: 100vh;[m
+[32m+[m[32m      background: var(--emma-bg-gradient);[m
+[32m+[m[32m      display: flex;[m
+[32m+[m[32m      flex-direction: column;[m
+[32m+[m[32m      justify-content: center;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .add-person-card {[m
+[32m+[m[32m      background: var(--emma-card-bg);[m
+[32m+[m[32m      backdrop-filter: blur(20px);[m
+[32m+[m[32m      border: 1px solid var(--emma-border);[m
+[32m+[m[32m      border-radius: 24px;[m
+[32m+[m[32m      padding: 40px;[m
+[32m+[m[32m      box-shadow: 0 20px 60px rgba(118, 75, 162, 0.15);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .header {[m
+[32m+[m[32m      text-align: center;[m
+[32m+[m[32m      margin-bottom: 32px;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .header h1 {[m
+[32m+[m[32m      font-size: 28px;[m
+[32m+[m[32m      font-weight: 700;[m
+[32m+[m[32m      color: var(--emma-text);[m
+[32m+[m[32m      margin: 0 0 12px 0;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .header p {[m
+[32m+[m[32m      color: var(--emma-text-secondary);[m
+[32m+[m[32m      margin: 0;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .form-group {[m
+[32m+[m[32m      margin-bottom: 24px;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .form-label {[m
+[32m+[m[32m      display: block;[m
+[32m+[m[32m      font-size: 14px;[m
+[32m+[m[32m      font-weight: 600;[m
+[32m+[m[32m      color: var(--emma-text);[m
+[32m+[m[32m      margin-bottom: 8px;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .form-input {[m
+[32m+[m[32m      width: 100%;[m
+[32m+[m[32m      padding: 16px 20px;[m
+[32m+[m[32m      background: var(--emma-bg);[m
+[32m+[m[32m      border: 1px solid var(--emma-border);[m
+[32m+[m[32m      border-radius: 12px;[m
+[32m+[m[32m      color: var(--emma-text);[m
+[32m+[m[32m      font-size: 16px;[m
+[32m+[m[32m      outline: none;[m
+[32m+[m[32m      transition: all 0.3s ease;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .form-input:focus {[m
+[32m+[m[32m      border-color: var(--emma-purple);[m
+[32m+[m[32m      box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .form-textarea {[m
+[32m+[m[32m      min-height: 100px;[m
+[32m+[m[32m      resize: vertical;[m
+[32m+[m[32m      font-family: inherit;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .form-buttons {[m
+[32m+[m[32m      display: flex;[m
+[32m+[m[32m      gap: 16px;[m
+[32m+[m[32m      margin-top: 32px;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .btn {[m
+[32m+[m[32m      flex: 1;[m
+[32m+[m[32m      padding: 16px 24px;[m
+[32m+[m[32m      border: none;[m
+[32m+[m[32m      border-radius: 12px;[m
+[32m+[m[32m      font-weight: 600;[m
+[32m+[m[32m      font-size: 16px;[m
+[32m+[m[32m      cursor: pointer;[m
+[32m+[m[32m      transition: all 0.3s ease;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .btn-primary {[m
+[32m+[m[32m      background: var(--emma-purple);[m
+[32m+[m[32m      color: white;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .btn-primary:hover {[m
+[32m+[m[32m      background: var(--emma-purple-hover);[m
+[32m+[m[32m      transform: translateY(-2px);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .btn-secondary {[m
+[32m+[m[32m      background: var(--emma-border);[m
+[32m+[m[32m      color: var(--emma-text);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .btn-secondary:hover {[m
+[32m+[m[32m      background: var(--emma-text-secondary);[m
+[32m+[m[32m      color: white;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    .success-message {[m
+[32m+[m[32m      background: rgba(34, 197, 94, 0.1);[m
+[32m+[m[32m      border: 1px solid rgba(34, 197, 94, 0.2);[m
+[32m+[m[32m      color: #059669;[m
+[32m+[m[32m      padding: 16px 20px;[m
+[32m+[m[32m      border-radius: 12px;[m
+[32m+[m[32m      margin-bottom: 24px;[m
+[32m+[m[32m      display: none;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @media (max-width: 768px) {[m
+[32m+[m[32m      .add-person-container {[m
+[32m+[m[32m        padding: 20px 16px;[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      .add-person-card {[m
+[32m+[m[32m        padding: 24px;[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      .form-buttons {[m
+[32m+[m[32m        flex-direction: column;[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[32m  </style>[m
+[32m+[m[32m</head>[m
+[32m+[m[32m<body>[m
+[32m+[m[32m  <div class="add-person-container">[m
+[32m+[m[32m    <div class="add-person-card">[m
+[32m+[m[32m      <div class="header">[m
+[32m+[m[32m        <h1>Add New Person</h1>[m
+[32m+[m[32m        <p>Add someone to your network of family, friends, and connections</p>[m
+[32m+[m[32m      </div>[m
+[32m+[m
+[32m+[m[32m      <div class="success-message" id="successMessage">[m
+[32m+[m[32m        Person added successfully! <a href="people.html">View all people</a>[m
+[32m+[m[32m      </div>[m
+[32m+[m
+[32m+[m[32m      <form id="addPersonForm" onsubmit="addPerson(event)">[m
+[32m+[m[32m        <div class="form-group">[m
+[32m+[m[32m          <label class="form-label" for="personName">Full Name *</label>[m
+[32m+[m[32m          <input type="text" class="form-input" id="personName" required placeholder="Enter full name">[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="form-group">[m
+[32m+[m[32m          <label class="form-label" for="personEmail">Email Address</label>[m
+[32m+[m[32m          <input type="email" class="form-input" id="personEmail" placeholder="person@example.com">[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="form-group">[m
+[32m+[m[32m          <label class="form-label" for="personPhone">Phone Number</label>[m
+[32m+[m[32m          <input type="tel" class="form-input" id="personPhone" placeholder="+1 (555) 123-4567">[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="form-group">[m
+[32m+[m[32m          <label class="form-label" for="personRelationship">Relationship *</label>[m
+[32m+[m[32m          <select class="form-input" id="personRelationship" required>[m
+[32m+[m[32m            <option value="">Select relationship type</option>[m
+[32m+[m[32m            <option value="self">🧑 Myself</option>[m
+[32m+[m[32m            <option value="family">👨‍👩‍👧‍👦 Family Member</option>[m
+[32m+[m[32m            <option value="friend">👫 Friend</option>[m
+[32m+[m[32m            <option value="best_friend">💝 Best Friend</option>[m
+[32m+[m[32m            <option value="romantic">💕 Romantic Partner</option>[m
+[32m+[m[32m            <option value="colleague">💼 Colleague</option>[m
+[32m+[m[32m          </select>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="form-group">[m
+[32m+[m[32m          <label class="form-label" for="personNotes">Notes</label>[m
+[32m+[m[32m          <textarea class="form-input form-textarea" id="personNotes" placeholder="Add any additional notes about this person, how you met, shared interests, etc."></textarea>[m
+[32m+[m[32m        </div>[m
+[32m+[m
+[32m+[m[32m        <div class="form-buttons">[m
+[32m+[m[32m          <button type="button" class="btn btn-secondary" onclick="goBack()">Cancel</button>[m
+[32m+[m[32m          <button type="submit" class="btn btn-primary">Add Person</button>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </form>[m
+[32m+[m[32m    </div>[m
+[32m+[m[32m  </div>[m
+[32m+[m
+[32m+[m[32m  <script type="module">[m
+[32m+[m[32m    // Import identity crypto functions[m
+[32m+[m[32m    import { generateIdentity, generateIdentityCard } from './js/vault/identity-crypto.js';[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Add person functionality[m
+[32m+[m[32m    async function addPerson(event) {[m
+[32m+[m[32m      event.preventDefault();[m
+[32m+[m[41m      [m
+[32m+[m[32m      try {[m
+[32m+[m[32m        // Show loading state[m
+[32m+[m[32m        const submitButton = event.target.querySelector('button[type="submit"]');[m
+[32m+[m[32m        const originalText = submitButton.textContent;[m
+[32m+[m[32m        submitButton.textContent = 'Generating identity...';[m
+[32m+[m[32m        submitButton.disabled = true;[m
+[32m+[m[41m        [m
+[32m+[m[32m        const newPerson = {[m
+[32m+[m[32m          id: Date.now(),[m
+[32m+[m[32m          name: document.getElementById('personName').value.trim(),[m
+[32m+[m[32m          email: document.getElementById('personEmail').value.trim(),[m
+[32m+[m[32m          phone: document.getElementById('personPhone').value.trim(),[m
+[32m+[m[32m          relationship: document.getElementById('personRelationship').value,[m
+[32m+[m[32m          notes: document.getElementById('personNotes').value.trim(),[m
+[32m+[m[32m          dateAdded: new Date().toISOString()[m
+[32m+[m[32m        };[m
+[32m+[m[41m        [m
+[32m+[m[32m        if (!newPerson.name || !newPerson.relationship) {[m
+[32m+[m[32m          alert('Please fill in all required fields.');[m
+[32m+[m[32m          submitButton.textContent = originalText;[m
+[32m+[m[32m          submitButton.disabled = false;[m
+[32m+[m[32m          return;[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Generate cryptographic identity[m
+[32m+[m[32m        const identity = await generateIdentity();[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Add crypto fields to person[m
+[32m+[m[32m        newPerson.publicSigningKey = identity.signing.publicKey;[m
+[32m+[m[32m        newPerson.publicEncryptionKey = identity.encryption.publicKey;[m
+[32m+[m[32m        newPerson.keyFingerprint = identity.fingerprint;[m
+[32m+[m[32m        newPerson.keyCreatedAt = identity.createdAt;[m
+[32m+[m[32m        newPerson.verificationStatus = 'unverified';[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Store private keys for self[m
+[32m+[m[32m        if (newPerson.relationship === 'self') {[m
+[32m+[m[32m          await storeOwnIdentity(newPerson.id, identity);[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Get existing people from localStorage[m
+[32m+[m[32m        const storedPeople = localStorage.getItem('emma-people');[m
+[32m+[m[32m        const allPeople = storedPeople ? JSON.parse(storedPeople) : [];[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Add new person[m
+[32m+[m[32m        allPeople.push(newPerson);[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Save back to localStorage[m
+[32m+[m[32m        localStorage.setItem('emma-people', JSON.stringify(allPeople));[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Show success message with identity info[m
+[32m+[m[32m        const successMessage = document.getElementById('successMessage');[m
+[32m+[m[32m        successMessage.innerHTML = `[m
+[32m+[m[32m          <p><strong>✅ ${newPerson.name} added successfully!</strong></p>[m
+[32m+[m[32m          ${newPerson.relationship === 'self' ? `[m
+[32m+[m[32m            <div style="margin-top: 10px; padding: 10px; background: rgba(134, 88, 255, 0.1); border-radius: 8px;">[m
+[32m+[m[32m              <p style="margin: 0 0 5px 0;"><strong>🔐 Cryptographic Identity Created</strong></p>[m
+[32m+[m[32m              <p style="margin: 0; font-size: 12px;">Fingerprint: <code>${identity.fingerprint.substring(0, 20)}...</code></p>[m
+[32m+[m[32m              <button onclick="window.open('people.html', '_self')" style="margin-top: 10px; padding: 5px 10px; background: #8658ff; color: white; border: none; border-radius: 4px; cursor: pointer;">[m
+[32m+[m[32m                View in People List[m
+[32m+[m[32m              </button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          ` : ''}[m
+[32m+[m[32m        `;[m
+[32m+[m[32m        successMessage.style.display = 'block';[m
+[32m+[m[32m        document.getElementById('addPersonForm').reset();[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Restore button[m
+[32m+[m[32m        submitButton.textContent = originalText;[m
+[32m+[m[32m        submitButton.disabled = false;[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Scroll to top to show success message[m
+[32m+[m[32m        window.scrollTo({ top: 0, behavior: 'smooth' });[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Show identity card for self[m
+[32m+[m[32m        if (newPerson.relationship === 'self') {[m
+[32m+[m[32m          setTimeout(() => {[m
+[32m+[m[32m            showIdentityCard(newPerson, identity);[m
+[32m+[m[32m          }, 1000);[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m      } catch (error) {[m
+[32m+[m[32m        console.error('Failed to add person:', error);[m
+[32m+[m[32m        alert('Failed to generate identity. Please try again.');[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Store own identity keys[m
+[32m+[m[32m    async function storeOwnIdentity(personId, identity) {[m
+[32m+[m[32m      try {[m
+[32m+[m[32m        const key = `emma_identity_${personId}`;[m
+[32m+[m[32m        await chrome.storage.local.set({[m
+[32m+[m[32m          [key]: identity[m
+[32m+[m[32m        });[m
+[32m+[m[32m      } catch (error) {[m
+[32m+[m[32m        // Fallback to localStorage[m
+[32m+[m[32m        localStorage.setItem(`emma_identity_${personId}`, JSON.stringify(identity));[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Show identity card[m
+[32m+[m[32m    function showIdentityCard(person, identity) {[m
+[32m+[m[32m      // Create a simple alert for now[m
+[32m+[m[32m      const message = `[m
+[32m+[m[32mIdentity created for ${person.name}![m
+[32m+[m
+[32m+[m[32mKey Fingerprint:[m
+[32m+[m[32m${identity.fingerprint}[m
+[32m+[m
+[32m+[m[32mPlease save this information securely.[m
+[32m+[m[32mYou can export your full identity from the People page.[m
+[32m+[m[32m      `;[m
+[32m+[m[32m      alert(message);[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Make addPerson available globally[m
+[32m+[m[32m    window.addPerson = addPerson;[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Go back to previous page[m
+[32m+[m[32m    function goBack() {[m
+[32m+[m[32m      if (window.history.length > 1) {[m
+[32m+[m[32m        window.history.back();[m
+[32m+[m[32m      } else {[m
+[32m+[m[32m        window.location.href = 'people.html';[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Focus on name field when page loads[m
+[32m+[m[32m    document.addEventListener('DOMContentLoaded', function() {[m
+[32m+[m[32m      document.getElementById('personName').focus();[m
+[32m+[m[32m    });[m
+[32m+[m[32m  </script>[m
+[32m+[m[32m</body>[m
+[32m+[m[32m</html>[m
+\ No newline at end of file[m
+[1mdiff --git a/emma-cloud.html b/emma-cloud.html[m
+[1mnew file mode 100644[m
+[1mindex 00000000..ec2a4e0a[m
+[1m--- /dev/null[m
+[1m+++ b/emma-cloud.html[m
+[36m@@ -0,0 +1,200 @@[m
+[32m+[m[32m<!DOCTYPE html>[m
+[32m+[m[32m<html lang="en">[m
+[32m+[m[32m<head>[m
+[32m+[m[32m  <meta charset="UTF-8">[m
+[32m+[m[32m  <meta name="viewport" content="width=device-width, initial-scale=1.0">[m
+[32m+[m[32m  <title>Emma Cloud - Intelligent Memory Sync</title>[m
+[32m+[m[32m  <link rel="stylesheet" href="css/main.css">[m
+[32m+[m[32m  <style>[m
+[32m+[m[32m    body {[m
+[32m+[m[32m      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);[m
+[32m+[m[32m      color: white;[m
+[32m+[m[32m      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;[m
+[32m+[m[32m      margin: 0;[m
+[32m+[m[32m      padding: 0;[m
+[32m+[m[32m      min-height: 100vh;[m
+[32m+[m[32m      display: flex;[m
+[32m+[m[32m      flex-direction: column;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    .cloud-header {[m
+[32m+[m[32m      padding: 40px 20px;[m
+[32m+[m[32m      text-align: center;[m
+[32m+[m[32m      background: linear-gradient(135deg, rgba(139, 69, 255, 0.2) 0%, rgba(88, 28, 135, 0.3) 100%);[m
+[32m+[m[32m      border-bottom: 1px solid rgba(255, 255, 255, 0.2);[m
+[32m+[m[32m      backdrop-filter: blur(20px);[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    .cloud-icon {[m
+[32m+[m[32m      font-size: 64px;[m
+[32m+[m[32m      margin-bottom: 20px;[m
+[32m+[m[32m      filter: grayscale(100%) opacity(0.5);[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    .cloud-title {[m
+[32m+[m[32m      font-size: 32px;[m
+[32m+[m[32m      font-weight: 700;[m
+[32m+[m[32m      margin-bottom: 10px;[m
+[32m+[m[32m      background: var(--emma-gradient-text);[m
+[32m+[m[32m      -webkit-background-clip: text;[m
+[32m+[m[32m      -webkit-text-fill-color: transparent;[m
+[32m+[m[32m      background-clip: text;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    .cloud-subtitle {[m
+[32m+[m[32m      font-size: 18px;[m
+[32m+[m[32m      opacity: 0.8;[m
+[32m+[m[32m      margin-bottom: 30px;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    .cloud-status {[m
+[32m+[m[32m      display: inline-flex;[m
+[32m+[m[32m      align-items: center;[m
+[

@@ -96,16 +96,7 @@ async function loadMemories() {
       try {
         vaultMemories = await window.emmaWebVault.listMemories(1000, 0);
 
-          vaultMemories.forEach((mem, idx) => {
-            console.log(`📝 MEMORY ${idx + 1}:`, {
-              id: mem.id,
-              title: mem.metadata?.title || mem.title || 'No title',
-              hasContent: !!mem.content,
-              hasAttachments: !!(mem.attachments && mem.attachments.length > 0),
-              attachmentCount: mem.attachments?.length || 0,
-              created: mem.created
-            });
-          });
+          // Memories loaded successfully
         } catch (vaultError) {
           console.error('💝 GALLERY: .emma vault error:', vaultError);
         }
@@ -131,7 +122,7 @@ async function loadMemories() {
 
     // Transform vault memories to our format
     if (vaultMemories.length > 0) {
-      console.log('🔍 PEOPLE DEBUG: Processing', vaultMemories.length, 'vault memories for people connections');
+      // Processing vault memories for people connections
 
       memories = await Promise.all(vaultMemories.map(async (memory, index) => {
         // Convert vault attachments to mediaItems format

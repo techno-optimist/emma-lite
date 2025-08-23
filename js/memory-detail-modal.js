@@ -502,32 +502,31 @@ async function loadPeopleContent(modal, memory) {
     // Get people from memory metadata
     const connectedPeople = memory.metadata?.people || [];
     
-    // Try multiple sources for people data
+    // Use the SAME API that works for people page and constellation
     let allPeople = {};
     
-    // First try web vault
-    const vaultData = window.emmaWebVault?.vaultData;
-    if (vaultData?.people) {
-      allPeople = vaultData.people;
-      console.log('👥 MODAL: Using people from web vault');
+    try {
+      // Use the exact same API that people page and constellation use successfully
+      if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.list) {
+        const result = await window.emmaAPI.people.list();
+        if (result && result.success && Array.isArray(result.items)) {
+          // Convert array to object with id as key for consistent access
+          result.items.forEach(person => {
+            if (person.id) {
+              allPeople[person.id] = person;
+            }
+          });
+          console.log('👥 MODAL: Loaded people via emmaAPI (same as people page)');
+        }
+      }
+    } catch (error) {
+      console.warn('👥 MODAL: EmmaAPI failed, trying direct vault access:', error);
     }
     
-    // If no people in vault, try chrome storage (for extension mode)
-    if (Object.keys(allPeople).length === 0 && typeof chrome !== 'undefined') {
-      try {
-        const store = await chrome.storage.local.get(['emma_people']);
-        const peopleArray = Array.isArray(store.emma_people) ? store.emma_people : [];
-        // Convert array to object with id as key
-        allPeople = {};
-        peopleArray.forEach(person => {
-          if (person.id) {
-            allPeople[person.id] = person;
-          }
-        });
-        console.log('👥 MODAL: Using people from chrome storage');
-      } catch (error) {
-        console.warn('👥 MODAL: Could not access chrome storage:', error);
-      }
+    // Fallback to direct vault access if API not available
+    if (Object.keys(allPeople).length === 0 && window.emmaWebVault?.vaultData?.content?.people) {
+      allPeople = window.emmaWebVault.vaultData.content.people || {};
+      console.log('👥 MODAL: Using people from direct vault access');
     }
     
     console.log('👥 MODAL: Connected people IDs:', connectedPeople);
@@ -629,70 +628,97 @@ async function loadPeopleContent(modal, memory) {
 }
 
 /**
- * CREATE BEAUTIFUL PEOPLE SELECTION GRID - FOR YOUR MOTHER'S MEMORIES
+ * SIMPLE BEAUTIFUL PEOPLE SELECTION - NO MORE COMPLEXITY!
  */
 async function openAddPeopleModalForGallery() {
-  console.log('👥 MODAL: Opening beautiful people selection grid for memory connections');
-  
   try {
-    // Get the current memory we're working with
-    const currentMemory = window.currentMemory;
-    if (!currentMemory) {
-      alert('No memory selected. Please try again.');
-      return;
-    }
-
-    // Load all people from vault - TRY ALL SOURCES
-    let allPeople = [];
+    // COPY EXACT LOGIC FROM WORKING PAGES
+    const response = await window.emmaAPI.people.list();
     
-    // Try web vault first (primary source)
-    if (window.emmaWebVault?.vaultData?.people) {
-      const peopleObj = window.emmaWebVault.vaultData.people;
-      allPeople = Object.values(peopleObj);
-      console.log('👥 MODAL: Loaded', allPeople.length, 'people from web vault');
-    }
-    
-    // Fallback to chrome storage if needed
-    if (allPeople.length === 0 && typeof chrome !== 'undefined') {
-      try {
-        const store = await chrome.storage.local.get(['emma_people']);
-        allPeople = Array.isArray(store.emma_people) ? store.emma_people : [];
-        console.log('👥 MODAL: Loaded', allPeople.length, 'people from chrome storage');
-      } catch (error) {
-        console.warn('👥 MODAL: Could not access chrome storage:', error);
+    if (response.success) {
+      const people = response.items || [];
+      
+      if (people.length === 0) {
+        alert('No people found. Please add people first.');
+        return;
       }
+      
+      // Create simple selection UI - just like people page createPersonCard
+      const peopleList = people.map(person => 
+        `<div onclick="selectPersonForMemory('${person.id}')" style="
+          padding: 10px; 
+          margin: 5px; 
+          border: 1px solid #ccc; 
+          cursor: pointer;
+          background: white;
+          color: black;
+        ">
+          ${person.name || 'Unknown'} (${person.relationship || 'Contact'})
+        </div>`
+      ).join('');
+      
+      // Simple modal
+      const modal = document.createElement('div');
+      modal.innerHTML = `
+        <div style="
+          position: fixed; 
+          top: 0; left: 0; 
+          width: 100%; height: 100%; 
+          background: rgba(0,0,0,0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+        ">
+          <div style="
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px;
+            max-width: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+          ">
+            <h3 style="color: black;">Select People for Memory</h3>
+            ${peopleList}
+            <button onclick="this.closest('div').closest('div').remove()" style="
+              margin-top: 10px;
+              padding: 10px;
+              background: #ccc;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+            ">Cancel</button>
+          </div>
+        </div>
+      `;
+      
+      // Add selection function
+      window.selectPersonForMemory = function(personId) {
+        const person = people.find(p => p.id === personId);
+        alert(`Selected: ${person.name}. (Connection logic to be implemented)`);
+        modal.remove();
+        delete window.selectPersonForMemory;
+      };
+      
+      document.body.appendChild(modal);
+      
+    } else {
+      alert('Failed to load people: ' + (response.error || 'Unknown error'));
     }
     
-    // Final fallback to localStorage for web context
-    if (allPeople.length === 0) {
-      try {
-        const localPeople = localStorage.getItem('emma_people');
-        if (localPeople) {
-          allPeople = JSON.parse(localPeople);
-          console.log('👥 MODAL: Loaded', allPeople.length, 'people from localStorage');
-        }
-      } catch (error) {
-        console.warn('👥 MODAL: Could not access localStorage:', error);
-      }
-    }
+  } catch (error) {
+    alert('Error loading people: ' + error.message);
+  }
+}
 
-    if (allPeople.length === 0) {
-      const shouldGoToPeople = confirm('No people found in your vault.\n\nWould you like to go to the People section to add some people first?');
-      if (shouldGoToPeople) {
-        window.open('../pages/people.html', '_blank');
-      }
-      return;
-    }
-
-    // Get currently connected people to filter them out
-    const currentlyConnected = currentMemory.metadata?.people || [];
-    const connectedIds = new Set(currentlyConnected.map(id => String(id)));
-    
-    // Filter to only show unconnected people
-    const availablePeople = allPeople.filter(person => !connectedIds.has(String(person.id)));
-    
-    if (availablePeople.length === 0) {
-      alert('All people in your vault are already connected to this memory!');
+/**
+ * Setup modal event handlers to prevent bubbling and handle interactions
+ * @param {HTMLElement} modal - The modal element  
+ * @param {Object} memory - The memory object
+ */
+function setupModalEventHandlers(modal, memory, overlay, content) {
+  // Clean event handlers setup
+  console.log('Setting up modal event handlers');
       return;
     }
 
