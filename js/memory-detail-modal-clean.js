@@ -130,9 +130,31 @@ async function loadPeopleInTab() {
         return;
       }
       
-      // Create beautiful people grid directly in tab
+      // Create beautiful people grid with circular avatars
       const peopleGrid = people.map((person, index) => {
         const isSelected = false; // TODO: Check if person is already connected to memory
+        const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+        
+        // Create avatar HTML - circular image with letter fallback
+        const avatarHTML = person.profilePicture || person.avatarUrl
+          ? `<img src="${person.profilePicture || person.avatarUrl}" 
+                  style="width: 64px; height: 64px; object-fit: cover; border-radius: 50%; margin-bottom: 16px; border: 3px solid rgba(255,255,255,0.2);"
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />`
+          : `<div style="
+              width: 64px; 
+              height: 64px; 
+              background: linear-gradient(135deg, #8658ff, #f093fb); 
+              border-radius: 50%; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              color: white; 
+              font-size: 24px; 
+              font-weight: 600; 
+              margin-bottom: 16px;
+              border: 3px solid rgba(255,255,255,0.2);
+            ">${initials}</div>`;
+        
         return `
           <div onclick="togglePersonSelection('${person.id}')" 
                id="person-${person.id}"
@@ -149,9 +171,9 @@ async function loadPeopleInTab() {
                " onmouseover="if (!this.classList.contains('selected')) { this.style.background='rgba(255, 255, 255, 0.1)'; this.style.transform='translateY(-2px)'; }" 
                   onmouseout="if (!this.classList.contains('selected')) { this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; }">
             
-            ${isSelected ? '<div style="position: absolute; top: 8px; right: 8px; color: #8658ff; font-size: 20px;">✓</div>' : ''}
+
             
-            <div style="font-size: 32px; margin-bottom: 12px;">👤</div>
+            ${avatarHTML}
             <div style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">
               ${person.name || 'Unknown'}
             </div>
@@ -207,13 +229,25 @@ async function loadPeopleInTab() {
           personCard.classList.remove('selected');
           personCard.style.border = '2px solid rgba(255, 255, 255, 0.2)';
           personCard.style.background = 'rgba(255, 255, 255, 0.05)';
-          personCard.querySelector('div').innerHTML = ''; // Remove checkmark
+          // Remove checkmark
+          const checkmark = personCard.querySelector('.selection-checkmark');
+          if (checkmark) {
+            checkmark.remove();
+          }
         } else {
           // Select
           personCard.classList.add('selected');
           personCard.style.border = '2px solid #8658ff';
           personCard.style.background = 'rgba(134, 88, 255, 0.1)';
-          personCard.querySelector('div').innerHTML = '<div style="position: absolute; top: 8px; right: 8px; color: #8658ff; font-size: 20px;">✓</div>';
+          // Add checkmark overlay
+          const existingCheckmark = personCard.querySelector('.selection-checkmark');
+          if (!existingCheckmark) {
+            const checkmark = document.createElement('div');
+            checkmark.className = 'selection-checkmark';
+            checkmark.style.cssText = 'position: absolute; top: 8px; right: 8px; color: #8658ff; font-size: 20px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;';
+            checkmark.innerHTML = '✓';
+            personCard.appendChild(checkmark);
+          }
         }
       };
       
@@ -226,7 +260,18 @@ async function loadPeopleInTab() {
         });
         
         console.log('Selected people for memory:', selectedPeople);
-        alert(`Connected ${selectedPeople.length} people to this memory!`);
+        
+        // Elegant success feedback instead of ugly alert
+        const saveButton = document.querySelector('button[onclick="savePeopleSelections()"]');
+        const originalText = saveButton.innerHTML;
+        saveButton.innerHTML = `✅ Connected ${selectedPeople.length} people!`;
+        saveButton.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+        
+        setTimeout(() => {
+          saveButton.innerHTML = originalText;
+          saveButton.style.background = 'linear-gradient(135deg, #8658ff, #f093fb)';
+        }, 2000);
+        
         // TODO: Actually save the connections to the memory
       };
       
