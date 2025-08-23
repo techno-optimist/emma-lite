@@ -2307,6 +2307,7 @@ class EmmaChatExperience extends ExperiencePopup {
         }
 
         console.log('👥 Creating avatar for person:', person.name);
+        console.log('👥 Person data structure:', person);
 
         // Create avatar element
         const avatar = document.createElement('div');
@@ -2664,6 +2665,7 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async startEnrichmentConversation(memoryId) {
     console.log('💝 EMMA CHAT: Starting enrichment conversation for memory:', memoryId);
+    console.log('💝 EMMA CHAT: Current enrichmentState size:', this.enrichmentState.size);
     
     // Get the state
     const state = this.enrichmentState.get(memoryId);
