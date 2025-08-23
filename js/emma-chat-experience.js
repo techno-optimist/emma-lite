@@ -877,6 +877,86 @@ class EmmaChatExperience extends ExperiencePopup {
     return sortedWords;
   }
 
+  /**
+   * Generate intelligent memory response directly from analysis
+   */
+  generateIntelligentMemoryResponse(memory, userMessage) {
+    console.log('💬 INTELLIGENT RESPONSE: Generating response for memory:', memory.title);
+    console.log('💬 INTELLIGENT RESPONSE: Memory metadata:', memory.metadata);
+    
+    // CRITICAL FIX: Use the memory data we already have instead of searching
+    const detectedPeopleIds = memory.metadata.people || [];
+    const detectedPeopleNames = memory.metadata.peopleNames || [];
+    const newPeopleDetected = memory.metadata.newPeopleDetected || [];
+    
+    console.log('💬 RESPONSE DEBUG: People IDs:', detectedPeopleIds);
+    console.log('💬 RESPONSE DEBUG: People names:', detectedPeopleNames);
+    console.log('💬 RESPONSE DEBUG: New people:', newPeopleDetected);
+    
+    if (detectedPeopleNames.length > 0) {
+      // CRITICAL FIX: Create CLEAN, natural responses based on people status
+      const existingPeople = [];
+      const newPeople = [];
+      
+      // Categorize people by vault status  
+      detectedPeopleNames.forEach((name, index) => {
+        const peopleId = detectedPeopleIds[index];
+        if (peopleId && !peopleId.startsWith('temp_')) {
+          existingPeople.push(name);
+        } else {
+          newPeople.push(name);
+        }
+      });
+      
+      console.log('💬 RESPONSE DEBUG: Existing people:', existingPeople);
+      console.log('💬 RESPONSE DEBUG: New people:', newPeople);
+      
+      // Build natural, clean response
+      let response = "";
+      
+      // Acknowledge the memory with people context
+      if (existingPeople.length > 0 && newPeople.length === 0) {
+        // All people are known
+        const names = existingPeople.join(' and ');
+        const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
+        const hasFamily = existingPeople.some(person => familyTerms.includes(person));
+        
+        if (hasFamily) {
+          response = `A walk with ${names} sounds so special! Family moments like these are precious. Where did you walk together?`;
+        } else {
+          response = `A walk with ${names} sounds lovely! What made this time together special?`;
+        }
+      } else if (newPeople.length > 0) {
+        // Some new people detected
+        if (existingPeople.length > 0) {
+          response = `A walk with ${existingPeople.join(' and ')}`;
+          if (newPeople.length === 1) {
+            response += ` and ${newPeople[0]} sounds wonderful! I know ${existingPeople.join(' and ')}, but who is ${newPeople[0]}? Should I add them to your vault?`;
+          } else {
+            response += ` and ${newPeople.join(' and ')} sounds wonderful! I know ${existingPeople.join(' and ')}, but who are ${newPeople.join(' and ')}? Should I add them to your vault?`;
+          }
+        } else {
+          // All people are new
+          const names = newPeople.join(' and ');
+          if (newPeople.length === 1) {
+            response = `A walk with ${names} sounds lovely! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
+          } else {
+            response = `A walk with ${names} sounds wonderful! I don't know ${names} yet - should I add them to your vault so I can remember them?`;
+          }
+        }
+      }
+      
+      return response;
+    }
+    
+    // FALLBACK: Activity-based responses when no people detected
+    if (userMessage.toLowerCase().includes('walk')) {
+      return "A walk sounds peaceful! I'd love to capture this memory for you. Where did you go, and what made this walk special?";
+    }
+    
+    return "I'd love to help you capture this memory! Tell me more about what happened.";
+  }
+
   async generateMemoryCaptureResponse(userMessage) {
     // Find the detected memory for this message
     let detectedMemory = null;
@@ -1873,8 +1953,8 @@ class EmmaChatExperience extends ExperiencePopup {
             collectedData: {}
         };
         
-        // Generate the single best response immediately.
-        const intelligentResponse = await this.generateMemoryCaptureResponse(message);
+        // Generate the single best response immediately using the analysis we just got
+        const intelligentResponse = this.generateIntelligentMemoryResponse(analysis.memory, message);
 
         // Add the message with confirmation buttons.
         this.addMessage(intelligentResponse, 'emma', {
