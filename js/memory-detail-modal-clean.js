@@ -165,4 +165,7 @@ async function openAddPeopleModalForGallery() {
   }
 }
 
+// Alias for gallery.js compatibility 
+window.openMemoryDetail = openMemoryDetailModal;
+
 console.log('✅ CLEAN Memory Detail Modal loaded successfully!');
