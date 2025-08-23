@@ -2275,22 +2275,33 @@ class EmmaChatExperience extends ExperiencePopup {
 
       // Create avatars for connected people
       for (const personId of memory.metadata.people) {
-        const person = peopleData[personId];
-        if (!person) {
-          console.warn('👥 Person not found in vault:', personId);
-          continue;
-        }
+        // Check if this is a new person (temp ID)
+        const isNewPerson = personId.startsWith('temp_');
+        let person = null;
+        let personName = null;
 
-        console.log('👥 Creating avatar for person:', person.name);
-        console.log('👥 Person data structure:', person);
+        if (isNewPerson) {
+          // Extract name from temp ID (e.g., "temp_william" -> "William")
+          personName = personId.replace('temp_', '');
+          personName = personName.charAt(0).toUpperCase() + personName.slice(1);
+          console.log('👥 Creating avatar for NEW person:', personName);
+        } else {
+          person = peopleData[personId];
+          if (!person) {
+            console.warn('👥 Person not found in vault:', personId);
+            continue;
+          }
+          personName = person.name;
+          console.log('👥 Creating avatar for EXISTING person:', person.name);
+          console.log('👥 Person data structure:', person);
+        }
 
         // Create avatar element
         const avatar = document.createElement('div');
-        avatar.style.cssText = `
+        const baseStyle = `
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           display: flex;
           align-items: center;
@@ -2301,43 +2312,91 @@ class EmmaChatExperience extends ExperiencePopup {
           cursor: pointer;
           transition: transform 0.2s;
         `;
-        avatar.title = person.name;
-        avatar.textContent = person.name.charAt(0).toUpperCase();
+        
+        if (isNewPerson) {
+          // New person - special styling
+          avatar.style.cssText = baseStyle + `
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            border: 2px solid #ffeb3b;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+          `;
+          avatar.title = `${personName} (Adding to vault...)`;
+          avatar.textContent = personName.charAt(0).toUpperCase();
+        } else {
+          // Existing person - normal styling
+          avatar.style.cssText = baseStyle + `
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          `;
+          avatar.title = person.name;
+          avatar.textContent = person.name.charAt(0).toUpperCase();
+
+          // CRITICAL FIX: Load person's photo correctly using vault system
+          if (person.avatarUrl) {
+            // Direct URL (legacy)
+            const img = document.createElement('img');
+            img.src = person.avatarUrl;
+            img.alt = `${person.name} avatar`;
+            img.style.cssText = `
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              object-fit: cover;
+            `;
+            img.onload = () => {
+              avatar.innerHTML = '';
+              avatar.appendChild(img);
+            };
+            img.onerror = () => {
+              console.warn('👥 Failed to load avatarUrl for:', person.name);
+            };
+          } else if (person.avatarId) {
+            // CORRECT: Load from vault media system
+            try {
+              window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
+                if (avatarData) {
+                  const blob = new Blob([avatarData], { type: 'image/jpeg' });
+                  const url = URL.createObjectURL(blob);
+                  
+                  const img = document.createElement('img');
+                  img.src = url;
+                  img.alt = `${person.name} avatar`;
+                  img.style.cssText = `
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    object-fit: cover;
+                  `;
+                  img.onload = () => {
+                    avatar.innerHTML = '';
+                    avatar.appendChild(img);
+                  };
+                  img.onerror = () => {
+                    console.warn('👥 Failed to load avatarId for:', person.name);
+                  };
+                }
+              }).catch(error => {
+                console.error('❌ Failed to load person avatar from vault:', error);
+              });
+            } catch (error) {
+              console.error('❌ Error loading avatar from vault:', error);
+            }
+          }
+        }
 
         // Add hover effect
         avatar.onmouseenter = () => avatar.style.transform = 'scale(1.1)';
         avatar.onmouseleave = () => avatar.style.transform = 'scale(1)';
 
-        // Try to load person's avatar if they have one
-        if (person.profilePhoto || person.avatarUrl || person.photo) {
-          const img = document.createElement('img');
-          img.src = person.profilePhoto || person.avatarUrl || person.photo;
-          img.alt = `${person.name} avatar`;
-          img.style.cssText = `
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-          `;
-          img.onload = () => {
-            avatar.innerHTML = '';
-            avatar.appendChild(img);
-          };
-          img.onerror = () => {
-            console.warn('👥 Failed to load avatar for:', person.name);
-            // Keep the letter avatar as fallback
-          };
-        }
-
         avatarsContainer.appendChild(avatar);
 
-        // Add name label
+        // Add name label with special styling for new people
         const nameLabel = document.createElement('span');
-        nameLabel.textContent = person.name;
+        nameLabel.textContent = isNewPerson ? `${personName} (NEW)` : personName;
         nameLabel.style.cssText = `
           font-size: 12px;
-          color: #fff;
+          color: ${isNewPerson ? '#ffeb3b' : '#fff'};
           margin-right: 12px;
+          ${isNewPerson ? 'font-weight: bold; text-shadow: 0 0 5px rgba(255, 235, 59, 0.8);' : ''}
         `;
         avatarsContainer.appendChild(nameLabel);
       }
