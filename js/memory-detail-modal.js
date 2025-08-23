@@ -29,11 +29,10 @@ function openMemoryDetailModal(memory) {
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
-    z-index: 2147483651;
+    z-index: 2147483647;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: fadeIn 0.3s ease;
   `;
 
   // Create overlay first
@@ -58,18 +57,50 @@ function openMemoryDetailModal(memory) {
   modal.appendChild(overlay);
   modal.appendChild(content);
 
+  // Ensure modal CSS is injected for visibility
+  if (!document.querySelector('#memory-modal-styles')) {
+    const style = document.createElement('style');
+    style.id = 'memory-modal-styles';
+    style.textContent = `
+      .memory-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 2147483647 !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
   // Add to DOM
   document.body.appendChild(modal);
+  console.log('🎪 MODAL: Modal added to DOM, checking visibility...');
+  console.log('🎪 MODAL: Modal display style:', window.getComputedStyle(modal).display);
+  console.log('🎪 MODAL: Modal z-index:', window.getComputedStyle(modal).zIndex);
   
   // Setup event handlers with longer delay to prevent immediate close
   // Add immediate protection against click events
   modal._isOpening = true;
   setTimeout(() => {
     modal._isOpening = false;
+    console.log('🎪 MODAL: Opening protection disabled after 300ms');
   }, 300);
   
   setTimeout(() => {
     setupModalEventHandlers(modal, memory, overlay, content);
+    console.log('🎪 MODAL: Event handlers set up after 150ms');
+    
+    // Double-check modal is still visible
+    if (modal.parentNode) {
+      console.log('🎪 MODAL: Modal still in DOM after event setup');
+    } else {
+      console.error('🎪 MODAL: Modal was removed from DOM!');
+    }
   }, 150);
   
   // Store reference
@@ -154,15 +185,6 @@ function createModalContent(memory) {
         "/>
       </div>
       <div style="display: flex; gap: 12px;">
-        <button class="modal-delete-btn" style="
-          background: rgba(239, 68, 68, 0.2);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #fca5a5;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        ">🗑️ Delete</button>
         <button class="modal-save-btn" style="
           background: linear-gradient(135deg, #8658ff, #f093fb);
           border: none;
@@ -363,15 +385,7 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
     });
   }
 
-  // Delete button
-  const deleteBtn = modal.querySelector('.modal-delete-btn');
-  if (deleteBtn) {
-    deleteBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      confirmDeleteMemory(modal, memory);
-    });
-  }
+  // Delete button removed for stability
 
   // Tab switching
   const tabBtns = modal.querySelectorAll('.tab-btn');
