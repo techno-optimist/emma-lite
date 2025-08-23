@@ -864,7 +864,6 @@ async function handleSaveMemoryToVault(memoryData) {
   console.log('🔄 BACKGROUND: DEPRECATED function called - redirecting to webapp');
   return await sendToWebapp('EMMA_SAVE_MEMORY', memoryData);
 }
-    if (!currentData) throw new Error('Vault content unavailable in memory. Please reopen the vault.');
     
     // Generate memory ID
     const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
