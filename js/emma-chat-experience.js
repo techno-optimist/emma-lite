@@ -878,15 +878,47 @@ class EmmaChatExperience extends ExperiencePopup {
       return "I'd love to help you capture this memory! Tell me more about what happened.";
     }
 
-    // Generate intelligent follow-up questions based on what's missing
+    // CRITICAL FIX: Generate personalized responses based on detected people and context
     const memory = detectedMemory.memory;
     const signals = detectedMemory.signals;
+    
+    console.log('💬 RESPONSE DEBUG: Detected people in memory:', memory.metadata.people);
+    console.log('💬 RESPONSE DEBUG: Available signals:', signals);
 
-    // Determine what information we need
-    const needsPeople = !memory.metadata.people || memory.metadata.people.length === 0;
+    // Generate PERSONALIZED responses based on detected people
+    const detectedPeople = memory.metadata.people || [];
+    
+    if (detectedPeople.length > 0) {
+      // PERSONALIZED: Acknowledge the specific people mentioned
+      const peopleNames = detectedPeople.join(' and ');
+      let personalizedResponse = "";
+      
+      // Check for family relationships first
+      const familyTerms = ['Mom', 'Dad', 'Mother', 'Father', 'Sister', 'Brother', 'Grandma', 'Grandpa'];
+      const hasFamilyMember = detectedPeople.some(person => familyTerms.includes(person));
+      
+      if (hasFamilyMember) {
+        personalizedResponse = `A walk with ${peopleNames} sounds so special! Family moments like these are truly precious. Tell me more about what made this time together meaningful to you.`;
+      } else {
+        personalizedResponse = `A walk with ${peopleNames} sounds lovely! I'd love to hear more about this moment. What made this time together special?`;
+      }
+      
+      // Add contextual follow-up based on activity
+      if (userMessage.toLowerCase().includes('walk')) {
+        personalizedResponse += " Where did you walk together?";
+      }
+      
+      return personalizedResponse;
+    }
+    
+    // FALLBACK: Activity-based responses when no people detected
+    if (userMessage.toLowerCase().includes('walk')) {
+      return "A walk sounds peaceful! I'd love to capture this memory for you. Where did you go, and what made this walk special?";
+    }
+    
+    // Generate intelligent follow-up questions based on what's missing
     const needsEmotions = !memory.metadata.emotions || memory.metadata.emotions.length === 0;
     const needsLocation = !memory.metadata.location;
-    const needsPhotos = !memory.attachments || memory.attachments.length === 0;
     const needsDetails = memory.content && memory.content.length < 100;
 
     // Generate contextual follow-up questions
@@ -894,10 +926,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     if (signals.types.includes('pet') && needsDetails) {
       followUp = "Tell me more about your pet! What's their personality like? How did this moment make you feel?";
-    } else if (signals.types.includes('milestone') && needsPeople) {
+    } else if (signals.types.includes('milestone')) {
       followUp = "What an important moment! Who else was there to share this with you?";
-    } else if (memory.metadata.people.includes('mom') || memory.metadata.people.includes('dad')) {
-      followUp = "Family moments are so precious! What made this time with your parent extra special?";
     } else if (needsEmotions) {
       followUp = "How did this moment make you feel? What emotions do you remember most?";
     } else if (needsLocation) {
@@ -908,10 +938,7 @@ class EmmaChatExperience extends ExperiencePopup {
       followUp = "This sounds like such a meaningful moment! What other details would make this memory complete?";
     }
 
-    // Always ask about photos
-    const photoPrompt = needsPhotos ? " Do you have any photos from this moment you'd like to add?" : "";
-
-    return `I can sense this is really special to you! ${followUp}${photoPrompt}`;
+    return `I can sense this is really special to you! ${followUp}`;
   }
 
   async generateEmmaResponse(userMessage) {
