@@ -2128,14 +2128,11 @@ class EmmaChatExperience extends ExperiencePopup {
     // BEAUTIFUL EMMA-STYLE: Create as chat message instead of dialog
     const previewHTML = `
       <div class="memory-capsule-preview">
-        <div class="capsule-header">
-          <div class="capsule-icon">💝</div>
-          <div class="capsule-title">Your Memory Capsule</div>
-        </div>
+        <!-- Header removed to avoid duplication with dialog header -->
 
         <div class="capsule-content">
           <h3 class="memory-title">${memory.title || 'Untitled Memory'}</h3>
-          <p class="memory-story">${memory.content}</p>
+          <p class="memory-story" id="memory-story-${memory.id}">${memory.content}</p>
 
           ${memory.metadata?.people?.length > 0 ? `
             <div class="memory-detail">
@@ -2278,6 +2275,20 @@ class EmmaChatExperience extends ExperiencePopup {
       console.log('👥 Creating capsule avatars for people:', memory.metadata.people);
       console.log('👥 Available people in vault:', Object.keys(peopleData));
       
+      // Fix the memory content by replacing person IDs with names
+      const storyElement = document.getElementById(`memory-story-${memory.id}`);
+      if (storyElement) {
+        let content = storyElement.textContent;
+        for (const personId of memory.metadata.people) {
+          const person = peopleData[personId];
+          if (person) {
+            // Replace person ID with person name
+            content = content.replace(new RegExp(personId, 'g'), person.name);
+          }
+        }
+        storyElement.textContent = content;
+      }
+      
       // Clear container
       avatarsContainer.innerHTML = '';
       avatarsContainer.style.cssText = `
@@ -2322,9 +2333,9 @@ class EmmaChatExperience extends ExperiencePopup {
         avatar.onmouseleave = () => avatar.style.transform = 'scale(1)';
 
         // Try to load person's avatar if they have one
-        if (person.avatarUrl) {
+        if (person.profilePhoto || person.avatarUrl || person.photo) {
           const img = document.createElement('img');
-          img.src = person.avatarUrl;
+          img.src = person.profilePhoto || person.avatarUrl || person.photo;
           img.alt = `${person.name} avatar`;
           img.style.cssText = `
             width: 100%;
@@ -2335,6 +2346,10 @@ class EmmaChatExperience extends ExperiencePopup {
           img.onload = () => {
             avatar.innerHTML = '';
             avatar.appendChild(img);
+          };
+          img.onerror = () => {
+            console.warn('👥 Failed to load avatar for:', person.name);
+            // Keep the letter avatar as fallback
           };
         }
 
