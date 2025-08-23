@@ -3616,58 +3616,7 @@
             console.log('💝 CONSTELLATION: Loaded', allMemories.length, 'vault memories');
           }
 
-          // 2. SECOND: Get fallback memories from localStorage (CRITICAL FIX!)
-          try {
-            const fallbackMemories = JSON.parse(localStorage.getItem('emma_fallback_memories') || '[]');
-            
-            if (fallbackMemories.length > 0) {
-              console.log('💾 CONSTELLATION: Found', fallbackMemories.length, 'fallback memories, adding to constellation');
-              
-              // Process fallback memories for constellation display (SAME as vault processing)
-              const processedFallbackMemories = fallbackMemories.map(memory => {
-                // Process attachments to ensure proper URL handling (CRITICAL FIX!)
-                const attachments = (memory.attachments || []).map(attachment => {
-                  // Fallback memories may have dataUrlPreview, dataUrl, url, or base64Data
-                  const imageUrl = attachment.dataUrlPreview || 
-                                   attachment.dataUrl || 
-                                   attachment.url ||
-                                   (attachment.base64Data ? `data:${attachment.type || 'image/jpeg'};base64,${attachment.base64Data}` : null);
-                  
-                  if (imageUrl) {
-                    return {
-                      ...attachment,
-                      url: imageUrl,
-                      dataUrl: imageUrl,
-                      isPersisted: false // Mark as not yet persisted to vault
-                    };
-                  }
-                  return attachment;
-                });
-                
-                // Generate thumbnail from first valid attachment
-                let thumbnail = memory.thumbnail;
-                if (!thumbnail && attachments.length > 0 && attachments[0].url) {
-                  thumbnail = attachments[0].url;
-                  console.log('💾 CONSTELLATION: Generated thumbnail for fallback memory:', memory.id, thumbnail.substring(0, 50) + '...');
-                }
-                
-                return {
-                  ...memory,
-                  attachments, // Include processed attachments
-                  thumbnail,
-                  isFallbackMemory: true, // Mark as fallback for UI indication
-                  needsVaultSync: true,
-                  title: (memory.title || 'Captured Memory') + ' 📦' // Add fallback indicator
-                };
-              });
-              
-              // Add fallback memories to the list
-              allMemories = [...allMemories, ...processedFallbackMemories];
-              console.log('💾 CONSTELLATION: Total memories (vault + fallback):', allMemories.length);
-            }
-          } catch (fallbackError) {
-            console.warn('💾 CONSTELLATION: Error loading fallback memories:', fallbackError);
-          }
+          // Note: All memories should be stored directly in vault - no fallback needed
 
           return allMemories;
 
@@ -6432,9 +6381,19 @@
 
       // CRITICAL: Initialize vault objects AFTER all scripts load
       setTimeout(() => {
+        
+        // CRITICAL FIX: Create the global vault instance (was missing!)
+        if (typeof EmmaWebVault !== 'undefined' && !window.emmaWebVault) {
+          window.emmaWebVault = new EmmaWebVault();
+          console.log('✅ DASHBOARD: EmmaWebVault instance created and ready');
+        } else if (window.emmaWebVault) {
+          console.log('✅ DASHBOARD: EmmaWebVault instance already exists');
+        } else {
+          console.error('❌ DASHBOARD: EmmaWebVault class not found!');
+        }
 
-        // Check what's available        // CRITICAL FIX: Don't create new instances - they already exist from script loading!
-        // The global scripts (emma-web-vault.js, web-vault-status.js) already create instances        // Extension mode - Set up extension-aware vault status
+        // Check what's available        
+        // Extension mode - Set up extension-aware vault status
         if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
 
           // Set dashboard as ready - extension handles all vault operations

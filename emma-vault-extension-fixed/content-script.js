@@ -1081,40 +1081,10 @@ async function saveToWebappVault(memoryData) {
     console.log('💾 Content Script: Saving memory to real webapp vault');
     
     // WAIT FOR WEBAPP VAULT TO BE READY (with timeout)
-    const vault = await waitForWebappVault(10000); // 10 second timeout
+    const vault = await waitForWebappVault(3000); // 3 second timeout - vault should be ready quickly
     
     if (!vault) {
-      console.warn('💾 Content Script: Vault timeout - attempting fallback save to localStorage');
-      
-      // FALLBACK: Save to localStorage temporarily
-      const fallbackMemory = {
-        ...memoryData,
-        id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
-        created: new Date().toISOString(),
-        source: 'extension_fallback',
-        needsVaultSync: true
-      };
-      
-      // Store in localStorage for later vault sync
-      const existingFallbacks = JSON.parse(localStorage.getItem('emma_fallback_memories') || '[]');
-      existingFallbacks.push(fallbackMemory);
-      localStorage.setItem('emma_fallback_memories', JSON.stringify(existingFallbacks));
-      
-      console.log('💾 Content Script: Memory saved to fallback storage:', fallbackMemory.id);
-      
-      // Trigger constellation refresh even with fallback
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
-          detail: { memoryId: fallbackMemory.id, memoryData: fallbackMemory }
-        }));
-      }, 100);
-      
-      return {
-        success: true,
-        memoryId: fallbackMemory.id,
-        message: 'Memory saved to fallback storage - will sync to vault when available',
-        isFallback: true
-      };
+      throw new Error('Webapp vault not available - please ensure dashboard is open and vault is unlocked');
     }
     
     console.log('💾 Content Script: Webapp vault is ready!', {
@@ -1154,7 +1124,7 @@ async function saveToWebappVault(memoryData) {
 /**
  * Wait for webapp vault to be ready and unlocked
  */
-async function waitForWebappVault(timeoutMs = 10000) {
+async function waitForWebappVault(timeoutMs = 3000) {
   return new Promise((resolve) => {
     const startTime = Date.now();
     
