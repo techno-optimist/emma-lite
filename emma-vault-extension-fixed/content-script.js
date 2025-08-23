@@ -1080,34 +1080,21 @@ async function saveToWebappVault(memoryData) {
   try {
     console.log('💾 Content Script: Saving memory to real webapp vault');
     
-    // ENHANCED DEBUG: Check webapp vault state in detail
-    console.log('💾 Content Script: Webapp vault debug info:', {
-      emmaWebVaultExists: !!window.emmaWebVault,
-      isOpen: window.emmaWebVault?.isOpen,
-      hasVaultData: !!window.emmaWebVault?.vaultData,
-      vaultDataKeys: window.emmaWebVault?.vaultData ? Object.keys(window.emmaWebVault.vaultData) : 'none',
-      hasAddMemoryMethod: typeof window.emmaWebVault?.addMemory === 'function',
-      currentVaultStatusExists: !!window.currentVaultStatus,
-      currentVaultStatusIsUnlocked: window.currentVaultStatus?.isUnlocked,
-      sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
-      localVaultActive: localStorage.getItem('emmaVaultActive')
+    // WAIT FOR WEBAPP VAULT TO BE READY (with timeout)
+    const vault = await waitForWebappVault(10000); // 10 second timeout
+    
+    if (!vault) {
+      throw new Error('Webapp vault failed to initialize within timeout');
+    }
+    
+    console.log('💾 Content Script: Webapp vault is ready!', {
+      isOpen: vault.isOpen,
+      hasVaultData: !!vault.vaultData,
+      hasAddMemoryMethod: typeof vault.addMemory === 'function'
     });
     
-    // Check if webapp vault is available
-    if (!window.emmaWebVault) {
-      throw new Error('window.emmaWebVault object not found - webapp vault not initialized');
-    }
-    
-    if (!window.emmaWebVault.isOpen) {
-      throw new Error(`Webapp vault exists but isOpen=${window.emmaWebVault.isOpen} - vault may be locked`);
-    }
-    
-    if (typeof window.emmaWebVault.addMemory !== 'function') {
-      throw new Error('emmaWebVault.addMemory method not available');
-    }
-    
     // Use webapp vault's addMemory method
-    const result = await window.emmaWebVault.addMemory(memoryData);
+    const result = await vault.addMemory(memoryData);
     
     console.log('💾 Content Script: Memory saved successfully:', result);
     
@@ -1132,6 +1119,50 @@ async function saveToWebappVault(memoryData) {
       error: error.message
     };
   }
+}
+
+/**
+ * Wait for webapp vault to be ready and unlocked
+ */
+async function waitForWebappVault(timeoutMs = 10000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    
+    const checkVault = () => {
+      // Enhanced DEBUG: Log current state during wait
+      console.log('💾 Content Script: Checking vault readiness...', {
+        emmaWebVaultExists: !!window.emmaWebVault,
+        isOpen: window.emmaWebVault?.isOpen,
+        hasVaultData: !!window.emmaWebVault?.vaultData,
+        hasAddMemoryMethod: typeof window.emmaWebVault?.addMemory === 'function',
+        sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
+        localVaultActive: localStorage.getItem('emmaVaultActive'),
+        timeElapsed: Date.now() - startTime
+      });
+      
+      // Check if vault exists and is ready
+      if (window.emmaWebVault && 
+          window.emmaWebVault.isOpen && 
+          typeof window.emmaWebVault.addMemory === 'function') {
+        console.log('✅ Content Script: Webapp vault is ready!');
+        resolve(window.emmaWebVault);
+        return;
+      }
+      
+      // Check for timeout
+      if (Date.now() - startTime > timeoutMs) {
+        console.error('❌ Content Script: Webapp vault timeout after', timeoutMs, 'ms');
+        resolve(null);
+        return;
+      }
+      
+      // Try again in 500ms
+      setTimeout(checkVault, 500);
+    };
+    
+    // Start checking immediately
+    checkVault();
+  });
 }
 
 /**
