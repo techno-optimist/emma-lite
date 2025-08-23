@@ -132,7 +132,10 @@ async function loadPeopleInTab() {
       
       // Create beautiful people grid with circular avatars
       const peopleGrid = people.map((person, index) => {
-        const isSelected = false; // TODO: Check if person is already connected to memory
+        // Check if person is already connected to this memory
+        const currentMemory = window.currentMemory;
+        const connectedPeople = currentMemory?.metadata?.people || [];
+        const isSelected = connectedPeople.includes(person.id);
         const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
         
         // Create avatar HTML - circular image with letter fallback
@@ -219,6 +222,28 @@ async function loadPeopleInTab() {
         </div>
       `;
       
+      // Add initial checkmarks for pre-selected people
+      setTimeout(() => {
+        people.forEach(person => {
+          const currentMemory = window.currentMemory;
+          const connectedPeople = currentMemory?.metadata?.people || [];
+          if (connectedPeople.includes(person.id)) {
+            const personCard = document.getElementById(`person-${person.id}`);
+            if (personCard) {
+              personCard.classList.add('selected');
+              personCard.style.border = '2px solid #8658ff';
+              personCard.style.background = 'rgba(134, 88, 255, 0.1)';
+              
+              const checkmark = document.createElement('div');
+              checkmark.className = 'selection-checkmark';
+              checkmark.style.cssText = 'position: absolute; top: 8px; right: 8px; color: #8658ff; font-size: 20px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;';
+              checkmark.innerHTML = '✓';
+              personCard.appendChild(checkmark);
+            }
+          }
+        });
+      }, 100);
+      
       // Add selection functionality
       window.togglePersonSelection = function(personId) {
         const personCard = document.getElementById(`person-${personId}`);
@@ -251,7 +276,7 @@ async function loadPeopleInTab() {
         }
       };
       
-      window.savePeopleSelections = function() {
+      window.savePeopleSelections = async function() {
         const selectedCards = document.querySelectorAll('#people-content .selected');
         const selectedPeople = Array.from(selectedCards).map(card => {
           const personId = card.id.replace('person-', '');
@@ -261,18 +286,82 @@ async function loadPeopleInTab() {
         
         console.log('Selected people for memory:', selectedPeople);
         
-        // Elegant success feedback instead of ugly alert
         const saveButton = document.querySelector('button[onclick="savePeopleSelections()"]');
         const originalText = saveButton.innerHTML;
-        saveButton.innerHTML = `✅ Connected ${selectedPeople.length} people!`;
-        saveButton.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
         
+        try {
+          // Show saving state
+          saveButton.innerHTML = '💾 Saving...';
+          saveButton.disabled = true;
+          
+          // Get the current memory
+          const currentMemory = window.currentMemory;
+          if (!currentMemory) {
+            throw new Error('No current memory found');
+          }
+          
+          // Create people ID array for metadata
+          const peopleIds = selectedPeople.map(p => p.id);
+          
+          // Update memory metadata with people connections
+          const updatedMemory = {
+            ...currentMemory,
+            metadata: {
+              ...currentMemory.metadata,
+              people: peopleIds
+            }
+          };
+          
+          // Save to vault using Emma API
+          let saveResult = null;
+          
+          if (window.emmaAPI?.vault?.updateMemory) {
+            // Try new API first
+            saveResult = await window.emmaAPI.vault.updateMemory(updatedMemory);
+          } else if (window.emmaWebVault?.updateMemory) {
+            // Fallback to web vault
+            saveResult = await window.emmaWebVault.updateMemory(updatedMemory.id, updatedMemory);
+          } else if (window.emma?.vault?.storeMemory) {
+            // Legacy API fallback
+            const mtapMemory = {
+              id: updatedMemory.id,
+              header: { id: updatedMemory.id, created: Date.now(), title: updatedMemory.title, protocol: 'MTAP/1.0' },
+              core: { content: updatedMemory.content },
+              metadata: { ...updatedMemory.metadata, people: peopleIds },
+              semantic: {},
+              relations: {}
+            };
+            saveResult = await window.emma.vault.storeMemory({ mtapMemory });
+          }
+          
+          if (saveResult && saveResult.success) {
+            // Success feedback
+            saveButton.innerHTML = `✅ Connected ${selectedPeople.length} people!`;
+            saveButton.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+            
+            // Update the global current memory
+            window.currentMemory = updatedMemory;
+            
+            console.log('✅ Successfully saved people connections to memory');
+            
+          } else {
+            throw new Error(saveResult?.error || 'Failed to save memory');
+          }
+          
+        } catch (error) {
+          console.error('❌ Error saving people connections:', error);
+          
+          // Error feedback
+          saveButton.innerHTML = '❌ Save Failed';
+          saveButton.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        }
+        
+        // Reset button after 2 seconds
         setTimeout(() => {
           saveButton.innerHTML = originalText;
           saveButton.style.background = 'linear-gradient(135deg, #8658ff, #f093fb)';
+          saveButton.disabled = false;
         }, 2000);
-        
-        // TODO: Actually save the connections to the memory
       };
       
     } else {
