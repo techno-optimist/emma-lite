@@ -6505,11 +6505,17 @@
        * (Reused from memories.js constellation)
        */
       async loadFullMediaForMemory(memory) {
+        console.log('🔍 MEDIA DEBUG: Starting loadFullMediaForMemory for memory:', memory.id);
+        console.log('🔍 MEDIA DEBUG: Memory attachments:', memory.attachments);
+        
         // Check if this memory has lazy-loaded attachments that need full loading
         const hasLazyAttachments = memory.attachments?.some(att => att.isLazyLoaded && att.hasMedia);
         
+        console.log('🔍 MEDIA DEBUG: hasLazyAttachments:', hasLazyAttachments);
+        
         if (!hasLazyAttachments) {
           console.log('💾 DASHBOARD: Memory already has full media, no loading needed');
+          console.log('🔍 MEDIA DEBUG: Returning original memory with attachments:', memory.attachments);
           return memory;
         }
         
@@ -6562,12 +6568,18 @@
        * 📱💻🖥️ RESPONSIVE MEMORY DIALOG - Works on ALL screen sizes!
        */
       showResponsiveMemoryDialog(memory) {
+        console.log('🎯 DIALOG DEBUG: Creating dialog for memory:', memory.id);
+        console.log('🎯 DIALOG DEBUG: Memory attachments in dialog:', memory.attachments);
+        
         // Prepare memory data  
         const hasImages = memory.attachments?.some(att => att.type?.startsWith('image/')) || 
                          memory.mediaItems?.some(item => item.type?.startsWith('image/'));
         const hasVideo = memory.attachments?.some(att => att.type?.startsWith('video/')) || 
                         memory.mediaItems?.some(item => item.type?.startsWith('video/'));
         const peopleList = memory.metadata?.people || memory.people || [];
+        
+        console.log('🎯 DIALOG DEBUG: hasImages:', hasImages, 'hasVideo:', hasVideo);
+        console.log('🎯 DIALOG DEBUG: Image attachments:', memory.attachments?.filter(att => att.type?.startsWith('image/')));
         
         // Create fully responsive dialog for ALL screen sizes
         const dialog = document.createElement('div');
@@ -6968,12 +6980,16 @@
                   ${(memory.attachments || memory.mediaItems || [])
                     .filter(att => att.type?.startsWith('image/'))
                     .slice(0, 5)
-                    .map((image, index) => `
-                      <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
-                        <div class="image-overlay"></div>
-                            </div>
-                    `).join('')}
-                            </div>
+                    .map((image, index) => {
+                      const imageUrl = image.url || image.dataUrl || image.data || image.previewUrl;
+                      console.log('🖼️ IMAGE DEBUG: Processing image', index, ':', image.name, 'URL:', imageUrl);
+                      return `
+                        <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${imageUrl}')">
+                          <div class="image-overlay"></div>
+                        </div>
+                      `;
+                    }).join('')}
+                </div>
                 ${(memory.attachments || memory.mediaItems || []).filter(att => att.type?.startsWith('image/')).length > 1 ? `
                   <div class="carousel-dots">
                     ${(memory.attachments || memory.mediaItems || [])
