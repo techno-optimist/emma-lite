@@ -6323,70 +6323,70 @@
         const dashboard = window.emmaDashboard;
 
         // Close button
-      document.getElementById('close-vault-modal').addEventListener('click', () => {
-        dashboard.closeVaultModal();
-      });
-
-      // Click outside to close
-      document.getElementById('vault-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'vault-modal') {
+        document.getElementById('close-vault-modal').addEventListener('click', () => {
           dashboard.closeVaultModal();
-        }
-      });
+        });
 
-      // Unlock form handlers
-      document.getElementById('unlock-btn').addEventListener('click', () => {
-        dashboard.unlockVault();
-      });
-
-      document.getElementById('cancel-unlock-btn').addEventListener('click', () => {
-        dashboard.hideUnlockForm();
-      });
-
-      // Create vault button handler
-      document.getElementById('create-vault-btn').addEventListener('click', async () => {
-
-        try {
-          if (window.emmaAPI && window.emmaAPI.vault) {
-            const st = await window.emmaAPI.vault.status();
-            if (st && st.initialized) {
-
-              dashboard.showUnlockForm();
-              return;
-            }
-          }
-        } catch {}
-        // Load welcome page for vault setup
-        window.location.assign('pages/welcome.html');
-      });
-
-      // Password input enter key
-      document.getElementById('vault-password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          dashboard.unlockVault();
-        }
-      });
-
-      // QR Code handlers
-      document.getElementById('generate-vault-qr-dashboard').addEventListener('click', () => {
-        dashboard.showToast('📱 Vault QR generation coming soon!', 'info');
-      });
-
-      document.getElementById('open-qr-scanner-dashboard').addEventListener('click', () => {
-        dashboard.showToast('📷 QR scanner coming soon!', 'info');
-      });
-
-      // Escape key to close vault modal
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          const modal = document.getElementById('vault-modal');
-          if (modal.classList.contains('show')) {
+        // Click outside to close
+        document.getElementById('vault-modal').addEventListener('click', (e) => {
+          if (e.target.id === 'vault-modal') {
             dashboard.closeVaultModal();
           }
-        }
-      });
+        });
 
-      // Vault status is managed by WebVaultStatus - don't override here!
+        // Unlock form handlers
+        document.getElementById('unlock-btn').addEventListener('click', () => {
+          dashboard.unlockVault();
+        });
+
+        document.getElementById('cancel-unlock-btn').addEventListener('click', () => {
+          dashboard.hideUnlockForm();
+        });
+
+        // Create vault button handler
+        document.getElementById('create-vault-btn').addEventListener('click', async () => {
+
+          try {
+            if (window.emmaAPI && window.emmaAPI.vault) {
+              const st = await window.emmaAPI.vault.status();
+              if (st && st.initialized) {
+
+                dashboard.showUnlockForm();
+                return;
+              }
+            }
+          } catch {}
+          // Load welcome page for vault setup
+          window.location.assign('pages/welcome.html');
+        });
+
+        // Password input enter key
+        document.getElementById('vault-password').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            dashboard.unlockVault();
+          }
+        });
+
+        // QR Code handlers
+        document.getElementById('generate-vault-qr-dashboard').addEventListener('click', () => {
+          dashboard.showToast('📱 Vault QR generation coming soon!', 'info');
+        });
+
+        document.getElementById('open-qr-scanner-dashboard').addEventListener('click', () => {
+          dashboard.showToast('📷 QR scanner coming soon!', 'info');
+        });
+
+        // Escape key to close vault modal
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            const modal = document.getElementById('vault-modal');
+            if (modal.classList.contains('show')) {
+              dashboard.closeVaultModal();
+            }
+          }
+        });
+
+        // Vault status is managed by WebVaultStatus - don't override here!
 
         // PERSISTENCE: Check if constellation was active before refresh
         const constellationWasActive = localStorage.getItem('emmaConstellationActive') === 'true';
@@ -6399,24 +6399,24 @@
           }, 1000); // Wait for dashboard to fully initialize
         }
 
-      // CRITICAL: Initialize vault objects AFTER all scripts load
-      setTimeout(() => {
-        
-        // CRITICAL FIX: Create the global vault instance (was missing!)
-        if (typeof EmmaWebVault !== 'undefined' && !window.emmaWebVault) {
-          window.emmaWebVault = new EmmaWebVault();
-          console.log('✅ DASHBOARD: EmmaWebVault instance created and ready');
-        } else if (window.emmaWebVault) {
-          console.log('✅ DASHBOARD: EmmaWebVault instance already exists');
-        } else {
-          console.error('❌ DASHBOARD: EmmaWebVault class not found!');
-        }
+        // CRITICAL: Initialize vault objects AFTER all scripts load
+        setTimeout(() => {
+          
+          // CRITICAL FIX: Create the global vault instance (was missing!)
+          if (typeof EmmaWebVault !== 'undefined' && !window.emmaWebVault) {
+            window.emmaWebVault = new EmmaWebVault();
+            console.log('✅ DASHBOARD: EmmaWebVault instance created and ready');
+          } else if (window.emmaWebVault) {
+            console.log('✅ DASHBOARD: EmmaWebVault instance already exists');
+          } else {
+            console.error('❌ DASHBOARD: EmmaWebVault class not found!');
+          }
 
-        // Check what's available        
-        // Extension mode - Set up extension-aware vault status
-        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+          // Check what's available        
+          // Extension mode - Set up extension-aware vault status
+          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
 
-          // Set dashboard as ready - extension handles all vault operations
+            // Set dashboard as ready - extension handles all vault operations
           const statusIcon = document.getElementById('status-icon');
           const statusTitle = document.getElementById('status-title');
           const statusDescription = document.getElementById('status-description');
@@ -6465,7 +6465,7 @@
 
         }
 
-      }, 100); // Small delay for DOM elements to be available
+        }, 100); // Small delay for DOM elements to be available
     });
   </script>
 </body>
