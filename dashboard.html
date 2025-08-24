@@ -5815,12 +5815,12 @@
         let dragStartZoom = { ...this.zoomState };
 
         document.addEventListener('mousedown', (e) => {
-          // 🖱️ SMART DRAGGING: Only start drag on empty background, preserve memory/person node clicks
+          // 🚫 DISABLE CLICK-TO-PAN: Let users click nodes without drag interference
+          // Only enable drag on the constellation container itself or document body
           if (this.isConstellationMode && 
-              !e.target.closest('button') && 
-              !e.target.closest('.memory-node') && 
-              !e.target.closest('.person-node') &&
-              !e.target.closest('.create-memory-node')) {
+              (e.target === this.constellationContainer || 
+               e.target === document.body || 
+               e.target.classList.contains('dashboard'))) {
             isDragging = true;
             dragStart = { x: e.clientX, y: e.clientY };
             dragStartZoom = { ...this.zoomState };
