@@ -3548,29 +3548,49 @@
             const vaultMemories = window.emmaWebVault.vaultData.content?.memories || {};
             const vaultMedia = window.emmaWebVault.vaultData.content?.media || {};
 
-            // Convert vault memories to array format
+            // Convert vault memories to array format with LIGHTWEIGHT LOADING for constellation
             const memories = Object.values(vaultMemories).map(memory => {
-              // Process attachments to include data URLs
-              const attachments = (memory.attachments || []).map(attachment => {
+              // 🚀 PERFORMANCE FIX: Only create lightweight attachment previews for constellation
+              // Full media will be loaded on-demand when memory is clicked
+              const attachmentPreviews = (memory.attachments || []).map(attachment => {
                 const mediaItem = vaultMedia[attachment.id];
-                if (mediaItem && mediaItem.data) {
-                  return {
-                    ...attachment,
-                    url: mediaItem.data.startsWith('data:')
-                      ? mediaItem.data
-                      : `data:${mediaItem.type};base64,${mediaItem.data}`,
-                    dataUrl: mediaItem.data.startsWith('data:')
-                      ? mediaItem.data
-                      : `data:${mediaItem.type};base64,${mediaItem.data}`,
-                    isPersisted: true
-                  };
-                }
-                return attachment;
+                return {
+                  id: attachment.id,
+                  type: attachment.type,
+                  name: attachment.name,
+                  size: attachment.size,
+                  // 💡 LAZY LOADING: Store media ID for on-demand loading, don't load data URL yet
+                  mediaId: attachment.id,
+                  hasMedia: !!(mediaItem && mediaItem.data),
+                  isLazyLoaded: true, // Flag to indicate this needs full loading on click
+                  // Only create preview thumbnail for first image attachment
+                  previewUrl: null // Will be set below for first image only
+                };
               });
+
+              // 🎯 OPTIMIZATION: Only load preview for FIRST image attachment (for constellation thumbnail)
+              if (attachmentPreviews.length > 0) {
+                const firstImageAttachment = attachmentPreviews.find(att => 
+                  att.hasMedia && (att.type?.startsWith('image/') || !att.type?.startsWith('video/'))
+                );
+                
+                if (firstImageAttachment) {
+                  const mediaItem = vaultMedia[firstImageAttachment.id];
+                  if (mediaItem && mediaItem.data) {
+                    // Only load the first image for constellation thumbnail
+                    firstImageAttachment.previewUrl = mediaItem.data.startsWith('data:')
+                      ? mediaItem.data
+                      : `data:${mediaItem.type};base64,${mediaItem.data}`;
+                  }
+                }
+              }
 
               return {
                 ...memory,
-                attachments
+                attachments: attachmentPreviews, // Lightweight previews only
+                attachmentCount: attachmentPreviews.length,
+                hasMedia: attachmentPreviews.some(att => att.hasMedia),
+                isVaultMemory: true
               };
             });
 
@@ -3579,10 +3599,12 @@
               const attachments = memory.attachments || [];
               let thumbnail = memory.thumbnail;
 
-              // If no thumbnail but has attachments with URLs, use first attachment
-              if (!thumbnail && attachments.length > 0 && attachments[0].url) {
-                thumbnail = attachments[0].url;
-
+              // 🎯 PERFORMANCE: Use previewUrl from first image attachment for thumbnail
+              if (!thumbnail && attachments.length > 0) {
+                const firstImageWithPreview = attachments.find(att => att.previewUrl);
+                if (firstImageWithPreview) {
+                  thumbnail = firstImageWithPreview.previewUrl;
+                }
               }
 
               return {

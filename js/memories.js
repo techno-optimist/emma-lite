@@ -1175,7 +1175,11 @@ async function loadConstellationView() {
         <option value="tags">Tags</option>
       </select>
     </label>
-    <button id="reset-view" class="btn secondary" style="font-size:12px; padding:4px 8px;">Reset</button>
+    <div style="display: inline-flex; gap: 8px; align-items: center;">
+      <button id="zoom-out" style="background: rgba(17,24,39,0.8); color: #e9d5ff; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer;" title="Zoom Out">🔍➖</button>
+      <button id="zoom-in" style="background: rgba(17,24,39,0.8); color: #e9d5ff; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer;" title="Zoom In">🔍➕</button>
+      <button id="reset-view" style="background: var(--emma-purple); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-weight: 500;" title="Show All Memories">🏠 Fit All</button>
+    </div>
   `;
   wrap.appendChild(controls);
 
@@ -1183,12 +1187,18 @@ async function loadConstellationView() {
 
   const ctx = canvas.getContext('2d');
 
-  // View transform for pan/zoom
-  const view = { scale: 1, tx: 0, ty: 0 };
-  const minScale = 0.5;
-  const maxScale = 3;
+  // 🎯 DEMENTIA-FRIENDLY ZOOM: Enhanced view transform for gentle pan/zoom
+  const view = { scale: 1, tx: 0, ty: 0, targetScale: 1, targetTx: 0, targetTy: 0 };
+  const minScale = 0.3;  // Allow zooming out more to see all memories
+  const maxScale = 5;    // Allow zooming in more for better detail
   let dragging = false;
   let dragStart = { x: 0, y: 0, tx: 0, ty: 0 };
+  
+  // 📱 TOUCH SUPPORT: Variables for pinch-to-zoom
+  let touches = [];
+  let lastPinchDistance = 0;
+  let isPinching = false;
+  let animationFrame = null;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -1293,6 +1303,40 @@ async function loadConstellationView() {
 
   let hoverId = null;
 
+  // 🎯 SMOOTH ANIMATIONS: Gentle transitions for dementia-friendly UX
+  function animateView() {
+    const speed = 0.15; // Gentle animation speed
+    let needsUpdate = false;
+    
+    // Smoothly animate to target position and scale
+    if (Math.abs(view.scale - view.targetScale) > 0.001) {
+      view.scale += (view.targetScale - view.scale) * speed;
+      needsUpdate = true;
+    }
+    if (Math.abs(view.tx - view.targetTx) > 0.1) {
+      view.tx += (view.targetTx - view.tx) * speed;
+      needsUpdate = true;
+    }
+    if (Math.abs(view.ty - view.targetTy) > 0.1) {
+      view.ty += (view.targetTy - view.ty) * speed;
+      needsUpdate = true;
+    }
+    
+    if (needsUpdate) {
+      draw();
+      animationFrame = requestAnimationFrame(animateView);
+    } else {
+      animationFrame = null;
+    }
+  }
+  
+  // Start smooth animation if not already running
+  function startAnimation() {
+    if (!animationFrame) {
+      animationFrame = requestAnimationFrame(animateView);
+    }
+  }
+
   function draw() {
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1356,8 +1400,12 @@ async function loadConstellationView() {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     if (dragging) {
-      view.tx = dragStart.tx + (mx - dragStart.x);
-      view.ty = dragStart.ty + (my - dragStart.y);
+      // 🎯 SMOOTH PANNING: Use target values for immediate response
+      view.targetTx = dragStart.tx + (mx - dragStart.x);
+      view.targetTy = dragStart.ty + (my - dragStart.y);
+      // Immediate update for responsive feel during drag
+      view.tx = view.targetTx;
+      view.ty = view.targetTy;
       draw();
       return;
     }
@@ -1387,30 +1435,217 @@ async function loadConstellationView() {
 
   canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
-    dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top, tx: view.tx, ty: view.ty };
+    dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top, tx: view.targetTx, ty: view.targetTy };
     dragging = true;
   });
   window.addEventListener('mouseup', () => { dragging = false; });
   canvas.addEventListener('mouseleave', () => { dragging = false; });
+  // 🎯 ENHANCED ZOOM: Smooth wheel zoom with better UX
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    const zoom = Math.exp(-e.deltaY * 0.0015);
-    const newScale = Math.max(minScale, Math.min(maxScale, view.scale * zoom));
-    const wx = (mx - view.tx) / view.scale;
-    const wy = (my - view.ty) / view.scale;
-    view.scale = newScale;
-    view.tx = mx - wx * view.scale;
-    view.ty = my - wy * view.scale;
-    draw();
+    
+    // Gentler zoom speed for dementia-friendly experience
+    const zoom = Math.exp(-e.deltaY * 0.001);
+    const newScale = Math.max(minScale, Math.min(maxScale, view.targetScale * zoom));
+    
+    // Calculate zoom point in world coordinates
+    const wx = (mx - view.targetTx) / view.targetScale;
+    const wy = (my - view.targetTy) / view.targetScale;
+    
+    // Set targets for smooth animation
+    view.targetScale = newScale;
+    view.targetTx = mx - wx * view.targetScale;
+    view.targetTy = my - wy * view.targetScale;
+    
+    startAnimation();
+  }, { passive: false });
+
+  // 📱 TOUCH GESTURES: Pinch-to-zoom support for tablets/phones
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    touches = Array.from(e.touches).map(touch => ({
+      id: touch.identifier,
+      x: touch.clientX - canvas.getBoundingClientRect().left,
+      y: touch.clientY - canvas.getBoundingClientRect().top
+    }));
+    
+    if (touches.length === 2) {
+      // Start pinch gesture
+      isPinching = true;
+      const dx = touches[0].x - touches[1].x;
+      const dy = touches[0].y - touches[1].y;
+      lastPinchDistance = Math.sqrt(dx * dx + dy * dy);
+    } else if (touches.length === 1) {
+      // Start pan gesture
+      dragStart = { x: touches[0].x, y: touches[0].y, tx: view.targetTx, ty: view.targetTy };
+      dragging = true;
+    }
+  }, { passive: false });
+  
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    touches = Array.from(e.touches).map(touch => ({
+      id: touch.identifier,
+      x: touch.clientX - canvas.getBoundingClientRect().left,
+      y: touch.clientY - canvas.getBoundingClientRect().top
+    }));
+    
+    if (isPinching && touches.length === 2) {
+      // Handle pinch zoom
+      const dx = touches[0].x - touches[1].x;
+      const dy = touches[0].y - touches[1].y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (lastPinchDistance > 0) {
+        const zoom = distance / lastPinchDistance;
+        const centerX = (touches[0].x + touches[1].x) / 2;
+        const centerY = (touches[0].y + touches[1].y) / 2;
+        
+        const newScale = Math.max(minScale, Math.min(maxScale, view.targetScale * zoom));
+        const wx = (centerX - view.targetTx) / view.targetScale;
+        const wy = (centerY - view.targetTy) / view.targetScale;
+        
+        view.targetScale = newScale;
+        view.targetTx = centerX - wx * view.targetScale;
+        view.targetTy = centerY - wy * view.targetScale;
+        
+        startAnimation();
+      }
+      
+      lastPinchDistance = distance;
+    } else if (dragging && touches.length === 1) {
+      // Handle pan
+      view.targetTx = dragStart.tx + (touches[0].x - dragStart.x);
+      view.targetTy = dragStart.ty + (touches[0].y - dragStart.y);
+      startAnimation();
+    }
+  }, { passive: false });
+  
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (e.touches.length === 0) {
+      dragging = false;
+      isPinching = false;
+      lastPinchDistance = 0;
+      touches = [];
+    }
   }, { passive: false });
 
   const clusterSelect = controls.querySelector('#cluster-mode');
   clusterSelect.addEventListener('change', () => { clusterMode = clusterSelect.value; draw(); });
+  
+  // 🔍 ZOOM CONTROLS: Simple buttons for dementia-friendly navigation
+  const zoomInBtn = controls.querySelector('#zoom-in');
+  const zoomOutBtn = controls.querySelector('#zoom-out');
   const resetBtn = controls.querySelector('#reset-view');
-  resetBtn.addEventListener('click', () => { view.scale = 1; view.tx = 0; view.ty = 0; draw(); });
+  
+  zoomInBtn.addEventListener('click', () => {
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const newScale = Math.min(maxScale, view.targetScale * 1.5);
+    const wx = (centerX - view.targetTx) / view.targetScale;
+    const wy = (centerY - view.targetTy) / view.targetScale;
+    
+    view.targetScale = newScale;
+    view.targetTx = centerX - wx * view.targetScale;
+    view.targetTy = centerY - wy * view.targetScale;
+    
+    startAnimation();
+    console.log('🔍➕ Zoom In to scale:', newScale);
+  });
+  
+  zoomOutBtn.addEventListener('click', () => {
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const newScale = Math.max(minScale, view.targetScale / 1.5);
+    const wx = (centerX - view.targetTx) / view.targetScale;
+    const wy = (centerY - view.targetTy) / view.targetScale;
+    
+    view.targetScale = newScale;
+    view.targetTx = centerX - wx * view.targetScale;
+    view.targetTy = centerY - wy * view.targetScale;
+    
+    startAnimation();
+    console.log('🔍➖ Zoom Out to scale:', newScale);
+  });
+  
+  // 🏠 ENHANCED RESET: Smooth animation back to fit-all view
+  resetBtn.addEventListener('click', () => { 
+    fitAllMemories();
+  });
+
+  // 🎯 AUTO-FIT: Calculate optimal zoom to show all memories elegantly
+  function fitAllMemories() {
+    if (items.length === 0) {
+      // No memories, just center the view
+      view.targetScale = 1;
+      view.targetTx = 0;
+      view.targetTy = 0;
+      startAnimation();
+      return;
+    }
+    
+    // Find bounding box of all memory positions
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    for (const item of items) {
+      const p = positions.get(item.id);
+      if (p) {
+        minX = Math.min(minX, p.x - 40); // Add padding for node size
+        minY = Math.min(minY, p.y - 40);
+        maxX = Math.max(maxX, p.x + 40);
+        maxY = Math.max(maxY, p.y + 40);
+      }
+    }
+    
+    if (minX === Infinity) {
+      // No valid positions, just center
+      view.targetScale = 1;
+      view.targetTx = 0;
+      view.targetTy = 0;
+      startAnimation();
+      return;
+    }
+    
+    // Calculate canvas size
+    const rect = canvas.getBoundingClientRect();
+    const canvasWidth = rect.width;
+    const canvasHeight = rect.height;
+    
+    // Calculate content size
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    
+    // Calculate scale to fit all content with some padding
+    const scaleX = (canvasWidth * 0.8) / contentWidth;  // 80% of canvas width
+    const scaleY = (canvasHeight * 0.8) / contentHeight; // 80% of canvas height
+    const optimalScale = Math.min(scaleX, scaleY, maxScale); // Don't exceed max scale
+    
+    // Ensure minimum scale
+    const finalScale = Math.max(optimalScale, minScale);
+    
+    // Calculate center position
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+    
+    // Set targets for smooth animation to center
+    view.targetScale = finalScale;
+    view.targetTx = canvasWidth / 2 - contentCenterX * finalScale;
+    view.targetTy = canvasHeight / 2 - contentCenterY * finalScale;
+    
+    console.log('🎯 FIT ALL: Fitting', items.length, 'memories with scale', finalScale);
+    startAnimation();
+  }
+  
+  // Initialize with all memories visible
+  setTimeout(() => fitAllMemories(), 100);
 
   resize();
 }
@@ -1975,14 +2210,74 @@ function showNotification(message, type = 'info', duration = 3000) {
   }, duration);
 }
 
-function openMemoryDetail(memoryId) {
+async function openMemoryDetail(memoryId) {
   const memory = allMemories.find(m => m.id == memoryId);
   if (!memory) return;
 
   console.log('🎯 CONSTELLATION: Opening responsive memory dialog for:', memory.title || memory.id);
 
+  // 🚀 PERFORMANCE: Load full media on-demand if memory has lazy-loaded attachments
+  const memoryWithFullMedia = await loadFullMediaForMemory(memory);
+
   // 📱💻🖥️ USE THE NEW RESPONSIVE MEMORY DIALOG!
-  showResponsiveMemoryDialog(memory);
+  showResponsiveMemoryDialog(memoryWithFullMedia);
+}
+
+/**
+ * 🚀 PERFORMANCE OPTIMIZATION: Load full media data on-demand for lazy-loaded attachments
+ */
+async function loadFullMediaForMemory(memory) {
+  // Check if this memory has lazy-loaded attachments that need full loading
+  const hasLazyAttachments = memory.attachments?.some(att => att.isLazyLoaded && att.hasMedia);
+  
+  if (!hasLazyAttachments) {
+    console.log('💾 LAZY LOADING: Memory already has full media, no loading needed');
+    return memory;
+  }
+  
+  console.log('🚀 LAZY LOADING: Loading full media for', memory.attachments?.length || 0, 'attachments');
+  
+  try {
+    // Get vault media data
+    const vaultMedia = window.emmaWebVault?.vaultData?.content?.media || {};
+    
+    // Load full media data for lazy-loaded attachments
+    const fullAttachments = memory.attachments.map(attachment => {
+      if (attachment.isLazyLoaded && attachment.hasMedia && attachment.mediaId) {
+        const mediaItem = vaultMedia[attachment.mediaId];
+        if (mediaItem && mediaItem.data) {
+          console.log('💾 LAZY LOADING: Loading full media for:', attachment.name);
+          return {
+            ...attachment,
+            url: mediaItem.data.startsWith('data:')
+              ? mediaItem.data
+              : `data:${mediaItem.type};base64,${mediaItem.data}`,
+            dataUrl: mediaItem.data.startsWith('data:')
+              ? mediaItem.data
+              : `data:${mediaItem.type};base64,${mediaItem.data}`,
+            data: mediaItem.data,
+            isLazyLoaded: false, // Mark as fully loaded
+            isPersisted: true
+          };
+        }
+      }
+      
+      // Return attachment as-is if already loaded or no media
+      return attachment;
+    });
+    
+    console.log('✅ LAZY LOADING: Successfully loaded full media data');
+    
+    return {
+      ...memory,
+      attachments: fullAttachments
+    };
+    
+  } catch (error) {
+    console.error('❌ LAZY LOADING: Failed to load full media:', error);
+    // Return original memory if loading fails
+    return memory;
+  }
 }
 
 /**
