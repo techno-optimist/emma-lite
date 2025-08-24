@@ -2461,30 +2461,38 @@
       }
 
       initNeuralNetwork() {
-        // 🎯 MOBILE-FIRST: Initialize nodes bound to orb center, not screen center
+        // 🎯 MOBILE-FIRST: Initialize nodes bound to absolute screen center
         console.log('🔧 initNeuralNetwork: Starting mobile-first radial positioning');
 
         const items = this.radialMenu.querySelectorAll('.radial-item');
         
-        // 🔥 CRITICAL FIX: Get orb center position dynamically, not screen center
-        const orbRect = this.orb.getBoundingClientRect();
-        const orbCenterX = orbRect.left + orbRect.width / 2;
-        const orbCenterY = orbRect.top + orbRect.height / 2;
+        // 📱 MOBILE FIX: Use absolute screen center for perfect alignment
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
+        
+        // Ensure orb is also centered on mobile
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+          console.log('📱 MOBILE: Ensuring orb is perfectly centered');
+          this.orb.style.position = 'fixed';
+          this.orb.style.left = '50%';
+          this.orb.style.top = '50%';
+          this.orb.style.transform = 'translate(-50%, -50%)';
+        }
 
-        console.log('🎯 Orb center:', { x: orbCenterX, y: orbCenterY, orbRect });
+        console.log('🎯 Screen center:', { x: screenCenterX, y: screenCenterY });
 
         // 📱 Responsive radius - closer on mobile, further on desktop
-        const isMobile = window.innerWidth <= 768;
         const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
         let radius;
 
         if (isMobile) {
-          // Mobile: Much smaller radius, closer to orb
-          radius = Math.min(120, Math.min(window.innerWidth, window.innerHeight) * 0.18);
+          // Mobile: Very close to orb, just light padding
+          radius = 80; // Just enough space around the orb
         } else if (isTablet) {
-          radius = 160;
+          radius = 100; // Bit more space on tablets
         } else {
-          radius = 200;
+          radius = 120; // Conservative spacing on desktop
         }
 
         console.log('📐 Using radius:', radius, 'for device type:', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop');
@@ -2495,13 +2503,13 @@
         items.forEach((item, i) => {
           const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
           
-          // 🔗 BOUND TO ORB: Calculate position relative to orb center, not screen center
-          const targetX = orbCenterX + Math.cos(angle) * radius;
-          const targetY = orbCenterY + Math.sin(angle) * radius;
+          // 🎯 ABSOLUTE CENTER: Calculate position relative to screen center for perfect alignment
+          const targetX = screenCenterX + Math.cos(angle) * radius;
+          const targetY = screenCenterY + Math.sin(angle) * radius;
 
-          // 🎬 ANIMATION SETUP: Start at orb center for animate-out effect
-          const startX = orbCenterX;
-          const startY = orbCenterY;
+          // 🎬 ANIMATION SETUP: Start at absolute screen center for animate-out effect
+          const startX = screenCenterX;
+          const startY = screenCenterY;
 
           // Position at orb center initially (for animation)
           item.style.left = (startX - 45) + 'px'; // Center the 90px item
@@ -2544,10 +2552,10 @@
           }
         });
 
-        // Add central orb as a node
+        // Add central orb as a node at screen center
         this.centralNode = {
-          x: orbCenterX,
-          y: orbCenterY,
+          x: screenCenterX,
+          y: screenCenterY,
           element: this.orb
         };
 
@@ -2605,8 +2613,8 @@
           
           // Much faster staggered timing for snappy reveal
           setTimeout(() => {
-            // 🚀 LIGHTNING FAST: Ultra-snappy 100ms animation with bounce easing
-            item.style.transition = 'all 0.1s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            // 🚀 ULTRA-LIGHTNING FAST: Super-snappy 50ms animation with bounce easing
+            item.style.transition = 'all 0.05s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
             item.style.left = (node.targetX - 45) + 'px';
             item.style.top = (node.targetY - 45) + 'px';
             item.style.transform = 'scale(1)';
@@ -2624,64 +2632,71 @@
         });
       }
 
-      // 🎬 NEW: Animate menu items inward to orb center - FAST & SNAPPY
+      // 🎬 NEW: Animate menu items inward to screen center - FAST & SNAPPY
       animateMenuItemsIn() {
-        console.log('🎬 Animating menu items IN to orb center');
+        console.log('🎬 Animating menu items IN to screen center');
         
-        // Get current orb position
-        const orbRect = this.orb.getBoundingClientRect();
-        const orbCenterX = orbRect.left + orbRect.width / 2;
-        const orbCenterY = orbRect.top + orbRect.height / 2;
+        // Use absolute screen center for perfect mobile alignment
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
         
         this.nodes.forEach((node, i) => {
           const item = node.element;
           
           // Much faster reverse staggered timing (last item first)
           setTimeout(() => {
-            // 🚀 FAST: Quick snap back to orb center
+            // 🚀 FAST: Quick snap back to screen center
             item.style.transition = 'all 0.12s cubic-bezier(0.4, 0, 0.8, 1)';
-            item.style.left = (orbCenterX - 45) + 'px';
-            item.style.top = (orbCenterY - 45) + 'px';
+            item.style.left = (screenCenterX - 45) + 'px';
+            item.style.top = (screenCenterY - 45) + 'px';
             item.style.transform = 'scale(0)';
             item.style.opacity = '0';
             
             // Re-enable float animation when menu closes
             item.style.animationPlayState = 'running';
             
-            console.log(`🎯 Item ${i} animated back to orb center (${orbCenterX}, ${orbCenterY})`);
+            console.log(`🎯 Item ${i} animated back to screen center (${screenCenterX}, ${screenCenterY})`);
           }, (this.nodes.length - 1 - i) * 25); // Much faster reverse stagger: 25ms
         });
       }
 
-      // 🔄 NEW: Reposition menu items when orb moves (for resize/orientation changes)
+      // 🔄 NEW: Reposition menu items to stay centered (for resize/orientation changes)
       repositionMenuToOrb() {
         if (!this.isMenuOpen || this.nodes.length === 0) return;
         
-        console.log('🔄 Repositioning menu items to stay bound to orb');
+        console.log('🔄 Repositioning menu items to stay centered');
         
-        // Get new orb position
-        const orbRect = this.orb.getBoundingClientRect();
-        const orbCenterX = orbRect.left + orbRect.width / 2;
-        const orbCenterY = orbRect.top + orbRect.height / 2;
+        // Use absolute screen center for consistent positioning
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
+        
+        // Ensure orb stays centered on mobile
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+          this.orb.style.position = 'fixed';
+          this.orb.style.left = '50%';
+          this.orb.style.top = '50%';
+          this.orb.style.transform = 'translate(-50%, -50%)';
+        }
         
         // Recalculate radius for current screen size
-        const isMobile = window.innerWidth <= 768;
         const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
         let radius;
         
         if (isMobile) {
-          radius = Math.min(120, Math.min(window.innerWidth, window.innerHeight) * 0.18);
+          // Mobile: Very close to orb, just light padding
+          radius = 80; // Just enough space around the orb
         } else if (isTablet) {
-          radius = 160;
+          radius = 100; // Bit more space on tablets
         } else {
-          radius = 200;
+          radius = 120; // Conservative spacing on desktop
         }
         
-        // Update all node positions
+        // Update all node positions relative to screen center
         this.nodes.forEach((node, i) => {
           const angle = (i / this.nodes.length) * Math.PI * 2 - Math.PI / 2;
-          const newTargetX = orbCenterX + Math.cos(angle) * radius;
-          const newTargetY = orbCenterY + Math.sin(angle) * radius;
+          const newTargetX = screenCenterX + Math.cos(angle) * radius;
+          const newTargetY = screenCenterY + Math.sin(angle) * radius;
           
           // Update positions with fast smooth transition
           const item = node.element;
