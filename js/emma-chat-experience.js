@@ -1806,6 +1806,18 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
+    // 🔍 CRITICAL: Check for memory search queries BEFORE memory capture analysis
+    // This prevents "what are my memories" from being captured as a memory
+    const intent = this.classifyUserIntent(message);
+    if (intent.type === 'memory_search') {
+      console.log('🔍 EARLY MEMORY SEARCH DETECTION: Bypassing memory capture for:', message);
+      this.showTypingIndicator();
+      setTimeout(() => {
+        this.respondAsEmma(message);
+      }, 1000 + Math.random() * 1500);
+      return;
+    }
+
     // 💝 Check for memory detection (new messages only)
     if (this.intelligentCapture) {
       const analysisResult = await this.analyzeForMemory(message, messageId);
@@ -2046,19 +2058,33 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
-    // 🔍 MEMORY SEARCH: Use vectorless for memory-specific queries
-    if (intent.type === 'memory_search' && this.isVectorlessEnabled && this.vectorlessEngine) {
-      try {
-        const result = await this.vectorlessEngine.processQuestion(userMessage);
-        if (result.success) {
-          this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
-          return;
-        } else {
-          console.warn('💬 Vectorless processing failed, using AI fallback:', result.error);
-        }
-      } catch (error) {
-        console.error('💬 Vectorless AI error:', error);
+    // 🔍 MEMORY SEARCH: Handle memory queries intelligently
+    if (intent.type === 'memory_search') {
+      // Check if this is a simple "what are my memories" type query
+      if (/\b(what are|show me|list|tell me)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(userMessage)) {
+        console.log('🔍 MEMORY SEARCH: Handling simple memory list request');
+        await this.handleMemoryListRequest(userMessage);
+        return;
       }
+      
+      // For complex memory search queries, use vectorless if available
+      if (this.isVectorlessEnabled && this.vectorlessEngine) {
+        try {
+          const result = await this.vectorlessEngine.processQuestion(userMessage);
+          if (result.success) {
+            this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
+            return;
+          } else {
+            console.warn('💬 Vectorless processing failed, using fallback:', result.error);
+          }
+        } catch (error) {
+          console.error('💬 Vectorless AI error:', error);
+        }
+      }
+      
+      // Fallback for memory search without vectorless
+      await this.handleMemoryListRequest(userMessage);
+      return;
     }
 
     // 🚀 ADVANCED AI MODE: Use OpenAI for conversation and questions
@@ -2094,9 +2120,12 @@ class EmmaChatExperience extends ExperiencePopup {
       return { type: 'person_inquiry', confidence: 0.9 };
     }
 
-    // 🔍 Memory search queries
-    if (/\b(find|search|show|what|who|when|where)\b.*\b(memory|memories|remember)\b/i.test(message)) {
-      return { type: 'memory_search', confidence: 0.8 };
+    // 🔍 Memory search queries - ENHANCED to catch edge cases
+    if (/\b(find|search|show|what|who|when|where|list|see|view|tell me)\b.*\b(memory|memories|remember)\b/i.test(message) ||
+        /\b(what are|show me|tell me|list)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(message) ||
+        /\bmemory\b.*\b(list|search|find|show)\b/i.test(message) ||
+        /\bmemories\b.*\b(list|search|find|show)\b/i.test(message)) {
+      return { type: 'memory_search', confidence: 0.9 };
     }
 
     // 🏛️ CORE VAULT OPERATIONS (Emma's primary job - always works!)
@@ -2279,6 +2308,67 @@ RULES:
         recentTopics: ['Context unavailable'],
         people: ['Context unavailable']
       };
+    }
+  }
+
+  /**
+   * 🔍 HANDLE MEMORY LIST REQUEST
+   * Shows user their existing memories when they ask "what are my memories"
+   */
+  async handleMemoryListRequest(userMessage) {
+    console.log('🔍 MEMORY LIST: Processing request:', userMessage);
+    
+    try {
+      // Get memories from vault
+      if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+        this.addMessage("I'd love to show you your memories! Please make sure your vault is unlocked first.", 'emma');
+        return;
+      }
+      
+      const memories = await window.emmaWebVault.listMemories(10); // Get first 10 memories
+      
+      if (!memories || memories.length === 0) {
+        this.addMessage("You don't have any memories in your vault yet. Would you like to create your first memory together?", 'emma');
+        return;
+      }
+      
+      // Generate a warm, personal response
+      const memoryCount = memories.length;
+      const totalMemories = Object.keys(window.emmaWebVault.vaultData?.content?.memories || {}).length;
+      
+      let response = `You have ${totalMemories} memory${totalMemories !== 1 ? 'ies' : ''} in your vault! `;
+      
+      if (totalMemories > 10) {
+        response += `Here are your ${memories.length} most recent ones:\n\n`;
+      } else {
+        response += `Here they are:\n\n`;
+      }
+      
+      // List recent memories with dates
+      memories.forEach((memory, index) => {
+        const title = memory.title || 'Untitled Memory';
+        const date = new Date(memory.created || memory.timestamp || Date.now()).toLocaleDateString();
+        response += `${index + 1}. **${title}** (${date})\n`;
+        
+        // Add a brief preview of the content if available
+        if (memory.content && memory.content.length > 0) {
+          const preview = memory.content.substring(0, 100);
+          response += `   ${preview}${memory.content.length > 100 ? '...' : ''}\n\n`;
+        } else {
+          response += '\n';
+        }
+      });
+      
+      if (totalMemories > 10) {
+        response += `\nYou can view all your memories in the constellation view or ask me to search for specific ones!`;
+      }
+      
+      this.addMessage(response, 'emma');
+      console.log('✅ MEMORY LIST: Successfully displayed memories');
+      
+    } catch (error) {
+      console.error('❌ MEMORY LIST ERROR:', error);
+      this.addMessage("I had trouble accessing your memories right now. Please try again in a moment.", 'emma');
     }
   }
 
