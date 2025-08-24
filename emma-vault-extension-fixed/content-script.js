@@ -4,7 +4,8 @@
  * Dedicated to Debbe - preserving memories with love
  */
 
-console.log('Emma Vault Bridge: Content script loaded');
+console.log('🚨🔗 CONTENT SCRIPT LOADING TEST - Version 7.2 - This should appear immediately on dashboard!');
+console.log('🚨🔗 Content script URL:', window.location.href);
 
 // Configuration
 const EMMA_VAULT_CHANNEL = 'emma-vault-bridge';
@@ -19,6 +20,8 @@ let lastSyncHash = null;
  * WEBAPP-FIRST: Handle extension popup vault status requests
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('🚨📨 CONTENT SCRIPT: MESSAGE RECEIVED!', request.action, 'from:', sender);
+  
   if (request.action === 'checkVaultStatus') {
     console.log('🔐 Content Script: Checking webapp vault status');
     
