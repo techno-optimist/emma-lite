@@ -44,10 +44,50 @@ class EmmaChatExperience extends ExperiencePopup {
       capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
 
+    // 🚀 CRITICAL: Initialize AI systems on startup
+    this.initializeEmmaIntelligence();
+
   }
 
   getTitle() {
     return ''; // No title - clean header following voice capture pattern
+  }
+
+  /**
+   * 🚀 INITIALIZE EMMA INTELLIGENCE SYSTEMS
+   * Sets up API keys, vectorless engine, and intelligence capabilities
+   */
+  async initializeEmmaIntelligence() {
+    console.log('🧠 Initializing Emma Intelligence Systems...');
+    
+    try {
+      // Load vectorless settings (includes API key detection)
+      this.loadVectorlessSettings();
+      
+      // Initialize vectorless engine for memory search
+      await this.initializeVectorlessEngine();
+      
+      // Log the intelligence status
+      this.logIntelligenceStatus();
+      
+    } catch (error) {
+      console.warn('🧠 Emma intelligence initialization error:', error);
+    }
+  }
+
+  /**
+   * 📊 LOG INTELLIGENCE STATUS for debugging
+   */
+  logIntelligenceStatus() {
+    console.log('🧠 EMMA INTELLIGENCE STATUS:');
+    console.log(`  🚀 Advanced AI Mode: ${this.apiKey ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`  🔍 Vectorless Engine: ${this.isVectorlessEnabled ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`  🎯 API Key: ${this.apiKey ? '✅ CONFIGURED' : '❌ NOT CONFIGURED'}`);
+    console.log(`  🐛 Debug Mode: ${this.debugMode ? '✅ ON' : '❌ OFF'}`);
+    
+    if (!this.apiKey) {
+      console.log('💡 To enable Advanced AI: Set OpenAI API key in Emma settings');
+    }
   }
 
   async initialize() {
@@ -530,32 +570,44 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * 👤 Detect if user is asking about a specific person
+   * 👤 Detect if user is SPECIFICALLY asking about an existing person (much more restrictive)
    * Returns { personName, requestType } if detected, null otherwise
    */
   detectPersonRequest(message) {
     const lowerMessage = message.toLowerCase().trim();
     
-    // Common patterns for asking about people
+    // 🎯 MUCH MORE RESTRICTIVE: Only detect when explicitly asking ABOUT someone
     const personPatterns = [
-      /(?:show me|tell me about|who is|about|where is)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
-      /(?:what about|how about)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
-      /([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s*\??\s*$/i, // Just a name, potentially with question mark
+      /(?:show me|tell me about|who is)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i, // Capitalized names only
+      /(?:what about|how about)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+      /^([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*\?+\s*$/i, // Only if it's JUST a capitalized name with question mark
     ];
+
+    // 🚫 EXCLUDE common non-person requests
+    const excludePatterns = [
+      /\b(add|create|new|save|let|want|need|help|can|could|should)\b/i,
+      /\b(person|people|memory|memories|vault|file)\b/i
+    ];
+
+    // Don't process if it contains excluded patterns
+    for (const exclude of excludePatterns) {
+      if (exclude.test(message)) {
+        return null;
+      }
+    }
 
     for (const pattern of personPatterns) {
       const match = message.match(pattern);
       if (match && match[1]) {
         const potentialName = match[1].trim();
         
-        // Filter out common words that aren't names
-        const commonWords = ['you', 'me', 'us', 'that', 'this', 'what', 'where', 'when', 'how', 'why', 'who', 'and', 'or', 'the', 'a', 'an'];
-        if (commonWords.includes(potentialName.toLowerCase())) {
+        // 🎯 STRICTER VALIDATION: Only proper names (capitalized, 2-15 chars)
+        if (potentialName.length < 2 || potentialName.length > 15) {
           continue;
         }
 
-        // If name is longer than 20 chars, probably not a person name
-        if (potentialName.length > 20) {
+        // Must start with capital letter (proper name)
+        if (!/^[A-Z]/.test(potentialName)) {
           continue;
         }
 
@@ -1919,52 +1971,267 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
 
-    // 👤 PERSON REQUEST DETECTION: Check if user is asking about a specific person
-    const personRequest = this.detectPersonRequest(userMessage);
-    if (personRequest) {
-      console.log('👤 CHAT: Person request detected:', personRequest);
-      await this.handlePersonRequest(personRequest);
-      return;
+    // 🎯 INTELLIGENT INTENT CLASSIFICATION
+    const intent = this.classifyUserIntent(userMessage);
+    console.log('🧠 CHAT: Intent classified as:', intent);
+
+    // 👤 PERSON REQUEST DETECTION: Only for specific person inquiries
+    if (intent.type === 'person_inquiry') {
+      const personRequest = this.detectPersonRequest(userMessage);
+      if (personRequest) {
+        console.log('👤 CHAT: Person request detected:', personRequest);
+        await this.handlePersonRequest(personRequest);
+        return;
+      }
     }
 
-    // 💝 Check if this message has detected memory - if so, focus on capture instead of search
+    // 💝 Memory capture detection for ongoing conversations
     const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
       analysis.memory && analysis.memory.originalContent &&
       analysis.memory.originalContent.includes(userMessage.substring(0, 50))
     );
 
     if (hasDetectedMemory) {
-      // Focus on memory capture, not searching existing memories
       const captureResponse = await this.generateMemoryCaptureResponse(userMessage);
       this.addMessage(captureResponse, 'emma');
       return;
     }
 
-    // 💜 PRIORITIZE DYNAMIC RESPONSES for natural conversation
-    // Only use vectorless for specific memory search queries, not general chat
-    const isMemorySearchQuery = /\b(find|search|show|what|who|when|where)\b.*\b(memory|memories|remember)\b/i.test(userMessage);
-
-    if (isMemorySearchQuery && this.isVectorlessEnabled && this.vectorlessEngine) {
-
+    // 🔍 MEMORY SEARCH: Use vectorless for memory-specific queries
+    if (intent.type === 'memory_search' && this.isVectorlessEnabled && this.vectorlessEngine) {
       try {
         const result = await this.vectorlessEngine.processQuestion(userMessage);
-
         if (result.success) {
-          // Add Emma's intelligent response with memory citations
           this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
           return;
         } else {
-          console.warn('💬 Vectorless processing failed, using dynamic fallback:', result.error);
+          console.warn('💬 Vectorless processing failed, using AI fallback:', result.error);
         }
       } catch (error) {
         console.error('💬 Vectorless AI error:', error);
       }
     }
 
-    // 💜 DEFAULT: Use dynamic, contextual responses for natural conversation
+    // 🚀 ADVANCED AI MODE: Use OpenAI for intelligent conversation
+    if (this.apiKey && (intent.type === 'conversation' || intent.type === 'command' || intent.type === 'question')) {
+      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent response');
+      console.log('🎯 Intent:', intent);
+      try {
+        const response = await this.generateIntelligentEmmaResponse(userMessage, intent);
+        this.addMessage(response, 'emma');
+        this.addAIModeIndicator(); // Show that AI was used
+        return;
+      } catch (error) {
+        console.warn('🤖 AI response failed, using fallback:', error);
+        this.addMessage("I'm having trouble accessing my advanced intelligence right now, but I'm still here to help with your memories!", 'emma');
+        return;
+      }
+    }
 
+    // 💜 FALLBACK: Dynamic responses for basic interactions
     const response = await this.generateDynamicEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
+  }
+
+  /**
+   * 🎯 INTELLIGENT INTENT CLASSIFICATION
+   * Determines what the user is trying to do
+   */
+  classifyUserIntent(message) {
+    const lower = message.toLowerCase().trim();
+
+    // 👤 Person inquiries (asking ABOUT someone)
+    if (/^(who is|tell me about|show me|what about|how about)\s+[A-Z]/i.test(message) ||
+        /^[A-Z][a-z]+\s*\?+\s*$/.test(message)) {
+      return { type: 'person_inquiry', confidence: 0.9 };
+    }
+
+    // 🔍 Memory search queries
+    if (/\b(find|search|show|what|who|when|where)\b.*\b(memory|memories|remember)\b/i.test(message)) {
+      return { type: 'memory_search', confidence: 0.8 };
+    }
+
+    // 🎯 Commands/actions (adding, creating, saving)
+    if (/\b(add|create|new|save|let|want|need|help)\b/i.test(message)) {
+      return { type: 'command', confidence: 0.7 };
+    }
+
+    // ❓ Questions requiring intelligence
+    if (/^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/i.test(message) ||
+        message.includes('?')) {
+      return { type: 'question', confidence: 0.6 };
+    }
+
+    // 💬 General conversation
+    return { type: 'conversation', confidence: 0.5 };
+  }
+
+  /**
+   * 🚀 GENERATE INTELLIGENT EMMA RESPONSE using OpenAI
+   * This is where the real AI magic happens!
+   */
+  async generateIntelligentEmmaResponse(userMessage, intent) {
+    console.log('🤖 Generating intelligent response with OpenAI...');
+    
+    try {
+      // Get vault context for personalization
+      const vaultContext = await this.getVaultContextForAI();
+      
+      // Build the prompt based on intent and context
+      const prompt = this.buildEmmaPrompt(userMessage, intent, vaultContext);
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: prompt.system
+            },
+            {
+              role: 'user', 
+              content: prompt.user
+            }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content;
+      
+      if (aiResponse) {
+        console.log('✅ OpenAI response generated successfully');
+        return aiResponse.trim();
+      } else {
+        throw new Error('No response content from OpenAI');
+      }
+
+    } catch (error) {
+      console.error('🤖 OpenAI API error:', error);
+      throw error; // Let caller handle fallback
+    }
+  }
+
+  /**
+   * 🧠 BUILD EMMA-SPECIFIC PROMPT for OpenAI
+   */
+  buildEmmaPrompt(userMessage, intent, vaultContext) {
+    const systemPrompt = `You are Emma, an intelligent memory companion. You help users organize, explore, and interact with their personal memories in a warm, helpful way.
+
+PERSONALITY:
+- Warm, caring, and memory-focused
+- Always helpful but never overwhelming
+- Gentle and patient, especially for users with memory challenges
+- Focus on preserving and celebrating memories
+
+CONTEXT:
+- User has ${vaultContext.memoryCount} memories in their vault
+- Recent memories include: ${vaultContext.recentTopics.join(', ')}
+- People in vault: ${vaultContext.people.join(', ')}
+
+CAPABILITIES:
+- Help organize and find memories
+- Suggest memory creation when appropriate  
+- Answer questions about their memories
+- Provide gentle guidance on memory preservation
+
+INTENT: ${intent.type}
+${intent.type === 'command' ? 'User is asking you to help them do something. Be proactive and helpful.' : ''}
+${intent.type === 'question' ? 'User has a question. Answer thoughtfully based on their memory context.' : ''}
+${intent.type === 'conversation' ? 'User wants to chat. Be warm and engaging while staying memory-focused.' : ''}
+
+RULES:
+- Keep responses concise (1-3 sentences)
+- Always be encouraging about memory preservation
+- Never mention technical details or AI limitations
+- If unsure, offer to help them explore their memories`;
+
+    return {
+      system: systemPrompt,
+      user: userMessage
+    };
+  }
+
+  /**
+   * 📊 GET VAULT CONTEXT for AI responses
+   */
+  async getVaultContextForAI() {
+    try {
+      const vault = window.emmaWebVault?.vaultData?.content;
+      
+      if (!vault) {
+        return {
+          memoryCount: 0,
+          recentTopics: ['No memories yet'],
+          people: ['No people yet']
+        };
+      }
+
+      const memories = vault.memories || {};
+      const people = vault.people || {};
+      
+      // Get recent memory topics
+      const memoryList = Object.values(memories);
+      const recentTopics = memoryList
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .slice(0, 3)
+        .map(m => m.title || 'Untitled memory')
+        .filter(Boolean);
+
+      // Get people names
+      const peopleNames = Object.values(people)
+        .map(p => p.name)
+        .filter(Boolean)
+        .slice(0, 5);
+
+      return {
+        memoryCount: memoryList.length,
+        recentTopics: recentTopics.length ? recentTopics : ['No recent memories'],
+        people: peopleNames.length ? peopleNames : ['No people yet']
+      };
+
+    } catch (error) {
+      console.error('📊 Error getting vault context:', error);
+      return {
+        memoryCount: 0,
+        recentTopics: ['Context unavailable'],
+        people: ['Context unavailable']
+      };
+    }
+  }
+
+  /**
+   * 🤖 ADD AI MODE INDICATOR to show when advanced AI was used
+   */
+  addAIModeIndicator() {
+    // Add a subtle indicator that AI was used (for debugging/transparency)
+    if (this.debugMode) {
+      const lastMessage = this.messageContainer?.lastElementChild;
+      if (lastMessage && lastMessage.classList.contains('emma-message')) {
+        const indicator = document.createElement('div');
+        indicator.className = 'ai-mode-indicator';
+        indicator.style.cssText = `
+          font-size: 10px;
+          color: #888;
+          text-align: right;
+          margin-top: 2px;
+          opacity: 0.7;
+        `;
+        indicator.textContent = '🚀 Advanced AI';
+        lastMessage.appendChild(indicator);
+      }
+    }
   }
 
   /**
