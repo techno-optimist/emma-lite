@@ -268,6 +268,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       return true;
       
+    case 'RELAY_SAVE_TO_WEBAPP':
+      // UNIVERSAL SCRIPT RELAY: Handle save from any website via universal script
+      console.log('🎯 BACKGROUND: Received RELAY_SAVE_TO_WEBAPP from:', request.fromPage);
+      sendToWebapp('EMMA_SAVE_MEMORY', request.originalData)
+        .then(result => {
+          console.log('🎯 BACKGROUND: RELAY sendToWebapp resolved with:', result);
+          sendResponse(result);
+        })
+        .catch(error => {
+          console.error('🎯 BACKGROUND: RELAY sendToWebapp failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true;
+      
     case 'UPDATE_MEMORY_IN_VAULT':
       handleUpdateMemoryInVault(request.data)
         .then(result => sendResponse(result))
