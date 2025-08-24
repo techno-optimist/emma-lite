@@ -17,6 +17,9 @@
   <!-- WEBAPP-FIRST ARCHITECTURE: Communication bridge -->
   <script src="js/webapp-extension-bridge.js"></script>
 
+  <!-- Emma Chat Experience - CRITICAL for edit memory functionality -->
+  <script src="js/emma-chat-experience.js"></script>
+
     <!-- Browser Compatibility Layer - PRODUCTION: Removed for clean deployment -->
   <!-- <script src="emma-browser-compatibility-fix.js"></script> -->
   
@@ -272,6 +275,8 @@
         this.setupEventListeners();
                 this.updateUI();
 
+                // Initialize chat experience asynchronously
+                this.initializeChatExperience();
             }
 
             initializeElements() {
@@ -303,6 +308,25 @@
           }
         } catch (error) {
                     console.error('❌ Failed to initialize Emma orb:', error);
+                }
+            }
+
+            async initializeChatExperience() {
+                try {
+                    // Check if EmmaVoiceChatExperience is available
+                    if (typeof EmmaVoiceChatExperience !== 'undefined') {
+                        console.log('🚀 Initializing Emma Chat Experience...');
+                        this.chatExperience = new EmmaVoiceChatExperience();
+                        await this.chatExperience.initializeBaseSystems();
+                        console.log('✅ Emma Chat Experience initialized and ready!');
+                        
+                        // Dispatch custom event to signal chat experience is ready
+                        window.dispatchEvent(new CustomEvent('emmaChatExperienceReady'));
+                    } else {
+                        console.warn('⚠️ EmmaVoiceChatExperience class not available');
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to initialize Emma Chat Experience:', error);
                 }
             }
 
@@ -721,24 +745,21 @@
                 if (memoryIdToEdit && mode === 'chat') {
                     console.log('🎯 URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
                     
-                    // Wait for Emma Chat Experience to load, then open edit dialog
-                    setTimeout(() => {
+                    // Function to open edit dialog
+                    const openEditDialog = () => {
                         if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
                             console.log('✅ Opening enhanced edit dialog for memory:', memoryIdToEdit);
                             window.chatExperience.editMemoryDetails(memoryIdToEdit);
                         } else {
-                            console.warn('⚠️ Emma Chat Experience not ready yet, retrying...');
-                            // Retry after another second
-                            setTimeout(() => {
-                                if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
-                                    console.log('✅ Opening enhanced edit dialog for memory (retry):', memoryIdToEdit);
-                                    window.chatExperience.editMemoryDetails(memoryIdToEdit);
-                                } else {
-                                    console.error('❌ Could not open edit dialog - Emma Chat Experience not available');
-                                }
-                            }, 1000);
+                            console.error('❌ Emma Chat Experience not available when trying to open edit dialog');
                         }
-                    }, 1500); // Wait for all systems to load
+                    };
+                    
+                    // Listen for chat experience ready event
+                    window.addEventListener('emmaChatExperienceReady', openEditDialog, { once: true });
+                    
+                    // Also try immediately in case it's already ready
+                    setTimeout(openEditDialog, 100);
                 }
 
                 // Show browser compatibility status
