@@ -3188,23 +3188,37 @@ RULES:
    */
   loadVectorlessSettings() {
     try {
-      const stored = localStorage.getItem('emma-vectorless-settings');
-      if (stored) {
-        const settings = JSON.parse(stored);
-        this.apiKey = settings.apiKey || null;
-        this.dementiaMode = settings.dementiaMode || false;
-        this.debugMode = settings.debugMode || false;
+      // 🚀 CHECK MULTIPLE API KEY SOURCES (Fixed!)
+      
+      // 1. Check the correct settings UI location
+      this.apiKey = localStorage.getItem('emma-openai-api-key');
+      
+      // 2. Check old vectorless settings format (backup)
+      if (!this.apiKey) {
+        const stored = localStorage.getItem('emma-vectorless-settings');
+        if (stored) {
+          const settings = JSON.parse(stored);
+          this.apiKey = settings.apiKey || null;
+        }
       }
       
-      // CRITICAL: Also check for global API key
+      // 3. Check global API key (backup)
       if (!this.apiKey && window.API_KEY) {
         this.apiKey = window.API_KEY;
         console.log('💬 Using global API key for Emma responses');
       }
       
-      if (!this.apiKey) {
+      // 🔧 Load other settings
+      this.dementiaMode = localStorage.getItem('emma-dementia-mode') === 'true';
+      this.debugMode = localStorage.getItem('emma-debug-mode') === 'true';
+      
+      // 🎯 LOG RESULTS
+      if (this.apiKey) {
+        console.log('✅ OpenAI API key found and loaded successfully!');
+      } else {
         console.warn('💬 No API key found - Emma will use intelligent fallbacks');
       }
+      
     } catch (error) {
       console.warn('💬 Could not load vectorless settings:', error);
     }
