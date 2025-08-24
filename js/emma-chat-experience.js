@@ -3027,6 +3027,32 @@ class EmmaChatExperience extends ExperiencePopup {
     }
     
     console.log('✅ EDIT: Found memory for editing:', memory.id, memory.title || memory.content?.substring(0, 50));
+    console.log('🔍 EDIT: Memory attachments structure:', memory.attachments?.length, memory.attachments?.slice(0, 2));
+
+    // 🎯 CRITICAL FIX: Process vault attachments to resolve media data (same as dashboard)
+    if (memory.attachments && window.emmaWebVault?.vaultData?.content?.media) {
+      const vaultMedia = window.emmaWebVault.vaultData.content.media;
+      memory.attachments = memory.attachments.map(attachment => {
+        if (attachment.id && vaultMedia[attachment.id]) {
+          const mediaItem = vaultMedia[attachment.id];
+          console.log('🔍 EDIT: Resolving attachment:', attachment.id, 'to media data');
+          return {
+            ...attachment,
+            data: mediaItem.data.startsWith('data:') 
+              ? mediaItem.data 
+              : `data:${mediaItem.type};base64,${mediaItem.data}`,
+            dataUrl: mediaItem.data.startsWith('data:') 
+              ? mediaItem.data 
+              : `data:${mediaItem.type};base64,${mediaItem.data}`,
+            url: mediaItem.data.startsWith('data:') 
+              ? mediaItem.data 
+              : `data:${mediaItem.type};base64,${mediaItem.data}`
+          };
+        }
+        return attachment;
+      });
+      console.log('✅ EDIT: Processed attachments with media data:', memory.attachments?.length);
+    }
 
     // Close the preview dialog first
     const dialog = document.querySelector('.memory-preview-dialog');
@@ -3126,7 +3152,11 @@ class EmmaChatExperience extends ExperiencePopup {
           <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
             ${(memory.attachments || []).map((attachment, index) => `
               <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
-                <img src="${attachment.url || attachment.dataUrl || attachment.data}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}">
+                ${(attachment.data || attachment.dataUrl || attachment.url) ? `
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;\\'>📷</div>'">
+                ` : `
+                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;">📷</div>
+                `}
                 <button class="remove-attachment-btn" data-index="${index}" style="
                   position: absolute;
                   top: 4px;
