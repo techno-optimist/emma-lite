@@ -1416,13 +1416,14 @@
       }
 
       .radial-item {
-        width: 80px !important;
-        height: 80px !important;
+        /* 🌌 UNIFIED: Same size for all devices - no more mobile/desktop differences */
+        width: 90px !important;
+        height: 90px !important;
         font-size: 12px;
-        /* 🎯 MOBILE TOUCH: Larger touch targets for easier interaction */
-        min-width: 80px;
-        min-height: 80px;
-        /* 🔗 BOUND TO ORB: Ensure positioning starts from orb center */
+        /* 🎯 TOUCH FRIENDLY: Large enough for all devices */
+        min-width: 90px;
+        min-height: 90px;
+        /* 🔗 BOUND TO ORB: Unified positioning */
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
       }
 
@@ -1493,8 +1494,9 @@
     /* Tablet optimizations */
     @media (max-width: 1024px) and (min-width: 769px) {
       .radial-item {
-        width: 80px;
-        height: 80px;
+        /* 🌌 UNIFIED: Same 90px size for tablets too */
+        width: 90px;
+        height: 90px;
       }
 
       .emma-orb-container {
@@ -2351,10 +2353,9 @@
           node.baseX = node.x;
           node.baseY = node.y;
 
-          // Update DOM position
+          // Update DOM position - UNIFIED: Same size for all devices
           if (node.element) {
-            const isMobile = window.innerWidth <= 768;
-            const elementSize = isMobile ? 35 : 45; // Half of element size for centering
+            const elementSize = 45; // Consistent centering for all devices (90px items)
             node.element.style.left = (node.x - elementSize) + 'px';
             node.element.style.top = (node.y - elementSize) + 'px';
           }
