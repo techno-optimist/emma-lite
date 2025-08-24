@@ -17,6 +17,9 @@
   <!-- WEBAPP-FIRST ARCHITECTURE: Communication bridge -->
   <script src="js/webapp-extension-bridge.js"></script>
 
+  <!-- Experience Popup Base - Required dependency for chat experience -->
+  <script src="js/experience-popup-base.js"></script>
+
   <!-- Emma Chat Experience - CRITICAL for edit memory functionality -->
   <script src="js/emma-chat-experience.js"></script>
 
@@ -313,17 +316,17 @@
 
             async initializeChatExperience() {
                 try {
-                    // Check if EmmaVoiceChatExperience is available
-                    if (typeof EmmaVoiceChatExperience !== 'undefined') {
+                    // Check if EmmaChatExperience is available
+                    if (typeof EmmaChatExperience !== 'undefined') {
                         console.log('🚀 Initializing Emma Chat Experience...');
-                        this.chatExperience = new EmmaVoiceChatExperience();
+                        this.chatExperience = new EmmaChatExperience();
                         await this.chatExperience.initializeBaseSystems();
                         console.log('✅ Emma Chat Experience initialized and ready!');
                         
                         // Dispatch custom event to signal chat experience is ready
                         window.dispatchEvent(new CustomEvent('emmaChatExperienceReady'));
                     } else {
-                        console.warn('⚠️ EmmaVoiceChatExperience class not available');
+                        console.warn('⚠️ EmmaChatExperience class not available');
                     }
                 } catch (error) {
                     console.error('❌ Failed to initialize Emma Chat Experience:', error);
