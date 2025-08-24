@@ -2461,33 +2461,25 @@
       }
 
       initNeuralNetwork() {
-        // 🎯 MOBILE-FIRST: Initialize nodes bound to absolute screen center
-        console.log('🔧 initNeuralNetwork: Starting mobile-first radial positioning');
+        // 🎯 BACK TO BASICS: Orb-relative positioning that actually works
+        console.log('🔧 initNeuralNetwork: Using orb-relative positioning');
 
         const items = this.radialMenu.querySelectorAll('.radial-item');
         
-        // 📱 MOBILE FIX: Use absolute screen center for perfect alignment
-        const screenCenterX = window.innerWidth / 2;
-        const screenCenterY = window.innerHeight / 2;
-        
-        // Ensure orb is also centered on mobile
+        // 🔥 GET ACTUAL ORB POSITION: Don't force it, work with it
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
+
+        console.log('🎯 Actual orb center:', { x: orbCenterX, y: orbCenterY, orbRect });
+
+        // 📱 Responsive radius - tight spacing on all devices
         const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-          console.log('📱 MOBILE: Ensuring orb is perfectly centered');
-          this.orb.style.position = 'fixed';
-          this.orb.style.left = '50%';
-          this.orb.style.top = '50%';
-          this.orb.style.transform = 'translate(-50%, -50%)';
-        }
-
-        console.log('🎯 Screen center:', { x: screenCenterX, y: screenCenterY });
-
-        // 📱 Responsive radius - closer on mobile, further on desktop
         const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
         let radius;
 
         if (isMobile) {
-          // Mobile: Very close to orb, just light padding
+          // Mobile: Close to orb
           radius = 50; // Maximum 50px from orb
         } else if (isTablet) {
           radius = 50; // Same tight spacing on tablets
@@ -2503,13 +2495,13 @@
         items.forEach((item, i) => {
           const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
           
-          // 🎯 ABSOLUTE CENTER: Calculate position relative to screen center for perfect alignment
-          const targetX = screenCenterX + Math.cos(angle) * radius;
-          const targetY = screenCenterY + Math.sin(angle) * radius;
+          // 🔗 ORB-RELATIVE: Calculate position relative to actual orb center
+          const targetX = orbCenterX + Math.cos(angle) * radius;
+          const targetY = orbCenterY + Math.sin(angle) * radius;
 
-          // 🎬 ANIMATION SETUP: Start at absolute screen center for animate-out effect
-          const startX = screenCenterX;
-          const startY = screenCenterY;
+          // 🎬 ANIMATION SETUP: Start at actual orb center for animate-out effect
+          const startX = orbCenterX;
+          const startY = orbCenterY;
 
           // Position at orb center initially (for animation)
           item.style.left = (startX - 45) + 'px'; // Center the 90px item
@@ -2552,10 +2544,10 @@
           }
         });
 
-        // Add central orb as a node at screen center
+        // Add central orb as a node at actual orb center
         this.centralNode = {
-          x: screenCenterX,
-          y: screenCenterY,
+          x: orbCenterX,
+          y: orbCenterY,
           element: this.orb
         };
 
@@ -2632,54 +2624,48 @@
         });
       }
 
-      // 🎬 NEW: Animate menu items inward to screen center - FAST & SNAPPY
+      // 🎬 NEW: Animate menu items inward to orb center - FAST & SNAPPY
       animateMenuItemsIn() {
-        console.log('🎬 Animating menu items IN to screen center');
+        console.log('🎬 Animating menu items IN to orb center');
         
-        // Use absolute screen center for perfect mobile alignment
-        const screenCenterX = window.innerWidth / 2;
-        const screenCenterY = window.innerHeight / 2;
+        // Get actual orb center position
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
         
         this.nodes.forEach((node, i) => {
           const item = node.element;
           
           // Much faster reverse staggered timing (last item first)
           setTimeout(() => {
-            // 🚀 FAST: Quick snap back to screen center
+            // 🚀 FAST: Quick snap back to orb center
             item.style.transition = 'all 0.12s cubic-bezier(0.4, 0, 0.8, 1)';
-            item.style.left = (screenCenterX - 45) + 'px';
-            item.style.top = (screenCenterY - 45) + 'px';
+            item.style.left = (orbCenterX - 45) + 'px';
+            item.style.top = (orbCenterY - 45) + 'px';
             item.style.transform = 'scale(0)';
             item.style.opacity = '0';
             
             // Re-enable float animation when menu closes
             item.style.animationPlayState = 'running';
             
-            console.log(`🎯 Item ${i} animated back to screen center (${screenCenterX}, ${screenCenterY})`);
+            console.log(`🎯 Item ${i} animated back to orb center (${orbCenterX}, ${orbCenterY})`);
           }, (this.nodes.length - 1 - i) * 25); // Much faster reverse stagger: 25ms
         });
       }
 
-      // 🔄 NEW: Reposition menu items to stay centered (for resize/orientation changes)
+      // 🔄 NEW: Reposition menu items to stay bound to orb (for resize/orientation changes)
       repositionMenuToOrb() {
         if (!this.isMenuOpen || this.nodes.length === 0) return;
         
-        console.log('🔄 Repositioning menu items to stay centered');
+        console.log('🔄 Repositioning menu items to stay bound to orb');
         
-        // Use absolute screen center for consistent positioning
-        const screenCenterX = window.innerWidth / 2;
-        const screenCenterY = window.innerHeight / 2;
-        
-        // Ensure orb stays centered on mobile
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-          this.orb.style.position = 'fixed';
-          this.orb.style.left = '50%';
-          this.orb.style.top = '50%';
-          this.orb.style.transform = 'translate(-50%, -50%)';
-        }
+        // Get current orb position (don't force it, work with it)
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
         
         // Recalculate radius for current screen size
+        const isMobile = window.innerWidth <= 768;
         const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
         let radius;
         
@@ -2692,11 +2678,11 @@
           radius = 50; // Never more than 50px from orb on desktop
         }
         
-        // Update all node positions relative to screen center
+        // Update all node positions relative to actual orb center
         this.nodes.forEach((node, i) => {
           const angle = (i / this.nodes.length) * Math.PI * 2 - Math.PI / 2;
-          const newTargetX = screenCenterX + Math.cos(angle) * radius;
-          const newTargetY = screenCenterY + Math.sin(angle) * radius;
+          const newTargetX = orbCenterX + Math.cos(angle) * radius;
+          const newTargetY = orbCenterY + Math.sin(angle) * radius;
           
           // Update positions with fast smooth transition
           const item = node.element;
