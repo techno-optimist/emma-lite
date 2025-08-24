@@ -56,7 +56,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('🚨💾 Content Script: Window.emmaWebVault exists:', !!window.emmaWebVault);
     console.log('🚨💾 Content Script: Window.emmaWebVault isOpen:', window.emmaWebVault?.isOpen);
     
-    // Save to real webapp vault
+    // IMMEDIATE VAULT CHECK - before waitForWebappVault timeout
+    if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+      console.log('🚨✅ Content Script: VAULT IS ALREADY READY! Skipping wait...');
+      window.emmaWebVault.addMemory(request.memoryData)
+        .then(result => {
+          console.log('🚨✅ Content Script: IMMEDIATE SAVE SUCCESS:', result);
+          sendResponse({ success: true, result });
+        })
+        .catch(error => {
+          console.error('🚨❌ Content Script: IMMEDIATE SAVE FAILED:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // Keep message channel open
+    }
+    
+    // Save to real webapp vault (fallback with wait)
     saveToWebappVault(request.memoryData)
       .then(result => {
         console.log('✅💾 Content Script: Save result SUCCESS:', result);
