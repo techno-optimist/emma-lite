@@ -3934,6 +3934,13 @@ RULES:
    * Analyze message for memory potential
    */
   async analyzeForMemory(message, messageId) {
+    // 🔍 CRITICAL: Check for memory search queries FIRST - prevent wrong capture
+    const intent = this.classifyUserIntent(message);
+    if (intent.type === 'memory_search') {
+      console.log('🔍 ANALYZE FOR MEMORY: Detected memory search query, skipping memory capture analysis:', message);
+      return { handled: false }; // Let it go to normal Emma response
+    }
+
     // 🎯 HANDLE CONVERSATIONAL MEDIA REQUESTS FIRST
     if (this.detectMediaRequest(message)) {
       console.log('📷 Detected conversational media request:', message);
@@ -7472,7 +7479,8 @@ ${stage === 'media' ? 'Ask if they have photos, videos, or mementos to include' 
 
 Response (just the question, naturally conversational):`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || fallbacks[stage] || "Can you tell me more about this memory?";
       
     } catch (error) {
@@ -7543,7 +7551,8 @@ Generate a brief, warm acknowledgment that:
 
 Just the acknowledgment response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "Thank you for sharing that beautiful detail with me.";
       
     } catch (error) {
@@ -7572,7 +7581,8 @@ Generate a brief, helpful response that:
 
 Just the response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "I'm Emma, your memory companion. I help people capture and explore the stories that matter to them. What brings you here today?";
       
     } catch (error) {
@@ -7617,7 +7627,8 @@ Generate a warm greeting that:
 
 Just the greeting:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || `Good ${timeOfDay}! What's on your mind?`;
       
     } catch (error) {
@@ -7646,7 +7657,8 @@ Generate a heartfelt response that:
 
 Just the response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "It means everything to me that I can be here with you in these moments. Your stories matter, and I'm honored you trust me with them.";
       
     } catch (error) {
@@ -7675,7 +7687,8 @@ Generate a reassuring response that:
 
 Just the response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "No worries at all - I'm here to help however feels right for you. You can share a memory, ask me something, or just talk. There's no wrong way to do this.";
       
     } catch (error) {
@@ -7704,7 +7717,8 @@ Generate an encouraging response that:
 
 Just the response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "I'm all ears. Take your time and share whatever feels important to you right now.";
       
     } catch (error) {
@@ -7762,7 +7776,8 @@ Be:
 
 Just the welcoming response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "I'm here with you. What's on your mind?";
       
     } catch (error) {
@@ -7827,7 +7842,8 @@ Generate a warm, personalized response that:
 
 Just the response:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "I'd love to help you capture this memory! Tell me more about what happened.";
       
     } catch (error) {
@@ -7869,7 +7885,8 @@ Generate ONE focused follow-up question that:
 
 Just the question:`;
 
-      const response = await this.vectorlessEngine.generateResponse(prompt, []);
+      const result = await this.vectorlessEngine.processQuestion(prompt, {});
+      const response = result.success ? result.response : null;
       return response || "What other details would help complete this beautiful memory?";
       
     } catch (error) {
