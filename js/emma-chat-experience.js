@@ -32,6 +32,9 @@ class EmmaChatExperience extends ExperiencePopup {
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
+    
+    // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
+    this.temporaryMemories = new Map(); // Store preview memories before vault save
 
     // Emma personality settings
     this.emmaPersonality = {
@@ -1995,6 +1998,9 @@ class EmmaChatExperience extends ExperiencePopup {
    * Show memory preview dialog
    */
   showMemoryPreviewDialog(memory) {
+    // 🎯 CRITICAL FIX: Store memory in temporary storage for editing
+    this.temporaryMemories.set(memory.id, memory);
+    console.log('🎯 PREVIEW: Stored temporary memory for editing:', memory.id);
 
     // BEAUTIFUL EMMA-STYLE: Create as chat message instead of dialog
     const previewHTML = `
@@ -2413,20 +2419,22 @@ class EmmaChatExperience extends ExperiencePopup {
    * Edit memory details with proper modal
    */
   editMemoryDetails(memoryId) {
-    // FIXED: Get memory from vault instead of undefined temporaryMemories
-    let memory = null;
+    // 🎯 CRITICAL FIX: Check temporary memories first (for preview editing)
+    let memory = this.temporaryMemories.get(memoryId);
     
-    // Try to get memory from vault
-    if (window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
+    // If not in temporary storage, try vault
+    if (!memory && window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
       const memories = window.emmaWebVault.vaultData.content.memories || {};
       memory = memories[memoryId];
     }
     
     if (!memory) {
-      console.error('❌ Memory not found with ID:', memoryId);
+      console.error('❌ Memory not found with ID:', memoryId, 'Available temporary memories:', Array.from(this.temporaryMemories.keys()));
       this.showToast('❌ Memory not found!', 'error');
       return;
     }
+    
+    console.log('✅ EDIT: Found memory for editing:', memory.id, memory.title || memory.content?.substring(0, 50));
 
     // Close the preview dialog first
     const dialog = document.querySelector('.memory-preview-dialog');
@@ -2606,9 +2614,44 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Add media handler
     addMediaBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      // Handle file uploads (simplified for now)
-      this.showToast('📎 File upload feature coming soon!', 'info');
+    fileInput.addEventListener('change', async (e) => {
+      // 🎯 CRITICAL FIX: Implement proper file upload like memory capsules
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      
+      console.log('📎 EDIT: Processing', files.length, 'uploaded files');
+      this.showToast(`📎 Processing ${files.length} file${files.length > 1 ? 's' : ''}...`, 'info');
+      
+      try {
+        // Process each file
+        for (const file of files) {
+          // Convert to data URL for display and storage
+          const dataUrl = await this.fileToBase64(file);
+          
+          // Add to memory attachments
+          memory.attachments = memory.attachments || [];
+          memory.attachments.push({
+            id: `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: file.type,
+            name: file.name,
+            size: file.size,
+            data: dataUrl,
+            dataUrl: dataUrl // For compatibility
+          });
+        }
+        
+        // Update temporary memory storage
+        this.temporaryMemories.set(memory.id, memory);
+        
+        // Re-render the edit modal to show new attachments
+        this.editMemoryDetails(memoryId);
+        
+        this.showToast(`✅ Added ${files.length} file${files.length > 1 ? 's' : ''} to memory!`, 'success');
+        
+      } catch (error) {
+        console.error('❌ Error processing files:', error);
+        this.showToast('❌ Failed to process files', 'error');
+      }
     });
 
     // Remove attachment handlers
@@ -2616,6 +2659,11 @@ class EmmaChatExperience extends ExperiencePopup {
       btn.addEventListener('click', (e) => {
         const index = parseInt(e.target.dataset.index);
         memory.attachments.splice(index, 1);
+        
+        // 🎯 CRITICAL FIX: Update temporary memory storage after removal
+        this.temporaryMemories.set(memory.id, memory);
+        console.log('🗑️ EDIT: Removed attachment at index', index);
+        
         // Re-render attachments grid
         this.editMemoryDetails(memoryId);
       });
@@ -2642,6 +2690,10 @@ class EmmaChatExperience extends ExperiencePopup {
       memory.metadata.people = selectedPeople;
       memory.title = title;
       memory.content = content;
+      
+      // 🎯 CRITICAL FIX: Update temporary memory storage with changes
+      this.temporaryMemories.set(memory.id, memory);
+      console.log('✅ EDIT: Updated temporary memory:', memory.id, 'with changes');
 
       this.showToast('💾 Changes saved!', 'success');
       closeModal();
@@ -3502,14 +3554,18 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async saveMemoryToVault(memoryId) {
     try {
-      // Get the memory from enrichment state
-      const state = this.enrichmentState.get(memoryId);
-      if (!state || !state.memory) {
-        this.showToast('❌ Memory not found', 'error');
-        return;
+      // 🎯 CRITICAL FIX: Get memory from temporary storage first (in case it was edited)
+      let memory = this.temporaryMemories.get(memoryId);
+      
+      // Fallback to enrichment state if not in temporary storage
+      if (!memory) {
+        const state = this.enrichmentState.get(memoryId);
+        if (!state || !state.memory) {
+          this.showToast('❌ Memory not found', 'error');
+          return;
+        }
+        memory = state.memory;
       }
-
-      const memory = state.memory;
       console.log('💾 EMMA CHAT: Saving memory to vault from preview:', memoryId);
       
       // Prepare memory for vault
@@ -3531,6 +3587,10 @@ class EmmaChatExperience extends ExperiencePopup {
         
         // Clear enrichment state
         this.enrichmentState.delete(memoryId);
+        
+        // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
+        this.temporaryMemories.delete(memoryId);
+        console.log('🧹 VAULT: Cleaned up temporary memory after successful save:', memoryId);
         
         // Add success message
         this.addMessage(`Perfect! I've saved your memory to your vault. It's now preserved forever! 💜`, 'emma');
@@ -3565,6 +3625,10 @@ class EmmaChatExperience extends ExperiencePopup {
         });
 
         this.showToast('✅ Memory saved to vault successfully!', 'success');
+        
+        // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
+        this.temporaryMemories.delete(memoryId);
+        console.log('🧹 VAULT: Cleaned up temporary memory after direct save:', memoryId);
 
         // Close dialog
         const dialog = document.querySelector('.memory-preview-dialog');
