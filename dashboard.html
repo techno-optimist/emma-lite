@@ -2473,21 +2473,10 @@
 
         console.log('🎯 Actual orb center:', { x: orbCenterX, y: orbCenterY, orbRect });
 
-        // 📱 Responsive radius - tight spacing on all devices
-        const isMobile = window.innerWidth <= 768;
-        const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
-        let radius;
+        // 🌌 SIMPLIFIED: One radius that works great for all devices - true orbiting feel
+        const radius = 140; // Proper orbiting distance - feels like satellites around Emma orb
 
-        if (isMobile) {
-          // Mobile: Moderate spacing for touch targets
-          radius = 80; // Breathing room from orb on mobile
-        } else if (isTablet) {
-          radius = 90; // Good spacing on tablets
-        } else {
-          radius = 100; // Proper breathing room from orb on desktop
-        }
-
-        console.log('📐 Using radius:', radius, 'for device type:', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop');
+        console.log('🌌 Using unified orbiting radius:', radius, 'px for all devices');
 
         // Clear existing nodes
         this.nodes = [];
@@ -2682,19 +2671,8 @@
         const orbCenterX = orbRect.left + orbRect.width / 2;
         const orbCenterY = orbRect.top + orbRect.height / 2;
         
-        // Recalculate radius for current screen size
-        const isMobile = window.innerWidth <= 768;
-        const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
-        let radius;
-        
-        if (isMobile) {
-          // Mobile: Moderate spacing for touch targets
-          radius = 80; // Breathing room from orb on mobile
-        } else if (isTablet) {
-          radius = 90; // Good spacing on tablets
-        } else {
-          radius = 100; // Proper breathing room from orb on desktop
-        }
+        // 🌌 SIMPLIFIED: Same orbiting radius for all devices
+        const radius = 140; // Consistent orbiting distance - satellites around Emma orb
         
         // Update all node positions relative to actual orb center
         this.nodes.forEach((node, i) => {
@@ -3037,18 +3015,8 @@
               const orbDy = node.y - this.orbNeuralNode.y;
               const orbDistance = Math.sqrt(orbDx * orbDx + orbDy * orbDy);
               
-              // Responsive max distance based on device size
-              const isMobile = window.innerWidth <= 768;
-              const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
-              let MAX_RADIAL_DISTANCE;
-              
-              if (isMobile) {
-                MAX_RADIAL_DISTANCE = 85; // Mobile: breathing room + buffer
-              } else if (isTablet) {
-                MAX_RADIAL_DISTANCE = 95; // Tablet: good spacing + buffer
-              } else {
-                MAX_RADIAL_DISTANCE = 105; // Desktop: proper spacing + buffer
-              }
+              // 🌌 SIMPLIFIED: One max distance for all devices - orbiting constraint
+              const MAX_RADIAL_DISTANCE = 150; // Orbiting distance + small buffer for physics
               
               if (orbDistance > MAX_RADIAL_DISTANCE) {
                 // Constrain to max distance from orb center
