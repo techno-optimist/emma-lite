@@ -80,13 +80,22 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   logIntelligenceStatus() {
     console.log('🧠 EMMA INTELLIGENCE STATUS:');
-    console.log(`  🚀 Advanced AI Mode: ${this.apiKey ? '✅ ENABLED' : '❌ DISABLED'}`);
-    console.log(`  🔍 Vectorless Engine: ${this.isVectorlessEnabled ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`  🏛️ Core Vault Operations: ✅ ALWAYS ENABLED`);
+    console.log(`  🚀 Advanced AI (Conversation): ${this.apiKey ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`  🔍 Vectorless Engine (Memory Search): ${this.isVectorlessEnabled ? '✅ ENABLED' : '❌ DISABLED'}`);
     console.log(`  🎯 API Key: ${this.apiKey ? '✅ CONFIGURED' : '❌ NOT CONFIGURED'}`);
     console.log(`  🐛 Debug Mode: ${this.debugMode ? '✅ ON' : '❌ OFF'}`);
     
+    console.log('');
+    console.log('💜 EMMA CAPABILITIES:');
+    console.log('  🏛️ Add people, create memories, manage vault (always works!)');
+    console.log('  🔍 Search existing memories (vectorless engine)');
+    console.log('  💬 Intelligent conversation (requires OpenAI key)');
+    
     if (!this.apiKey) {
-      console.log('💡 To enable Advanced AI: Set OpenAI API key in Emma settings');
+      console.log('');
+      console.log('💡 Note: Core vault operations work without API key!');
+      console.log('   To enable enhanced conversation: Set OpenAI API key in Emma settings');
     }
   }
 
@@ -1997,6 +2006,13 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
+    // 🏛️ CORE VAULT OPERATIONS: Emma's primary job (always works!)
+    if (intent.type === 'vault_operation') {
+      console.log('🏛️ CORE VAULT OPERATION: Handling directly');
+      await this.handleVaultOperation(userMessage, intent);
+      return;
+    }
+
     // 🔍 MEMORY SEARCH: Use vectorless for memory-specific queries
     if (intent.type === 'memory_search' && this.isVectorlessEnabled && this.vectorlessEngine) {
       try {
@@ -2012,9 +2028,9 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     }
 
-    // 🚀 ADVANCED AI MODE: Use OpenAI for intelligent conversation
-    if (this.apiKey && (intent.type === 'conversation' || intent.type === 'command' || intent.type === 'question')) {
-      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent response');
+    // 🚀 ADVANCED AI MODE: Use OpenAI for conversation and questions
+    if (this.apiKey && intent.type === 'conversation') {
+      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent conversation');
       console.log('🎯 Intent:', intent);
       try {
         const response = await this.generateIntelligentEmmaResponse(userMessage, intent);
@@ -2023,8 +2039,7 @@ class EmmaChatExperience extends ExperiencePopup {
         return;
       } catch (error) {
         console.warn('🤖 AI response failed, using fallback:', error);
-        this.addMessage("I'm having trouble accessing my advanced intelligence right now, but I'm still here to help with your memories!", 'emma');
-        return;
+        // Don't show error for conversation - just fall through to dynamic response
       }
     }
 
@@ -2051,19 +2066,27 @@ class EmmaChatExperience extends ExperiencePopup {
       return { type: 'memory_search', confidence: 0.8 };
     }
 
-    // 🎯 Commands/actions (adding, creating, saving)
-    if (/\b(add|create|new|save|let|want|need|help)\b/i.test(message)) {
-      return { type: 'command', confidence: 0.7 };
+    // 🏛️ CORE VAULT OPERATIONS (Emma's primary job - always works!)
+    if (/\b(add|create|new|save)\b.*\b(person|people|memory|memories|vault)\b/i.test(message) ||
+        /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(message) ||
+        /\blet'?s?\s+(add|create|save)\b/i.test(message)) {
+      return { type: 'vault_operation', confidence: 0.95 };
     }
 
-    // ❓ Questions requiring intelligence
+    // 💬 General conversation & questions (use AI if available)
     if (/^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/i.test(message) ||
-        message.includes('?')) {
-      return { type: 'question', confidence: 0.6 };
+        message.includes('?') ||
+        /\b(hello|hi|hey|thank|thanks|help|tell me|explain)\b/i.test(message)) {
+      return { type: 'conversation', confidence: 0.6 };
     }
 
-    // 💬 General conversation
-    return { type: 'conversation', confidence: 0.5 };
+    // 🎯 Other commands/actions
+    if (/\b(add|create|new|save|let|want|need|help)\b/i.test(message)) {
+      return { type: 'general_command', confidence: 0.5 };
+    }
+
+    // 💬 Default: General conversation
+    return { type: 'conversation', confidence: 0.4 };
   }
 
   /**
@@ -2141,15 +2164,15 @@ CONTEXT:
 - People in vault: ${vaultContext.people.join(', ')}
 
 CAPABILITIES:
-- Help organize and find memories
-- Suggest memory creation when appropriate  
-- Answer questions about their memories
-- Provide gentle guidance on memory preservation
+- Provide warm conversation about memories
+- Answer questions about their vault and memories
+- Give gentle encouragement about memory preservation
+- Help them reflect on their experiences
+
+NOTE: Core vault operations (adding people, creating memories) are handled by Emma's built-in systems. Focus on conversation, encouragement, and emotional support.
 
 INTENT: ${intent.type}
-${intent.type === 'command' ? 'User is asking you to help them do something. Be proactive and helpful.' : ''}
-${intent.type === 'question' ? 'User has a question. Answer thoughtfully based on their memory context.' : ''}
-${intent.type === 'conversation' ? 'User wants to chat. Be warm and engaging while staying memory-focused.' : ''}
+${intent.type === 'conversation' ? 'User wants to have a conversation. Be warm, engaging, and memory-focused. Provide emotional support and encouragement.' : ''}
 
 RULES:
 - Keep responses concise (1-3 sentences)
@@ -2208,6 +2231,144 @@ RULES:
         recentTopics: ['Context unavailable'],
         people: ['Context unavailable']
       };
+    }
+  }
+
+  /**
+   * 🏛️ HANDLE CORE VAULT OPERATIONS
+   * Emma's primary job - managing memories and people
+   */
+  async handleVaultOperation(userMessage, intent) {
+    console.log('🏛️ Processing vault operation:', userMessage);
+    
+    const lower = userMessage.toLowerCase().trim();
+    
+    // 👤 Adding a person to the vault
+    if (/\b(add|create|new|save)\b.*\b(person|people)\b/i.test(userMessage) ||
+        /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(userMessage)) {
+      
+      // Extract person name from message
+      const personName = this.extractPersonNameFromMessage(userMessage);
+      
+      if (personName) {
+        await this.addPersonToVault(personName, userMessage);
+      } else {
+        this.addMessage("I'd love to help you add someone to your vault! What's their name?", 'emma');
+      }
+      return;
+    }
+    
+    // 💝 Creating a new memory
+    if (/\b(add|create|new|save)\b.*\b(memory|memories)\b/i.test(userMessage)) {
+      this.addMessage("I'll help you create a new memory! What would you like to remember?", 'emma');
+      // TODO: Trigger memory creation wizard
+      return;
+    }
+    
+    // 🔧 General vault operations
+    if (/\blet'?s?\s+(add|create|save)\b/i.test(userMessage)) {
+      this.addMessage("I'm ready to help! What would you like to add to your vault - a person, a memory, or something else?", 'emma');
+      return;
+    }
+    
+    // 💜 Fallback for unrecognized vault operations
+    this.addMessage("I'm here to help with your vault! I can add people, create memories, or help you organize your thoughts. What would you like to do?", 'emma');
+  }
+
+  /**
+   * 🎯 EXTRACT PERSON NAME from user message
+   */
+  extractPersonNameFromMessage(message) {
+    // Look for patterns like "add Mandy", "save John to vault", etc.
+    const patterns = [
+      /\b(add|create|new|save)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
+      /\b(add|save)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+to/i,
+      /\blet'?s?\s+add\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = message.match(pattern);
+      if (match && match[2]) {
+        const name = match[2].trim();
+        // Filter out common words
+        if (!/^(person|people|memory|memories|vault|emma|new|the|a|an)$/i.test(name)) {
+          return name;
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * 👤 ADD PERSON TO VAULT
+   */
+  async addPersonToVault(personName, originalMessage) {
+    try {
+      console.log('👤 Adding person to vault:', personName);
+      
+      // Check if person already exists
+      const existingPerson = await this.findPersonInVault(personName);
+      if (existingPerson) {
+        this.addMessage(`${personName} is already in your vault! Would you like me to show you their information?`, 'emma');
+        return;
+      }
+      
+      // Create new person object
+      const newPerson = {
+        id: `person_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: personName,
+        createdAt: new Date().toISOString(),
+        memories: [],
+        notes: `Added from chat: "${originalMessage}"`,
+        relationships: []
+      };
+      
+      // Add to vault
+      if (window.emmaWebVault && window.emmaWebVault.vaultData) {
+        if (!window.emmaWebVault.vaultData.content.people) {
+          window.emmaWebVault.vaultData.content.people = {};
+        }
+        
+        window.emmaWebVault.vaultData.content.people[newPerson.id] = newPerson;
+        
+        // Trigger save
+        await window.emmaWebVault.scheduleElegantSave();
+        
+        this.addMessage(`✅ I've added ${personName} to your vault! They're now part of your memory collection.`, 'emma');
+        this.addVaultOperationIndicator(); // Show that this was a core vault operation
+        console.log('✅ Person added successfully:', newPerson);
+        
+      } else {
+        this.addMessage("I'm having trouble accessing your vault right now. Please make sure it's unlocked and try again.", 'emma');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error adding person to vault:', error);
+      this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
+    }
+  }
+
+  /**
+   * 🏛️ ADD VAULT OPERATION INDICATOR to show when Emma handled core operations
+   */
+  addVaultOperationIndicator() {
+    // Add a subtle indicator that this was a core vault operation (for debugging/transparency)
+    if (this.debugMode) {
+      const lastMessage = this.messageContainer?.lastElementChild;
+      if (lastMessage && lastMessage.classList.contains('emma-message')) {
+        const indicator = document.createElement('div');
+        indicator.className = 'vault-operation-indicator';
+        indicator.style.cssText = `
+          font-size: 10px;
+          color: #9d4edd;
+          text-align: right;
+          margin-top: 2px;
+          opacity: 0.7;
+        `;
+        indicator.textContent = '🏛️ Core Vault Operation';
+        lastMessage.appendChild(indicator);
+      }
     }
   }
 
