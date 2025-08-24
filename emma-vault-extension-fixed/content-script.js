@@ -71,7 +71,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       currentTime: Date.now()
     });
     
-    // 🚨 CRITICAL FIX: Access vault via postMessage (CSP-compliant)
+    // 🚨 CRITICAL FIX: Access vault via postMessage (CSP-compliant) - USING PROMISES
     console.log('🚨🔧 Content Script: Attempting CSP-compliant vault access via postMessage...');
     
     // Method 1: Use postMessage to communicate with page context
@@ -102,83 +102,91 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }, 1000);
     });
     
-    // Check if we can get vault status via postMessage
-    const vaultStatus = await vaultCheckPromise;
-    console.log('🚨🔧 Content Script: PostMessage vault status:', vaultStatus);
-    
-    // If vault is available, use postMessage to save
-    if (vaultStatus?.exists && vaultStatus?.isOpen) {
-      console.log('🚨✅ Content Script: FOUND VAULT VIA POSTMESSAGE! Saving...');
+    // Check if we can get vault status via postMessage - USING .then() instead of await
+    vaultCheckPromise.then(vaultStatus => {
+      console.log('🚨🔧 Content Script: PostMessage vault status:', vaultStatus);
       
-      const savePromise = new Promise((resolve) => {
-        const saveMessageId = 'vault-save-' + Date.now();
+      // If vault is available, use postMessage to save
+      if (vaultStatus?.exists && vaultStatus?.isOpen) {
+        console.log('🚨✅ Content Script: FOUND VAULT VIA POSTMESSAGE! Saving...');
         
-        // Listen for save response
-        const saveResponseHandler = (event) => {
-          if (event.data?.type === 'EMMA_VAULT_SAVE_RESPONSE' && event.data?.messageId === saveMessageId) {
-            console.log('🚨✅ Content Script: Received save response:', event.data.result);
+        const savePromise = new Promise((resolve) => {
+          const saveMessageId = 'vault-save-' + Date.now();
+          
+          // Listen for save response
+          const saveResponseHandler = (event) => {
+            if (event.data?.type === 'EMMA_VAULT_SAVE_RESPONSE' && event.data?.messageId === saveMessageId) {
+              console.log('🚨✅ Content Script: Received save response:', event.data.result);
+              window.removeEventListener('message', saveResponseHandler);
+              resolve(event.data.result);
+            }
+          };
+          
+          window.addEventListener('message', saveResponseHandler);
+          
+          // Send save request to page context
+          window.postMessage({
+            type: 'EMMA_VAULT_SAVE',
+            messageId: saveMessageId,
+            memoryData: request.memoryData
+          }, '*');
+          
+          // Timeout after 10 seconds
+          setTimeout(() => {
             window.removeEventListener('message', saveResponseHandler);
-            resolve(event.data.result);
-          }
-        };
+            resolve({ success: false, error: 'Save timeout' });
+          }, 10000);
+        });
         
-        window.addEventListener('message', saveResponseHandler);
+        savePromise.then(saveResult => {
+          console.log('🚨✅ Content Script: PostMessage save result:', saveResult);
+          sendResponse(saveResult);
+        });
+      } else {
+        console.log('🚨⚠️ Content Script: PostMessage vault not ready, falling back to waitForWebappVault...');
+        // Fall through to the existing wait logic
+        handleSaveWithFallback();
+      }
+    });
+    
+    // Fallback function for when postMessage doesn't work
+    function handleSaveWithFallback() {
+      // IMMEDIATE VAULT CHECK - before waitForWebappVault timeout
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        console.log('🚨✅ Content Script: VAULT IS ALREADY READY! Skipping wait...');
+        window.emmaWebVault.addMemory(request.memoryData)
+          .then(result => {
+            console.log('🚨✅ Content Script: IMMEDIATE SAVE SUCCESS:', result);
+            sendResponse({ success: true, result });
+          })
+          .catch(error => {
+            console.error('🚨❌ Content Script: IMMEDIATE SAVE FAILED:', error);
+            sendResponse({ success: false, error: error.message });
+          });
+      } else {
+        console.log('🚨⚠️ Content Script: Vault not immediately ready, trying waitForWebappVault...');
         
-        // Send save request to page context
-        window.postMessage({
-          type: 'EMMA_VAULT_SAVE',
-          messageId: saveMessageId,
-          memoryData: request.memoryData
-        }, '*');
-        
-        // Timeout after 10 seconds
-        setTimeout(() => {
-          window.removeEventListener('message', saveResponseHandler);
-          resolve({ success: false, error: 'Save timeout' });
-        }, 10000);
-      });
-      
-      const saveResult = await savePromise;
-      console.log('🚨✅ Content Script: PostMessage save result:', saveResult);
-      sendResponse(saveResult);
-      return true; // Keep message channel open
+        // Save to real webapp vault (fallback with wait)
+        saveToWebappVault(request.memoryData)
+          .then(result => {
+            console.log('✅💾 Content Script: Save result SUCCESS:', result);
+            sendResponse(result);
+          })
+          .catch(error => {
+            console.error('❌💾 Content Script: Save FAILED:', error);
+            console.error('❌💾 Content Script: Error details:', {
+              message: error.message,
+              stack: error.stack,
+              vaultExists: !!window.emmaWebVault,
+              vaultIsOpen: window.emmaWebVault?.isOpen
+            });
+            sendResponse({ success: false, error: error.message });
+          });
+      }
     }
     
-    // IMMEDIATE VAULT CHECK - before waitForWebappVault timeout
-    if (window.emmaWebVault && window.emmaWebVault.isOpen) {
-      console.log('🚨✅ Content Script: VAULT IS ALREADY READY! Skipping wait...');
-      window.emmaWebVault.addMemory(request.memoryData)
-        .then(result => {
-          console.log('🚨✅ Content Script: IMMEDIATE SAVE SUCCESS:', result);
-          sendResponse({ success: true, result });
-        })
-        .catch(error => {
-          console.error('🚨❌ Content Script: IMMEDIATE SAVE FAILED:', error);
-          sendResponse({ success: false, error: error.message });
-        });
-      return true; // Keep message channel open
-    } else {
-      console.log('🚨⚠️ Content Script: Vault not immediately ready, trying waitForWebappVault...');
-    }
-    
-    // Save to real webapp vault (fallback with wait)
-    saveToWebappVault(request.memoryData)
-      .then(result => {
-        console.log('✅💾 Content Script: Save result SUCCESS:', result);
-        sendResponse(result);
-      })
-      .catch(error => {
-        console.error('❌💾 Content Script: Save FAILED:', error);
-        console.error('❌💾 Content Script: Error details:', {
-          message: error.message,
-          stack: error.stack,
-          vaultExists: !!window.emmaWebVault,
-          vaultIsOpen: window.emmaWebVault?.isOpen
-        });
-        sendResponse({ success: false, error: error.message });
-      });
-    
-    return true; // Keep message channel open for async response
+    // Always return true to keep message channel open for async responses
+    return true;
   }
 });
 
