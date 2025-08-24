@@ -454,7 +454,7 @@ async function createMemoryPeopleAvatars(memory) {
     }
 
     const vaultData = window.emmaWebVault.vaultData;
-    const peopleData = vaultData.people || {};
+    const peopleData = vaultData.content?.people || {};
     
     // Available people loaded from vault
 

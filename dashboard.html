@@ -1741,8 +1741,47 @@
     <div class="aurora"></div>
   </div>
 
-  <!-- Memory Constellation Canvas -->
-  <canvas id="constellation" class="constellation-canvas"></canvas>
+  <!-- Memory Constellation Redirect -->
+  <div id="constellation-redirect" class="constellation-redirect" style="
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.5s ease;
+  ">
+    <div style="
+      background: rgba(134, 88, 255, 0.1);
+      border: 1px solid rgba(134, 88, 255, 0.3);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      max-width: 400px;
+    ">
+      <h2 style="margin: 0 0 20px 0; font-size: 2em;">💝 Memory Constellation</h2>
+      <p style="margin: 0 0 30px 0; opacity: 0.8; line-height: 1.6;">
+        Your memories are beautifully organized in the Memory Gallery.<br>
+        Click below to explore your memory constellation.
+      </p>
+      <button onclick="window.location.href='pages/gallery.html'" style="
+        background: linear-gradient(135deg, rgba(134, 88, 255, 0.8), rgba(240, 147, 251, 0.8));
+        border: none;
+        padding: 16px 32px;
+        border-radius: 30px;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        View Memory Constellation →
+      </button>
+    </div>
+  </div>
 
   <!-- Welcome Text -->
   <div class="welcome-text">
@@ -1995,7 +2034,7 @@
           <div class="quick-actions-grid">
             <button class="quick-action" onclick="window.location.href='pages/gallery.html'">
               <span>💝</span>
-              <span>Memories</span>
+              <span>View Memory Constellation</span>
             </button>
             <button class="quick-action" onclick="window.location.href='pages/emma-settings-redesigned.html'">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: rgba(255, 255, 255, 0.8);">
@@ -3459,13 +3498,20 @@
         // PERSISTENCE: Save constellation state for page refresh
         localStorage.setItem('emmaConstellationActive', 'true');
 
-        // Add constellation-active class to hide all UI
+        // Show constellation redirect instead of broken rendering
+        const redirect = document.getElementById('constellation-redirect');
+        if (redirect) {
+          redirect.style.opacity = '1';
+          redirect.style.pointerEvents = 'all';
+        }
+
+        // Add constellation-active class to hide all UI  
         document.body.classList.add('constellation-active');
 
         // Shrink central orb
         this.shrinkCentralOrb();
 
-        // Load memory data
+        // Skip memory data loading - redirect to working gallery instead
         await this.loadMemoriesForConstellation();
 
         // Fade out current nodes
@@ -5577,6 +5623,13 @@
         if (this.neuralAnimationId) {
           cancelAnimationFrame(this.neuralAnimationId);
           this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+        }
+
+        // Hide constellation redirect
+        const redirect = document.getElementById('constellation-redirect');
+        if (redirect) {
+          redirect.style.opacity = '0';
+          redirect.style.pointerEvents = 'none';
         }
 
         // Remove constellation-active class to restore UI

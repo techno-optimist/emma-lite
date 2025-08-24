@@ -473,7 +473,7 @@ async function createMemoryPeopleAvatars(memory) {
     }
 
     const vaultData = window.emmaWebVault.vaultData;
-    const peopleData = vaultData.people || {};
+    const peopleData = vaultData.content?.people || {};
     
     console.log('👥 Available people in vault:', Object.keys(peopleData));
 
