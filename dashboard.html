@@ -5852,8 +5852,19 @@
         // Enable pointer events for zoom interaction
         document.addEventListener('wheel', (e) => {
           if (this.isConstellationMode) {
-            e.preventDefault();
-            this.handleConstellationZoom(e);
+            // 🚫 SMART SCROLL: Don't intercept wheel events over dialogs/modals
+            const isOverDialog = e.target.closest('.memory-preview-dialog') || 
+                                e.target.closest('.person-summary-modal') ||
+                                e.target.closest('.voice-wizard-modal') ||
+                                e.target.closest('.modal-overlay') ||
+                                e.target.closest('.responsive-memory-container');
+            
+            if (!isOverDialog) {
+              // Only zoom constellation when NOT scrolling in a dialog
+              e.preventDefault();
+              this.handleConstellationZoom(e);
+            }
+            // If over dialog, allow natural scrolling behavior
           }
         }, { passive: false });
 
