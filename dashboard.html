@@ -2326,48 +2326,34 @@
         }
       }
 
-      // Reposition nodes on window resize for responsive behavior
+      // Reposition nodes on window resize for responsive behavior (CONSTELLATION MODE ONLY)
       repositionNodesOnResize() {
         if (!this.nodes || this.nodes.length === 0) return;
+        
+        // 🚨 CRITICAL: This function is now ONLY for constellation mode
+        // Radial menu repositioning is handled by repositionMenuToOrb()
+        if (!this.isConstellationMode) {
+          console.warn('🚨 repositionNodesOnResize called for non-constellation mode - use repositionMenuToOrb instead');
+          return;
+        }
 
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
 
-        // Recalculate responsive radius
-        const isMobile = window.innerWidth <= 768;
-        const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
-        let radius;
-
-        if (isMobile) {
-          radius = Math.min(window.innerWidth, window.innerHeight) * 0.25;
-        } else if (isTablet) {
-          radius = 200;
-        } else {
-          radius = 250;
-        }
-
-        // Reposition each node
+        // Reposition each constellation node
         this.nodes.forEach((node, i) => {
-          if (this.isConstellationMode) {
-            // For constellation mode, maintain relative positions but scale
-            const scaleX = window.innerWidth / (this.lastWindowWidth || window.innerWidth);
-            const scaleY = window.innerHeight / (this.lastWindowHeight || window.innerHeight);
+          // For constellation mode, maintain relative positions but scale
+          const scaleX = window.innerWidth / (this.lastWindowWidth || window.innerWidth);
+          const scaleY = window.innerHeight / (this.lastWindowHeight || window.innerHeight);
 
-            node.x = centerX + (node.x - centerX) * scaleX;
-            node.y = centerY + (node.y - centerY) * scaleY;
-            node.baseX = node.x;
-            node.baseY = node.y;
-          } else {
-            // For radial menu, recalculate circular positions
-            const angle = (i / this.nodes.length) * Math.PI * 2 - Math.PI / 2;
-            node.x = centerX + Math.cos(angle) * radius;
-            node.y = centerY + Math.sin(angle) * radius;
-            node.baseX = node.x;
-            node.baseY = node.y;
-          }
+          node.x = centerX + (node.x - centerX) * scaleX;
+          node.y = centerY + (node.y - centerY) * scaleY;
+          node.baseX = node.x;
+          node.baseY = node.y;
 
           // Update DOM position
           if (node.element) {
+            const isMobile = window.innerWidth <= 768;
             const elementSize = isMobile ? 35 : 45; // Half of element size for centering
             node.element.style.left = (node.x - elementSize) + 'px';
             node.element.style.top = (node.y - elementSize) + 'px';
@@ -2560,8 +2546,8 @@
 
         // Add central orb as a node
         this.centralNode = {
-          x: centerX,
-          y: centerY,
+          x: orbCenterX,
+          y: orbCenterY,
           element: this.orb
         };
 
