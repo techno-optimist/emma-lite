@@ -2598,16 +2598,46 @@ async function loadConstellationPeopleAvatars(memory) {
 }
 
 function editConstellationMemory(memoryId) {
-  // Navigate to Emma Chat for editing
-  console.log('🔗 CONSTELLATION: Navigating to Emma Chat for editing memory:', memoryId);
+  console.log('✏️ CONSTELLATION: Opening edit dialog for memory:', memoryId);
+  
+  // Get the memory from vault
+  const vault = window.emmaWebVault || window.emmaAPI?.vault;
+  if (!vault || !vault.memories) {
+    console.error('❌ No vault available for editing');
+    return;
+  }
+  
+  const memory = vault.memories.find(m => m.id === memoryId);
+  if (!memory) {
+    console.error('❌ Memory not found:', memoryId);
+    return;
+  }
   
   // Close the dialog first
   document.querySelector('.memory-preview-dialog.constellation')?.remove();
   
-  // Navigate to Emma Chat with proper path (detects if we're in pages/ subdirectory)
-  const currentPath = window.location.pathname;
-  const chatPath = currentPath.includes('/pages/') ? '../index.html' : 'index.html';
-  window.location.href = `${chatPath}?mode=chat&memory=${memoryId}`;
+  // Create Emma Chat Experience if needed
+  if (!window.chatExperience) {
+    if (typeof EmmaChatExperience !== 'undefined') {
+      console.log('🚀 Creating Emma Chat Experience for editing...');
+      new EmmaChatExperience();
+    } else {
+      console.error('❌ EmmaChatExperience not available');
+      return;
+    }
+  }
+  
+  // Wait for chat experience and open edit dialog
+  const openEdit = () => {
+    if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+      console.log('✅ Opening enhanced edit dialog for memory:', memoryId);
+      window.chatExperience.editMemoryDetails(memoryId);
+    } else {
+      setTimeout(openEdit, 100);
+    }
+  };
+  
+  setTimeout(openEdit, 100);
 }
 
 function shareConstellationMemory(memoryId) {

@@ -18,7 +18,7 @@
   <script src="js/emma-vault-primary.js"></script>
   <script src="js/emma-web-vault.js"></script>
   <script src="js/web-vault-status.js"></script>
-  
+
   <!-- WEBAPP-FIRST ARCHITECTURE: Communication bridge -->
   <script src="js/webapp-extension-bridge.js"></script>
 
@@ -2256,9 +2256,9 @@
                 this.neuralCanvas.height = window.innerHeight;
               }
               
-              // Force immediate redraw of connections with new positions  
+              // Force immediate redraw of connections with new positions
               if (this.render && typeof this.render === 'function') {
-                this.render();
+              this.render();
               } else if (window.neuralRenderer && window.neuralRenderer.render) {
                 window.neuralRenderer.render();
               }
@@ -5788,9 +5788,9 @@
               height: clamp(40px, 6vw, 48px);
               border-radius: 50%;
               cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
               transition: all 0.3s ease;
               backdrop-filter: blur(10px);
               flex-shrink: 0;
@@ -5805,8 +5805,8 @@
             .hero-carousel {
               margin-bottom: clamp(25px, 5vw, 35px);
               border-radius: clamp(12px, 2.5vw, 16px);
-              overflow: hidden;
-              position: relative;
+            overflow: hidden;
+            position: relative;
               aspect-ratio: 16/9;
               background: rgba(0, 0, 0, 0.3);
             }
@@ -5818,9 +5818,9 @@
             }
             
             .hero-image {
-              position: absolute;
-              top: 0;
-              left: 0;
+                position: absolute;
+                top: 0;
+                left: 0;
               width: 100%;
               height: 100%;
               background-size: cover;
@@ -5835,7 +5835,7 @@
             
             .image-overlay {
               position: absolute;
-              bottom: 0;
+                bottom: 0;
               left: 0;
               right: 0;
               height: 50%;
@@ -5847,7 +5847,7 @@
               bottom: 15px;
               left: 50%;
               transform: translateX(-50%);
-              display: flex;
+                    display: flex;
               gap: 8px;
             }
             
@@ -5888,19 +5888,19 @@
             .memory-person-avatar {
               width: clamp(70px, 12vw, 100px);
               height: clamp(70px, 12vw, 100px);
-              border-radius: 50%;
+                                border-radius: 50%;
               border: 3px solid rgba(255, 255, 255, 0.9);
-              overflow: hidden;
+                                overflow: hidden;
               position: relative;
               background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
+                            display: flex;
+                            flex-direction: column;
+                              align-items: center;
+                              justify-content: center;
               font-size: clamp(12px, 2.5vw, 16px);
-              font-weight: 600;
+                              font-weight: 600;
               color: white;
-              transition: all 0.3s ease;
+                    transition: all 0.3s ease;
               cursor: pointer;
               text-align: center;
               box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
@@ -5926,14 +5926,14 @@
             .memory-story p {
               color: white;
               font-size: clamp(16px, 3vw, 18px);
-              line-height: 1.6;
+                line-height: 1.6;
               margin: 0 0 clamp(15px, 3vw, 20px) 0;
               text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
             }
             
             .memory-tags {
-              display: flex;
-              align-items: center;
+                      display: flex;
+                      align-items: center;
               gap: clamp(10px, 2vw, 15px);
               margin-bottom: clamp(10px, 2vw, 15px);
               flex-wrap: wrap;
@@ -5945,7 +5945,7 @@
             }
             
             .emotions-list {
-              display: flex;
+                    display: flex;
               gap: clamp(6px, 1.5vw, 10px);
               flex-wrap: wrap;
             }
@@ -5956,7 +5956,7 @@
               padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px);
               border-radius: clamp(12px, 2vw, 16px);
               font-size: clamp(12px, 2.5vw, 14px);
-              font-weight: 500;
+                      font-weight: 500;
               border: 1px solid rgba(255, 255, 255, 0.2);
               backdrop-filter: blur(10px);
             }
@@ -5967,7 +5967,7 @@
             }
             
             .media-grid {
-              display: grid;
+                    display: grid;
               grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 25vw, 200px), 1fr));
               gap: clamp(10px, 2vw, 15px);
             }
@@ -5975,9 +5975,9 @@
             .media-item {
               aspect-ratio: 1;
               border-radius: clamp(8px, 2vw, 12px);
-              overflow: hidden;
+                          overflow: hidden;
               background: rgba(255, 255, 255, 0.1);
-              position: relative;
+                          position: relative;
               transition: transform 0.3s ease;
             }
             
@@ -5986,13 +5986,13 @@
             }
             
             .media-item img, .media-item video {
-              width: 100%;
-              height: 100%;
+                              width: 100%;
+                              height: 100%;
               object-fit: cover;
             }
             
             .video-play-overlay {
-              position: absolute;
+                                position: absolute;
               top: 50%;
               left: 50%;
               transform: translate(-50%, -50%);
@@ -6019,9 +6019,9 @@
               font-weight: 600;
               cursor: pointer;
               transition: all 0.3s ease;
-              display: flex;
-              align-items: center;
-              justify-content: center;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
               gap: clamp(6px, 1.5vw, 8px);
               text-decoration: none;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -6042,7 +6042,7 @@
               background: rgba(255, 255, 255, 0.15);
               color: white;
               border: 2px solid rgba(255, 255, 255, 0.3);
-              backdrop-filter: blur(10px);
+                                  backdrop-filter: blur(10px);
             }
             
             .action-btn.secondary:hover {
@@ -6063,8 +6063,8 @@
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
               </button>
-            </div>
-            
+                              </div>
+
             <!-- HERO CAROUSEL -->
             ${hasImages ? `
               <div class="hero-carousel">
@@ -6075,9 +6075,9 @@
                     .map((image, index) => `
                       <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
                         <div class="image-overlay"></div>
-                      </div>
+                            </div>
                     `).join('')}
-                </div>
+                            </div>
                 ${(memory.attachments || memory.mediaItems || []).filter(att => att.type?.startsWith('image/')).length > 1 ? `
                   <div class="carousel-dots">
                     ${(memory.attachments || memory.mediaItems || [])
@@ -6086,7 +6086,7 @@
                       .map((_, index) => `
                         <div class="dot ${index === 0 ? 'active' : ''}" onclick="window.emmaDashboard.switchDashboardCarouselImage(${index})"></div>
                       `).join('')}
-                  </div>
+                        </div>
                 ` : ''}
               </div>
             ` : ''}
@@ -6097,16 +6097,16 @@
                 <h3 class="section-title">👥 People in this memory</h3>
                 <div class="people-grid" id="people-grid-${memory.id}">
                   <!-- People avatars will be loaded here -->
+                  </div>
                 </div>
-              </div>
-            ` : ''}
-            
+              ` : ''}
+
             <!-- CONTENT -->
             <div class="content-section">
               <div class="memory-story">
                 <p>${memory.content || memory.description || memory.details || 'This precious memory is stored in your vault...'}</p>
-              </div>
-              
+            </div>
+
               ${memory.metadata?.emotions?.length > 0 ? `
                 <div class="memory-tags">
                   <span class="tag-label">💭</span>
@@ -6171,7 +6171,7 @@
 
         document.body.appendChild(dialog);
         this.currentMemoryDialog = dialog;
-        
+
         // Animate in
         setTimeout(() => {
           dialog.style.opacity = '1';
@@ -6299,14 +6299,47 @@
       }
 
       /**
-       * ✏️ Edit memory from dashboard dialog
+       * ✏️ Edit memory from dashboard dialog - DIRECT APPROACH
        */
       editDashboardMemory(memoryId) {
-        // Close current dialog
-        this.closeMemoryDialog();
+        // Get the memory from vault
+        const vault = window.emmaWebVault || window.emmaAPI?.vault;
+        if (!vault || !vault.memories) {
+          console.error('❌ No vault available for editing');
+          return;
+        }
         
-        // Navigate to Emma Chat with memory ID for editing (triggers auto-open edit dialog)
-        window.location.href = `index.html?mode=chat&memory=${memoryId}`;
+        const memory = vault.memories.find(m => m.id === memoryId);
+        if (!memory) {
+          console.error('❌ Memory not found:', memoryId);
+          return;
+        }
+        
+        // Close current dialog
+            this.closeMemoryDialog();
+        
+        // Create Emma Chat Experience if needed
+        if (!window.chatExperience) {
+          if (typeof EmmaChatExperience !== 'undefined') {
+            console.log('🚀 Creating Emma Chat Experience for editing...');
+            new EmmaChatExperience();
+          } else {
+            console.error('❌ EmmaChatExperience not available');
+            return;
+          }
+        }
+        
+        // Wait for chat experience and open edit dialog
+        const openEdit = () => {
+          if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+            console.log('✅ Opening enhanced edit dialog for memory:', memoryId);
+            window.chatExperience.editMemoryDetails(memoryId);
+          } else {
+            setTimeout(openEdit, 100);
+          }
+        };
+        
+        setTimeout(openEdit, 100);
       }
 
       /**
@@ -6496,76 +6529,76 @@
       // Small delay to ensure all elements are definitely available
       setTimeout(() => {
         console.log('🔍 DEBUG: Creating EmmaDashboard instance...');
-        window.emmaDashboard = new EmmaDashboard();
-        
+      window.emmaDashboard = new EmmaDashboard();
+
         // Setup vault modal event listeners AFTER dashboard is created
-        const dashboard = window.emmaDashboard;
+      const dashboard = window.emmaDashboard;
 
-        // Close button
-        document.getElementById('close-vault-modal').addEventListener('click', () => {
+      // Close button
+      document.getElementById('close-vault-modal').addEventListener('click', () => {
+        dashboard.closeVaultModal();
+      });
+
+      // Click outside to close
+      document.getElementById('vault-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'vault-modal') {
           dashboard.closeVaultModal();
-        });
+        }
+      });
 
-        // Click outside to close
-        document.getElementById('vault-modal').addEventListener('click', (e) => {
-          if (e.target.id === 'vault-modal') {
+      // Unlock form handlers
+      document.getElementById('unlock-btn').addEventListener('click', () => {
+        dashboard.unlockVault();
+      });
+
+      document.getElementById('cancel-unlock-btn').addEventListener('click', () => {
+        dashboard.hideUnlockForm();
+      });
+
+      // Create vault button handler
+      document.getElementById('create-vault-btn').addEventListener('click', async () => {
+
+        try {
+          if (window.emmaAPI && window.emmaAPI.vault) {
+            const st = await window.emmaAPI.vault.status();
+            if (st && st.initialized) {
+
+              dashboard.showUnlockForm();
+              return;
+            }
+          }
+        } catch {}
+        // Load welcome page for vault setup
+        window.location.assign('pages/welcome.html');
+      });
+
+      // Password input enter key
+      document.getElementById('vault-password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          dashboard.unlockVault();
+        }
+      });
+
+      // QR Code handlers
+      document.getElementById('generate-vault-qr-dashboard').addEventListener('click', () => {
+        dashboard.showToast('📱 Vault QR generation coming soon!', 'info');
+      });
+
+      document.getElementById('open-qr-scanner-dashboard').addEventListener('click', () => {
+        dashboard.showToast('📷 QR scanner coming soon!', 'info');
+      });
+
+      // Escape key to close vault modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const modal = document.getElementById('vault-modal');
+          if (modal.classList.contains('show')) {
             dashboard.closeVaultModal();
           }
-        });
+        }
+      });
 
-        // Unlock form handlers
-        document.getElementById('unlock-btn').addEventListener('click', () => {
-          dashboard.unlockVault();
-        });
-
-        document.getElementById('cancel-unlock-btn').addEventListener('click', () => {
-          dashboard.hideUnlockForm();
-        });
-
-        // Create vault button handler
-        document.getElementById('create-vault-btn').addEventListener('click', async () => {
-
-          try {
-            if (window.emmaAPI && window.emmaAPI.vault) {
-              const st = await window.emmaAPI.vault.status();
-              if (st && st.initialized) {
-
-                dashboard.showUnlockForm();
-                return;
-              }
-            }
-          } catch {}
-          // Load welcome page for vault setup
-          window.location.assign('pages/welcome.html');
-        });
-
-        // Password input enter key
-        document.getElementById('vault-password').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            dashboard.unlockVault();
-          }
-        });
-
-        // QR Code handlers
-        document.getElementById('generate-vault-qr-dashboard').addEventListener('click', () => {
-          dashboard.showToast('📱 Vault QR generation coming soon!', 'info');
-        });
-
-        document.getElementById('open-qr-scanner-dashboard').addEventListener('click', () => {
-          dashboard.showToast('📷 QR scanner coming soon!', 'info');
-        });
-
-        // Escape key to close vault modal
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') {
-            const modal = document.getElementById('vault-modal');
-            if (modal.classList.contains('show')) {
-              dashboard.closeVaultModal();
-            }
-          }
-        });
-
-        // Vault status is managed by WebVaultStatus - don't override here!
+      // Vault status is managed by WebVaultStatus - don't override here!
 
         // PERSISTENCE: Check if constellation was active before refresh
         const constellationWasActive = localStorage.getItem('emmaConstellationActive') === 'true';
@@ -6578,8 +6611,8 @@
           }, 1000); // Wait for dashboard to fully initialize
         }
 
-        // CRITICAL: Initialize vault objects AFTER all scripts load
-        setTimeout(() => {
+      // CRITICAL: Initialize vault objects AFTER all scripts load
+      setTimeout(() => {
           console.log('🚨🔧 DASHBOARD: setTimeout running - starting vault initialization...');
           console.log('🚨🔧 DASHBOARD: EmmaWebVault class available:', typeof EmmaWebVault);
           console.log('🚨🔧 DASHBOARD: window.emmaWebVault exists:', !!window.emmaWebVault);
@@ -6637,9 +6670,9 @@
 
           // Check what's available        
           // Extension mode - Set up extension-aware vault status
-          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
+        if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
 
-            // Set dashboard as ready - extension handles all vault operations
+          // Set dashboard as ready - extension handles all vault operations
           const statusIcon = document.getElementById('status-icon');
           const statusTitle = document.getElementById('status-title');
           const statusDescription = document.getElementById('status-description');
