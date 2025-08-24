@@ -2604,8 +2604,10 @@ function editConstellationMemory(memoryId) {
   // Close the dialog first
   document.querySelector('.memory-preview-dialog.constellation')?.remove();
   
-  // Navigate to Emma Chat (assuming it's in the pages directory)
-  window.location.href = `../index.html?mode=chat&memory=${memoryId}`;
+  // Navigate to Emma Chat with proper path (detects if we're in pages/ subdirectory)
+  const currentPath = window.location.pathname;
+  const chatPath = currentPath.includes('/pages/') ? '../index.html' : 'index.html';
+  window.location.href = `${chatPath}?mode=chat&memory=${memoryId}`;
 }
 
 function shareConstellationMemory(memoryId) {

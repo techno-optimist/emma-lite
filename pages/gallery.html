@@ -756,6 +756,34 @@
           } else {
             console.log('✅ GALLERY: Vault instance already exists');
           }
+
+          // 🎯 CHECK URL PARAMETERS FOR DIRECT MEMORY EDITING
+          const urlParams = new URLSearchParams(window.location.search);
+          const memoryIdToEdit = urlParams.get('memory');
+          const mode = urlParams.get('mode');
+          
+          if (memoryIdToEdit && mode === 'chat') {
+            console.log('🎯 GALLERY URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
+            
+            // Wait for Emma Chat Experience to load, then open edit dialog
+            setTimeout(() => {
+              if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+                console.log('✅ GALLERY: Opening enhanced edit dialog for memory:', memoryIdToEdit);
+                window.chatExperience.editMemoryDetails(memoryIdToEdit);
+              } else {
+                console.warn('⚠️ GALLERY: Emma Chat Experience not ready yet, retrying...');
+                // Retry after another second
+                setTimeout(() => {
+                  if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+                    console.log('✅ GALLERY: Opening enhanced edit dialog for memory (retry):', memoryIdToEdit);
+                    window.chatExperience.editMemoryDetails(memoryIdToEdit);
+                  } else {
+                    console.error('❌ GALLERY: Could not open edit dialog - Emma Chat Experience not available');
+                  }
+                }, 1000);
+              }
+            }, 1500); // Wait for all systems to load
+          }
           
           console.log('🔍 GALLERY: emmaWebVault exists:', !!window.emmaWebVault);
           console.log('🔍 GALLERY: webVaultStatus exists:', !!window.webVaultStatus);
