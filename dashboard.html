@@ -5654,590 +5654,712 @@
         return cleaned.length > 0 ? cleaned.substring(0, 50) : 'Untitled Memory';
       }
 
-      // Open elegant memory dialog with media slideshow
+      // 📱💻🖥️ RESPONSIVE MEMORY DIALOG - Works on ALL screen sizes!
       openMemoryDialog(memory) {
+        console.log('🎯 DASHBOARD: Opening responsive memory dialog for:', memory.title || memory.id);
+        
+        // 📱💻🖥️ USE THE NEW RESPONSIVE MEMORY DIALOG!
+        this.showResponsiveMemoryDialog(memory);
+      }
 
-        // Create memory dialog modal
-        const memoryDialog = document.createElement('div');
-        memoryDialog.className = 'memory-dialog-overlay';
-
-        // FIXED: Better date handling for extension data
-        const memoryDate = memory.created || memory.date || memory.timestamp;
-        const formattedDate = memoryDate ? new Date(memoryDate).toLocaleDateString('en-US', {
-          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        }) : 'Unknown date';
-
-        // FIXED: Better title extraction
-        const memoryTitle = memory.metadata?.title || memory.title || memory.subject || memory.summary || 'Untitled Memory';
-
-        // FIXED: Better content extraction
-        const memoryContent = memory.content || memory.description || memory.details || 'This precious memory is stored in your vault...';
-
-        // FIXED: Handle attachments from extension
-        const mediaItems = memory.attachments || memory.mediaItems || [];
-
-        // FIXED: Better thumbnail handling
-        const thumbnail = memory.thumbnail ||
-                          (mediaItems.length > 0 && mediaItems[0].url ? mediaItems[0].url : null) ||
-                          this.generateMemoryThumbnail(memory.category || memory.theme || 'special');
-
-        // Style the overlay
-        memoryDialog.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10000;
+      /**
+       * 📱💻🖥️ RESPONSIVE MEMORY DIALOG - Works on ALL screen sizes!
+       */
+      showResponsiveMemoryDialog(memory) {
+        // Prepare memory data  
+        const hasImages = memory.attachments?.some(att => att.type?.startsWith('image/')) || 
+                         memory.mediaItems?.some(item => item.type?.startsWith('image/'));
+        const hasVideo = memory.attachments?.some(att => att.type?.startsWith('video/')) || 
+                        memory.mediaItems?.some(item => item.type?.startsWith('video/'));
+        const peopleList = memory.metadata?.people || memory.people || [];
+        
+        // Create fully responsive dialog for ALL screen sizes
+        const dialog = document.createElement('div');
+        dialog.className = 'memory-preview-dialog responsive dashboard';
+        dialog.style.cssText = `
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          z-index: 10000 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          animation: dialogFadeIn 0.3s ease forwards;
+          background: rgba(0, 0, 0, 0.9) !important;
+          backdrop-filter: blur(20px) !important;
+          padding: 0;
         `;
 
-        memoryDialog.innerHTML = `
-          <div class="memory-dialog" style="
-            background: linear-gradient(135deg, rgba(15, 15, 25, 0.98), rgba(25, 25, 35, 0.98));
-            backdrop-filter: blur(30px);
-            border: 1px solid rgba(134, 88, 255, 0.4);
-            border-radius: 24px;
-            max-width: 700px;
-            width: 90%;
-            max-height: 85vh;
-            overflow: hidden;
-            box-shadow:
-              0 32px 80px rgba(0, 0, 0, 0.6),
-              0 0 0 1px rgba(134, 88, 255, 0.2),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transform: scale(0.9);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-          ">
-            <!-- Emma Branded Header -->
-            <div class="memory-dialog-header" style="
-              padding: 32px 40px 24px 40px;
-              background: linear-gradient(135deg, rgba(134, 88, 255, 0.15), rgba(240, 147, 251, 0.15));
-              border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-              position: relative;
-              overflow: hidden;
-            ">
-              <!-- Clean Background -->
-              <div style="
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(134, 88, 255, 0.02);
-                opacity: 0.5;
-              "></div>
-
-              <div style="position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start;">
-                <!-- Left: Title and Info -->
-                <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                  <div style="
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, rgba(134, 88, 255, 0.3), rgba(240, 147, 251, 0.3));
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 20px;
-                    border: 2px solid rgba(134, 88, 255, 0.5);
-                    box-shadow: 0 8px 32px rgba(134, 88, 255, 0.3);
-                  ">💝</div>
-                  <div>
-                    <h2 style="color: white; margin: 0; font-size: 24px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">
-                      ${this.sanitizeTitle(memoryTitle)}
-                    </h2>
-                    <div style="color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-top: 4px;">
-                      <span style="
-                        background: rgba(134, 88, 255, 0.2);
-                        padding: 4px 12px;
-                        border-radius: 16px;
-                        font-size: 12px;
-                        border: 1px solid rgba(134, 88, 255, 0.3);
-                      ">📅 ${formattedDate}</span>
-                      ${memory.category ? ` <span style="
-                        background: rgba(240, 147, 251, 0.2);
-                        padding: 4px 12px;
-                        border-radius: 16px;
-                        font-size: 12px;
-                        border: 1px solid rgba(240, 147, 251, 0.3);
-                        margin-left: 8px;
-                        text-transform: capitalize;
-                      ">✨ ${memory.category}</span>` : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Right: People Avatars + Close Button -->
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                  ${(() => {
-                    const people = memory.metadata?.people || memory.people || [];
-                    if (!people || people.length === 0) return '';
-
-                    // Get people data from vault to resolve IDs to names/avatars
-                    let resolvedPeople = [];
-                    try {
-                      // Try to get people from current vault data
-                      if (window.emmaWebVault && window.emmaWebVault.vaultData) {
-                        const vaultPeople = window.emmaWebVault.vaultData.content?.people || {};
-                        const vaultMedia = window.emmaWebVault.vaultData.content?.media || {};
-
-                        resolvedPeople = people.slice(0, 4).map(personId => { // Limit to 4 people in header
-                          const person = vaultPeople[personId];
-                          if (person) {
-                            // Resolve avatar from media if available
-                            let avatarUrl = person.avatarUrl;
-                            if (!avatarUrl && person.avatarId && vaultMedia[person.avatarId]) {
-                              const mediaItem = vaultMedia[person.avatarId];
-                              avatarUrl = mediaItem.data.startsWith('data:')
-                                ? mediaItem.data
-                                : `data:${mediaItem.type};base64,${mediaItem.data}`;
-                            }
-
-                            return {
-                              id: personId,
-                              name: person.name || 'Unknown Person',
-                              firstName: (person.name || 'Unknown').split(' ')[0],
-                              avatarUrl: avatarUrl
-                            };
-                          }
-                          return null;
-                        }).filter(Boolean);
-                      }
-                    } catch (error) {
-                      console.warn('⚠️ Failed to resolve people data for header:', error);
-                    }
-
-                    if (resolvedPeople.length === 0) return '';
-
-                    return `
-                      <div style="display: flex; align-items: center; gap: 8px; margin-right: 8px;">
-                        ${resolvedPeople.map(person => {
-                          const initials = person.firstName.charAt(0).toUpperCase();
-
-                          return `
-                            <div style="
-                              display: flex;
-                              flex-direction: column;
-                              align-items: center;
-                              gap: 4px;
-                              cursor: pointer;
-                              transition: all 0.3s ease;
-                            " onclick="dashboard.openPersonDialog('${person.id}')" onmouseover="
-                              this.style.transform='translateY(-2px)';
-                            " onmouseout="
-                              this.style.transform='translateY(0)';
-                            ">
-                              <div style="
-                                width: 36px;
-                                height: 36px;
-                                border-radius: 50%;
-                                background: ${person.avatarUrl ? `url('${person.avatarUrl}')` : 'linear-gradient(135deg, rgba(240, 147, 251, 0.5), rgba(134, 88, 255, 0.5))'};
-                                background-size: cover;
-                                background-position: center;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                font-size: 14px;
-                                font-weight: 700;
-                                color: white;
-                                border: 2px solid rgba(255, 255, 255, 0.3);
-                                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-                                box-shadow: 0 4px 16px rgba(240, 147, 251, 0.3);
-                              ">${person.avatarUrl ? '' : initials}</div>
-                              <div style="
-                                color: rgba(255, 255, 255, 0.9);
-                                font-size: 10px;
-                                font-weight: 600;
-                                text-align: center;
-                                max-width: 40px;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                                white-space: nowrap;
-                              ">${person.firstName}</div>
-                            </div>
-                          `;
-                        }).join('')}
-                        ${people.length > 4 ? `
-                          <div style="
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            gap: 4px;
-                          ">
-                            <div style="
-                              width: 36px;
-                              height: 36px;
-                              border-radius: 50%;
-                              background: rgba(134, 88, 255, 0.2);
-                              border: 2px dashed rgba(134, 88, 255, 0.5);
-                              display: flex;
-                              align-items: center;
-                              justify-content: center;
-                              font-size: 12px;
-                              font-weight: 700;
-                              color: rgba(255, 255, 255, 0.8);
-                            ">+${people.length - 4}</div>
-                            <div style="
-                              color: rgba(255, 255, 255, 0.7);
-                              font-size: 9px;
-                              font-weight: 600;
-                            ">more</div>
-                          </div>
-                        ` : ''}
-                      </div>
-                    `;
-                  })()}
-
-                  <button onclick="dashboard.closeMemoryDialog()" style="
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    color: rgba(255, 255, 255, 0.8);
-                    font-size: 18px;
-                    cursor: pointer;
-                    padding: 10px;
-                    border-radius: 50%;
-                    width: 40px;
-                    height: 40px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: all 0.3s ease;
-                    backdrop-filter: blur(10px);
-                  " onmouseover="
-                    this.style.background='rgba(255, 255, 255, 0.15)';
-                    this.style.color='white';
-                    this.style.transform='scale(1.1)';
-                  " onmouseout="
-                    this.style.background='rgba(255, 255, 255, 0.1)';
-                    this.style.color='rgba(255, 255, 255, 0.8)';
-                    this.style.transform='scale(1)';
-                  ">✕</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Content Area -->
-            <div class="memory-content" style="
-              padding: 32px 40px;
+        dialog.innerHTML = `
+          <style>
+            /* 🎯 RESPONSIVE DIALOG STYLES FOR ALL SCREEN SIZES */
+            @keyframes dialogFadeIn {
+              from { opacity: 0; transform: scale(0.95); }
+              to { opacity: 1; transform: scale(1); }
+            }
+            
+            .responsive-memory-container {
+              background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+              border-radius: clamp(16px, 3vw, 24px);
+              max-width: 95vw;
+              max-height: 95vh;
+              width: 100%;
               overflow-y: auto;
-              max-height: calc(85vh - 140px);
-            ">
-
-              <!-- Single Content Box - Fit to Content -->
-              <div class="memory-description" style="
-                color: rgba(255, 255, 255, 0.95);
-                line-height: 1.6;
-                margin-bottom: 24px;
-                font-size: 15px;
-                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-                padding: 20px;
-                border-radius: 12px;
-                border-left: 4px solid rgba(134, 88, 255, 0.6);
-                backdrop-filter: blur(10px);
-                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-                display: inline-block;
-                min-width: 100%;
-                box-sizing: border-box;
-              ">
-                ${memoryContent}
+              position: relative;
+              animation: dialogFadeIn 0.3s ease forwards;
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            }
+            
+            /* 📱 MOBILE FIRST (320px+) */
+            .responsive-memory-container {
+              margin: 10px;
+              padding: 20px;
+            }
+            
+            /* 📱 TABLET (768px+) */
+            @media (min-width: 768px) {
+              .responsive-memory-container {
+                margin: 20px;
+                padding: 30px;
+                max-width: 700px;
+              }
+            }
+            
+            /* 💻 LAPTOP (1024px+) */
+            @media (min-width: 1024px) {
+              .responsive-memory-container {
+                margin: 40px;
+                padding: 40px;
+                max-width: 900px;
+              }
+            }
+            
+            /* 🖥️ DESKTOP (1440px+) */
+            @media (min-width: 1440px) {
+              .responsive-memory-container {
+                max-width: 1100px;
+                padding: 50px;
+              }
+            }
+            
+            /* HEADER STYLES */
+            .memory-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              margin-bottom: clamp(20px, 4vw, 30px);
+              flex-wrap: wrap;
+              gap: 15px;
+            }
+            
+            .header-info h2 {
+              margin: 0;
+              color: white;
+              font-size: clamp(20px, 4vw, 28px);
+              font-weight: 700;
+              line-height: 1.2;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            
+            .memory-date {
+              color: rgba(255, 255, 255, 0.8);
+              font-size: clamp(14px, 2.5vw, 16px);
+              margin-top: 5px;
+            }
+            
+            .close-btn {
+              background: rgba(255, 255, 255, 0.15);
+              border: none;
+              color: white;
+              width: clamp(40px, 6vw, 48px);
+              height: clamp(40px, 6vw, 48px);
+              border-radius: 50%;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: all 0.3s ease;
+              backdrop-filter: blur(10px);
+              flex-shrink: 0;
+            }
+            
+            .close-btn:hover {
+              background: rgba(255, 255, 255, 0.25);
+              transform: scale(1.1);
+            }
+            
+            /* HERO CAROUSEL STYLES */
+            .hero-carousel {
+              margin-bottom: clamp(25px, 5vw, 35px);
+              border-radius: clamp(12px, 2.5vw, 16px);
+              overflow: hidden;
+              position: relative;
+              aspect-ratio: 16/9;
+              background: rgba(0, 0, 0, 0.3);
+            }
+            
+            .carousel-container {
+              position: relative;
+              width: 100%;
+              height: 100%;
+            }
+            
+            .hero-image {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-size: cover;
+              background-position: center;
+              opacity: 0;
+              transition: opacity 0.5s ease;
+            }
+            
+            .hero-image.active {
+              opacity: 1;
+            }
+            
+            .image-overlay {
+              position: absolute;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              height: 50%;
+              background: linear-gradient(transparent, rgba(0, 0, 0, 0.4));
+            }
+            
+            .carousel-dots {
+              position: absolute;
+              bottom: 15px;
+              left: 50%;
+              transform: translateX(-50%);
+              display: flex;
+              gap: 8px;
+            }
+            
+            .dot {
+              width: 10px;
+              height: 10px;
+              border-radius: 50%;
+              background: rgba(255, 255, 255, 0.5);
+              cursor: pointer;
+              transition: all 0.3s ease;
+            }
+            
+            .dot.active {
+              background: white;
+              transform: scale(1.2);
+            }
+            
+            /* PEOPLE SECTION */
+            .people-section {
+              margin-bottom: clamp(25px, 5vw, 35px);
+            }
+            
+            .section-title {
+              color: white;
+              font-size: clamp(16px, 3vw, 20px);
+              font-weight: 600;
+              margin: 0 0 clamp(15px, 3vw, 20px) 0;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            
+            .people-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(clamp(80px, 15vw, 120px), 1fr));
+              gap: clamp(12px, 3vw, 20px);
+              justify-items: center;
+            }
+            
+            .memory-person-avatar {
+              width: clamp(70px, 12vw, 100px);
+              height: clamp(70px, 12vw, 100px);
+              border-radius: 50%;
+              border: 3px solid rgba(255, 255, 255, 0.9);
+              overflow: hidden;
+              position: relative;
+              background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              font-size: clamp(12px, 2.5vw, 16px);
+              font-weight: 600;
+              color: white;
+              transition: all 0.3s ease;
+              cursor: pointer;
+              text-align: center;
+              box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            }
+            
+            .memory-person-avatar:hover {
+              transform: scale(1.05);
+              border-color: white;
+              box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+            }
+            
+            .memory-person-avatar img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+            
+            /* CONTENT SECTION */
+            .content-section {
+              margin-bottom: clamp(25px, 5vw, 35px);
+            }
+            
+            .memory-story p {
+              color: white;
+              font-size: clamp(16px, 3vw, 18px);
+              line-height: 1.6;
+              margin: 0 0 clamp(15px, 3vw, 20px) 0;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            }
+            
+            .memory-tags {
+              display: flex;
+              align-items: center;
+              gap: clamp(10px, 2vw, 15px);
+              margin-bottom: clamp(10px, 2vw, 15px);
+              flex-wrap: wrap;
+            }
+            
+            .tag-label {
+              font-size: clamp(16px, 3vw, 18px);
+              flex-shrink: 0;
+            }
+            
+            .emotions-list {
+              display: flex;
+              gap: clamp(6px, 1.5vw, 10px);
+              flex-wrap: wrap;
+            }
+            
+            .emotion-tag, .location-tag {
+              background: rgba(255, 255, 255, 0.15);
+              color: white;
+              padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px);
+              border-radius: clamp(12px, 2vw, 16px);
+              font-size: clamp(12px, 2.5vw, 14px);
+              font-weight: 500;
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              backdrop-filter: blur(10px);
+            }
+            
+            /* MEDIA SECTION */
+            .media-section {
+              margin-bottom: clamp(25px, 5vw, 35px);
+            }
+            
+            .media-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 25vw, 200px), 1fr));
+              gap: clamp(10px, 2vw, 15px);
+            }
+            
+            .media-item {
+              aspect-ratio: 1;
+              border-radius: clamp(8px, 2vw, 12px);
+              overflow: hidden;
+              background: rgba(255, 255, 255, 0.1);
+              position: relative;
+              transition: transform 0.3s ease;
+            }
+            
+            .media-item:hover {
+              transform: scale(1.05);
+            }
+            
+            .media-item img, .media-item video {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+            
+            .video-play-overlay {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              font-size: clamp(20px, 4vw, 30px);
+              color: white;
+              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            
+            /* ACTION BUTTONS */
+            .action-buttons {
+              display: flex;
+              gap: clamp(12px, 3vw, 20px);
+              margin-top: clamp(30px, 5vw, 40px);
+              flex-wrap: wrap;
+            }
+            
+            .action-btn {
+              flex: 1;
+              min-width: clamp(120px, 25vw, 150px);
+              padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 30px);
+              border: none;
+              border-radius: clamp(10px, 2vw, 14px);
+              font-size: clamp(14px, 2.5vw, 16px);
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: clamp(6px, 1.5vw, 8px);
+              text-decoration: none;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            
+            .action-btn.primary {
+              background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+              color: #8b5cf6;
+              border: 2px solid rgba(255, 255, 255, 0.3);
+            }
+            
+            .action-btn.primary:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+            }
+            
+            .action-btn.secondary {
+              background: rgba(255, 255, 255, 0.15);
+              color: white;
+              border: 2px solid rgba(255, 255, 255, 0.3);
+              backdrop-filter: blur(10px);
+            }
+            
+            .action-btn.secondary:hover {
+              background: rgba(255, 255, 255, 0.25);
+              transform: translateY(-2px);
+            }
+          </style>
+          
+          <div class="responsive-memory-container">
+            <!-- HEADER -->
+            <div class="memory-header">
+              <div class="header-info">
+                <h2>${memory.metadata?.title || memory.title || memory.subject || 'Beautiful Memory'}</h2>
+                <div class="memory-date">${this.formatMemoryDate(memory.created || memory.date || memory.timestamp)}</div>
               </div>
-
-              ${(() => {
-                const tags = memory.metadata?.tags || memory.tags || [];
-                return tags && tags.length > 0 ? `
-                  <div class="memory-tags" style="margin-bottom: 32px;">
-                    <div style="
-                      color: rgba(255, 255, 255, 0.7);
-                      font-size: 15px;
-                      margin-bottom: 16px;
-                      font-weight: 600;
-                      display: flex;
-                      align-items: center;
-                      gap: 8px;
-                    ">
-                      <span style="font-size: 18px;">🏷️</span>
-                      Tags
-                    </div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                      ${tags.map(tag => `
-                        <span style="
-                          background: linear-gradient(135deg, rgba(134, 88, 255, 0.25), rgba(240, 147, 251, 0.25));
-                          color: rgba(255, 255, 255, 0.95);
-                          padding: 8px 16px;
-                          border-radius: 20px;
-                          font-size: 13px;
-                          font-weight: 500;
-                          border: 1px solid rgba(134, 88, 255, 0.4);
-                          backdrop-filter: blur(10px);
-                          box-shadow: 0 4px 16px rgba(134, 88, 255, 0.2);
-                        ">#${tag}</span>
+              <button class="close-btn" onclick="dashboard.closeMemoryDialog()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+            
+            <!-- HERO CAROUSEL -->
+            ${hasImages ? `
+              <div class="hero-carousel">
+                <div class="carousel-container">
+                  ${(memory.attachments || memory.mediaItems || [])
+                    .filter(att => att.type?.startsWith('image/'))
+                    .slice(0, 5)
+                    .map((image, index) => `
+                      <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                        <div class="image-overlay"></div>
+                      </div>
+                    `).join('')}
+                </div>
+                ${(memory.attachments || memory.mediaItems || []).filter(att => att.type?.startsWith('image/')).length > 1 ? `
+                  <div class="carousel-dots">
+                    ${(memory.attachments || memory.mediaItems || [])
+                      .filter(att => att.type?.startsWith('image/'))
+                      .slice(0, 5)
+                      .map((_, index) => `
+                        <div class="dot ${index === 0 ? 'active' : ''}" onclick="dashboard.switchDashboardCarouselImage(${index})"></div>
                       `).join('')}
-                    </div>
                   </div>
-                ` : '';
-              })()}
-
-              ${mediaItems.length > 0 ? `
-                <div class="memory-media" style="margin-bottom: 24px;">
-                  <div style="
-                    color: rgba(255, 255, 255, 0.7);
-                    font-size: 15px;
-                    margin-bottom: 20px;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                  ">
-                    <span style="font-size: 18px;">🎬</span>
-                    Media Gallery
-                    <span style="
-                      background: rgba(134, 88, 255, 0.2);
-                      color: rgba(255, 255, 255, 0.8);
-                      padding: 4px 10px;
-                      border-radius: 12px;
-                      font-size: 12px;
-                      font-weight: 500;
-                    ">${mediaItems.length} ${mediaItems.length === 1 ? 'item' : 'items'}</span>
-                  </div>
-
-                  <!-- Emma Branded Media Grid - 2 Columns -->
-                  <div style="
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 24px;
-                    padding: 24px;
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
-                    border-radius: 20px;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    backdrop-filter: blur(15px);
-                    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-                  ">
-                    ${mediaItems.map((item, index) => {
-                      const hasImage = item.dataUrl || item.url;
-                      const imageUrl = item.dataUrl || item.url;
-                      const isImage = (item.type || '').startsWith('image') || hasImage;
-                      const fileName = item.name || `Image ${index + 1}`;
-
-                      return `
-                        <div style="
-                          background: linear-gradient(135deg, rgba(134, 88, 255, 0.12), rgba(240, 147, 251, 0.08));
-                          border: 1px solid rgba(134, 88, 255, 0.25);
-                          border-radius: 20px;
-                          padding: 0;
-                          cursor: pointer;
-                          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                          overflow: hidden;
-                          backdrop-filter: blur(20px);
-                          position: relative;
-                          aspect-ratio: 1;
-                          box-shadow: 0 8px 32px rgba(134, 88, 255, 0.15);
-                        "
-                        onmouseover="
-                          this.style.transform='translateY(-6px) scale(1.05)';
-                          this.style.boxShadow='0 24px 64px rgba(134, 88, 255, 0.4), 0 0 0 2px rgba(134, 88, 255, 0.4)';
-                          this.style.borderColor='rgba(134, 88, 255, 0.6)';
-                        "
-                        onmouseout="
-                          this.style.transform='translateY(0) scale(1)';
-                          this.style.boxShadow='0 8px 32px rgba(134, 88, 255, 0.15)';
-                          this.style.borderColor='rgba(134, 88, 255, 0.25)';
-                        "
-                        onclick="window.open('${imageUrl}', '_blank')">
-
-                          ${hasImage ? `
-                            <!-- Image Container -->
-                            <div style="
-                              width: 100%;
-                              height: 100%;
-                              background-image: url('${imageUrl}');
-                              background-size: cover;
-                              background-position: center;
-                              position: relative;
-                              border-radius: 20px;
-                            ">
-                              <!-- Hover Overlay -->
-                              <div style="
-                                position: absolute;
-                                top: 0;
-                                left: 0;
-                                right: 0;
-                                bottom: 0;
-                                background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
-                                opacity: 0;
-                                transition: opacity 0.3s ease;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                border-radius: 20px;
-                              " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-                                <div style="
-                                  background: rgba(255, 255, 255, 0.9);
-                                  color: rgba(134, 88, 255, 1);
-                                  padding: 8px 12px;
-                                  border-radius: 12px;
-                                  font-size: 12px;
-                                  font-weight: 600;
-                                  backdrop-filter: blur(10px);
-                                  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-                                ">🔍 View Full Size</div>
-                              </div>
-
-                            </div>
-                          ` : `
-                            <!-- Non-Image File -->
-                            <div style="
-                              height: 100%;
-                              display: flex;
-                              flex-direction: column;
-                              align-items: center;
-                              justify-content: center;
-                              background: linear-gradient(135deg, rgba(134, 88, 255, 0.15), rgba(240, 147, 251, 0.1));
-                              padding: 24px;
-                              border-radius: 20px;
-                            ">
-                              <div style="
-                                font-size: 48px;
-                                margin-bottom: 16px;
-                                filter: drop-shadow(0 4px 8px rgba(134, 88, 255, 0.3));
-                              ">${isImage ? '🖼️' : '📄'}</div>
-                              <div style="
-                                font-size: 13px;
-                                font-weight: 600;
-                                color: rgba(255, 255, 255, 0.9);
-                                text-align: center;
-                                line-height: 1.4;
-                                margin-bottom: 12px;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                                white-space: nowrap;
-                                width: 100%;
-                              ">${fileName}</div>
-                              <div style="
-                                font-size: 11px;
-                                color: rgba(255, 255, 255, 0.6);
-                                background: rgba(0, 0, 0, 0.3);
-                                padding: 6px 12px;
-                                border-radius: 12px;
-                                backdrop-filter: blur(5px);
-                              ">${((item.size || 0) / 1024 / 1024).toFixed(1)} MB</div>
-                            </div>
-                          `}
-                        </div>
-                      `;
-                    }).join('')}
+                ` : ''}
+              </div>
+            ` : ''}
+            
+            <!-- PEOPLE SECTION -->
+            ${peopleList.length > 0 ? `
+              <div class="people-section">
+                <h3 class="section-title">👥 People in this memory</h3>
+                <div class="people-grid" id="people-grid-${memory.id}">
+                  <!-- People avatars will be loaded here -->
+                </div>
+              </div>
+            ` : ''}
+            
+            <!-- CONTENT -->
+            <div class="content-section">
+              <div class="memory-story">
+                <p>${memory.content || memory.description || memory.details || 'This precious memory is stored in your vault...'}</p>
+              </div>
+              
+              ${memory.metadata?.emotions?.length > 0 ? `
+                <div class="memory-tags">
+                  <span class="tag-label">💭</span>
+                  <div class="emotions-list">
+                    ${memory.metadata.emotions.map(emotion => `
+                      <span class="emotion-tag">${emotion}</span>
+                    `).join('')}
                   </div>
                 </div>
               ` : ''}
 
+              ${memory.metadata?.location || memory.location ? `
+                <div class="memory-tags">
+                  <span class="tag-label">📍</span>
+                  <span class="location-tag">${memory.metadata?.location || memory.location}</span>
+                </div>
+              ` : ''}
             </div>
 
-            <!-- Emma Branded Actions -->
-            <div class="memory-actions" style="
-              padding: 24px 40px 32px 40px;
-              border-top: 1px solid rgba(255, 255, 255, 0.1);
-              background: linear-gradient(135deg, rgba(134, 88, 255, 0.05), rgba(240, 147, 251, 0.05));
-              display: flex;
-              gap: 16px;
-              justify-content: center;
-            ">
-              <button onclick="dashboard.shareMemory('${memory.id}')" style="
-                padding: 14px 28px;
-                border: 1px solid rgba(134, 88, 255, 0.4);
-                background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
-                color: rgba(255, 255, 255, 0.9);
-                border-radius: 16px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                backdrop-filter: blur(10px);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-              " onmouseover="
-                this.style.background='linear-gradient(135deg, rgba(134, 88, 255, 0.2), rgba(240, 147, 251, 0.2))';
-                this.style.transform='translateY(-2px)';
-                this.style.boxShadow='0 8px 32px rgba(134, 88, 255, 0.3)';
-              " onmouseout="
-                this.style.background='linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1))';
-                this.style.transform='translateY(0)';
-                this.style.boxShadow='none';
-              ">
-                <span>📤</span>
-                Share Memory
+            <!-- MEDIA GRID -->
+            ${(memory.attachments?.length > 1 || memory.mediaItems?.length > 1) || hasVideo ? `
+              <div class="media-section">
+                <h3 class="section-title">📷 All Media (${(memory.attachments || memory.mediaItems || []).length})</h3>
+                <div class="media-grid">
+                  ${(memory.attachments || memory.mediaItems || []).map((attachment, index) => `
+                    <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
+                      ${attachment.type?.startsWith('image/') ? `
+                        <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                      ` : attachment.type?.startsWith('video/') ? `
+                        <video src="${attachment.dataUrl || attachment.url}" muted>
+                        <div class="video-play-overlay">▶️</div>
+                        </video>
+                      ` : `
+                        <div class="file-item">
+                          <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                          <div class="file-name">${attachment.name}</div>
+                        </div>
+                      `}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+            
+            <!-- ACTION BUTTONS -->
+            <div class="action-buttons">
+              <button class="action-btn secondary" onclick="dashboard.editDashboardMemory('${memory.id}')">
+                ✏️ Edit Memory
               </button>
-
-              <button onclick="window.location.href='pages/gallery.html#${memory.id}'" style="
-                padding: 14px 28px;
-                border: none;
-                background: linear-gradient(135deg, rgba(134, 88, 255, 0.8), rgba(240, 147, 251, 0.8));
-                color: white;
-                border-radius: 16px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 700;
-                transition: all 0.3s ease;
-                backdrop-filter: blur(10px);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                box-shadow: 0 8px 32px rgba(134, 88, 255, 0.4);
-              " onmouseover="
-                this.style.transform='translateY(-3px) scale(1.02)';
-                this.style.boxShadow='0 16px 48px rgba(134, 88, 255, 0.6)';
-              " onmouseout="
-                this.style.transform='translateY(0) scale(1)';
-                this.style.boxShadow='0 8px 32px rgba(134, 88, 255, 0.4)';
-              ">
-                <span>✏️</span>
-                Edit in Gallery
+              <button class="action-btn primary" onclick="dashboard.shareDashboardMemory('${memory.id}')">
+                🔗 Share Memory
               </button>
             </div>
           </div>
         `;
 
-        // Style the dialog
-        memoryDialog.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10000;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        `;
+        dialog.addEventListener('click', (e) => {
+          if (e.target === dialog) {
+            dialog.remove();
+          }
+        });
 
-        document.body.appendChild(memoryDialog);
-        this.currentMemoryDialog = memoryDialog;
-
+        document.body.appendChild(dialog);
+        this.currentMemoryDialog = dialog;
+        
         // Animate in
-        requestAnimationFrame(() => {
-          memoryDialog.style.opacity = '1';
-          const dialogEl = memoryDialog.querySelector('.memory-dialog');
-          if (dialogEl) {
-            dialogEl.style.transform = 'scale(1)';
-          }
-        });
+        setTimeout(() => {
+          dialog.style.opacity = '1';
+          // Load people avatars if needed
+          this.loadDashboardPeopleAvatars(memory);
+        }, 100);
+      }
 
-        // Close on outside click
-        memoryDialog.addEventListener('click', (e) => {
-          if (e.target === memoryDialog) {
-            this.closeMemoryDialog();
-          }
+      /**
+       * 📅 Format memory date for display
+       */
+      formatMemoryDate(timestamp) {
+        if (!timestamp) return 'Unknown date';
+        
+        try {
+          const date = new Date(timestamp);
+          return date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric', 
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch (error) {
+          console.warn('Error formatting date:', error);
+          return 'Unknown date';
+        }
+      }
+
+      /**
+       * 🎠 Switch carousel image in dashboard dialog
+       */
+      switchDashboardCarouselImage(index) {
+        const heroImages = document.querySelectorAll('.hero-image');
+        const dots = document.querySelectorAll('.dot');
+        
+        heroImages.forEach((img, i) => {
+          img.classList.toggle('active', i === index);
         });
+        
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === index);
+        });
+      }
+
+      /**
+       * 👥 Load people avatars for dashboard memory dialog
+       */
+      async loadDashboardPeopleAvatars(memory) {
+        const peopleGrid = document.getElementById(`people-grid-${memory.id}`);
+        if (!peopleGrid) return;
+
+        const peopleList = memory.metadata?.people || memory.people || [];
+        if (peopleList.length === 0) return;
+
+        try {
+          // Get vault data for people info
+          let vaultData = null;
+          if (window.emmaWebVault && window.emmaWebVault.vaultData) {
+            vaultData = window.emmaWebVault.vaultData;
+          }
+
+          if (!vaultData?.content?.people) {
+            console.warn('⚠️ No vault people data available');
+            return;
+          }
+
+          const vaultPeople = vaultData.content.people;
+          const vaultMedia = vaultData.content.media || {};
+
+          // Create avatar elements for each person
+          peopleList.forEach(personId => {
+            const person = vaultPeople[personId];
+            if (!person) return;
+
+            // Resolve avatar URL
+            let avatarUrl = person.avatarUrl;
+            if (!avatarUrl && person.avatarId && vaultMedia[person.avatarId]) {
+              const mediaItem = vaultMedia[person.avatarId];
+              avatarUrl = mediaItem.data?.startsWith('data:') 
+                ? mediaItem.data 
+                : `data:${mediaItem.type};base64,${mediaItem.data}`;
+            }
+
+            const firstName = (person.name || 'Unknown').split(' ')[0];
+            const initials = firstName.charAt(0).toUpperCase();
+
+            const avatarElement = document.createElement('div');
+            avatarElement.className = 'memory-person-avatar';
+            avatarElement.onclick = () => this.openPersonDialog(personId);
+
+            if (avatarUrl) {
+              const img = document.createElement('img');
+              img.src = avatarUrl;
+              img.alt = person.name;
+              img.onerror = () => {
+                // Fallback to initials if image fails
+                avatarElement.innerHTML = `<span>${initials}</span>`;
+              };
+              avatarElement.appendChild(img);
+            } else {
+              avatarElement.innerHTML = `<span>${initials}</span>`;
+            }
+
+            // Add name label below avatar
+            const nameLabel = document.createElement('div');
+            nameLabel.style.cssText = `
+              color: white;
+              font-size: clamp(12px, 2vw, 14px);
+              font-weight: 500;
+              margin-top: 8px;
+              text-align: center;
+            `;
+            nameLabel.textContent = firstName;
+
+            const avatarContainer = document.createElement('div');
+            avatarContainer.appendChild(avatarElement);
+            avatarContainer.appendChild(nameLabel);
+
+            peopleGrid.appendChild(avatarContainer);
+          });
+
+        } catch (error) {
+          console.error('❌ Error loading dashboard people avatars:', error);
+        }
+      }
+
+      /**
+       * ✏️ Edit memory from dashboard dialog
+       */
+      editDashboardMemory(memoryId) {
+        // Close current dialog
+        this.closeMemoryDialog();
+        
+        // Navigate to Emma Chat with memory ID for editing
+        window.location.href = `../index.html?mode=chat&memory=${memoryId}`;
+      }
+
+      /**
+       * 🔗 Share memory from dashboard dialog
+       */
+      shareDashboardMemory(memoryId) {
+        const shareUrl = `${window.location.origin}/index.html?memory=${memoryId}`;
+        
+        if (navigator.share && navigator.canShare && navigator.canShare({ url: shareUrl })) {
+          navigator.share({
+            title: 'Emma Memory',
+            text: 'Check out this memory from Emma',
+            url: shareUrl
+          }).catch(err => {
+            console.log('Share cancelled:', err);
+            // Fallback to copy
+            this.copyToClipboard(shareUrl);
+          });
+        } else {
+          // Fallback to copy to clipboard
+          this.copyToClipboard(shareUrl);
+        }
+      }
+
+      /**
+       * 📋 Copy text to clipboard utility
+       */
+      copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(() => {
+            this.showToast('🔗 Memory link copied to clipboard!', 'success');
+          }).catch(err => {
+            console.error('Failed to copy:', err);
+            this.fallbackCopyToClipboard(text);
+          });
+        } else {
+          this.fallbackCopyToClipboard(text);
+        }
+      }
+
+      /**
+       * 📋 Fallback copy method for older browsers
+       */
+      fallbackCopyToClipboard(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          this.showToast('🔗 Memory link copied to clipboard!', 'success');
+        } catch (err) {
+          console.error('Fallback copy failed:', err);
+          this.showToast('❌ Failed to copy link', 'error');
+        }
+        
+        document.body.removeChild(textArea);
       }
 
       // Close memory dialog
