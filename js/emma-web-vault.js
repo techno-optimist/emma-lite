@@ -1106,45 +1106,74 @@ class EmmaWebVault {
   }
 
   /**
-   * Auto-save with graceful fallback for unsupported browsers
+   * Auto-save with CRITICAL .emma file sync requirement
+   * EMMA ETHOS: .emma file is the single source of truth
    */
   async autoSave() {
 
-    // Check if File System Access API is supported
+    // 🔥 CRITICAL: .emma file MUST be updated or operation fails
     const hasFileSystemAccess = 'showOpenFilePicker' in window;
 
     if (hasFileSystemAccess && this.fileHandle) {
-      // PREFERRED: Direct save to original file
-
+      // ✅ PREFERRED: Direct save to original file
+      console.log('💾 VAULT: Saving directly to .emma file');
+      
+      // Show sync status
+      if (window.emmaSyncStatus) {
+        window.emmaSyncStatus.show('syncing', 'Saving to .emma file...');
+      }
+      
       this.pendingChanges = true;
       this.scheduleElegantSave();
+      
+      // Save to IndexedDB as backup only AFTER file save is scheduled
+      try {
+        await this.saveToIndexedDB();
+      } catch (error) {
+        console.warn('⚠️ BACKUP: IndexedDB save failed (non-critical):', error);
+      }
+      
     } else if (hasFileSystemAccess && !this.fileHandle) {
-      // File System Access API supported but no handle - show affordance
-      console.warn('⛔ DIRECT-SAVE: No file handle - prompting user');
-      this.showDirectSaveAffordance && this.showDirectSaveAffordance();
-      // Still save to IndexedDB as backup
-      await this.saveToIndexedDB();
-      throw new Error('Direct save required: no file access available');
+      // 🚨 CRITICAL: Try to restore file handle first
+      console.warn('⛔ CRITICAL: No file handle - attempting restoration...');
+      
+      try {
+        const restored = await this.reEstablishFileAccess();
+        // If successful, retry save
+        if (restored && this.fileHandle) {
+          console.log('✅ File handle restored - retrying save');
+          return await this.autoSave();
+        }
+      } catch (restoreError) {
+        console.error('❌ File handle restoration failed:', restoreError);
+      }
+      
+      // 🚨 CRITICAL: Cannot save to .emma file - BLOCK THE OPERATION
+      if (window.emmaSyncStatus) {
+        window.emmaSyncStatus.show('error', '.emma file access lost');
+      }
+      this.showFileSyncError();
+      throw new Error('CRITICAL: Cannot save to .emma file - file access lost');
+      
     } else {
-      // FALLBACK: File System Access API not supported - use download method
-
+      // 🔄 FALLBACK: File System Access API not supported
+      console.log('📥 FALLBACK: Using download method for .emma file');
+      
+      // Show fallback sync status
+      if (window.emmaSyncStatus) {
+        window.emmaSyncStatus.show('warning', 'Download required - browser limitation');
+      }
+      
+      // Save to IndexedDB first
       await this.saveToIndexedDB();
-      // Auto-download updated vault file
+      // Then trigger download of updated .emma file
       await this.downloadVaultFile(this.originalFileName || 'updated-vault.emma');
-
-    }
-
-    // Always save to IndexedDB as backup
-    try {
-      await this.saveToIndexedDB();
-
-    } catch (error) {
-      console.error('❌ BACKUP: IndexedDB save failed:', error);
     }
   }
 
   /**
    * Schedule debounced elegant save to prevent excessive file writes
+   * EMMA ETHOS: Minimize data loss window while preventing file thrashing
    */
   scheduleElegantSave() {
     // Clear any existing timer
@@ -1152,13 +1181,33 @@ class EmmaWebVault {
       clearTimeout(this.saveDebounceTimer);
     }
 
-    // Schedule save after 2-second debounce
+    // 🔥 CRITICAL: Reduced debounce to 500ms for Emma's precious memories
+    // Balance between data safety and file performance
     this.saveDebounceTimer = setTimeout(async () => {
       if (this.pendingChanges) {
-        await this.performElegantSave();
-        this.pendingChanges = false;
+        console.log('💾 EMMA: Performing immediate .emma file save');
+        try {
+          await this.performElegantSave();
+          this.pendingChanges = false;
+          console.log('✅ EMMA: .emma file saved successfully');
+          
+          // Show success status
+          if (window.emmaSyncStatus) {
+            window.emmaSyncStatus.show('success', '.emma file updated successfully');
+          }
+        } catch (error) {
+          console.error('❌ EMMA: Critical .emma file save failed:', error);
+          
+          // Show error status
+          if (window.emmaSyncStatus) {
+            window.emmaSyncStatus.show('error', '.emma file save failed');
+          }
+          
+          // Show error to user - this is critical
+          this.showFileSyncError();
+        }
       }
-    }, 2000);
+    }, 500); // Reduced from 2000ms to 500ms for Emma's ethos
 
   }
 
@@ -1249,21 +1298,30 @@ class EmmaWebVault {
       // Perform final atomic update
       await this.atomicFileUpdate();
 
+      // 🔥 CRITICAL: Preserve filename for file access restoration
+      const preservedFileName = this.originalFileName;
+      
       // Clear vault state
       this.isOpen = false;
       this.vaultData = null;
       this.passphrase = null;
-      this.fileHandle = null;
+      this.fileHandle = null; // Handle cleared but filename preserved
       this.originalFileName = null;
 
-      // Clear session storage
+      // Clear session storage (but preserve filename in localStorage)
       sessionStorage.removeItem('emmaVaultActive');
       sessionStorage.removeItem('emmaVaultPassphrase');
       sessionStorage.removeItem('emmaVaultOriginalFileName');
 
-      // CRITICAL FIX: Also clear localStorage backup
+      // CRITICAL FIX: Clear active state but PRESERVE filename for restoration
       localStorage.removeItem('emmaVaultActive');
       localStorage.removeItem('emmaVaultName');
+      
+      // 🔄 PRESERVE: Keep filename in localStorage for file access restoration
+      if (preservedFileName) {
+        localStorage.setItem('emmaVaultOriginalFileName', preservedFileName);
+        console.log('💾 LOCK: Preserved filename for restoration:', preservedFileName);
+      }
 
       return { success: true };
 
@@ -1368,10 +1426,25 @@ class EmmaWebVault {
         this.isOpen = true;
         this.passphrase = passphrase;
 
-        // Restore original filename
-        this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName');
-        if (this.originalFileName) {
-
+        // Restore original filename (check both session and localStorage)
+        this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName') || 
+                               localStorage.getItem('emmaVaultOriginalFileName');
+        
+        // 🔥 CRITICAL: Try to restore file access for .emma file sync
+        if (this.originalFileName && 'showOpenFilePicker' in window) {
+          console.log('🔄 RESTORE: Attempting to restore file access for:', this.originalFileName);
+          try {
+            // Try silent restoration first (may work if browser remembers permission)
+            const restored = await this.reEstablishFileAccess();
+            if (restored) {
+              console.log('✅ RESTORE: File access restored automatically');
+            } else {
+              console.warn('⚠️ RESTORE: File access not restored - will prompt on first save');
+            }
+          } catch (error) {
+            console.warn('⚠️ RESTORE: File access restoration failed:', error);
+            // Not critical - user will be prompted on first save
+          }
         }
 
         return { vaultData: this.vaultData, hasPassphrase: true, hasFileName: !!this.originalFileName };
@@ -2557,6 +2630,101 @@ window.emmaAPI = {
       return await window.emmaWebVault.getMedia(mediaId);
     }
   }
+};
+
+/**
+ * Show critical error when .emma file sync is broken
+ * EMMA ETHOS: Never silently fail - always inform the user
+ */
+EmmaWebVault.prototype.showFileSyncError = function() {
+  console.error('🚨 CRITICAL: .emma file sync broken - showing user error');
+  
+  // Remove any existing sync error modal
+  const existing = document.querySelector('.emma-sync-error-modal');
+  if (existing) existing.remove();
+  
+  // Create prominent error modal
+  const modal = document.createElement('div');
+  modal.className = 'emma-sync-error-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(220, 38, 38, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: white;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: #dc2626;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 600px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    ">
+      <div style="font-size: 48px; margin-bottom: 20px;">🚨</div>
+      <h2 style="margin: 0 0 20px 0; font-size: 24px;">CRITICAL: .emma File Access Lost</h2>
+      <p style="margin: 0 0 30px 0; font-size: 16px; line-height: 1.5; opacity: 0.9;">
+        Your memories cannot be saved to your .emma file right now. This means your memories 
+        would only exist in your browser and could be lost.<br><br>
+        <strong>Click below to restore access to your .emma file.</strong>
+      </p>
+      <button id="restore-file-access" style="
+        background: white;
+        color: #dc2626;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 15px;
+      ">🔗 Restore File Access</button>
+      <button id="cancel-save" style="
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 13px 30px;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+      ">Cancel Save</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Handle restore file access
+  document.getElementById('restore-file-access').onclick = async () => {
+    try {
+      const restored = await this.reEstablishFileAccess();
+      if (restored) {
+        modal.remove();
+        // Show success and retry the save operation
+        this.showToast && this.showToast('✅ File access restored! Saving to .emma file...', 'success');
+        // The autoSave will retry automatically
+      } else {
+        alert('Could not restore file access. Please ensure you select the correct .emma file.');
+      }
+    } catch (error) {
+      console.error('File restoration failed:', error);
+      alert('Failed to restore file access: ' + error.message);
+    }
+  };
+  
+  // Handle cancel
+  document.getElementById('cancel-save').onclick = () => {
+    modal.remove();
+    // User explicitly chose not to save - this is acceptable
+  };
 };
 
 // Emma Web Vault System ready for production

@@ -316,17 +316,40 @@ class EmmaSmartPhotoCapture {
       }))
     };
 
-    const response = await chrome.runtime.sendMessage({
-      action: 'ephemeral.add',
-      data: capsuleData
-    });
-
+    // 🔥 CRITICAL FIX: Use fixed web vault system instead of extension background
+    this.log('💾 PHOTO CAPTURE: Using fixed web vault system for photo capsule creation');
+    
+    if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+      throw new Error('Vault not available. Please unlock your .emma vault first.');
+    }
+    
+    // Transform to vault-compatible format
+    const vaultMemory = {
+      content: capsuleData.content,
+      metadata: {
+        ...capsuleData.metadata,
+        type: capsuleData.type,
+        source: capsuleData.source,
+        createdVia: 'SmartPhotoCapture'
+      },
+      attachments: capsuleData.attachments.map(photo => ({
+        type: photo.type,
+        data: photo.dataUrl, // Use dataUrl as data
+        name: `photo_${Date.now()}.jpg`,
+        metadata: photo.metadata
+      }))
+    };
+    
+    // Use fixed vault system with .emma file sync
+    const response = await window.emmaWebVault.addMemory(vaultMemory);
+    
     if (response && response.success) {
-      this.log(`Created capsule with ${photos.length} photos: ${response.memoryId}`);
-      return response.memoryId;
+      const memoryId = response.memory?.id || `photo_${Date.now()}`;
+      this.log(`Created capsule with ${photos.length} photos: ${memoryId}`);
+      return memoryId;
     }
 
-    throw new Error('Failed to create photo capsule');
+    throw new Error('Failed to create photo capsule: ' + (response?.error || 'Unknown error'));
   }
 
   /**

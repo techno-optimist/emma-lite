@@ -813,11 +813,29 @@ async function generateSampleMemories() {
   ];
 
   try {
+    // 🔥 CRITICAL FIX: Use fixed web vault system instead of extension background
+    console.log('💾 SAMPLES: Using fixed web vault system for sample memory generation');
+    
+    if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+      throw new Error('Vault not available. Please unlock your .emma vault first.');
+    }
+    
     for (const memory of sampleMemories) {
-      await chrome.runtime.sendMessage({
-        action: 'ephemeral.add',
-        data: memory
-      });
+      // Transform to vault-compatible format
+      const vaultMemory = {
+        content: memory.content,
+        metadata: {
+          ...memory.metadata,
+          type: memory.type,
+          source: memory.source,
+          role: memory.role,
+          createdVia: 'SampleMemoryGenerator'
+        },
+        attachments: []
+      };
+      
+      // Use fixed vault system with .emma file sync
+      await window.emmaWebVault.addMemory(vaultMemory);
     }
 
     showNotification('Sample memories generated successfully!');
@@ -4326,15 +4344,30 @@ function openCreateWizardModal() {
         if (!save || !save.success) throw new Error(save?.error || 'Failed to create memory');
         newMemoryId = save.id || mtap.header.id;
       } else {
+        // 🔥 CRITICAL FIX: Use fixed web vault system instead of extension background
+        console.log('💾 WIZARD: Using fixed web vault system for memory creation');
+        
+        if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+          throw new Error('Vault not available. Please unlock your .emma vault first.');
+        }
+        
         const payload = {
           content: description || title || '(Untitled memory)',
-          role: 'user',
-          source: 'manual',
-          type: files.length ? 'media' : 'note',
-          metadata: { title: title || undefined, category, tags: tagList, createdVia: 'CreateMemoryWizardModal' }
+          metadata: { 
+            title: title || undefined, 
+            category, 
+            tags: tagList, 
+            createdVia: 'CreateMemoryWizardModal',
+            source: 'manual',
+            type: files.length ? 'media' : 'note'
+          },
+          attachments: [] // Will be processed separately below
         };
-        const save = await chrome.runtime.sendMessage({ action: 'ephemeral.add', data: payload });
+        
+        // Use fixed vault system with .emma file sync
+        const save = await window.emmaWebVault.addMemory(payload);
         if (!save || !save.success) throw new Error(save?.error || 'Failed to create memory');
+        newMemoryId = save.memory?.id || `mem_${Date.now()}`;
       }
 
       // Desktop attachments

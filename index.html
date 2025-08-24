@@ -234,10 +234,24 @@
             <div class="emma-orb-webgl" id="emmaOrb"></div>
   </div>
 
-        <!-- Vault Status -->
+                <!-- Vault Status -->
         <div class="vault-status" id="vaultStatus">
             <div id="vaultStatusText">🔒 No vault loaded</div>
-  </div>
+            <!-- 🔥 CRITICAL: .emma File Sync Status Indicator -->
+            <div id="syncStatus" style="
+                margin-top: 10px;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                text-align: center;
+                background: rgba(59, 130, 246, 0.2);
+                border: 1px solid rgba(59, 130, 246, 0.5);
+                display: none;
+            ">
+                <span id="syncStatusIcon">💾</span>
+                <span id="syncStatusText">Sync Status</span>
+            </div>
+        </div>
 
         <!-- Clean Vault Controls -->
         <div class="vault-controls">
@@ -765,6 +779,59 @@
                         console.warn('⚠️ EMMA: Compatibility issues detected for', report.browser.name);
                     }
                 }
+
+                // 🔥 CRITICAL: Initialize .emma file sync status monitoring
+                window.emmaSyncStatus = {
+                    show: function(status, message) {
+                        const syncStatusEl = document.getElementById('syncStatus');
+                        const iconEl = document.getElementById('syncStatusIcon');
+                        const textEl = document.getElementById('syncStatusText');
+                        
+                        if (!syncStatusEl) return;
+                        
+                        syncStatusEl.style.display = 'block';
+                        
+                        switch(status) {
+                            case 'syncing':
+                                syncStatusEl.style.background = 'rgba(59, 130, 246, 0.2)';
+                                syncStatusEl.style.border = '1px solid rgba(59, 130, 246, 0.5)';
+                                iconEl.textContent = '💾';
+                                textEl.textContent = message || 'Saving to .emma file...';
+                                break;
+                            case 'success':
+                                syncStatusEl.style.background = 'rgba(16, 185, 129, 0.2)';
+                                syncStatusEl.style.border = '1px solid rgba(16, 185, 129, 0.5)';
+                                iconEl.textContent = '✅';
+                                textEl.textContent = message || '.emma file updated';
+                                // Auto-hide success after 3 seconds
+                                setTimeout(() => this.hide(), 3000);
+                                break;
+                            case 'error':
+                                syncStatusEl.style.background = 'rgba(220, 38, 38, 0.2)';
+                                syncStatusEl.style.border = '1px solid rgba(220, 38, 38, 0.5)';
+                                iconEl.textContent = '🚨';
+                                textEl.textContent = message || '.emma file sync failed';
+                                break;
+                            case 'warning':
+                                syncStatusEl.style.background = 'rgba(245, 158, 11, 0.2)';
+                                syncStatusEl.style.border = '1px solid rgba(245, 158, 11, 0.5)';
+                                iconEl.textContent = '⚠️';
+                                textEl.textContent = message || 'Browser storage only - .emma file not updated';
+                                break;
+                        }
+                    },
+                    
+                    hide: function() {
+                        const syncStatusEl = document.getElementById('syncStatus');
+                        if (syncStatusEl) {
+                            syncStatusEl.style.display = 'none';
+                        }
+                    }
+                };
+
+                // Make sync status available globally for vault system
+                window.emmaSyncStatus.show('success', '.emma file sync ready');
+                
             }, 600); // Slightly longer to ensure compatibility layer loads
     });
   </script>
