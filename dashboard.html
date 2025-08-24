@@ -6401,11 +6401,16 @@
 
         // CRITICAL: Initialize vault objects AFTER all scripts load
         setTimeout(() => {
+          console.log('🚨🔧 DASHBOARD: setTimeout running - starting vault initialization...');
+          console.log('🚨🔧 DASHBOARD: EmmaWebVault class available:', typeof EmmaWebVault);
+          console.log('🚨🔧 DASHBOARD: window.emmaWebVault exists:', !!window.emmaWebVault);
           
           // CRITICAL FIX: Create the global vault instance (was missing!)
           if (typeof EmmaWebVault !== 'undefined' && !window.emmaWebVault) {
+            console.log('🚨🔧 DASHBOARD: Creating new EmmaWebVault instance...');
             window.emmaWebVault = new EmmaWebVault();
             console.log('✅ DASHBOARD: EmmaWebVault instance created and ready');
+            console.log('✅ DASHBOARD: window.emmaWebVault now exists:', !!window.emmaWebVault);
             
             // IMMEDIATE VAULT RESTORATION for extension compatibility
             if (sessionStorage.getItem('emmaVaultActive') === 'true') {
@@ -6443,10 +6448,12 @@
             } else {
               console.log('🚨ℹ️ DASHBOARD: No active vault session found - extension will need manual unlock');
             }
+          } else if (typeof EmmaWebVault === 'undefined') {
+            console.error('🚨❌ DASHBOARD: EmmaWebVault class not available! Check script loading.');
           } else if (window.emmaWebVault) {
-            console.log('✅ DASHBOARD: EmmaWebVault instance already exists');
+            console.log('🚨ℹ️ DASHBOARD: window.emmaWebVault already exists, skipping creation');
           } else {
-            console.error('❌ DASHBOARD: EmmaWebVault class not found!');
+            console.error('🚨❌ DASHBOARD: Unknown condition preventing vault creation');
           }
 
           // Check what's available        
