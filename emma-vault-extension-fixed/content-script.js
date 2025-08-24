@@ -71,52 +71,76 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       currentTime: Date.now()
     });
     
-    // 🚨 CRITICAL FIX: Access vault from page context via DOM
-    console.log('🚨🔧 Content Script: Attempting to access vault from page context...');
+    // 🚨 CRITICAL FIX: Access vault via postMessage (CSP-compliant)
+    console.log('🚨🔧 Content Script: Attempting CSP-compliant vault access via postMessage...');
     
-    // Method 1: Try to access via injected script
-    const pageVaultCheck = () => {
-      return {
-        exists: !!window.emmaWebVault,
-        isOpen: window.emmaWebVault?.isOpen,
-        canAddMemory: typeof window.emmaWebVault?.addMemory === 'function'
-      };
-    };
-    
-    // Inject script to check vault in page context
-    const script = document.createElement('script');
-    script.textContent = `
-      window.__EMMA_VAULT_STATUS__ = {
-        exists: !!window.emmaWebVault,
-        isOpen: window.emmaWebVault?.isOpen,
-        canAddMemory: typeof window.emmaWebVault?.addMemory === 'function',
-        timestamp: Date.now()
+    // Method 1: Use postMessage to communicate with page context
+    const vaultCheckPromise = new Promise((resolve) => {
+      const messageId = 'vault-check-' + Date.now();
+      
+      // Listen for response from page context
+      const responseHandler = (event) => {
+        if (event.data?.type === 'EMMA_VAULT_RESPONSE' && event.data?.messageId === messageId) {
+          console.log('🚨🔧 Content Script: Received vault status from page:', event.data.vaultStatus);
+          window.removeEventListener('message', responseHandler);
+          resolve(event.data.vaultStatus);
+        }
       };
       
-      // Store the addMemory function reference
-      if (window.emmaWebVault && window.emmaWebVault.addMemory) {
-        window.__EMMA_ADD_MEMORY__ = window.emmaWebVault.addMemory.bind(window.emmaWebVault);
-      }
-    `;
-    document.head.appendChild(script);
-    document.head.removeChild(script);
-    
-    // Check what we got from page context
-    console.log('🚨🔧 Content Script: Page context vault status:', window.__EMMA_VAULT_STATUS__);
-    
-    // If vault is available in page context, use it directly
-    if (window.__EMMA_VAULT_STATUS__?.exists && window.__EMMA_VAULT_STATUS__?.isOpen && window.__EMMA_ADD_MEMORY__) {
-      console.log('🚨✅ Content Script: FOUND VAULT IN PAGE CONTEXT! Using directly...');
+      window.addEventListener('message', responseHandler);
       
-      window.__EMMA_ADD_MEMORY__(request.memoryData)
-        .then(result => {
-          console.log('🚨✅ Content Script: PAGE CONTEXT SAVE SUCCESS:', result);
-          sendResponse({ success: true, result });
-        })
-        .catch(error => {
-          console.error('🚨❌ Content Script: PAGE CONTEXT SAVE FAILED:', error);
-          sendResponse({ success: false, error: error.message });
-        });
+      // Request vault status from page context
+      window.postMessage({
+        type: 'EMMA_VAULT_CHECK',
+        messageId: messageId
+      }, '*');
+      
+      // Timeout after 1 second
+      setTimeout(() => {
+        window.removeEventListener('message', responseHandler);
+        resolve(null);
+      }, 1000);
+    });
+    
+    // Check if we can get vault status via postMessage
+    const vaultStatus = await vaultCheckPromise;
+    console.log('🚨🔧 Content Script: PostMessage vault status:', vaultStatus);
+    
+    // If vault is available, use postMessage to save
+    if (vaultStatus?.exists && vaultStatus?.isOpen) {
+      console.log('🚨✅ Content Script: FOUND VAULT VIA POSTMESSAGE! Saving...');
+      
+      const savePromise = new Promise((resolve) => {
+        const saveMessageId = 'vault-save-' + Date.now();
+        
+        // Listen for save response
+        const saveResponseHandler = (event) => {
+          if (event.data?.type === 'EMMA_VAULT_SAVE_RESPONSE' && event.data?.messageId === saveMessageId) {
+            console.log('🚨✅ Content Script: Received save response:', event.data.result);
+            window.removeEventListener('message', saveResponseHandler);
+            resolve(event.data.result);
+          }
+        };
+        
+        window.addEventListener('message', saveResponseHandler);
+        
+        // Send save request to page context
+        window.postMessage({
+          type: 'EMMA_VAULT_SAVE',
+          messageId: saveMessageId,
+          memoryData: request.memoryData
+        }, '*');
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          window.removeEventListener('message', saveResponseHandler);
+          resolve({ success: false, error: 'Save timeout' });
+        }, 10000);
+      });
+      
+      const saveResult = await savePromise;
+      console.log('🚨✅ Content Script: PostMessage save result:', saveResult);
+      sendResponse(saveResult);
       return true; // Keep message channel open
     }
     

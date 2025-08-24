@@ -6498,6 +6498,54 @@
         
       }, 100); // Small delay to ensure all elements are definitely available
     });
+    
+    // 🚨 CRITICAL: Add postMessage handlers for content script communication
+    window.addEventListener('message', (event) => {
+      // Only handle messages from same origin
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data?.type === 'EMMA_VAULT_CHECK') {
+        console.log('🚨📨 DASHBOARD: Received vault check request from content script');
+        
+        const vaultStatus = {
+          exists: !!window.emmaWebVault,
+          isOpen: window.emmaWebVault?.isOpen,
+          canAddMemory: typeof window.emmaWebVault?.addMemory === 'function',
+          timestamp: Date.now()
+        };
+        
+        console.log('🚨📨 DASHBOARD: Sending vault status:', vaultStatus);
+        
+        window.postMessage({
+          type: 'EMMA_VAULT_RESPONSE',
+          messageId: event.data.messageId,
+          vaultStatus: vaultStatus
+        }, '*');
+      }
+      
+      if (event.data?.type === 'EMMA_VAULT_SAVE' && window.emmaWebVault && window.emmaWebVault.isOpen) {
+        console.log('🚨💾 DASHBOARD: Received save request from content script');
+        console.log('🚨💾 DASHBOARD: Memory data size:', JSON.stringify(event.data.memoryData).length);
+        
+        window.emmaWebVault.addMemory(event.data.memoryData)
+          .then(result => {
+            console.log('🚨✅ DASHBOARD: Save successful:', result);
+            window.postMessage({
+              type: 'EMMA_VAULT_SAVE_RESPONSE',
+              messageId: event.data.messageId,
+              result: { success: true, result }
+            }, '*');
+          })
+          .catch(error => {
+            console.error('🚨❌ DASHBOARD: Save failed:', error);
+            window.postMessage({
+              type: 'EMMA_VAULT_SAVE_RESPONSE',
+              messageId: event.data.messageId,
+              result: { success: false, error: error.message }
+            }, '*');
+          });
+      }
+    });
   </script>
 </body>
 </html>
