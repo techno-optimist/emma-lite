@@ -2572,14 +2572,14 @@
           this.initNeuralNetwork();
           this.animateNeuralNetwork();
 
-          // 🎬 ANIMATE FROM CENTER: Smooth outward animation from orb center
-          this.animateMenuItemsOut();
+          // 🧠 NEURAL EXPANSION: Use physics to expand nodes naturally from orb
+          this.expandRadialNeuralNetwork();
 
         } else {
-          // 🎬 ANIMATE TO CENTER: Smooth inward animation back to orb center
-          this.animateMenuItemsIn();
+          // 🧠 NEURAL COLLAPSE: Use physics to collapse nodes back to orb naturally
+          this.collapseRadialNeuralNetwork();
 
-          // Cleanup after fast animation completes
+          // Cleanup after natural physics collapse
           setTimeout(() => {
             this.radialMenu.classList.remove('active');
             document.body.classList.remove('menu-active');
@@ -2592,41 +2592,47 @@
 
             // Reset nodes array
             this.nodes = [];
-          }, 150); // Much faster cleanup for snappy animations
+          }, 200); // Allow time for natural neural collapse
         }
       }
 
-      // 🎬 NEW: Animate menu items outward from orb center - FAST & SNAPPY
-      animateMenuItemsOut() {
-        console.log('🎬 Animating menu items OUT from orb center');
+      // 🧠 NEURAL EXPANSION: Expand radial nodes using neural network physics
+      expandRadialNeuralNetwork() {
+        console.log('🧠 Expanding radial neural network from orb center');
         
         this.nodes.forEach((node, i) => {
-          const item = node.element;
+          // Set target position for neural physics to move toward
+          node.baseX = node.targetX;
+          node.baseY = node.targetY;
           
-          // Much faster staggered timing for snappy reveal
+          // Add initial velocity toward target (like constellation nodes)
+          const dx = node.targetX - node.x;
+          const dy = node.targetY - node.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance > 1) {
+            // Give it momentum toward target
+            node.vx = (dx / distance) * 3; // Fast initial velocity
+            node.vy = (dy / distance) * 3;
+          }
+          
+          // Show and scale the node
           setTimeout(() => {
-            // 🚀 ULTRA-LIGHTNING FAST: Super-snappy 50ms animation with bounce easing
-            item.style.transition = 'all 0.05s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-            item.style.left = (node.targetX - 45) + 'px';
-            item.style.top = (node.targetY - 45) + 'px';
-            item.style.transform = 'scale(1)';
-            item.style.opacity = '1';
+            node.element.style.transition = 'opacity 0.1s ease, transform 0.1s ease';
+            node.element.style.opacity = '1';
+            node.element.style.transform = 'scale(1)';
             
-            // Update node position for physics
-            node.x = node.targetX;
-            node.y = node.targetY;
+            // Pause float animation during menu display
+            node.element.style.animationPlayState = 'paused';
             
-            // Temporarily disable float animation during menu
-            item.style.animationPlayState = 'paused';
-            
-            console.log(`🎯 Item ${i} animated to (${node.targetX}, ${node.targetY})`);
-          }, i * 30); // Much faster stagger: 30ms instead of 80ms
+            console.log(`🧠 Node ${i} neural expansion initiated to (${node.targetX}, ${node.targetY})`);
+          }, i * 15); // Fast stagger
         });
       }
 
-      // 🎬 NEW: Animate menu items inward to orb center - FAST & SNAPPY
-      animateMenuItemsIn() {
-        console.log('🎬 Animating menu items IN to orb center');
+      // 🧠 NEURAL COLLAPSE: Collapse radial nodes back to orb using neural physics
+      collapseRadialNeuralNetwork() {
+        console.log('🧠 Collapsing radial neural network back to orb center');
         
         // Get actual orb center position
         const orbRect = this.orb.getBoundingClientRect();
@@ -2634,22 +2640,34 @@
         const orbCenterY = orbRect.top + orbRect.height / 2;
         
         this.nodes.forEach((node, i) => {
-          const item = node.element;
+          // Set orb center as the new target for neural physics
+          node.baseX = orbCenterX;
+          node.baseY = orbCenterY;
+          node.targetX = orbCenterX;
+          node.targetY = orbCenterY;
           
-          // Much faster reverse staggered timing (last item first)
+          // Add velocity toward orb center (like constellation nodes)
+          const dx = orbCenterX - node.x;
+          const dy = orbCenterY - node.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance > 1) {
+            // Give it momentum toward orb center
+            node.vx = (dx / distance) * 4; // Fast collapse velocity
+            node.vy = (dy / distance) * 4;
+          }
+          
+          // Hide and scale down the node
           setTimeout(() => {
-            // 🚀 FAST: Quick snap back to orb center
-            item.style.transition = 'all 0.12s cubic-bezier(0.4, 0, 0.8, 1)';
-            item.style.left = (orbCenterX - 45) + 'px';
-            item.style.top = (orbCenterY - 45) + 'px';
-            item.style.transform = 'scale(0)';
-            item.style.opacity = '0';
+            node.element.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            node.element.style.opacity = '0';
+            node.element.style.transform = 'scale(0)';
             
             // Re-enable float animation when menu closes
-            item.style.animationPlayState = 'running';
+            node.element.style.animationPlayState = 'running';
             
-            console.log(`🎯 Item ${i} animated back to orb center (${orbCenterX}, ${orbCenterY})`);
-          }, (this.nodes.length - 1 - i) * 25); // Much faster reverse stagger: 25ms
+            console.log(`🧠 Node ${i} neural collapse initiated to orb (${orbCenterX}, ${orbCenterY})`);
+          }, (this.nodes.length - 1 - i) * 20); // Fast reverse stagger
         });
       }
 
