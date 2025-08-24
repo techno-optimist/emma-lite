@@ -2600,14 +2600,14 @@ async function loadConstellationPeopleAvatars(memory) {
 function editConstellationMemory(memoryId) {
   console.log('✏️ CONSTELLATION: Opening edit dialog for memory:', memoryId);
   
-  // Get the memory from vault
-  const vault = window.emmaWebVault || window.emmaAPI?.vault;
-  if (!vault || !vault.memories) {
-    console.error('❌ No vault available for editing');
+  // Get the memory from vault using CONSTELLATION'S method
+  if (!window.emmaWebVault || !window.emmaWebVault.vaultData?.content?.memories) {
+    console.error('❌ No vault data available for editing');
     return;
   }
   
-  const memory = vault.memories.find(m => m.id === memoryId);
+  const vaultMemories = window.emmaWebVault.vaultData.content.memories;
+  const memory = vaultMemories[memoryId];
   if (!memory) {
     console.error('❌ Memory not found:', memoryId);
     return;
