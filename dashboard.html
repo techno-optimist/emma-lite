@@ -2579,7 +2579,7 @@
           // 🎬 ANIMATE TO CENTER: Smooth inward animation back to orb center
           this.animateMenuItemsIn();
 
-          // Cleanup after animation completes
+          // Cleanup after fast animation completes
           setTimeout(() => {
             this.radialMenu.classList.remove('active');
             document.body.classList.remove('menu-active');
@@ -2592,21 +2592,21 @@
 
             // Reset nodes array
             this.nodes = [];
-          }, 300); // Wait for animation to complete
+          }, 150); // Much faster cleanup for snappy animations
         }
       }
 
-      // 🎬 NEW: Animate menu items outward from orb center
+      // 🎬 NEW: Animate menu items outward from orb center - FAST & SNAPPY
       animateMenuItemsOut() {
         console.log('🎬 Animating menu items OUT from orb center');
         
         this.nodes.forEach((node, i) => {
           const item = node.element;
           
-          // Staggered timing for elegant reveal
+          // Much faster staggered timing for snappy reveal
           setTimeout(() => {
-            // 🎯 Animate to target position with smooth easing
-            item.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            // 🚀 FAST: Quick snappy animation with bounce easing
+            item.style.transition = 'all 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
             item.style.left = (node.targetX - 45) + 'px';
             item.style.top = (node.targetY - 45) + 'px';
             item.style.transform = 'scale(1)';
@@ -2620,11 +2620,11 @@
             item.style.animationPlayState = 'paused';
             
             console.log(`🎯 Item ${i} animated to (${node.targetX}, ${node.targetY})`);
-          }, i * 80); // Staggered by 80ms
+          }, i * 30); // Much faster stagger: 30ms instead of 80ms
         });
       }
 
-      // 🎬 NEW: Animate menu items inward to orb center  
+      // 🎬 NEW: Animate menu items inward to orb center - FAST & SNAPPY
       animateMenuItemsIn() {
         console.log('🎬 Animating menu items IN to orb center');
         
@@ -2636,10 +2636,10 @@
         this.nodes.forEach((node, i) => {
           const item = node.element;
           
-          // Reverse staggered timing (last item first)
+          // Much faster reverse staggered timing (last item first)
           setTimeout(() => {
-            // 🎯 Animate back to orb center
-            item.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.6, 1)';
+            // 🚀 FAST: Quick snap back to orb center
+            item.style.transition = 'all 0.12s cubic-bezier(0.4, 0, 0.8, 1)';
             item.style.left = (orbCenterX - 45) + 'px';
             item.style.top = (orbCenterY - 45) + 'px';
             item.style.transform = 'scale(0)';
@@ -2649,7 +2649,7 @@
             item.style.animationPlayState = 'running';
             
             console.log(`🎯 Item ${i} animated back to orb center (${orbCenterX}, ${orbCenterY})`);
-          }, (this.nodes.length - 1 - i) * 60); // Reverse stagger by 60ms
+          }, (this.nodes.length - 1 - i) * 25); // Much faster reverse stagger: 25ms
         });
       }
 
@@ -2683,9 +2683,9 @@
           const newTargetX = orbCenterX + Math.cos(angle) * radius;
           const newTargetY = orbCenterY + Math.sin(angle) * radius;
           
-          // Update positions smoothly
+          // Update positions with fast smooth transition
           const item = node.element;
-          item.style.transition = 'all 0.2s ease';
+          item.style.transition = 'all 0.15s ease';
           item.style.left = (newTargetX - 45) + 'px';
           item.style.top = (newTargetY - 45) + 'px';
           
