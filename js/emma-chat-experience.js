@@ -961,44 +961,80 @@ class EmmaChatExperience extends ExperiencePopup {
         }
       }
       
-      // Get media thumbnail if available with better error handling
-      let thumbnail = '';
+      // Get all media attachments for responsive grid display
+      let mediaItems = [];
       try {
         if (memory.attachments && memory.attachments.length > 0 && window.emmaWebVault?.vaultData?.content?.media) {
-          const firstAttachment = memory.attachments[0];
-          if (firstAttachment && firstAttachment.id) {
-            const mediaData = window.emmaWebVault.vaultData.content.media[firstAttachment.id];
-            if (mediaData && mediaData.data) {
-              const mediaUrl = mediaData.data.startsWith('data:') 
-                ? mediaData.data 
-                : `data:${mediaData.type || 'image/jpeg'};base64,${mediaData.data}`;
-              thumbnail = mediaUrl;
-            }
-          }
+          const vaultMedia = window.emmaWebVault.vaultData.content.media;
+          
+          mediaItems = memory.attachments
+            .map(attachment => {
+              if (attachment && attachment.id && vaultMedia[attachment.id]) {
+                const mediaData = vaultMedia[attachment.id];
+                if (mediaData && mediaData.data) {
+                  const mediaUrl = mediaData.data.startsWith('data:') 
+                    ? mediaData.data 
+                    : `data:${mediaData.type || 'image/jpeg'};base64,${mediaData.data}`;
+                  return {
+                    id: attachment.id,
+                    url: mediaUrl,
+                    type: mediaData.type || 'image/jpeg'
+                  };
+                }
+              }
+              return null;
+            })
+            .filter(item => item !== null);
+            
+          console.log(`📸 CHAT: Found ${mediaItems.length} media items for memory`);
         }
-      } catch (thumbError) {
-        console.warn('💝 CHAT: Error loading thumbnail:', thumbError);
-        thumbnail = '';
+      } catch (mediaError) {
+        console.warn('💝 CHAT: Error loading media:', mediaError);
+        mediaItems = [];
       }
 
-      // 🎯 COMPLETELY REDESIGNED: Clean, beautiful memory card
+      // 🎯 RESPONSIVE MEDIA LAYOUT: Different layouts based on media count
+      let mediaHTML = '';
+      
+      if (mediaItems.length === 0) {
+        // No images - show heart icon
+        mediaHTML = `
+          <div class="memory-icon">
+            💝
+          </div>
+        `;
+      } else if (mediaItems.length === 1) {
+        // Single image - span full width
+        mediaHTML = `
+          <div class="memory-single-image" onclick="event.stopPropagation(); window.chatExperience.openImageModal('${mediaItems[0].url}', '${memory.id}')">
+            <img src="${mediaItems[0].url}" alt="Memory photo" />
+          </div>
+        `;
+      } else {
+        // Multiple images - responsive grid
+        const gridClass = mediaItems.length === 2 ? 'grid-2' : 
+                         mediaItems.length === 3 ? 'grid-3' : 'grid-4';
+        
+        mediaHTML = `
+          <div class="memory-grid ${gridClass}">
+            ${mediaItems.slice(0, 6).map((item, index) => `
+              <div class="grid-item" onclick="event.stopPropagation(); window.chatExperience.openImageModal('${item.url}', '${memory.id}', ${index})">
+                <img src="${item.url}" alt="Memory photo ${index + 1}" />
+                ${index === 5 && mediaItems.length > 6 ? `<div class="more-overlay">+${mediaItems.length - 6}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // Create complete memory card with responsive media layout
       const memoryCardHTML = `
-        <div class="chat-memory-card" onclick="window.chatExperience.openMemoryFromChat('${memory.id}')">
-          <div class="memory-card-inner">
-            ${thumbnail ? `
-              <div class="memory-thumbnail">
-                <img src="${thumbnail}" alt="Memory photo" />
-              </div>
-            ` : `
-              <div class="memory-icon">
-                💝
-              </div>
-            `}
-            <div class="memory-content">
-              <div class="memory-date">${formattedDate}</div>
-              <div class="memory-text">${preview}</div>
-              <div class="memory-action">💜 View this memory</div>
-            </div>
+        <div class="chat-memory-card">
+          ${mediaHTML}
+          <div class="memory-content" onclick="window.chatExperience.openMemoryFromChat('${memory.id}')">
+            <div class="memory-date">${formattedDate}</div>
+            <div class="memory-text">${preview}</div>
+            <div class="memory-action">💜 View this memory</div>
           </div>
         </div>
       `;
@@ -1031,7 +1067,6 @@ class EmmaChatExperience extends ExperiencePopup {
           border-radius: 16px;
           padding: 0;
           margin: 12px 0;
-          cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           backdrop-filter: blur(10px);
           overflow: hidden;
@@ -1042,53 +1077,112 @@ class EmmaChatExperience extends ExperiencePopup {
             rgba(138, 43, 226, 0.15) 0%, 
             rgba(75, 0, 130, 0.10) 100%);
           border-color: rgba(138, 43, 226, 0.4);
-          transform: translateY(-3px) scale(1.02);
+          transform: translateY(-2px);
           box-shadow: 0 8px 24px rgba(138, 43, 226, 0.25);
         }
 
-        .memory-card-inner {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 16px;
-          height: 100%;
-        }
-
-        .memory-thumbnail {
-          width: 70px;
-          height: 70px;
-          border-radius: 12px;
+        /* Single image layout - spans full width */
+        .memory-single-image {
+          width: 100%;
+          height: 200px;
+          cursor: pointer;
           overflow: hidden;
-          flex-shrink: 0;
-          background: linear-gradient(135deg, #8a2be2, #4b0082);
-          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+          border-radius: 16px 16px 0 0;
+          position: relative;
         }
 
-        .memory-thumbnail img {
+        .memory-single-image img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          transition: transform 0.3s ease;
         }
 
+        .memory-single-image:hover img {
+          transform: scale(1.05);
+        }
+
+        /* Grid layouts for multiple images */
+        .memory-grid {
+          display: grid;
+          gap: 2px;
+          background: rgba(138, 43, 226, 0.1);
+          border-radius: 16px 16px 0 0;
+          overflow: hidden;
+        }
+
+        .memory-grid.grid-2 {
+          grid-template-columns: 1fr 1fr;
+          height: 160px;
+        }
+
+        .memory-grid.grid-3 {
+          grid-template-columns: 2fr 1fr;
+          grid-template-rows: 1fr 1fr;
+          height: 200px;
+        }
+
+        .memory-grid.grid-3 .grid-item:first-child {
+          grid-row: 1 / -1;
+        }
+
+        .memory-grid.grid-4 {
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: 1fr 1fr;
+          height: 200px;
+        }
+
+        .grid-item {
+          position: relative;
+          cursor: pointer;
+          overflow: hidden;
+          background: rgba(138, 43, 226, 0.2);
+        }
+
+        .grid-item img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+
+        .grid-item:hover img {
+          transform: scale(1.1);
+        }
+
+        .more-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 24px;
+          font-weight: 600;
+        }
+
+        /* Heart icon for no images */
         .memory-icon {
-          width: 70px;
-          height: 70px;
-          border-radius: 12px;
+          width: 80px;
+          height: 80px;
+          border-radius: 16px;
           background: linear-gradient(135deg, #8a2be2, #4b0082);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 28px;
-          flex-shrink: 0;
+          font-size: 32px;
+          margin: 16px auto;
           box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
         }
 
+        /* Memory content area */
         .memory-content {
-          flex: 1;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
+          padding: 16px;
+          cursor: pointer;
         }
 
         .memory-date {
@@ -1097,13 +1191,14 @@ class EmmaChatExperience extends ExperiencePopup {
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          margin-bottom: 8px;
         }
 
         .memory-text {
           color: rgba(255, 255, 255, 0.95);
           font-size: 14px;
           line-height: 1.4;
-          margin: 2px 0 8px 0;
+          margin-bottom: 12px;
           word-wrap: break-word;
           overflow: hidden;
           display: -webkit-box;
@@ -1121,31 +1216,30 @@ class EmmaChatExperience extends ExperiencePopup {
           transition: color 0.2s ease;
         }
 
-        .chat-memory-card:hover .memory-action {
+        .memory-content:hover .memory-action {
           color: rgba(138, 43, 226, 1);
         }
 
         /* Mobile optimization */
         @media (max-width: 480px) {
-          .memory-card-inner {
-            flex-direction: column;
-            text-align: center;
-            gap: 12px;
-            padding: 16px;
+          .memory-single-image {
+            height: 180px;
           }
           
-          .memory-thumbnail,
+          .memory-grid.grid-2,
+          .memory-grid.grid-3,
+          .memory-grid.grid-4 {
+            height: 160px;
+          }
+          
           .memory-icon {
-            width: 80px;
-            height: 80px;
-          }
-          
-          .memory-content {
-            align-items: center;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
           }
           
           .memory-text {
-            text-align: center;
+            font-size: 13px;
             -webkit-line-clamp: 3;
           }
         }
@@ -1163,6 +1257,217 @@ class EmmaChatExperience extends ExperiencePopup {
     
     // Use the existing edit memory functionality
     this.editMemoryDetails(memoryId);
+  }
+
+  /**
+   * 🖼️ Open image modal for easy viewing (dementia-friendly)
+   */
+  openImageModal(imageUrl, memoryId, imageIndex = 0) {
+    console.log('🖼️ CHAT: Opening image modal:', { memoryId, imageIndex });
+    
+    try {
+      // Create beautiful image modal
+      const modalHTML = `
+        <div class="emma-image-modal" id="emma-image-modal" onclick="this.remove()">
+          <div class="image-modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close-btn" onclick="document.getElementById('emma-image-modal').remove()">
+              ×
+            </button>
+            <div class="image-container">
+              <img src="${imageUrl}" alt="Memory photo" id="modal-image" />
+            </div>
+            <div class="image-modal-footer">
+              <div class="image-info">
+                <span class="image-label">📸 Memory Photo</span>
+                <span class="memory-link" onclick="document.getElementById('emma-image-modal').remove(); window.chatExperience.openMemoryFromChat('${memoryId}')">
+                  💜 View Full Memory
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Add modal to body
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+      // Add modal styling
+      this.addImageModalStyles();
+
+      // Add keyboard support
+      const modalElement = document.getElementById('emma-image-modal');
+      const handleKeydown = (e) => {
+        if (e.key === 'Escape') {
+          modalElement.remove();
+          document.removeEventListener('keydown', handleKeydown);
+        }
+      };
+      document.addEventListener('keydown', handleKeydown);
+
+    } catch (error) {
+      console.error('🖼️ CHAT: Error opening image modal:', error);
+    }
+  }
+
+  /**
+   * 🎨 Add image modal styling
+   */
+  addImageModalStyles() {
+    // Check if styles already exist to avoid duplicates
+    if (document.getElementById('emma-image-modal-styles')) return;
+
+    const styles = `
+      <style id="emma-image-modal-styles">
+        .emma-image-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          padding: 20px;
+          animation: modalFadeIn 0.3s ease-out;
+        }
+
+        .image-modal-content {
+          max-width: 90vw;
+          max-height: 90vh;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 16px;
+          overflow: hidden;
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          position: relative;
+          animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .modal-close-btn {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: rgba(0, 0, 0, 0.7);
+          border: none;
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          font-size: 24px;
+          cursor: pointer;
+          z-index: 10001;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .modal-close-btn:hover {
+          background: rgba(0, 0, 0, 0.9);
+          transform: scale(1.1);
+        }
+
+        .image-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          max-height: 70vh;
+          overflow: hidden;
+        }
+
+        .image-container img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          border-radius: 12px;
+        }
+
+        .image-modal-footer {
+          background: linear-gradient(135deg, 
+            rgba(138, 43, 226, 0.2) 0%, 
+            rgba(75, 0, 130, 0.2) 100%);
+          padding: 16px 20px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .image-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          color: white;
+        }
+
+        .image-label {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .memory-link {
+          color: rgba(138, 43, 226, 0.9);
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          padding: 8px 12px;
+          border-radius: 8px;
+          background: rgba(138, 43, 226, 0.1);
+          border: 1px solid rgba(138, 43, 226, 0.3);
+          transition: all 0.2s ease;
+        }
+
+        .memory-link:hover {
+          background: rgba(138, 43, 226, 0.2);
+          border-color: rgba(138, 43, 226, 0.5);
+          transform: translateY(-1px);
+        }
+
+        @keyframes modalFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes modalSlideIn {
+          from { 
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 480px) {
+          .emma-image-modal {
+            padding: 10px;
+          }
+          
+          .image-modal-content {
+            max-width: 95vw;
+            max-height: 95vh;
+          }
+          
+          .image-container {
+            max-height: 75vh;
+          }
+          
+          .image-info {
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+          }
+          
+          .memory-link {
+            width: 100%;
+            text-align: center;
+          }
+        }
+      </style>
+    `;
+
+    document.head.insertAdjacentHTML('beforeend', styles);
   }
 
   setupKeyboardShortcuts() {
