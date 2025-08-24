@@ -2351,6 +2351,54 @@ window.emmaAPI = {
       return await window.emmaWebVault.openVaultFile();
     },
 
+    unlock: async (data) => {
+      // For web vault, we need to load from IndexedDB and decrypt with passphrase
+      try {
+        const vaultData = await window.emmaWebVault.loadFromIndexedDB();
+        if (!vaultData) {
+          return { success: false, error: 'No vault found. Please create or open a vault first.' };
+        }
+
+        // If vault data appears to be encrypted, decrypt it
+        if (vaultData.encrypted !== false && data.passphrase) {
+          try {
+            const decryptedData = await window.emmaWebVault.nativeDecryptVault(vaultData, data.passphrase);
+            window.emmaWebVault.vaultData = decryptedData;
+            window.emmaWebVault.passphrase = data.passphrase;
+            window.emmaWebVault.isOpen = true;
+
+            // Set session storage for dashboard
+            sessionStorage.setItem('emmaVaultActive', 'true');
+            sessionStorage.setItem('emmaVaultName', decryptedData.metadata?.name || decryptedData.name || 'Web Vault');
+            sessionStorage.setItem('emmaVaultPassphrase', data.passphrase);
+
+            console.log('✅ Vault unlocked successfully via API!');
+            return { success: true, stats: window.emmaWebVault.getStats() };
+          } catch (error) {
+            console.error('❌ Failed to decrypt vault with provided passphrase:', error);
+            return { success: false, error: 'Incorrect passphrase or corrupted vault data' };
+          }
+        } else {
+          // Vault data is not encrypted or already decrypted
+          window.emmaWebVault.vaultData = vaultData;
+          window.emmaWebVault.isOpen = true;
+          if (data.passphrase) {
+            window.emmaWebVault.passphrase = data.passphrase;
+            sessionStorage.setItem('emmaVaultPassphrase', data.passphrase);
+          }
+
+          sessionStorage.setItem('emmaVaultActive', 'true');
+          sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || vaultData.name || 'Web Vault');
+
+          console.log('✅ Vault opened successfully (unencrypted data)!');
+          return { success: true, stats: window.emmaWebVault.getStats() };
+        }
+      } catch (error) {
+        console.error('❌ Failed to unlock vault:', error);
+        return { success: false, error: error.message };
+      }
+    },
+
     status: () => {
       return {
         hasVault: window.emmaWebVault.isOpen,
