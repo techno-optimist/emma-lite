@@ -5852,12 +5852,23 @@
         // Enable pointer events for zoom interaction
         document.addEventListener('wheel', (e) => {
           if (this.isConstellationMode) {
-            // 🚫 SMART SCROLL: Don't intercept wheel events over dialogs/modals
+            // 🚫 SMART SCROLL: Don't intercept wheel events over dialogs/modals/chat
             const isOverDialog = e.target.closest('.memory-preview-dialog') || 
                                 e.target.closest('.person-summary-modal') ||
                                 e.target.closest('.voice-wizard-modal') ||
                                 e.target.closest('.modal-overlay') ||
-                                e.target.closest('.responsive-memory-container');
+                                e.target.closest('.responsive-memory-container') ||
+                                
+                                // 💬 CHAT WINDOW EXCLUSIONS
+                                e.target.closest('.experience-popup') ||
+                                e.target.closest('.chat-container') ||
+                                e.target.closest('.message-container') ||
+                                e.target.closest('.messages-container') ||
+                                e.target.closest('.chat-messages') ||
+                                e.target.closest('.emma-chat') ||
+                                e.target.closest('[class*="chat"]') ||
+                                e.target.closest('[class*="message"]') ||
+                                e.target.closest('[class*="popup"]');
             
             if (!isOverDialog) {
               // Only zoom constellation when NOT scrolling in a dialog
