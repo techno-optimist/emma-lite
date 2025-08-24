@@ -1868,8 +1868,11 @@
       }
 
       // Update created date
-      const createdDate = new Date(person.createdAt).toLocaleDateString();
+      const createdDate = person.createdAt ? new Date(person.createdAt).toLocaleDateString() : 'Recently';
       document.getElementById('person-created-date').textContent = createdDate;
+
+      // 🎯 CRITICAL FIX: Load and display connected memories count and list
+      await updatePersonMemoryConnections(person.id);
 
       // Load avatar for detail view - SAME LOGIC AS PERSON CARDS
       const detailAvatar = document.getElementById('person-detail-avatar');
@@ -2459,14 +2462,15 @@
         }
 
         const vaultData = window.emmaWebVault.vaultData;
-        if (!vaultData || !vaultData.memories) {
+        if (!vaultData || !vaultData.content || !vaultData.content.memories) {
+          console.warn('⚠️ No memories found in vault data structure');
           return [];
         }
 
         // Find memories that include this person
         const connectedMemories = [];
         
-        for (const [memoryId, memory] of Object.entries(vaultData.memories)) {
+        for (const [memoryId, memory] of Object.entries(vaultData.content.memories)) {
           // Check if person is in memory's people metadata
           if (memory.metadata && memory.metadata.people && 
               Array.isArray(memory.metadata.people) && 
@@ -2475,7 +2479,7 @@
           }
           
           // Also check if person's name is mentioned in content
-          const personData = vaultData.people && vaultData.people[personId];
+          const personData = vaultData.content.people && vaultData.content.people[personId];
           if (personData && memory.content) {
             const personName = personData.name.toLowerCase();
             const memoryContent = memory.content.toLowerCase();
@@ -2497,6 +2501,159 @@
       }
     }
 
+    // Update person dialog with connected memories count and list
+    async function updatePersonMemoryConnections(personId) {
+      try {
+        const connectedMemories = await loadMemoriesForPerson(personId);
+        const memoryCount = connectedMemories.length;
+        
+        console.log(`🔗 PEOPLE: Found ${memoryCount} memories for person ${personId}`);
+        
+        // Update the memory count display
+        const memoryCountElement = document.querySelector('.detail-item:last-child .detail-value');
+        if (memoryCountElement) {
+          memoryCountElement.textContent = `${memoryCount} shared memor${memoryCount === 1 ? 'y' : 'ies'}`;
+        }
+        
+        // Create elegant memories list if there are any memories
+        if (memoryCount > 0) {
+          await displayConnectedMemoriesList(connectedMemories);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error updating person memory connections:', error);
+      }
+    }
+    
+    // Display elegant list of connected memories
+    async function displayConnectedMemoriesList(memories) {
+      // Find the Memory Connection section
+      const memorySection = document.querySelector('.detail-section:last-child');
+      
+      // Remove any existing memories list
+      const existingList = memorySection.querySelector('.connected-memories-list');
+      if (existingList) {
+        existingList.remove();
+      }
+      
+      // Create elegant memories list
+      const memoriesList = document.createElement('div');
+      memoriesList.className = 'connected-memories-list';
+      memoriesList.style.cssText = `
+        margin-top: 16px;
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      `;
+      
+      const memoriesHtml = memories.map(memory => {
+        const title = memory.title || memory.content?.substring(0, 50) + '...' || 'Untitled Memory';
+        const date = memory.timestamp ? new Date(memory.timestamp).toLocaleDateString() : 'Recent';
+        const hasMedia = memory.attachments && memory.attachments.length > 0;
+        
+        return `
+          <div class="memory-item" style="
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          " onclick="openMemoryFromPeople('${memory.id}')" 
+             onmouseover="this.style.background='rgba(255,255,255,0.08)'" 
+             onmouseout="this.style.background='transparent'">
+            <div style="
+              width: 40px;
+              height: 40px;
+              border-radius: 8px;
+              background: linear-gradient(135deg, #8658ff, #f093fb);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+            ">${hasMedia ? '📸' : '💭'}</div>
+            <div style="flex: 1;">
+              <div style="
+                color: white;
+                font-weight: 500;
+                font-size: 14px;
+                margin-bottom: 4px;
+                line-height: 1.3;
+              ">${title}</div>
+              <div style="
+                color: rgba(255, 255, 255, 0.6);
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              ">
+                <span>📅 ${date}</span>
+                ${hasMedia ? `<span>📎 ${memory.attachments.length} file${memory.attachments.length > 1 ? 's' : ''}</span>` : ''}
+              </div>
+            </div>
+            <div style="
+              color: rgba(255, 255, 255, 0.4);
+              font-size: 18px;
+            ">›</div>
+          </div>
+        `;
+      }).join('');
+      
+      memoriesList.innerHTML = memoriesHtml;
+      memorySection.appendChild(memoriesList);
+    }
+    
+    // Open memory from people dialog (navigate to memory view)
+    function openMemoryFromPeople(memoryId) {
+      console.log('🔗 PEOPLE: Opening memory:', memoryId);
+      
+      // Close the people dialog
+      closePersonDetailModal();
+      
+      // Navigate to memory view - try multiple approaches
+      if (window.parent && window.parent !== window) {
+        // If in iframe, message parent
+        window.parent.postMessage({
+          type: 'EMMA_OPEN_MEMORY',
+          memoryId: memoryId
+        }, '*');
+      } else if (window.emmaDashboard && typeof window.emmaDashboard.openMemoryFromPeople === 'function') {
+        // If dashboard method available
+        window.emmaDashboard.openMemoryFromPeople(memoryId);
+      } else {
+        // Fallback: navigate to dashboard with memory parameter
+        const currentUrl = new URL(window.location.href);
+        const isInSubfolder = currentUrl.pathname.includes('/pages/');
+        const targetUrl = isInSubfolder ? '../dashboard.html' : './dashboard.html';
+        window.location.href = `${targetUrl}?openMemory=${memoryId}`;
+      }
+    }
+    
+    // Open person dialog by ID (from URL parameter or other sources)
+    async function openPersonFromId(personId) {
+      try {
+        if (!window.emmaWebVault || !window.emmaWebVault.vaultData?.content?.people) {
+          console.error('❌ PEOPLE: Vault not available or no people data');
+          return;
+        }
+        
+        const person = window.emmaWebVault.vaultData.content.people[personId];
+        if (!person) {
+          console.error('❌ PEOPLE: Person not found with ID:', personId);
+          return;
+        }
+        
+        console.log('🔗 PEOPLE: Opening person dialog for:', person.name);
+        await openPersonDetailModal(person);
+        
+      } catch (error) {
+        console.error('❌ PEOPLE: Error opening person by ID:', error);
+      }
+    }
+
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       initNeuralNetwork();
@@ -2507,6 +2664,14 @@
         if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
           console.log('✅ PEOPLE: Vault confirmed ready, loading people...');
           loadPeople();
+          
+          // 🎯 AUTO-OPEN: Check if a specific person should be opened from URL param
+          const urlParams = new URLSearchParams(window.location.search);
+          const personId = urlParams.get('person');
+          if (personId) {
+            console.log('🔗 PEOPLE: Auto-opening person from URL:', personId);
+            setTimeout(() => openPersonFromId(personId), 300); // Give time for people to load
+          }
         } else {
           console.error('❌ PEOPLE: Vault still not available, showing empty state');
           renderPeople(); // Show empty state
