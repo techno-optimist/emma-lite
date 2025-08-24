@@ -216,39 +216,31 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     ];
 
-    // Create prompts as a chat message that disappears when conversation starts
-    const promptsMessageHTML = `
-      <div class="emma-message emma-quick-start-prompts" id="quick-start-prompts-message">
-        <div class="emma-message-header">
-          <div class="emma-avatar">
-            <div class="emma-avatar-circle">
-              <span class="emma-avatar-letter">E</span>
-            </div>
-          </div>
-          <div class="emma-message-info">
-            <span class="emma-message-name">Emma</span>
-            <span class="emma-message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-          </div>
-        </div>
-        <div class="emma-message-content">
-          <div class="quick-prompts-text">Here are some ways I can help you today:</div>
-          <div class="emma-quick-prompts-container">
-            ${promptsConfig.map(prompt => `
-              <button class="emma-quick-prompt" 
-                      data-action="${prompt.action}"
-                      data-text="${prompt.text}"
-                      title="${prompt.description}">
-                <span class="prompt-icon">${prompt.icon}</span>
-                <span class="prompt-text">${prompt.text}</span>
-              </button>
-            `).join('')}
-          </div>
-        </div>
+    // Create prompts as proper Emma message content
+    const promptsContent = `
+      <div class="quick-prompts-text">Here are some ways I can help you today:</div>
+      <div class="emma-quick-prompts-container">
+        ${promptsConfig.map(prompt => `
+          <button class="emma-quick-prompt" 
+                  data-action="${prompt.action}"
+                  data-text="${prompt.text}"
+                  title="${prompt.description}">
+            <span class="prompt-icon">${prompt.icon}</span>
+            <span class="prompt-text">${prompt.text}</span>
+          </button>
+        `).join('')}
       </div>
     `;
 
-    // Add prompts to chat messages area
-    this.messageContainer.insertAdjacentHTML('beforeend', promptsMessageHTML);
+    // Add prompts as a proper Emma message using the standard addMessage function
+    const promptMessageId = this.addMessage(promptsContent, 'emma', { isHtml: true });
+    
+    // Mark this message as the quick start prompts for easy removal
+    const promptMessage = document.getElementById(promptMessageId);
+    if (promptMessage) {
+      promptMessage.classList.add('emma-quick-start-prompts');
+      promptMessage.id = 'quick-start-prompts-message';
+    }
 
     // Apply beautiful Emma-branded styling
     this.addQuickPromptStyles();
@@ -277,7 +269,6 @@ class EmmaChatExperience extends ExperiencePopup {
           color: rgba(255, 255, 255, 0.9);
           font-size: 14px;
           margin-bottom: 16px;
-          text-align: center;
           font-weight: 400;
         }
         
