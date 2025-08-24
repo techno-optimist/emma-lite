@@ -5688,8 +5688,8 @@
           justify-content: center !important;
           opacity: 0;
           animation: dialogFadeIn 0.3s ease forwards;
-          background: rgba(0, 0, 0, 0.9) !important;
-          backdrop-filter: blur(20px) !important;
+          background: rgba(0, 0, 0, 0.6) !important;
+          backdrop-filter: blur(25px) saturate(180%) !important;
           padding: 0;
         `;
 
@@ -5702,7 +5702,13 @@
             }
             
             .responsive-memory-container {
-              background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+              background: linear-gradient(135deg, 
+                rgba(139, 92, 246, 0.85) 0%, 
+                rgba(124, 58, 237, 0.8) 30%,
+                rgba(109, 40, 217, 0.75) 70%,
+                rgba(88, 28, 135, 0.8) 100%
+              );
+              backdrop-filter: blur(40px) saturate(150%);
               border-radius: clamp(16px, 3vw, 24px);
               max-width: 95vw;
               max-height: 95vh;
@@ -5710,8 +5716,11 @@
               overflow-y: auto;
               position: relative;
               animation: dialogFadeIn 0.3s ease forwards;
-              border: 1px solid rgba(255, 255, 255, 0.2);
-              box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              box-shadow: 
+                0 32px 64px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
             }
             
             /* 📱 MOBILE FIRST (320px+) */
@@ -6049,7 +6058,7 @@
                 <h2>${memory.metadata?.title || memory.title || memory.subject || 'Beautiful Memory'}</h2>
                 <div class="memory-date">${this.formatMemoryDate(memory.created || memory.date || memory.timestamp)}</div>
               </div>
-              <button class="close-btn" onclick="dashboard.closeMemoryDialog()">
+              <button class="close-btn" onclick="window.emmaDashboard.closeMemoryDialog()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                   <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
@@ -6075,7 +6084,7 @@
                       .filter(att => att.type?.startsWith('image/'))
                       .slice(0, 5)
                       .map((_, index) => `
-                        <div class="dot ${index === 0 ? 'active' : ''}" onclick="dashboard.switchDashboardCarouselImage(${index})"></div>
+                        <div class="dot ${index === 0 ? 'active' : ''}" onclick="window.emmaDashboard.switchDashboardCarouselImage(${index})"></div>
                       `).join('')}
                   </div>
                 ` : ''}
@@ -6144,10 +6153,10 @@
             
             <!-- ACTION BUTTONS -->
             <div class="action-buttons">
-              <button class="action-btn secondary" onclick="dashboard.editDashboardMemory('${memory.id}')">
+              <button class="action-btn secondary" onclick="window.emmaDashboard.editDashboardMemory('${memory.id}')">
                 ✏️ Edit Memory
               </button>
-              <button class="action-btn primary" onclick="dashboard.shareDashboardMemory('${memory.id}')">
+              <button class="action-btn primary" onclick="window.emmaDashboard.shareDashboardMemory('${memory.id}')">
                 🔗 Share Memory
               </button>
             </div>
@@ -6360,6 +6369,54 @@
         }
         
         document.body.removeChild(textArea);
+      }
+
+      /**
+       * 🍞 Show toast notification
+       */
+      showToast(message, type = 'info') {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 
+                      type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 
+                      'linear-gradient(135deg, #8b5cf6, #7c3aed)'};
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 500;
+          z-index: 20000;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          opacity: 0;
+          transform: translateX(100%);
+          transition: all 0.3s ease;
+        `;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 300);
+        }, 3000);
       }
 
       // Close memory dialog
