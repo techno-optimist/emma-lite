@@ -128,10 +128,7 @@ class EmmaChatExperience extends ExperiencePopup {
           </button>
         </div>
 
-        <!-- Quick Start Prompts -->
-        <div class="emma-quick-prompts" id="quick-prompts">
-          <!-- Dynamic prompts will be added here -->
-        </div>
+
 
         <!-- Add bottom spacing for input area - match top padding exactly -->
         <div style="height: 32px;"></div>
@@ -188,12 +185,12 @@ class EmmaChatExperience extends ExperiencePopup {
 
   /**
    * 🎯 Setup elegant quick start prompts for user engagement
-   * Dynamic, on-brand suggestions to guide conversation
+   * Dynamic, on-brand suggestions to guide conversation - appear in chat, disappear when conversation starts
    */
   setupQuickStartPrompts() {
-    const quickPromptsContainer = document.getElementById('quick-prompts');
-    if (!quickPromptsContainer) {
-      console.warn('💬 Quick prompts container not found');
+    // Add prompts to the chat messages area, not the input area
+    if (!this.messageContainer) {
+      console.warn('💬 Message container not found for quick prompts');
       return;
     }
 
@@ -219,25 +216,48 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     ];
 
-    // Generate dynamic prompt buttons
-    const promptsHTML = promptsConfig.map(prompt => `
-      <button class="emma-quick-prompt" 
-              data-action="${prompt.action}"
-              data-text="${prompt.text}"
-              title="${prompt.description}">
-        <span class="prompt-icon">${prompt.icon}</span>
-        <span class="prompt-text">${prompt.text}</span>
-      </button>
-    `).join('');
+    // Create prompts as a chat message that disappears when conversation starts
+    const promptsMessageHTML = `
+      <div class="emma-message emma-quick-start-prompts" id="quick-start-prompts-message">
+        <div class="emma-message-header">
+          <div class="emma-avatar">
+            <div class="emma-avatar-circle">
+              <span class="emma-avatar-letter">E</span>
+            </div>
+          </div>
+          <div class="emma-message-info">
+            <span class="emma-message-name">Emma</span>
+            <span class="emma-message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          </div>
+        </div>
+        <div class="emma-message-content">
+          <div class="quick-prompts-text">Here are some ways I can help you today:</div>
+          <div class="emma-quick-prompts-container">
+            ${promptsConfig.map(prompt => `
+              <button class="emma-quick-prompt" 
+                      data-action="${prompt.action}"
+                      data-text="${prompt.text}"
+                      title="${prompt.description}">
+                <span class="prompt-icon">${prompt.icon}</span>
+                <span class="prompt-text">${prompt.text}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
 
-    // Add prompts with elegant Emma styling
-    quickPromptsContainer.innerHTML = promptsHTML;
+    // Add prompts to chat messages area
+    this.messageContainer.insertAdjacentHTML('beforeend', promptsMessageHTML);
 
     // Apply beautiful Emma-branded styling
     this.addQuickPromptStyles();
 
     // Wire up functionality for each prompt
     this.setupPromptEventListeners();
+    
+    // Mark that we have quick prompts showing
+    this.hasQuickPromptsShowing = true;
   }
 
   /**
@@ -249,14 +269,24 @@ class EmmaChatExperience extends ExperiencePopup {
 
     const styles = `
       <style id="emma-quick-prompt-styles">
-        .emma-quick-prompts {
+        .emma-quick-start-prompts {
+          animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+        
+        .quick-prompts-text {
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 14px;
+          margin-bottom: 16px;
+          text-align: center;
+          font-weight: 400;
+        }
+        
+        .emma-quick-prompts-container {
           display: flex;
           flex-wrap: wrap;
           gap: 12px;
-          margin-top: 16px;
           padding: 0;
           justify-content: center;
-          animation: fadeInUp 0.6s ease-out 0.3s both;
         }
 
         .emma-quick-prompt {
@@ -342,9 +372,20 @@ class EmmaChatExperience extends ExperiencePopup {
           }
         }
 
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+        }
+
         /* Mobile optimization */
         @media (max-width: 480px) {
-          .emma-quick-prompts {
+          .emma-quick-prompts-container {
             flex-direction: column;
             gap: 8px;
           }
@@ -400,6 +441,9 @@ class EmmaChatExperience extends ExperiencePopup {
   async handlePromptAction(action, promptText) {
     console.log(`🎯 PROMPT: Executing action "${action}" with text "${promptText}"`);
     
+    // Hide the quick prompts since conversation is starting
+    this.hideQuickStartPrompts();
+    
     // Add the prompt text as a user message to show context
     this.addMessage(promptText, 'user');
     
@@ -428,13 +472,29 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
+   * 🫥 Hide quick start prompts when conversation begins  
+   */
+  hideQuickStartPrompts() {
+    const promptsMessage = document.getElementById('quick-start-prompts-message');
+    if (promptsMessage) {
+      promptsMessage.style.animation = 'fadeOut 0.3s ease-out forwards';
+      setTimeout(() => {
+        promptsMessage.remove();
+        this.hasQuickPromptsShowing = false;
+      }, 300);
+    }
+  }
+
+  /**
    * 📸 Handle photos prompt - trigger intelligent photo capture
    */
   async handlePhotosPrompt() {
     this.addMessage("Perfect! Let's capture some photos to save as memories. I can help you organize them beautifully! 📸", 'emma');
     
-    // Trigger the media upload flow
-    await this.handleMediaRequest();
+    // Trigger the media upload flow with proper parameters
+    const mediaMessage = "I'd like to save some photos as memories";
+    const messageId = `message_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await this.handleMediaRequest(mediaMessage, messageId);
   }
 
   /**
@@ -718,6 +778,11 @@ class EmmaChatExperience extends ExperiencePopup {
   async sendMessage() {
     const message = this.inputField.value.trim();
     if (!message) return;
+
+    // Hide quick start prompts when user starts typing their own messages
+    if (this.hasQuickPromptsShowing) {
+      this.hideQuickStartPrompts();
+    }
 
     // Add user message
     const messageId = this.addMessage(message, 'user');
