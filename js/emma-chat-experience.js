@@ -36,6 +36,9 @@ class EmmaChatExperience extends ExperiencePopup {
     // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
     this.temporaryMemories = new Map(); // Store preview memories before vault save
 
+    // 🤔 PERSON ENRICHMENT FLOW STATE
+    this.currentPersonEnrichment = null; // Track active person enrichment conversations
+
     // Emma personality settings
     this.emmaPersonality = {
       name: "Emma",
@@ -97,6 +100,7 @@ class EmmaChatExperience extends ExperiencePopup {
     console.log('  🔤 Case-insensitive name recognition');
     console.log('  🗣️ Natural language processing');
     console.log('  🎯 Ultra-robust name extraction');
+    console.log('  🤔 Gentle person enrichment conversations');
     console.log('  💝 Always works without technical setup');
     
     if (!this.apiKey) {
@@ -1992,6 +1996,23 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
 
+    // 🤔 CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
+    if (this.currentPersonEnrichment && 
+        this.currentPersonEnrichment.stage !== 'complete' &&
+        Date.now() - this.currentPersonEnrichment.startedAt < 300000) { // 5 minute timeout
+      
+      console.log('🤔 Active person enrichment detected, handling response');
+      const handled = await this.handlePersonEnrichmentResponse(userMessage, this.currentPersonEnrichment.personName);
+      
+      if (handled) {
+        // If this completed the enrichment, clear it
+        if (this.currentPersonEnrichment.stage === 'complete') {
+          this.currentPersonEnrichment = null;
+        }
+        return;
+      }
+    }
+
     // 🎯 INTELLIGENT INTENT CLASSIFICATION
     const intent = this.classifyUserIntent(userMessage);
     console.log('🧠 CHAT: Intent classified as:', intent);
@@ -2445,7 +2466,13 @@ RULES:
         createdAt: new Date().toISOString(),
         memories: [],
         notes: `Added via Emma chat: "${originalMessage}"`,
-        relationships: []
+        relationships: [],
+        enrichment: {
+          relationship: '',
+          details: '',
+          memories: [],
+          addedAt: new Date().toISOString()
+        }
       };
       
       console.log('👤 Created person object:', newPerson);
@@ -2463,9 +2490,15 @@ RULES:
         await window.emmaWebVault.scheduleElegantSave();
         console.log('👤 Vault save scheduled');
         
-        this.addMessage(`✅ Perfect! I've added ${personName} to your vault. They're now part of your memory collection and I can help you track memories with them.`, 'emma');
+        // 💜 DEMENTIA-FRIENDLY SUCCESS MESSAGE
+        this.addMessage(`✅ Perfect! I've added ${personName} to your vault.`, 'emma');
         this.addVaultOperationIndicator(); // Show that this was a core vault operation
         console.log('✅ PERSON ADDED SUCCESSFULLY:', personName);
+        
+        // 🤔 GENTLE FOLLOW-UP CONVERSATION
+        setTimeout(() => {
+          this.startPersonEnrichmentFlow(personName);
+        }, 1500);
         
       } else {
         console.error('❌ Vault not available:', { 
@@ -2478,6 +2511,143 @@ RULES:
     } catch (error) {
       console.error('❌ PERSON ADD ERROR:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
+    }
+  }
+
+  /**
+   * 🤔 START PERSON ENRICHMENT FLOW
+   * Gentle follow-up conversation for dementia users
+   */
+  async startPersonEnrichmentFlow(personName) {
+    console.log('🤔 Starting person enrichment flow for:', personName);
+    
+    // 💜 GENTLE, NON-OVERWHELMING QUESTIONS
+    const followUpQuestions = [
+      `Tell me a little about ${personName}. How do you know them?`,
+      `What's something special you'd like to remember about ${personName}?`,
+      `Would you like to tell me how ${personName} is important to you?`,
+      `Is there anything particular about ${personName} that makes you smile?`
+    ];
+    
+    // Pick a random gentle question
+    const question = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
+    
+    // 🕰️ Give them time to process the success first
+    setTimeout(() => {
+      this.addMessage(question, 'emma');
+      
+      // 🎯 SET CONTEXT for next response
+      this.currentPersonEnrichment = {
+        personName: personName,
+        stage: 'relationship', // relationship, details, memories, complete
+        startedAt: Date.now()
+      };
+      
+    }, 2000); // Wait 2 seconds after success message
+  }
+
+  /**
+   * 🤔 HANDLE PERSON ENRICHMENT RESPONSES
+   * Process follow-up information about newly added person
+   */
+  async handlePersonEnrichmentResponse(userMessage, personName) {
+    console.log('🤔 Handling enrichment response for:', personName, userMessage);
+    
+    // 🚫 CHECK FOR SKIP/DECLINE SIGNALS
+    const skipPatterns = [
+      /\b(no|nah|skip|pass|not now|maybe later|that'?s enough|i'?m good|all set)\b/i,
+      /\b(move on|next|done|finished|enough|nothing else)\b/i,
+      /\b(don'?t want|not interested|not really)\b/i
+    ];
+    
+    const isSkipping = skipPatterns.some(pattern => pattern.test(userMessage.toLowerCase()));
+    
+    if (isSkipping) {
+      console.log('🤔 User is skipping enrichment');
+      this.addMessage(`That's perfectly fine! ${personName} is safely in your vault. We can always add more details later.`, 'emma');
+      this.currentPersonEnrichment = null; // Clear the enrichment flow
+      return true;
+    }
+    
+    try {
+      // Find the person in vault
+      const vault = window.emmaWebVault?.vaultData?.content;
+      if (!vault?.people) {
+        console.error('❌ No people section in vault');
+        return false;
+      }
+      
+      // Find person by name
+      let targetPerson = null;
+      for (const [id, person] of Object.entries(vault.people)) {
+        if (person.name === personName) {
+          targetPerson = person;
+          break;
+        }
+      }
+      
+      if (!targetPerson) {
+        console.error('❌ Person not found in vault:', personName);
+        return false;
+      }
+      
+      // 💝 ADD ENRICHMENT INFO
+      if (!targetPerson.enrichment) {
+        targetPerson.enrichment = {
+          relationship: '',
+          details: '',
+          memories: [],
+          addedAt: new Date().toISOString()
+        };
+      }
+      
+      const stage = this.currentPersonEnrichment?.stage || 'relationship';
+      
+      if (stage === 'relationship') {
+        targetPerson.enrichment.relationship = userMessage;
+        targetPerson.notes = `${targetPerson.notes}\nRelationship: ${userMessage}`;
+        
+        // 💬 ACKNOWLEDGING RESPONSE
+        const acknowledgments = [
+          `That's wonderful! ${userMessage.includes('friend') ? 'Friends are so precious.' : 'Thank you for sharing that.'}`,
+          `How lovely! I can tell ${personName} means a lot to you.`,
+          `That's beautiful. ${personName} sounds like someone special.`,
+          `Thank you for telling me about your connection with ${personName}.`
+        ];
+        
+        const ack = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+        this.addMessage(ack, 'emma');
+        
+        // 🎯 OPTIONAL FOLLOW-UP
+        setTimeout(() => {
+          this.addMessage(`Is there anything else you'd like me to remember about ${personName}? Or we can move on to something else - whatever feels right for you.`, 'emma');
+          
+          this.currentPersonEnrichment.stage = 'complete';
+        }, 2500);
+        
+      } else {
+        // Additional details
+        if (!targetPerson.enrichment.details) {
+          targetPerson.enrichment.details = userMessage;
+        } else {
+          targetPerson.enrichment.details += `\n${userMessage}`;
+        }
+        
+        targetPerson.notes += `\nAdditional: ${userMessage}`;
+        
+        this.addMessage(`Thank you for sharing that about ${personName}. I'll keep that in your vault.`, 'emma');
+        this.currentPersonEnrichment.stage = 'complete';
+      }
+      
+      // 💾 SAVE ENRICHMENT
+      await window.emmaWebVault.scheduleElegantSave();
+      console.log('✅ Person enrichment saved:', targetPerson.enrichment);
+      
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error handling person enrichment:', error);
+      return false;
     }
   }
 
