@@ -2085,6 +2085,18 @@
         this.isConstellationMode = false;
         this.constellationMemories = [];
         this.centralNeuron = null;
+        
+        // 🔍 ZOOM FUNCTIONALITY: Dashboard constellation zoom/pan state
+        this.zoomState = {
+          scale: 1,
+          translateX: 0,
+          translateY: 0,
+          isDragging: false,
+          lastTouchDistance: 0,
+          minScale: 0.3,
+          maxScale: 3.0
+        };
+        this.constellationContainer = null;
 
         // Initialize WebGL Emma Orb
         this.initEmmaOrb();
@@ -3652,6 +3664,9 @@
         // Shrink central orb
         this.shrinkCentralOrb();
 
+        // 🔍 CREATE ZOOMABLE CONSTELLATION CONTAINER
+        this.createConstellationContainer();
+
         // Load memory data for constellation
         await this.loadMemoriesForConstellation();
 
@@ -3661,7 +3676,7 @@
         // Create memory constellation (await for real memories)
         await this.createMemoryConstellation();
 
-        // Show constellation UI
+        // Show constellation UI with zoom controls
         this.showConstellationUI();
       }
 
@@ -4234,7 +4249,9 @@
           memoryElement.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.4)';
         });
 
-        document.body.appendChild(memoryElement);
+        // 🔍 ZOOM FIX: Add to constellation container instead of body
+        const targetContainer = this.constellationContainer || document.body;
+        targetContainer.appendChild(memoryElement);
 
         // Animate in with random delay for organic feel
         const delay = Math.random() * 500 + 100;
@@ -4339,7 +4356,9 @@
           this.startEmmaChatExperience();
         });
 
-        document.body.appendChild(createElement);
+        // 🔍 ZOOM FIX: Add to constellation container instead of body
+        const targetContainer = this.constellationContainer || document.body;
+        targetContainer.appendChild(createElement);
 
         // Animate in
         setTimeout(() => {
@@ -4730,9 +4749,9 @@
           memoryElement.style.zIndex = '1500'; /* CRITICAL FIX: Maintain high z-index even when not hovering */
         });
 
-        // Append to a container that's below the canvas
-        const container = document.querySelector('.dashboard') || document.body;
-        container.appendChild(memoryElement);
+        // 🔍 ZOOM FIX: Add to constellation container for proper zoom behavior
+        const targetContainer = this.constellationContainer || document.querySelector('.dashboard') || document.body;
+        targetContainer.appendChild(memoryElement);
 
         // Animate in with staggered timing
         const delay = Math.random() * 500 + 200; // 200-700ms delay
@@ -5581,6 +5600,9 @@
         this.updateConstellationCounts();
 
         this.constellationUI = burgerMenu;
+        
+        // 🔍 ADD ZOOM CONTROLS to constellation UI
+        this.addConstellationZoomControls();
       }
 
       // Set up constellation menu interactions
@@ -5737,6 +5759,251 @@
         }
       }
 
+      // 🔍 CREATE ZOOMABLE CONSTELLATION CONTAINER
+      createConstellationContainer() {
+        // Remove any existing constellation container
+        const existingContainer = document.getElementById('constellation-zoom-container');
+        if (existingContainer) {
+          existingContainer.remove();
+        }
+
+        // Create zoomable container for constellation nodes
+        this.constellationContainer = document.createElement('div');
+        this.constellationContainer.id = 'constellation-zoom-container';
+        this.constellationContainer.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1400;
+          transform-origin: center center;
+          transition: transform 0.2s ease-out;
+        `;
+
+        // Reset zoom state
+        this.zoomState.scale = 1;
+        this.zoomState.translateX = 0;
+        this.zoomState.translateY = 0;
+
+        // Add to dashboard
+        document.body.appendChild(this.constellationContainer);
+
+        // Enable zoom/pan interaction on the container
+        this.setupConstellationZoom();
+
+        console.log('🔍 ZOOM: Created constellation container with zoom functionality');
+      }
+
+      // 🔍 SETUP ZOOM AND PAN FUNCTIONALITY
+      setupConstellationZoom() {
+        // Enable pointer events for zoom interaction
+        document.addEventListener('wheel', (e) => {
+          if (this.isConstellationMode) {
+            e.preventDefault();
+            this.handleConstellationZoom(e);
+          }
+        }, { passive: false });
+
+        // Mouse drag for panning
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragStartZoom = { ...this.zoomState };
+
+        document.addEventListener('mousedown', (e) => {
+          if (this.isConstellationMode && e.target === document.body) {
+            isDragging = true;
+            dragStart = { x: e.clientX, y: e.clientY };
+            dragStartZoom = { ...this.zoomState };
+            document.body.style.cursor = 'grabbing';
+          }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+          if (isDragging && this.isConstellationMode) {
+            const deltaX = e.clientX - dragStart.x;
+            const deltaY = e.clientY - dragStart.y;
+            
+            this.zoomState.translateX = dragStartZoom.translateX + deltaX;
+            this.zoomState.translateY = dragStartZoom.translateY + deltaY;
+            
+            this.updateConstellationTransform();
+          }
+        });
+
+        document.addEventListener('mouseup', () => {
+          if (isDragging) {
+            isDragging = false;
+            document.body.style.cursor = '';
+          }
+        });
+      }
+
+      // 🔍 HANDLE MOUSE WHEEL ZOOM
+      handleConstellationZoom(e) {
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+        const newScale = Math.max(this.zoomState.minScale, 
+                         Math.min(this.zoomState.maxScale, 
+                         this.zoomState.scale * zoomFactor));
+
+        // Zoom towards mouse position
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+
+        // Calculate offset to zoom towards mouse
+        const scaleRatio = newScale / this.zoomState.scale;
+        this.zoomState.translateX = mouseX - (mouseX - this.zoomState.translateX) * scaleRatio;
+        this.zoomState.translateY = mouseY - (mouseY - this.zoomState.translateY) * scaleRatio;
+        this.zoomState.scale = newScale;
+
+        this.updateConstellationTransform();
+      }
+
+      // 🔍 UPDATE CONSTELLATION TRANSFORM
+      updateConstellationTransform() {
+        if (this.constellationContainer) {
+          const transform = `translate(${this.zoomState.translateX}px, ${this.zoomState.translateY}px) scale(${this.zoomState.scale})`;
+          this.constellationContainer.style.transform = transform;
+        }
+      }
+
+      // 🔍 ADD ZOOM CONTROL BUTTONS
+      addConstellationZoomControls() {
+        // Create zoom controls container
+        const zoomControls = document.createElement('div');
+        zoomControls.id = 'constellation-zoom-controls';
+        zoomControls.style.cssText = `
+          position: fixed;
+          bottom: 80px;
+          right: 30px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          z-index: 9999;
+          opacity: 1;
+          transition: opacity 0.3s ease;
+        `;
+
+        // Zoom in button
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.innerHTML = '🔍➕';
+        zoomInBtn.title = 'Zoom In';
+        zoomInBtn.style.cssText = `
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(139, 92, 246, 0.9);
+          color: white;
+          font-size: 20px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        `;
+        
+        zoomInBtn.addEventListener('click', () => {
+          const newScale = Math.min(this.zoomState.maxScale, this.zoomState.scale * 1.3);
+          this.zoomState.scale = newScale;
+          this.updateConstellationTransform();
+        });
+
+        // Zoom out button
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.innerHTML = '🔍➖';
+        zoomOutBtn.title = 'Zoom Out';
+        zoomOutBtn.style.cssText = zoomInBtn.style.cssText;
+        
+        zoomOutBtn.addEventListener('click', () => {
+          const newScale = Math.max(this.zoomState.minScale, this.zoomState.scale / 1.3);
+          this.zoomState.scale = newScale;
+          this.updateConstellationTransform();
+        });
+
+        // Reset zoom button
+        const resetBtn = document.createElement('button');
+        resetBtn.innerHTML = '🏠';
+        resetBtn.title = 'Fit All Memories';
+        resetBtn.style.cssText = zoomInBtn.style.cssText.replace('rgba(139, 92, 246, 0.9)', 'rgba(16, 185, 129, 0.9)');
+        
+        resetBtn.addEventListener('click', () => {
+          this.fitAllMemories();
+        });
+
+        // Add hover effects
+        [zoomInBtn, zoomOutBtn, resetBtn].forEach(btn => {
+          btn.addEventListener('mouseenter', () => {
+            btn.style.transform = 'scale(1.1)';
+          });
+          btn.addEventListener('mouseleave', () => {
+            btn.style.transform = 'scale(1)';
+          });
+        });
+
+        zoomControls.appendChild(zoomInBtn);
+        zoomControls.appendChild(zoomOutBtn);
+        zoomControls.appendChild(resetBtn);
+        document.body.appendChild(zoomControls);
+
+        console.log('🔍 ZOOM: Added zoom control buttons for Debbe');
+      }
+
+      // 🔍 FIT ALL MEMORIES IN VIEW
+      fitAllMemories() {
+        if (!this.nodes || this.nodes.length === 0) {
+          // Reset to center if no nodes
+          this.zoomState.scale = 1;
+          this.zoomState.translateX = 0;
+          this.zoomState.translateY = 0;
+          this.updateConstellationTransform();
+          return;
+        }
+
+        // Find bounding box of all nodes
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        
+        this.nodes.forEach(node => {
+          if (node.x !== undefined && node.y !== undefined) {
+            minX = Math.min(minX, node.x - 50); // Add padding
+            minY = Math.min(minY, node.y - 50);
+            maxX = Math.max(maxX, node.x + 50);
+            maxY = Math.max(maxY, node.y + 50);
+          }
+        });
+
+        if (minX === Infinity) {
+          // No valid positions, just center
+          this.zoomState.scale = 1;
+          this.zoomState.translateX = 0;
+          this.zoomState.translateY = 0;
+          this.updateConstellationTransform();
+          return;
+        }
+
+        // Calculate optimal scale and position
+        const contentWidth = maxX - minX;
+        const contentHeight = maxY - minY;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        const scaleX = (viewportWidth * 0.8) / contentWidth;
+        const scaleY = (viewportHeight * 0.8) / contentHeight;
+        const optimalScale = Math.min(scaleX, scaleY, this.zoomState.maxScale);
+        const finalScale = Math.max(optimalScale, this.zoomState.minScale);
+
+        // Center the content
+        const contentCenterX = (minX + maxX) / 2;
+        const contentCenterY = (minY + maxY) / 2;
+        
+        this.zoomState.scale = finalScale;
+        this.zoomState.translateX = viewportWidth / 2 - contentCenterX * finalScale;
+        this.zoomState.translateY = viewportHeight / 2 - contentCenterY * finalScale;
+
+        this.updateConstellationTransform();
+        
+        console.log('🏠 ZOOM: Fitted all memories in view for Debbe');
+      }
+
       // Removed fadeOutMemoryNodes and fadeInMemoryNodes - no longer needed since constellation mode exits to main dashboard
 
       // Completely clear all memory nodes from DOM (prevents duplicates)
@@ -5851,11 +6118,72 @@
       }
 
       // 📱💻🖥️ RESPONSIVE MEMORY DIALOG - Works on ALL screen sizes!
-      openMemoryDialog(memory) {
+      async openMemoryDialog(memory) {
         console.log('🎯 DASHBOARD: Opening responsive memory dialog for:', memory.title || memory.id);
         
+        // 🚀 CRITICAL FIX: Load full media if lazy-loaded (from performance optimization)
+        const memoryWithFullMedia = await this.loadFullMediaForMemory(memory);
+        
         // 📱💻🖥️ USE THE NEW RESPONSIVE MEMORY DIALOG!
-        this.showResponsiveMemoryDialog(memory);
+        this.showResponsiveMemoryDialog(memoryWithFullMedia);
+      }
+
+      /**
+       * 🚀 PERFORMANCE OPTIMIZATION: Load full media data on-demand for lazy-loaded attachments
+       * (Reused from memories.js constellation)
+       */
+      async loadFullMediaForMemory(memory) {
+        // Check if this memory has lazy-loaded attachments that need full loading
+        const hasLazyAttachments = memory.attachments?.some(att => att.isLazyLoaded && att.hasMedia);
+        
+        if (!hasLazyAttachments) {
+          console.log('💾 DASHBOARD: Memory already has full media, no loading needed');
+          return memory;
+        }
+        
+        console.log('🚀 DASHBOARD: Loading full media for', memory.attachments?.length || 0, 'attachments');
+        
+        try {
+          // Get vault media data
+          const vaultMedia = window.emmaWebVault?.vaultData?.content?.media || {};
+          
+          // Load full media data for lazy-loaded attachments
+          const fullAttachments = memory.attachments.map(attachment => {
+            if (attachment.isLazyLoaded && attachment.hasMedia && attachment.mediaId) {
+              const mediaItem = vaultMedia[attachment.mediaId];
+              if (mediaItem && mediaItem.data) {
+                console.log('💾 DASHBOARD: Loading full media for:', attachment.name);
+                return {
+                  ...attachment,
+                  url: mediaItem.data.startsWith('data:')
+                    ? mediaItem.data
+                    : `data:${mediaItem.type};base64,${mediaItem.data}`,
+                  dataUrl: mediaItem.data.startsWith('data:')
+                    ? mediaItem.data
+                    : `data:${mediaItem.type};base64,${mediaItem.data}`,
+                  data: mediaItem.data,
+                  isLazyLoaded: false, // Mark as fully loaded
+                  isPersisted: true
+                };
+              }
+            }
+            
+            // Return attachment as-is if already loaded or no media
+            return attachment;
+          });
+          
+          console.log('✅ DASHBOARD: Successfully loaded full media data');
+          
+          return {
+            ...memory,
+            attachments: fullAttachments
+          };
+          
+        } catch (error) {
+          console.error('❌ DASHBOARD: Failed to load full media:', error);
+          // Return original memory if loading fails
+          return memory;
+        }
       }
 
       /**
