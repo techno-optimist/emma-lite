@@ -6409,18 +6409,39 @@
             
             // IMMEDIATE VAULT RESTORATION for extension compatibility
             if (sessionStorage.getItem('emmaVaultActive') === 'true') {
-              console.log('🔧 DASHBOARD: Immediately restoring vault for extension compatibility...');
+              console.log('🚨🔧 DASHBOARD: Immediately restoring vault for extension compatibility...');
+              console.log('🚨🔧 DASHBOARD: Session vault name:', sessionStorage.getItem('emmaVaultName'));
+              console.log('🚨🔧 DASHBOARD: Document ready state:', document.readyState);
+              
               window.emmaWebVault.restoreVaultState()
                 .then(result => {
                   if (result) {
-                    console.log('✅ DASHBOARD: Vault restored successfully for extension');
+                    console.log('🚨✅ DASHBOARD: Vault restored successfully for extension!', {
+                      isOpen: window.emmaWebVault.isOpen,
+                      hasVaultData: !!window.emmaWebVault.vaultData,
+                      hasAddMemoryMethod: typeof window.emmaWebVault.addMemory
+                    });
                   } else {
-                    console.log('⚠️ DASHBOARD: Vault restore returned false');
+                    console.log('🚨⚠️ DASHBOARD: Vault restore returned false - troubleshooting...');
+                    console.log('🚨⚠️ DASHBOARD: Current vault state:', {
+                      isOpen: window.emmaWebVault.isOpen,
+                      hasVaultData: !!window.emmaWebVault.vaultData,
+                      sessionActive: sessionStorage.getItem('emmaVaultActive'),
+                      sessionName: sessionStorage.getItem('emmaVaultName')
+                    });
                   }
                 })
                 .catch(error => {
-                  console.warn('⚠️ DASHBOARD: Could not restore vault:', error);
+                  console.error('🚨❌ DASHBOARD: Could not restore vault:', error);
+                  console.error('🚨❌ DASHBOARD: Restore error details:', {
+                    errorMessage: error.message,
+                    errorStack: error.stack,
+                    vaultExists: !!window.emmaWebVault,
+                    sessionActive: sessionStorage.getItem('emmaVaultActive')
+                  });
                 });
+            } else {
+              console.log('🚨ℹ️ DASHBOARD: No active vault session found - extension will need manual unlock');
             }
           } else if (window.emmaWebVault) {
             console.log('✅ DASHBOARD: EmmaWebVault instance already exists');

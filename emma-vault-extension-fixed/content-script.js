@@ -45,17 +45,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'SAVE_MEMORY_TO_WEBAPP_VAULT') {
-    console.log('💾 Content Script: *** REAL MEMORY SAVE REQUEST ***');
-    console.log('💾 Content Script: Memory data:', request.memoryData);
+    console.log('🚨💾 Content Script: *** REAL MEMORY SAVE REQUEST ***');
+    console.log('🚨💾 Content Script: Memory data size:', JSON.stringify(request.memoryData).length);
+    console.log('🚨💾 Content Script: Current page URL:', window.location.href);
+    console.log('🚨💾 Content Script: Document ready state:', document.readyState);
+    console.log('🚨💾 Content Script: Session vault active:', sessionStorage.getItem('emmaVaultActive'));
+    console.log('🚨💾 Content Script: Window.emmaWebVault exists:', !!window.emmaWebVault);
+    console.log('🚨💾 Content Script: Window.emmaWebVault isOpen:', window.emmaWebVault?.isOpen);
     
     // Save to real webapp vault
     saveToWebappVault(request.memoryData)
       .then(result => {
-        console.log('💾 Content Script: Save result:', result);
+        console.log('✅💾 Content Script: Save result SUCCESS:', result);
         sendResponse(result);
       })
       .catch(error => {
-        console.error('💾 Content Script: Save failed:', error);
+        console.error('❌💾 Content Script: Save FAILED:', error);
+        console.error('❌💾 Content Script: Error details:', {
+          message: error.message,
+          stack: error.stack,
+          vaultExists: !!window.emmaWebVault,
+          vaultIsOpen: window.emmaWebVault?.isOpen
+        });
         sendResponse({ success: false, error: error.message });
       });
     
@@ -1137,8 +1148,25 @@ async function waitForWebappVault(timeoutMs = 3000) {
         hasAddMemoryMethod: typeof window.emmaWebVault?.addMemory === 'function',
         sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
         localVaultActive: localStorage.getItem('emmaVaultActive'),
-        timeElapsed: Date.now() - startTime
+        timeElapsed: Date.now() - startTime,
+        pageUrl: window.location.href,
+        documentReady: document.readyState,
+        emmaWebVaultClass: typeof EmmaWebVault,
+        windowKeys: Object.keys(window).filter(k => k.includes('emma')).slice(0, 10)
       });
+      
+      // ULTIMATE DEBUG: If vault exists, show its full state
+      if (window.emmaWebVault) {
+        console.log('💾 Content Script: VAULT OBJECT DETAILS:', {
+          constructor: window.emmaWebVault.constructor.name,
+          isOpen: window.emmaWebVault.isOpen,
+          hasVaultData: !!window.emmaWebVault.vaultData,
+          vaultDataContent: !!window.emmaWebVault.vaultData?.content,
+          addMemoryExists: typeof window.emmaWebVault.addMemory,
+          restoreStateExists: typeof window.emmaWebVault.restoreVaultState,
+          allMethods: Object.getOwnPropertyNames(Object.getPrototypeOf(window.emmaWebVault)).slice(0, 10)
+        });
+      }
       
       // Check if vault exists and is ready (FIXED: Don't require vaultData for new memories)
       if (window.emmaWebVault && 
