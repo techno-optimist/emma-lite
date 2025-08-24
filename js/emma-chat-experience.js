@@ -1774,8 +1774,13 @@ class EmmaChatExperience extends ExperiencePopup {
         attachments: []
       };
 
-      // Show enhanced memory preview with media upload
-      this.showEnhancedMemoryPreview(memory);
+      // 🎯 CRITICAL UPGRADE: Use the superior edit dialog instead of basic enhanced preview
+      // Store memory in temporary storage for editing
+      this.temporaryMemories.set(memory.id, memory);
+      console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
+      
+      // Show the much better edit dialog we just perfected!
+      this.editMemoryDetails(memory.id);
 
     } catch (error) {
       console.error('❌ Error handling media request:', error);
