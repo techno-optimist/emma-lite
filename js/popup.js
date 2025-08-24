@@ -1009,11 +1009,12 @@ function viewMemoriesGallery() {
 function openCreateMemory() {
   try {
     if (chrome && chrome.tabs && chrome.runtime) {
-      chrome.tabs.create({ url: chrome.runtime.getURL('memories.html?create=true') });
+      // 🎯 SAFE REDIRECT: Use dashboard for memory creation (unified experience for Debbe)
+      chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html?create=true') });
       return;
     }
   } catch {}
-  try { window.location.href = 'memories.html?create=true'; } catch {}
+  try { window.location.href = 'dashboard.html?create=true'; } catch {}
 }
 
 function openPeople() {
@@ -1075,11 +1076,12 @@ async function addMediaOnPageToCapsule() {
 function openConstellation() {
   try {
     if (chrome && chrome.tabs && chrome.runtime) {
-      chrome.tabs.create({ url: chrome.runtime.getURL('memories.html?view=constellation') });
+      // 🎯 SAFE REDIRECT: Use dashboard constellation (the good one!) for Debbe's demo
+      chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html?constellation=true') });
       return;
     }
   } catch {}
-  try { window.location.href = 'memories.html?view=constellation'; } catch {}
+  try { window.location.href = 'dashboard.html?constellation=true'; } catch {}
 }
 
 function openExport() {

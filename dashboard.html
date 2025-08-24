@@ -2125,6 +2125,9 @@
           this.loading.classList.remove('active');
         }, 1500);
 
+        // 🎯 SAFE AUTO-TRIGGER: Check URL params for constellation or memory creation
+        this.handleURLParams();
+
         // Start background animations
         this.startAnimations();
       }
@@ -3117,6 +3120,32 @@
         };
 
         animate();
+      }
+
+      // 🎯 SAFE URL PARAM HANDLER: Auto-trigger constellation or memory creation
+      handleURLParams() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          
+          if (urlParams.get('constellation') === 'true') {
+            // Auto-enter constellation mode after a brief delay
+            setTimeout(() => {
+              console.log('🎯 AUTO-TRIGGERING: Constellation mode from URL param');
+              this.enterMemoryConstellation();
+            }, 2000); // Wait for dashboard to fully load
+          }
+          
+          if (urlParams.get('create') === 'true') {
+            // Auto-start voice capture for memory creation
+            setTimeout(() => {
+              console.log('🎯 AUTO-TRIGGERING: Memory creation from URL param');
+              this.startVoiceCapture();
+            }, 2000); // Wait for dashboard to fully load
+          }
+        } catch (error) {
+          console.warn('🔧 URL param handling failed (non-critical):', error);
+          // Safe fallback - do nothing if URL parsing fails
+        }
       }
 
       async handleRadialAction(action) {
