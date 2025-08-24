@@ -287,11 +287,22 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = _UniversalMediaCapture;
 }
 
-// 🚨 CRITICAL FIX: Add SAVE_MEMORY_TO_WEBAPP_VAULT handler for non-Emma pages
+// 🚨 CRITICAL FIX: Add SAVE_MEMORY_TO_WEBAPP_VAULT handler for non-Emma pages ONLY
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('🚨📡 UNIVERSAL: MESSAGE RECEIVED!', request.action, 'on page:', window.location.href);
   
+  // CRITICAL: Only handle if NOT on Emma domain (prevent infinite loop!)
+  const isEmmaDomain = window.location.href.includes('emma-hjjc.onrender.com') || 
+                       window.location.href.includes('emma-lite-extension.onrender.com') ||
+                       window.location.href.includes('localhost') ||
+                       window.location.href.includes('127.0.0.1');
+  
   if (request.action === 'SAVE_MEMORY_TO_WEBAPP_VAULT') {
+    if (isEmmaDomain) {
+      console.log('🚨🚫 UNIVERSAL: On Emma domain - letting content-script.js handle this!');
+      return false; // Let content-script.js handle it
+    }
+    
     console.log('🚨⚠️ UNIVERSAL: Got save request on non-Emma page! Redirecting to background...');
     console.log('🚨⚠️ UNIVERSAL: This should have been sent to Emma dashboard tab!');
     
