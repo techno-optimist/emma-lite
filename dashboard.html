@@ -1416,18 +1416,30 @@
       }
 
       .radial-item {
-        width: 70px !important;
-        height: 70px !important;
+        width: 80px !important;
+        height: 80px !important;
         font-size: 12px;
+        /* 🎯 MOBILE TOUCH: Larger touch targets for easier interaction */
+        min-width: 80px;
+        min-height: 80px;
+        /* 🔗 BOUND TO ORB: Ensure positioning starts from orb center */
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
       }
 
       .radial-item-icon {
-        font-size: 24px;
+        font-size: 28px;
       }
 
       .radial-item-label {
-        font-size: 10px;
-        margin-top: 2px;
+        font-size: 11px;
+        margin-top: 3px;
+        font-weight: 500;
+      }
+
+      /* 📱 MOBILE OPTIMIZATION: Better visual feedback */
+      .radial-item:active {
+        transform: scale(0.95) !important;
+        background: rgba(134, 88, 255, 0.3) !important;
       }
 
       .emma-orb-container {
@@ -2247,8 +2259,9 @@
           // Debounce resize events
           clearTimeout(this.resizeTimeout);
           this.resizeTimeout = setTimeout(() => {
-            if (this.isMenuOpen || this.isConstellationMode) {
-              this.repositionNodesOnResize();
+            if (this.isMenuOpen) {
+              // 🔄 MOBILE FIX: Keep radial menu bound to orb center
+              this.repositionMenuToOrb();
               
               // CRITICAL FIX: Resize canvas and redraw connections after repositioning
               if (this.neuralCanvas) {
@@ -2258,7 +2271,21 @@
               
               // Force immediate redraw of connections with new positions
               if (this.render && typeof this.render === 'function') {
-              this.render();
+                this.render();
+              } else if (window.neuralRenderer && window.neuralRenderer.render) {
+                window.neuralRenderer.render();
+              }
+            } else if (this.isConstellationMode) {
+              // Existing constellation resize handling
+              this.repositionNodesOnResize();
+              
+              if (this.neuralCanvas) {
+                this.neuralCanvas.width = window.innerWidth;
+                this.neuralCanvas.height = window.innerHeight;
+              }
+              
+              if (this.render && typeof this.render === 'function') {
+                this.render();
               } else if (window.neuralRenderer && window.neuralRenderer.render) {
                 window.neuralRenderer.render();
               }
@@ -2448,58 +2475,73 @@
       }
 
       initNeuralNetwork() {
-        // Initialize neural nodes with responsive positioning
-
-        console.log('🔧 radialMenu innerHTML preview:', this.radialMenu ? this.radialMenu.innerHTML.substring(0, 200) : 'NULL');
+        // 🎯 MOBILE-FIRST: Initialize nodes bound to orb center, not screen center
+        console.log('🔧 initNeuralNetwork: Starting mobile-first radial positioning');
 
         const items = this.radialMenu.querySelectorAll('.radial-item');
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
+        
+        // 🔥 CRITICAL FIX: Get orb center position dynamically, not screen center
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
 
-        // Responsive radius calculation
+        console.log('🎯 Orb center:', { x: orbCenterX, y: orbCenterY, orbRect });
+
+        // 📱 Responsive radius - closer on mobile, further on desktop
         const isMobile = window.innerWidth <= 768;
         const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
         let radius;
 
         if (isMobile) {
-          radius = Math.min(window.innerWidth, window.innerHeight) * 0.25; // 25% of smaller dimension
+          // Mobile: Much smaller radius, closer to orb
+          radius = Math.min(120, Math.min(window.innerWidth, window.innerHeight) * 0.18);
         } else if (isTablet) {
-          radius = 200;
+          radius = 160;
         } else {
-          radius = 250;
+          radius = 200;
         }
 
-        // Debug: Check if items exist but are hidden
-        if (items.length === 0) {
+        console.log('📐 Using radius:', radius, 'for device type:', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop');
 
-          const allChildren = this.radialMenu.querySelectorAll('*');
-
-          allChildren.forEach((child, i) => {
-
-          });
-        }
+        // Clear existing nodes
+        this.nodes = [];
 
         items.forEach((item, i) => {
           const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
-          const x = centerX + Math.cos(angle) * radius;
-          const y = centerY + Math.sin(angle) * radius;
+          
+          // 🔗 BOUND TO ORB: Calculate position relative to orb center, not screen center
+          const targetX = orbCenterX + Math.cos(angle) * radius;
+          const targetY = orbCenterY + Math.sin(angle) * radius;
 
-          // CRITICAL: Actually position the DOM element
-          item.style.left = (x - 45) + 'px'; // Center the 90px item
-          item.style.top = (y - 45) + 'px';
-          console.log('🔧 Positioned item', i, 'at', x, y, 'DOM:', (x-45), (y-45));
+          // 🎬 ANIMATION SETUP: Start at orb center for animate-out effect
+          const startX = orbCenterX;
+          const startY = orbCenterY;
 
-          this.nodes.push({
+          // Position at orb center initially (for animation)
+          item.style.left = (startX - 45) + 'px'; // Center the 90px item
+          item.style.top = (startY - 45) + 'px';
+          item.style.transform = 'scale(0)';
+          item.style.opacity = '0';
+
+          console.log(`🎯 Item ${i}: start(${startX}, ${startY}) → target(${targetX}, ${targetY})`);
+
+          // Store both current and target positions
+          const nodeData = {
             element: item,
-            x: x,
-            y: y,
+            x: startX,      // Current position (starts at orb center)
+            y: startY,
+            targetX: targetX,  // Final position
+            targetY: targetY,
             vx: 0,
             vy: 0,
-            baseX: x,
-            baseY: y,
+            baseX: targetX,    // Base position for physics
+            baseY: targetY,
             angle: angle,
-            connections: []
-          });
+            connections: [],
+            orbBound: true     // Flag to indicate this is bound to orb
+          };
+
+          this.nodes.push(nodeData);
         });
 
         // Create connections between nodes
@@ -2540,46 +2582,135 @@
 
           this.updateVaultNodeStatus(); // Update vault node based on status
 
-          // Initialize neural network (constellation mode now exits instead of showing menu)
-
+          // Initialize neural network bound to orb center
           this.initNeuralNetwork();
-
           this.animateNeuralNetwork();
 
-          // Stagger animations for menu items
+          // 🎬 ANIMATE FROM CENTER: Smooth outward animation from orb center
+          this.animateMenuItemsOut();
 
-          const menuItems = this.radialMenu.querySelectorAll('.radial-item');
-
-          menuItems.forEach((item, i) => {
-            setTimeout(() => {
-
-              // Use !important to override CSS animation
-              item.style.setProperty('transform', 'scale(1)', 'important');
-              item.style.setProperty('opacity', '1', 'important');
-              // Temporarily disable float animation during menu
-              item.style.animationPlayState = 'paused';
-            }, i * 50);
-          });
         } else {
-          this.radialMenu.classList.remove('active');
-          document.body.classList.remove('menu-active'); // Restore ALL UI elements
+          // 🎬 ANIMATE TO CENTER: Smooth inward animation back to orb center
+          this.animateMenuItemsIn();
 
-          this.radialMenu.querySelectorAll('.radial-item').forEach(item => {
-            item.style.setProperty('transform', 'scale(0)', 'important');
-            item.style.setProperty('opacity', '0', 'important');
+          // Cleanup after animation completes
+          setTimeout(() => {
+            this.radialMenu.classList.remove('active');
+            document.body.classList.remove('menu-active');
+
+            // Clear neural animation
+            if (this.neuralAnimationId) {
+              cancelAnimationFrame(this.neuralAnimationId);
+              this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+            }
+
+            // Reset nodes array
+            this.nodes = [];
+          }, 300); // Wait for animation to complete
+        }
+      }
+
+      // 🎬 NEW: Animate menu items outward from orb center
+      animateMenuItemsOut() {
+        console.log('🎬 Animating menu items OUT from orb center');
+        
+        this.nodes.forEach((node, i) => {
+          const item = node.element;
+          
+          // Staggered timing for elegant reveal
+          setTimeout(() => {
+            // 🎯 Animate to target position with smooth easing
+            item.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            item.style.left = (node.targetX - 45) + 'px';
+            item.style.top = (node.targetY - 45) + 'px';
+            item.style.transform = 'scale(1)';
+            item.style.opacity = '1';
+            
+            // Update node position for physics
+            node.x = node.targetX;
+            node.y = node.targetY;
+            
+            // Temporarily disable float animation during menu
+            item.style.animationPlayState = 'paused';
+            
+            console.log(`🎯 Item ${i} animated to (${node.targetX}, ${node.targetY})`);
+          }, i * 80); // Staggered by 80ms
+        });
+      }
+
+      // 🎬 NEW: Animate menu items inward to orb center  
+      animateMenuItemsIn() {
+        console.log('🎬 Animating menu items IN to orb center');
+        
+        // Get current orb position
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
+        
+        this.nodes.forEach((node, i) => {
+          const item = node.element;
+          
+          // Reverse staggered timing (last item first)
+          setTimeout(() => {
+            // 🎯 Animate back to orb center
+            item.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.6, 1)';
+            item.style.left = (orbCenterX - 45) + 'px';
+            item.style.top = (orbCenterY - 45) + 'px';
+            item.style.transform = 'scale(0)';
+            item.style.opacity = '0';
+            
             // Re-enable float animation when menu closes
             item.style.animationPlayState = 'running';
-          });
+            
+            console.log(`🎯 Item ${i} animated back to orb center (${orbCenterX}, ${orbCenterY})`);
+          }, (this.nodes.length - 1 - i) * 60); // Reverse stagger by 60ms
+        });
+      }
 
-          // Clear neural animation
-          if (this.neuralAnimationId) {
-            cancelAnimationFrame(this.neuralAnimationId);
-            this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
-          }
-
-          // Reset nodes array (constellation mode exits instead of showing menu overlay)
-          this.nodes = [];
+      // 🔄 NEW: Reposition menu items when orb moves (for resize/orientation changes)
+      repositionMenuToOrb() {
+        if (!this.isMenuOpen || this.nodes.length === 0) return;
+        
+        console.log('🔄 Repositioning menu items to stay bound to orb');
+        
+        // Get new orb position
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
+        
+        // Recalculate radius for current screen size
+        const isMobile = window.innerWidth <= 768;
+        const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
+        let radius;
+        
+        if (isMobile) {
+          radius = Math.min(120, Math.min(window.innerWidth, window.innerHeight) * 0.18);
+        } else if (isTablet) {
+          radius = 160;
+        } else {
+          radius = 200;
         }
+        
+        // Update all node positions
+        this.nodes.forEach((node, i) => {
+          const angle = (i / this.nodes.length) * Math.PI * 2 - Math.PI / 2;
+          const newTargetX = orbCenterX + Math.cos(angle) * radius;
+          const newTargetY = orbCenterY + Math.sin(angle) * radius;
+          
+          // Update positions smoothly
+          const item = node.element;
+          item.style.transition = 'all 0.2s ease';
+          item.style.left = (newTargetX - 45) + 'px';
+          item.style.top = (newTargetY - 45) + 'px';
+          
+          // Update node data
+          node.x = newTargetX;
+          node.y = newTargetY;
+          node.targetX = newTargetX;
+          node.targetY = newTargetY;
+          node.baseX = newTargetX;
+          node.baseY = newTargetY;
+        });
       }
 
       initLoadingOrb() {
