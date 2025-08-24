@@ -2703,16 +2703,21 @@ class EmmaChatExperience extends ExperiencePopup {
       this.temporaryMemories.set(memory.id, memory);
       console.log('✅ EDIT: Updated temporary memory:', memory.id, 'with changes');
 
-      this.showToast('💾 Changes saved!', 'success');
-      closeModal();
-      
-      // 🎯 CRITICAL FIX: For media request workflows, save to vault automatically
+      // 🎯 CRITICAL FIX: For media request workflows, save to vault first, THEN close dialog
       console.log('🔍 EDIT: Checking mediaUpload flag:', memory.metadata?.mediaUpload, 'Full metadata:', memory.metadata);
       if (memory.metadata?.mediaUpload) {
-        console.log('💾 EDIT: Media request workflow detected - automatically saving to vault');
+        console.log('💾 EDIT: Media request workflow detected - saving to vault before closing dialog');
+        
+        // Show saving toast but don't close dialog yet
+        this.showToast('💾 Saving to vault...', 'info');
+        
         setTimeout(async () => {
           try {
             await this.saveMemoryToVault(memory.id);
+            
+            // NOW close the dialog after successful save
+            closeModal();
+            this.showToast('✅ Memory saved to vault!', 'success');
             
             // 🎯 TRIGGER CONSTELLATION REFRESH
             console.log('🔄 EDIT: Triggering constellation refresh after vault save...');
@@ -2726,10 +2731,16 @@ class EmmaChatExperience extends ExperiencePopup {
             
           } catch (error) {
             console.error('❌ EDIT: Error auto-saving to vault:', error);
+            this.showToast('❌ Failed to save to vault', 'error');
+            // Close dialog even if save failed
+            closeModal();
           }
         }, 500);
       } else {
-        // Regular edit flow - refresh preview
+        // Regular edit flow - close immediately and refresh preview
+        this.showToast('💾 Changes saved!', 'success');
+        closeModal();
+        
         setTimeout(() => {
           this.showMemoryPreviewDialog(memory);
         }, 300);
@@ -2839,6 +2850,10 @@ class EmmaChatExperience extends ExperiencePopup {
         return;
       }
 
+      // 🎯 CRITICAL FIX: Clear grid to prevent duplication!
+      console.log('🧹 PICKER: Clearing grid to prevent duplication...');
+      grid.innerHTML = '';
+      
       // Hide loading text
       loadingText.style.display = 'none';
       
@@ -2853,8 +2868,8 @@ class EmmaChatExperience extends ExperiencePopup {
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        background: rgba(34, 197, 94, 0.15);
-        border: 2px dashed #22c55e;
+        background: rgba(139, 92, 246, 0.15);
+        border: 2px dashed #8b5cf6;
         position: relative;
       `;
       
@@ -2864,13 +2879,13 @@ class EmmaChatExperience extends ExperiencePopup {
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: rgba(34, 197, 94, 0.2);
-        border: 3px dashed #22c55e;
+        background: rgba(139, 92, 246, 0.2);
+        border: 3px dashed #8b5cf6;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 32px;
-        color: #22c55e;
+        color: #8b5cf6;
         margin-bottom: 8px;
         transition: all 0.3s ease;
       `;
@@ -2882,7 +2897,7 @@ class EmmaChatExperience extends ExperiencePopup {
       addLabel.style.cssText = `
         font-size: 14px;
         font-weight: 600;
-        color: #22c55e;
+        color: #8b5cf6;
         text-align: center;
         margin-bottom: 4px;
       `;
@@ -2892,7 +2907,7 @@ class EmmaChatExperience extends ExperiencePopup {
       instructionLabel.textContent = 'Click to create';
       instructionLabel.style.cssText = `
         font-size: 12px;
-        color: rgba(34, 197, 94, 0.8);
+        color: rgba(139, 92, 246, 0.8);
         text-align: center;
       `;
       
@@ -2907,16 +2922,16 @@ class EmmaChatExperience extends ExperiencePopup {
       
       // Add hover effects
       addPersonItem.addEventListener('mouseenter', () => {
-        addPersonItem.style.background = 'rgba(34, 197, 94, 0.25)';
+        addPersonItem.style.background = 'rgba(139, 92, 246, 0.25)';
         addPersonItem.style.transform = 'scale(1.02)';
-        addAvatar.style.background = 'rgba(34, 197, 94, 0.3)';
+        addAvatar.style.background = 'rgba(139, 92, 246, 0.3)';
         addAvatar.style.transform = 'scale(1.1)';
       });
       
       addPersonItem.addEventListener('mouseleave', () => {
-        addPersonItem.style.background = 'rgba(34, 197, 94, 0.15)';
+        addPersonItem.style.background = 'rgba(139, 92, 246, 0.15)';
         addPersonItem.style.transform = 'scale(1)';
-        addAvatar.style.background = 'rgba(34, 197, 94, 0.2)';
+        addAvatar.style.background = 'rgba(139, 92, 246, 0.2)';
         addAvatar.style.transform = 'scale(1)';
       });
       
@@ -3172,7 +3187,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     addPersonDialog.innerHTML = `
       <div class="add-person-modal-content" style="
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.95));
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(124, 58, 237, 0.95));
         border-radius: 20px;
         padding: 30px;
         max-width: 500px;
@@ -3247,13 +3262,13 @@ class EmmaChatExperience extends ExperiencePopup {
           <button class="save-person-btn" style="
             background: linear-gradient(135deg, #ffffff, #f3f4f6);
             border: none;
-            color: #16a34a;
+            color: #8b5cf6;
             padding: 12px 24px;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 700;
             font-size: 16px;
-            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
           ">✨ Add Person</button>
         </div>
       </div>
