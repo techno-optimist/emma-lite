@@ -128,6 +128,11 @@ class EmmaChatExperience extends ExperiencePopup {
           </button>
         </div>
 
+        <!-- Quick Start Prompts -->
+        <div class="emma-quick-prompts" id="quick-prompts">
+          <!-- Dynamic prompts will be added here -->
+        </div>
+
         <!-- Add bottom spacing for input area - match top padding exactly -->
         <div style="height: 32px;"></div>
       </div>
@@ -176,6 +181,301 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Setup settings modal
     this.setupSettingsModal();
+    
+    // 🎯 Setup dynamic quick start prompts
+    this.setupQuickStartPrompts();
+  }
+
+  /**
+   * 🎯 Setup elegant quick start prompts for user engagement
+   * Dynamic, on-brand suggestions to guide conversation
+   */
+  setupQuickStartPrompts() {
+    const quickPromptsContainer = document.getElementById('quick-prompts');
+    if (!quickPromptsContainer) {
+      console.warn('💬 Quick prompts container not found');
+      return;
+    }
+
+    // Dynamic prompt configuration - easy to modify and expand
+    const promptsConfig = [
+      {
+        text: "Let's save some photos!",
+        icon: "📸",
+        action: "photos",
+        description: "Capture and organize your favorite images"
+      },
+      {
+        text: "Let's save a new memory",
+        icon: "💝",
+        action: "memory", 
+        description: "Create a new memory capsule"
+      },
+      {
+        text: "Ask me about any of your memories",
+        icon: "🧠",
+        action: "explore",
+        description: "Explore and reminisce about past memories"
+      }
+    ];
+
+    // Generate dynamic prompt buttons
+    const promptsHTML = promptsConfig.map(prompt => `
+      <button class="emma-quick-prompt" 
+              data-action="${prompt.action}"
+              data-text="${prompt.text}"
+              title="${prompt.description}">
+        <span class="prompt-icon">${prompt.icon}</span>
+        <span class="prompt-text">${prompt.text}</span>
+      </button>
+    `).join('');
+
+    // Add prompts with elegant Emma styling
+    quickPromptsContainer.innerHTML = promptsHTML;
+
+    // Apply beautiful Emma-branded styling
+    this.addQuickPromptStyles();
+
+    // Wire up functionality for each prompt
+    this.setupPromptEventListeners();
+  }
+
+  /**
+   * 🎨 Add elegant Emma-branded styling for quick prompts
+   */
+  addQuickPromptStyles() {
+    // Check if styles already exist to avoid duplicates
+    if (document.getElementById('emma-quick-prompt-styles')) return;
+
+    const styles = `
+      <style id="emma-quick-prompt-styles">
+        .emma-quick-prompts {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 16px;
+          padding: 0;
+          justify-content: center;
+          animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .emma-quick-prompt {
+          background: linear-gradient(135deg, 
+            rgba(138, 43, 226, 0.8) 0%, 
+            rgba(75, 0, 130, 0.8) 100%);
+          border: 1px solid rgba(138, 43, 226, 0.3);
+          border-radius: 16px;
+          padding: 12px 16px;
+          color: white;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 16px rgba(138, 43, 226, 0.2);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 44px;
+          outline: none;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .emma-quick-prompt::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, 
+            transparent, 
+            rgba(255, 255, 255, 0.2), 
+            transparent);
+          transition: left 0.6s ease;
+        }
+
+        .emma-quick-prompt:hover {
+          transform: translateY(-2px) scale(1.02);
+          background: linear-gradient(135deg, 
+            rgba(138, 43, 226, 0.9) 0%, 
+            rgba(75, 0, 130, 0.9) 100%);
+          box-shadow: 0 8px 24px rgba(138, 43, 226, 0.4);
+          border-color: rgba(138, 43, 226, 0.6);
+        }
+
+        .emma-quick-prompt:hover::before {
+          left: 100%;
+        }
+
+        .emma-quick-prompt:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        .emma-quick-prompt:focus {
+          border-color: rgba(138, 43, 226, 0.8);
+          box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.3);
+        }
+
+        .prompt-icon {
+          font-size: 16px;
+          line-height: 1;
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+        }
+
+        .prompt-text {
+          line-height: 1.2;
+          white-space: nowrap;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 480px) {
+          .emma-quick-prompts {
+            flex-direction: column;
+            gap: 8px;
+          }
+          
+          .emma-quick-prompt {
+            width: 100%;
+            justify-content: center;
+            min-height: 48px;
+            font-size: 15px;
+          }
+        }
+
+        /* Responsive flex layout */
+        @media (min-width: 481px) and (max-width: 768px) {
+          .emma-quick-prompt {
+            flex: 1;
+            min-width: 160px;
+            justify-content: center;
+          }
+        }
+      </style>
+    `;
+
+    document.head.insertAdjacentHTML('beforeend', styles);
+  }
+
+  /**
+   * 🔗 Setup event listeners for prompt functionality
+   */
+  setupPromptEventListeners() {
+    const promptButtons = document.querySelectorAll('.emma-quick-prompt');
+    
+    promptButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const action = e.currentTarget.dataset.action;
+        const text = e.currentTarget.dataset.text;
+        
+        // Visual feedback
+        e.currentTarget.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          e.currentTarget.style.transform = '';
+        }, 150);
+
+        // Execute the appropriate action
+        this.handlePromptAction(action, text);
+      });
+    });
+  }
+
+  /**
+   * 🎬 Handle quick prompt actions with intelligent routing
+   */
+  async handlePromptAction(action, promptText) {
+    console.log(`🎯 PROMPT: Executing action "${action}" with text "${promptText}"`);
+    
+    // Add the prompt text as a user message to show context
+    this.addMessage(promptText, 'user');
+    
+    try {
+      switch (action) {
+        case 'photos':
+          await this.handlePhotosPrompt();
+          break;
+          
+        case 'memory':
+          await this.handleNewMemoryPrompt();
+          break;
+          
+        case 'explore':
+          await this.handleExploreMemoriesPrompt();
+          break;
+          
+        default:
+          console.warn(`Unknown prompt action: ${action}`);
+          this.addMessage("I'm not sure how to help with that. Try asking me about your memories!", 'emma');
+      }
+    } catch (error) {
+      console.error('🚨 PROMPT: Action failed:', error);
+      this.addMessage("Something went wrong. Let's try that again!", 'emma');
+    }
+  }
+
+  /**
+   * 📸 Handle photos prompt - trigger intelligent photo capture
+   */
+  async handlePhotosPrompt() {
+    this.addMessage("Perfect! Let's capture some photos to save as memories. I can help you organize them beautifully! 📸", 'emma');
+    
+    // Trigger the media upload flow
+    await this.handleMediaRequest();
+  }
+
+  /**
+   * 💝 Handle new memory prompt - start memory creation conversation  
+   */
+  async handleNewMemoryPrompt() {
+    const responses = [
+      "Wonderful! I'd love to help you create a new memory. What would you like to remember?",
+      "That's beautiful! Tell me about this memory you'd like to save forever.",
+      "Perfect! What special moment would you like to capture in your memory vault?",
+      "I'm here to help! What's the story you'd like to preserve?"
+    ];
+    
+    const response = responses[Math.floor(Math.random() * responses.length)];
+    this.addMessage(response, 'emma');
+    
+    // Focus on the input for immediate typing
+    if (this.inputField) {
+      this.inputField.focus();
+    }
+  }
+
+  /**
+   * 🧠 Handle explore memories prompt - intelligent memory discovery
+   */
+  async handleExploreMemoriesPrompt() {
+    const responses = [
+      "I'd love to explore your memories with you! What would you like to reminisce about?",
+      "Your memories are treasures! Is there a particular person, place, or time you'd like to revisit?",
+      "Let's dive into your beautiful collection of memories. What's on your mind?",
+      "I'm here to help you rediscover your precious moments. What would you like to explore?"
+    ];
+    
+    const response = responses[Math.floor(Math.random() * responses.length)];
+    this.addMessage(response, 'emma');
+    
+    // Could add memory suggestions based on vault content here
+    // For now, encourage open conversation
+    if (this.inputField) {
+      this.inputField.focus();
+    }
   }
 
   setupKeyboardShortcuts() {
