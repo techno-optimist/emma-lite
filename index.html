@@ -713,6 +713,34 @@
                 
                 window.cleanEmmaApp = new CleanEmmaApp();
 
+                // 🎯 CHECK URL PARAMETERS FOR DIRECT MEMORY EDITING
+                const urlParams = new URLSearchParams(window.location.search);
+                const memoryIdToEdit = urlParams.get('memory');
+                const mode = urlParams.get('mode');
+                
+                if (memoryIdToEdit && mode === 'chat') {
+                    console.log('🎯 URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
+                    
+                    // Wait for Emma Chat Experience to load, then open edit dialog
+                    setTimeout(() => {
+                        if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+                            console.log('✅ Opening enhanced edit dialog for memory:', memoryIdToEdit);
+                            window.chatExperience.editMemoryDetails(memoryIdToEdit);
+                        } else {
+                            console.warn('⚠️ Emma Chat Experience not ready yet, retrying...');
+                            // Retry after another second
+                            setTimeout(() => {
+                                if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+                                    console.log('✅ Opening enhanced edit dialog for memory (retry):', memoryIdToEdit);
+                                    window.chatExperience.editMemoryDetails(memoryIdToEdit);
+                                } else {
+                                    console.error('❌ Could not open edit dialog - Emma Chat Experience not available');
+                                }
+                            }, 1000);
+                        }
+                    }, 1500); // Wait for all systems to load
+                }
+
                 // Show browser compatibility status
                 if (window.emmaBrowserCompatibility) {
                     const report = window.emmaBrowserCompatibility.getCompatibilityReport();

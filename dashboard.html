@@ -6296,8 +6296,8 @@
         // Close current dialog
         this.closeMemoryDialog();
         
-        // Navigate to Emma Chat with memory ID for editing
-        window.location.href = `../index.html?mode=chat&memory=${memoryId}`;
+        // Navigate to Emma Chat with memory ID for editing (triggers auto-open edit dialog)
+        window.location.href = `index.html?mode=chat&memory=${memoryId}`;
       }
 
       /**
