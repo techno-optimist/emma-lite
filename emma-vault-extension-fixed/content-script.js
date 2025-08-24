@@ -23,11 +23,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('🚨📨 CONTENT SCRIPT: MESSAGE RECEIVED!', request.action, 'from:', sender);
   
   if (request.action === 'checkVaultStatus') {
-    console.log('🔐 Content Script: Checking webapp vault status');
+    console.log('🚨🔐 Content Script: *** VAULT STATUS CHECK REQUEST ***');
+    console.log('🚨🔐 Content Script: Checking webapp vault status on:', window.location.href);
+    console.log('🚨🔐 Content Script: Request details:', request);
+    console.log('🚨🔐 Content Script: Sender details:', sender);
     
     // Check if webapp vault is unlocked by looking for vault indicators
     const vaultStatus = getWebappVaultStatus();
-    console.log('🔐 Content Script: Vault status:', vaultStatus);
+    console.log('🚨🔐 Content Script: Vault status result:', vaultStatus);
     
     sendResponse(vaultStatus);
     return true; // Keep message channel open for async response
@@ -111,12 +114,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 function getWebappVaultStatus() {
   try {
+    console.log('🚨🔍 Content Script: *** GETTING WEBAPP VAULT STATUS ***');
+    console.log('🚨🔍 Content Script: Page URL:', window.location.href);
+    console.log('🚨🔍 Content Script: Document ready state:', document.readyState);
+    
     // Method 1: Check sessionStorage for vault status (CORRECT KEYS!)
     const sessionVaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
     const sessionVaultName = sessionStorage.getItem('emmaVaultName');
     
+    console.log('🚨🔍 Content Script: Session vault active:', sessionVaultActive);
+    console.log('🚨🔍 Content Script: Session vault name:', sessionVaultName);
+    
     if (sessionVaultActive && sessionVaultName) {
-      console.log('🔐 Content Script: Found active vault in sessionStorage:', sessionVaultName);
+      console.log('🚨✅ Content Script: Found active vault in sessionStorage:', sessionVaultName);
       return {
         isUnlocked: true,
         vaultName: sessionVaultName,
@@ -158,7 +168,16 @@ function getWebappVaultStatus() {
     }
     
     // Default: vault is locked
-    console.log('🔐 Content Script: No vault indicators found - vault is locked');
+    console.log('🚨❌ Content Script: No vault indicators found - vault is locked');
+    console.log('🚨❌ Content Script: Final status check summary:', {
+      sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
+      sessionVaultName: sessionStorage.getItem('emmaVaultName'),
+      localVaultActive: localStorage.getItem('emmaVaultActive'),
+      localVaultName: localStorage.getItem('emmaVaultName'),
+      windowEmmaWebVault: !!window.emmaWebVault,
+      windowEmmaWebVaultIsOpen: window.emmaWebVault?.isOpen,
+      windowCurrentVaultStatus: !!window.currentVaultStatus
+    });
     return {
       isUnlocked: false,
       source: 'default'
