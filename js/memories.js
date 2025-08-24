@@ -2600,44 +2600,16 @@ async function loadConstellationPeopleAvatars(memory) {
 function editConstellationMemory(memoryId) {
   console.log('✏️ CONSTELLATION: Opening edit dialog for memory:', memoryId);
   
-  // Get the memory from vault using CONSTELLATION'S method
-  if (!window.emmaWebVault || !window.emmaWebVault.vaultData?.content?.memories) {
-    console.error('❌ No vault data available for editing');
-    return;
-  }
-  
-  const vaultMemories = window.emmaWebVault.vaultData.content.memories;
-  const memory = vaultMemories[memoryId];
-  if (!memory) {
-    console.error('❌ Memory not found:', memoryId);
-    return;
-  }
-  
   // Close the dialog first
   document.querySelector('.memory-preview-dialog.constellation')?.remove();
   
-  // Create Emma Chat Experience if needed
-  if (!window.chatExperience) {
-    if (typeof EmmaChatExperience !== 'undefined') {
-      console.log('🚀 Creating Emma Chat Experience for editing...');
-      new EmmaChatExperience();
-    } else {
-      console.error('❌ EmmaChatExperience not available');
-      return;
-    }
+  // Simple approach: Create temporary instance JUST for the edit dialog
+  if (typeof EmmaChatExperience !== 'undefined') {
+    const tempChatExperience = new EmmaChatExperience();
+    tempChatExperience.editMemoryDetails(memoryId);
+  } else {
+    console.error('❌ EmmaChatExperience not available');
   }
-  
-  // Wait for chat experience and open edit dialog
-  const openEdit = () => {
-    if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
-      console.log('✅ Opening enhanced edit dialog for memory:', memoryId);
-      window.chatExperience.editMemoryDetails(memoryId);
-    } else {
-      setTimeout(openEdit, 100);
-    }
-  };
-  
-  setTimeout(openEdit, 100);
 }
 
 function shareConstellationMemory(memoryId) {
