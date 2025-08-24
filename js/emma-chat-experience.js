@@ -2008,77 +2008,117 @@ class EmmaChatExperience extends ExperiencePopup {
   showMemoryPreviewDialog(memory) {
     // 🎯 CRITICAL FIX: Store memory in temporary storage for editing
     this.temporaryMemories.set(memory.id, memory);
-    console.log('🎯 PREVIEW: Stored temporary memory for editing:', memory.id);
+    console.log('🎯 MOBILE PREVIEW: Stored temporary memory for editing:', memory.id);
 
-    // BEAUTIFUL EMMA-STYLE: Create as chat message instead of dialog
+    // 📱 MOBILE-FIRST REDESIGN: Full-screen modal optimized for touch
+    const hasImages = memory.attachments?.some(att => att.type?.startsWith('image/'));
+    const hasVideo = memory.attachments?.some(att => att.type?.startsWith('video/'));
+    const peopleList = memory.metadata?.people || [];
+    
     const previewHTML = `
-      <div class="memory-capsule-preview">
-        <!-- Header removed to avoid duplication with dialog header -->
+      <!-- 📱 MOBILE HEADER: Full-width with close button -->
+      <div class="mobile-header">
+        <div class="header-content">
+          <h2 class="memory-title">${memory.title || 'Beautiful Memory'}</h2>
+          <button class="close-btn" onclick="this.closest('.memory-preview-dialog').remove()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="memory-date">${memory.metadata?.date || 'Saturday, August 23, 2025'}</div>
+      </div>
 
-        <div class="capsule-content">
-          <h3 class="memory-title">${memory.title || 'Untitled Memory'}</h3>
-          <p class="memory-story" id="memory-story-${memory.id}">${memory.content}</p>
-
-          ${memory.metadata?.emotions?.length > 0 ? `
-            <div class="memory-detail">
-              <span class="detail-label">💭 Emotions:</span>
-              <span class="detail-value">${memory.metadata.emotions.join(', ')}</span>
-            </div>
-          ` : ''}
-
-          ${memory.metadata?.location ? `
-            <div class="memory-detail">
-              <span class="detail-label">📍 Location:</span>
-              <span class="detail-value">${memory.metadata.location}</span>
-            </div>
-          ` : ''}
-
-          ${memory.attachments?.length > 0 ? `
-            <div class="memory-detail">
-              <span class="detail-label">📷 Media:</span>
-              <span class="detail-value">${memory.attachments.length} ${memory.attachments.length === 1 ? 'file' : 'files'} attached</span>
-            </div>
-            <div class="memory-media-grid">
-              ${memory.attachments.slice(0, 4).map(attachment => `
-                <div class="media-thumbnail">
-                  ${attachment.type?.startsWith('image/') ? `
-                    <img src="${attachment.data || attachment.dataUrl || attachment.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxQzcuMDI5NDQgMjEgMyAxNi45NzA2IDMgMTJDMyA3LjAyOTQ0IDcuMDI5NDQgMyAxMiAzQzE2Ljk3MDYgMyAyMSA3LjAyOTQ0IDIxIDEyWiIgc3Ryb2tlPSIjOEI1Q0Y2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'}" alt="${attachment.name}" />
-                  ` : attachment.type?.startsWith('video/') ? `
-                    <video src="${attachment.dataUrl || attachment.url}" muted>
-                      <div class="video-overlay">🎥</div>
-                    </video>
-                  ` : `
-                    <div class="file-thumbnail">
-                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
-                      <div class="file-name">${attachment.name}</div>
-                    </div>
-                  `}
+      <!-- 📸 HERO IMAGE CAROUSEL: Feature photos prominently -->
+      ${hasImages ? `
+        <div class="hero-carousel">
+          <div class="carousel-container">
+            ${memory.attachments
+              .filter(att => att.type?.startsWith('image/'))
+              .slice(0, 5)
+              .map((image, index) => `
+                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                  <div class="image-overlay"></div>
                 </div>
               `).join('')}
-              ${memory.attachments.length > 4 ? `
-                <div class="media-thumbnail more-indicator">
-                  <div class="more-count">+${memory.attachments.length - 4}</div>
-                  <div class="more-text">more</div>
-                </div>
-              ` : ''}
+          </div>
+          ${memory.attachments.filter(att => att.type?.startsWith('image/')).length > 1 ? `
+            <div class="carousel-dots">
+              ${memory.attachments
+                .filter(att => att.type?.startsWith('image/'))
+                .slice(0, 5)
+                .map((_, index) => `
+                  <div class="dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>
+                `).join('')}
             </div>
           ` : ''}
         </div>
+      ` : ''}
 
-        <div class="capsule-actions">
-          <button class="capsule-btn primary" onclick="window.chatExperience.saveMemoryToVault('${memory.id}')">
-            ✨ Save to Vault
-          </button>
-          <button class="capsule-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
-            ✏️ Edit
-          </button>
+      <!-- 👥 PEOPLE SECTION: Large touch-friendly avatars -->
+      ${peopleList.length > 0 ? `
+        <div class="people-section">
+          <h3 class="section-title">👥 People in this memory</h3>
+          <div class="people-grid" id="people-grid-${memory.id}">
+            <!-- People avatars will be loaded here -->
+          </div>
         </div>
+      ` : ''}
+
+      <!-- 📝 CONTENT SECTION: Story and details -->
+      <div class="content-section">
+        <div class="memory-story">
+          <p>${memory.content}</p>
+        </div>
+        
+        ${memory.metadata?.emotions?.length > 0 ? `
+          <div class="memory-tags">
+            <span class="tag-label">💭</span>
+            <div class="emotions-list">
+              ${memory.metadata.emotions.map(emotion => `
+                <span class="emotion-tag">${emotion}</span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${memory.metadata?.location ? `
+          <div class="memory-tags">
+            <span class="tag-label">📍</span>
+            <span class="location-tag">${memory.metadata.location}</span>
+          </div>
+        ` : ''}
       </div>
+
+      <!-- 🎬 MEDIA GRID: Additional media -->
+      ${memory.attachments?.length > 1 || hasVideo ? `
+        <div class="media-section">
+          <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+          <div class="media-grid">
+            ${memory.attachments.map((attachment, index) => `
+              <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
+                ${attachment.type?.startsWith('image/') ? `
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                ` : attachment.type?.startsWith('video/') ? `
+                  <video src="${attachment.dataUrl || attachment.url}" muted>
+                    <div class="video-play-overlay">▶️</div>
+                  </video>
+                ` : `
+                  <div class="file-item">
+                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                    <div class="file-name">${attachment.name}</div>
+                  </div>
+                `}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
     `;
 
-    // Create proper overlay dialog with high z-index
+    // Create fully responsive dialog for ALL screen sizes
     const dialog = document.createElement('div');
-    dialog.className = 'memory-preview-dialog';
+    dialog.className = 'memory-preview-dialog responsive';
     dialog.style.cssText = `
       position: fixed !important;
       top: 0 !important;
@@ -2091,49 +2131,467 @@ class EmmaChatExperience extends ExperiencePopup {
       justify-content: center !important;
       opacity: 0;
       animation: dialogFadeIn 0.3s ease forwards;
-      background: rgba(0, 0, 0, 0.8) !important;
-      backdrop-filter: blur(15px) !important;
+      background: rgba(0, 0, 0, 0.9) !important;
+      backdrop-filter: blur(20px) !important;
+      padding: 0;
     `;
     dialog.innerHTML = `
       <style>
-        .memory-person-avatar {
-          width: 32px;
-          height: 32px;
+        /* 🎯 RESPONSIVE DIALOG STYLES FOR ALL SCREEN SIZES */
+        @keyframes dialogFadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        
+        .responsive-memory-container {
+          background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+          border-radius: clamp(16px, 3vw, 24px);
+          max-width: 95vw;
+          max-height: 95vh;
+          width: 100%;
+          overflow-y: auto;
+          position: relative;
+          animation: dialogFadeIn 0.3s ease forwards;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* 📱 MOBILE FIRST (320px+) */
+        .responsive-memory-container {
+          margin: 10px;
+          padding: 20px;
+        }
+        
+        /* 📱 TABLET (768px+) */
+        @media (min-width: 768px) {
+          .responsive-memory-container {
+            margin: 20px;
+            padding: 30px;
+            max-width: 700px;
+          }
+        }
+        
+        /* 💻 LAPTOP (1024px+) */
+        @media (min-width: 1024px) {
+          .responsive-memory-container {
+            margin: 40px;
+            padding: 40px;
+            max-width: 900px;
+          }
+        }
+        
+        /* 🖥️ DESKTOP (1440px+) */
+        @media (min-width: 1440px) {
+          .responsive-memory-container {
+            max-width: 1100px;
+            padding: 50px;
+          }
+        }
+        
+        /* HEADER STYLES */
+        .memory-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: clamp(20px, 4vw, 30px);
+          flex-wrap: wrap;
+          gap: 15px;
+        }
+        
+        .header-info h2 {
+          margin: 0;
+          color: white;
+          font-size: clamp(20px, 4vw, 28px);
+          font-weight: 700;
+          line-height: 1.2;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .memory-date {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: clamp(14px, 2.5vw, 16px);
+          margin-top: 5px;
+        }
+        
+        .close-btn {
+          background: rgba(255, 255, 255, 0.15);
+          border: none;
+          color: white;
+          width: clamp(40px, 6vw, 48px);
+          height: clamp(40px, 6vw, 48px);
           border-radius: 50%;
-          border: 2px solid rgba(255, 255, 255, 0.8);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+          flex-shrink: 0;
+        }
+        
+        .close-btn:hover {
+          background: rgba(255, 255, 255, 0.25);
+          transform: scale(1.1);
+        }
+        
+        /* HERO CAROUSEL STYLES */
+        .hero-carousel {
+          margin-bottom: clamp(25px, 5vw, 35px);
+          border-radius: clamp(12px, 2.5vw, 16px);
+          overflow: hidden;
+          position: relative;
+          aspect-ratio: 16/9;
+          background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .carousel-container {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+        
+        .hero-image {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+        
+        .hero-image.active {
+          opacity: 1;
+        }
+        
+        .image-overlay {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 50%;
+          background: linear-gradient(transparent, rgba(0, 0, 0, 0.4));
+        }
+        
+        .carousel-dots {
+          position: absolute;
+          bottom: 15px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 8px;
+        }
+        
+        .dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.5);
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .dot.active {
+          background: white;
+          transform: scale(1.2);
+        }
+        
+        /* PEOPLE SECTION */
+        .people-section {
+          margin-bottom: clamp(25px, 5vw, 35px);
+        }
+        
+        .section-title {
+          color: white;
+          font-size: clamp(16px, 3vw, 20px);
+          font-weight: 600;
+          margin: 0 0 clamp(15px, 3vw, 20px) 0;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .people-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(clamp(80px, 15vw, 120px), 1fr));
+          gap: clamp(12px, 3vw, 20px);
+          justify-items: center;
+        }
+        
+        .memory-person-avatar {
+          width: clamp(70px, 12vw, 100px);
+          height: clamp(70px, 12vw, 100px);
+          border-radius: 50%;
+          border: 3px solid rgba(255, 255, 255, 0.9);
           overflow: hidden;
           position: relative;
           background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          font-size: 0.8rem;
+          font-size: clamp(12px, 2.5vw, 16px);
           font-weight: 600;
           color: white;
           transition: all 0.3s ease;
           cursor: pointer;
+          text-align: center;
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
         }
+        
         .memory-person-avatar:hover {
-          transform: scale(1.2);
+          transform: scale(1.05);
           border-color: white;
-          z-index: 10;
+          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
         }
+        
         .memory-person-avatar img {
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
+        
+        /* CONTENT SECTION */
+        .content-section {
+          margin-bottom: clamp(25px, 5vw, 35px);
+        }
+        
+        .memory-story p {
+          color: white;
+          font-size: clamp(16px, 3vw, 18px);
+          line-height: 1.6;
+          margin: 0 0 clamp(15px, 3vw, 20px) 0;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .memory-tags {
+          display: flex;
+          align-items: center;
+          gap: clamp(10px, 2vw, 15px);
+          margin-bottom: clamp(10px, 2vw, 15px);
+          flex-wrap: wrap;
+        }
+        
+        .tag-label {
+          font-size: clamp(16px, 3vw, 18px);
+          flex-shrink: 0;
+        }
+        
+        .emotions-list {
+          display: flex;
+          gap: clamp(6px, 1.5vw, 10px);
+          flex-wrap: wrap;
+        }
+        
+        .emotion-tag, .location-tag {
+          background: rgba(255, 255, 255, 0.15);
+          color: white;
+          padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px);
+          border-radius: clamp(12px, 2vw, 16px);
+          font-size: clamp(12px, 2.5vw, 14px);
+          font-weight: 500;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(10px);
+        }
+        
+        /* MEDIA SECTION */
+        .media-section {
+          margin-bottom: clamp(25px, 5vw, 35px);
+        }
+        
+        .media-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 25vw, 200px), 1fr));
+          gap: clamp(10px, 2vw, 15px);
+        }
+        
+        .media-item {
+          aspect-ratio: 1;
+          border-radius: clamp(8px, 2vw, 12px);
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.1);
+          position: relative;
+          transition: transform 0.3s ease;
+        }
+        
+        .media-item:hover {
+          transform: scale(1.05);
+        }
+        
+        .media-item img, .media-item video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        .video-play-overlay {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: clamp(20px, 4vw, 30px);
+          color: white;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* ACTION BUTTONS */
+        .action-buttons {
+          display: flex;
+          gap: clamp(12px, 3vw, 20px);
+          margin-top: clamp(30px, 5vw, 40px);
+          flex-wrap: wrap;
+        }
+        
+        .action-btn {
+          flex: 1;
+          min-width: clamp(120px, 25vw, 150px);
+          padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 30px);
+          border: none;
+          border-radius: clamp(10px, 2vw, 14px);
+          font-size: clamp(14px, 2.5vw, 16px);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: clamp(6px, 1.5vw, 8px);
+          text-decoration: none;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .action-btn.primary {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          color: #8b5cf6;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .action-btn.primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        .action-btn.secondary {
+          background: rgba(255, 255, 255, 0.15);
+          color: white;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          backdrop-filter: blur(10px);
+        }
+        
+        .action-btn.secondary:hover {
+          background: rgba(255, 255, 255, 0.25);
+          transform: translateY(-2px);
+        }
       </style>
-      <div class="dialog-content" style="position: relative; z-index: 10001 !important;">
-        <div class="dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-          <h3 style="margin: 0; color: white;">💝 Memory Capsule</h3>
-          <div style="display: flex; align-items: center; gap: 16px;">
-            <div class="memory-people-avatars" id="capsule-people-${memory.id}" style="display: flex; gap: 4px; flex-shrink: 0;"></div>
-            <button class="dialog-close" onclick="this.remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+      
+      <div class="responsive-memory-container">
+        <!-- HEADER -->
+        <div class="memory-header">
+          <div class="header-info">
+            <h2>${memory.title || 'Beautiful Memory'}</h2>
+            <div class="memory-date">${memory.metadata?.date || 'Saturday, August 23, 2025'}</div>
           </div>
+          <button class="close-btn" onclick="this.closest('.memory-preview-dialog').remove()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
-        <div class="dialog-body">
-          ${previewHTML}
+        
+        <!-- HERO CAROUSEL -->
+        ${hasImages ? `
+          <div class="hero-carousel">
+            <div class="carousel-container">
+              ${memory.attachments
+                .filter(att => att.type?.startsWith('image/'))
+                .slice(0, 5)
+                .map((image, index) => `
+                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                    <div class="image-overlay"></div>
+                  </div>
+                `).join('')}
+            </div>
+            ${memory.attachments.filter(att => att.type?.startsWith('image/')).length > 1 ? `
+              <div class="carousel-dots">
+                ${memory.attachments
+                  .filter(att => att.type?.startsWith('image/'))
+                  .slice(0, 5)
+                  .map((_, index) => `
+                    <div class="dot ${index === 0 ? 'active' : ''}" onclick="window.chatExperience.switchCarouselImage(${index})"></div>
+                  `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+        
+        <!-- PEOPLE SECTION -->
+        ${peopleList.length > 0 ? `
+          <div class="people-section">
+            <h3 class="section-title">👥 People in this memory</h3>
+            <div class="people-grid" id="people-grid-${memory.id}">
+              <!-- People avatars will be loaded here -->
+            </div>
+          </div>
+        ` : ''}
+        
+        <!-- CONTENT -->
+        <div class="content-section">
+          <div class="memory-story">
+            <p>${memory.content}</p>
+          </div>
+          
+          ${memory.metadata?.emotions?.length > 0 ? `
+            <div class="memory-tags">
+              <span class="tag-label">💭</span>
+              <div class="emotions-list">
+                ${memory.metadata.emotions.map(emotion => `
+                  <span class="emotion-tag">${emotion}</span>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${memory.metadata?.location ? `
+            <div class="memory-tags">
+              <span class="tag-label">📍</span>
+              <span class="location-tag">${memory.metadata.location}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- MEDIA GRID -->
+        ${memory.attachments?.length > 1 || hasVideo ? `
+          <div class="media-section">
+            <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+            <div class="media-grid">
+              ${memory.attachments.map((attachment, index) => `
+                <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
+                  ${attachment.type?.startsWith('image/') ? `
+                    <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                  ` : attachment.type?.startsWith('video/') ? `
+                    <video src="${attachment.dataUrl || attachment.url}" muted>
+                    <div class="video-play-overlay">▶️</div>
+                    </video>
+                  ` : `
+                    <div class="file-item">
+                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                      <div class="file-name">${attachment.name}</div>
+                    </div>
+                  `}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        <!-- ACTION BUTTONS -->
+        <div class="action-buttons">
+          <button class="action-btn primary" onclick="window.chatExperience.saveMemoryToVault('${memory.id}')">
+            ✨ Save to Vault
+          </button>
+          <button class="action-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
+            ✏️ Edit Memory
+          </button>
         </div>
       </div>
     `;
@@ -2149,10 +2607,136 @@ class EmmaChatExperience extends ExperiencePopup {
     // Animate in
     setTimeout(() => {
       dialog.style.opacity = '1';
-      // Create people avatars after dialog is visible
-      this.createCapsulePeopleAvatars(memory);
+      // Load large responsive people avatars
+      this.loadLargeResponsivePeopleAvatars(memory);
     }, 100);
 
+  }
+
+  /**
+   * Switch carousel image in memory preview
+   */
+  switchCarouselImage(index) {
+    const dialog = document.querySelector('.memory-preview-dialog');
+    if (!dialog) return;
+    
+    // Update active image
+    const images = dialog.querySelectorAll('.hero-image');
+    const dots = dialog.querySelectorAll('.dot');
+    
+    images.forEach((img, i) => {
+      img.classList.toggle('active', i === index);
+    });
+    
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === index);
+    });
+  }
+
+  /**
+   * Load large responsive people avatars for the new memory dialog
+   */
+  async loadLargeResponsivePeopleAvatars(memory) {
+    const grid = document.getElementById(`people-grid-${memory.id}`);
+    if (!grid) return;
+
+    try {
+      // Get people from vault
+      let people = [];
+      
+      if (window.emmaAPI && typeof window.emmaAPI.people?.list === 'function') {
+        try {
+          const result = await window.emmaAPI.people.list();
+          if (result?.success && Array.isArray(result.items)) {
+            people = result.items;
+          }
+        } catch (apiError) {
+          console.log('📝 EmmaAPI people.list failed:', apiError);
+        }
+      }
+      
+      // Fallback to vault direct access
+      if (people.length === 0 && window.emmaWebVault?.vaultData?.content?.people) {
+        const rawPeople = Object.values(window.emmaWebVault.vaultData.content.people) || [];
+        const media = window.emmaWebVault.vaultData.content.media || {};
+        
+        people = rawPeople.map(person => {
+          let avatarUrl = person.avatarUrl;
+          
+          if (!avatarUrl && person.avatarId && media[person.avatarId]) {
+            const mediaItem = media[person.avatarId];
+            if (mediaItem?.data) {
+              avatarUrl = mediaItem.data.startsWith('data:')
+                ? mediaItem.data
+                : `data:${mediaItem.type};base64,${mediaItem.data}`;
+            }
+          }
+          
+          return { ...person, avatarUrl };
+        });
+      }
+
+      if (people.length === 0) {
+        grid.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center;">No people in vault yet.</p>';
+        return;
+      }
+
+      // Filter to people in this memory
+      const memoryPeopleIds = memory.metadata?.people || [];
+      const memoryPeople = people.filter(person => 
+        memoryPeopleIds.some(p => (typeof p === 'string' ? p : p.id) === person.id)
+      );
+
+      console.log('👥 RESPONSIVE: Loading', memoryPeople.length, 'people for memory');
+
+      // Create responsive people avatars
+      memoryPeople.forEach(person => {
+        const personDiv = document.createElement('div');
+        personDiv.className = 'memory-person-avatar';
+        personDiv.dataset.personId = person.id;
+        personDiv.dataset.personName = person.name;
+
+        // Create name label below avatar
+        const nameLabel = document.createElement('div');
+        nameLabel.textContent = person.name;
+        nameLabel.style.cssText = `
+          color: white;
+          font-size: clamp(12px, 2.5vw, 14px);
+          font-weight: 500;
+          margin-top: 8px;
+          text-align: center;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        `;
+
+        if (person.avatarUrl) {
+          const img = document.createElement('img');
+          img.src = person.avatarUrl;
+          img.alt = person.name;
+          img.onload = () => {
+            personDiv.innerHTML = '';
+            personDiv.appendChild(img);
+          };
+          img.onerror = () => {
+            // Fallback to initials
+            personDiv.textContent = person.name.split(' ').map(n => n[0]).join('').toUpperCase();
+          };
+        } else {
+          // Show initials
+          personDiv.textContent = person.name.split(' ').map(n => n[0]).join('').toUpperCase();
+        }
+
+        const container = document.createElement('div');
+        container.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
+        container.appendChild(personDiv);
+        container.appendChild(nameLabel);
+        
+        grid.appendChild(container);
+      });
+
+    } catch (error) {
+      console.error('❌ Error loading responsive people avatars:', error);
+      grid.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center;">Error loading people.</p>';
+    }
   }
 
   /**
