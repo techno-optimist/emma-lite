@@ -4651,24 +4651,40 @@
       // Open person summary modal with connected memories
       async openPersonSummaryModal(person) {
 
-        // Get all memories from vault to find real connections
-        let allMemories = [];
+        // 🎯 FIXED: Use direct vault access like people page for consistent memory connections
+        let connectedMemories = [];
         try {
-          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-            allMemories = await window.emmaWebVault.listMemories(1000);
-
+          if (window.emmaWebVault && window.emmaWebVault.vaultData?.content?.memories) {
+            const vaultMemories = window.emmaWebVault.vaultData.content.memories;
+            const vaultPeople = window.emmaWebVault.vaultData.content.people || {};
+            
+            // Find memories that include this person (same logic as people page)
+            for (const [memoryId, memory] of Object.entries(vaultMemories)) {
+              // Check if person is in memory's people metadata
+              if (memory.metadata && memory.metadata.people && 
+                  Array.isArray(memory.metadata.people) && 
+                  memory.metadata.people.includes(person.id)) {
+                connectedMemories.push({ ...memory, id: memoryId });
+              }
+              
+              // Also check if person's name is mentioned in content
+              if (person.name && memory.content) {
+                const personName = person.name.toLowerCase();
+                const memoryContent = memory.content.toLowerCase();
+                if (memoryContent.includes(personName)) {
+                  // Avoid duplicates
+                  if (!connectedMemories.find(m => m.id === memoryId)) {
+                    connectedMemories.push({ ...memory, id: memoryId });
+                  }
+                }
+              }
+            }
+            
+            console.log(`🔗 DASHBOARD: Found ${connectedMemories.length} memories for person ${person.id}`);
           }
         } catch (error) {
           console.error('👤 SUMMARY: Error loading memories:', error);
         }
-
-        // Find memories that have this person in their metadata.people array
-        const connectedMemories = allMemories.filter(memory => {
-          const peopleInMemory = memory.metadata?.people || [];
-          const isConnected = peopleInMemory.includes(person.id);
-
-          return isConnected;
-        });
 
         // Create modal HTML
         const modalHTML = `
@@ -4837,12 +4853,6 @@
         };
 
         return colors[relation] || colors.friend; // Default to friend colors
-      }
-
-      // Open person dialog (placeholder)
-      openPersonDialog(person) {
-
-        this.showToast(`👥 ${person.name} (${person.relation})`, 'info');
       }
 
       // Create intelligent connections between memory nodes and people nodes
@@ -6209,9 +6219,9 @@
         }
       }
 
-      // Open person dialog from memory
+      // Open person dialog from memory by ID - navigate to people page  
       openPersonDialog(personId) {
-
+        console.log('🔗 DASHBOARD: Opening person page for ID:', personId);
         // Navigate to people page with person selected
         window.location.href = `pages/people-emma.html?person=${personId}`;
       }
