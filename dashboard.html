@@ -2488,11 +2488,11 @@
 
         if (isMobile) {
           // Mobile: Very close to orb, just light padding
-          radius = 80; // Just enough space around the orb
+          radius = 50; // Maximum 50px from orb
         } else if (isTablet) {
-          radius = 100; // Bit more space on tablets
+          radius = 50; // Same tight spacing on tablets
         } else {
-          radius = 120; // Conservative spacing on desktop
+          radius = 50; // Never more than 50px from orb on desktop
         }
 
         console.log('📐 Using radius:', radius, 'for device type:', isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop');
@@ -2685,11 +2685,11 @@
         
         if (isMobile) {
           // Mobile: Very close to orb, just light padding
-          radius = 80; // Just enough space around the orb
+          radius = 50; // Maximum 50px from orb
         } else if (isTablet) {
-          radius = 100; // Bit more space on tablets
+          radius = 50; // Same tight spacing on tablets
         } else {
-          radius = 120; // Conservative spacing on desktop
+          radius = 50; // Never more than 50px from orb on desktop
         }
         
         // Update all node positions relative to screen center
