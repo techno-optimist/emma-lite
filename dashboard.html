@@ -4786,7 +4786,7 @@
 
         // Create BIGGER avatar circle with subtle heartbeat glow - NO TEXT LABELS
         personElement.style.cssText = `
-          position: fixed;
+          position: absolute;
           left: ${x}px;
           top: ${y}px;
           width: 85px;
@@ -4840,9 +4840,13 @@
           personElement.style.zIndex = '1500'; /* CRITICAL FIX: Maintain high z-index even when not hovering */
         });
 
-        // Append to container
-        const container = document.querySelector('.dashboard') || document.body;
-        container.appendChild(personElement);
+        // 🔗 CRITICAL FIX: Append to constellation container for zoom/pan anchoring
+        if (this.constellationContainer) {
+          this.constellationContainer.appendChild(personElement);
+        } else {
+          const container = document.querySelector('.dashboard') || document.body;
+          container.appendChild(personElement);
+        }
 
         // Animate in with staggered timing
         const delay = Math.random() * 500 + 300; // 300-800ms delay
@@ -5601,8 +5605,7 @@
 
         this.constellationUI = burgerMenu;
         
-        // 🔍 ADD ZOOM CONTROLS to constellation UI
-        this.addConstellationZoomControls();
+        // 🎯 NO CONTROLS NEEDED: Natural gestures (wheel zoom, drag pan, pinch) are intuitive
       }
 
       // Set up constellation menu interactions
@@ -5812,13 +5815,17 @@
         let dragStartZoom = { ...this.zoomState };
 
         document.addEventListener('mousedown', (e) => {
-          // Allow dragging when clicking anywhere in constellation mode (not just body)
-          if (this.isConstellationMode && !e.target.closest('button') && !e.target.closest('.memory-node')) {
+          // 🖱️ SMART DRAGGING: Only start drag on empty background, preserve memory/person node clicks
+          if (this.isConstellationMode && 
+              !e.target.closest('button') && 
+              !e.target.closest('.memory-node') && 
+              !e.target.closest('.person-node') &&
+              !e.target.closest('.create-memory-node')) {
             isDragging = true;
             dragStart = { x: e.clientX, y: e.clientY };
             dragStartZoom = { ...this.zoomState };
             document.body.style.cursor = 'grabbing';
-            e.preventDefault(); // Prevent text selection while dragging
+            e.preventDefault(); // Only prevent when starting drag on empty space
           }
         });
 
@@ -6406,25 +6413,13 @@
           this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
         }
 
-        // 🔍 RESET ZOOM STATE: Reset neural canvas transform and remove zoom controls
+        // 🔍 RESET ZOOM STATE: Reset neural canvas transform and clean up
         if (this.neuralCanvas) {
           this.neuralCanvas.style.transform = '';
           this.neuralCanvas.style.transformOrigin = '';
         }
         
-        // Remove zoom controls
-        const zoomControls = document.getElementById('constellation-zoom-controls');
-        if (zoomControls) {
-          zoomControls.remove();
-        }
-        
-        // Remove pan controls
-        const panControls = document.getElementById('constellation-pan-controls');
-        if (panControls) {
-          panControls.remove();
-        }
-        
-        // Remove constellation container
+        // Remove constellation container  
         const constellationContainer = document.getElementById('constellation-zoom-container');
         if (constellationContainer) {
           constellationContainer.remove();
