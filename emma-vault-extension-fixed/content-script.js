@@ -1081,7 +1081,7 @@ async function saveToWebappVault(memoryData) {
     console.log('💾 Content Script: Saving memory to real webapp vault');
     
     // WAIT FOR WEBAPP VAULT TO BE READY (with timeout)
-    const vault = await waitForWebappVault(3000); // 3 second timeout - vault should be ready quickly
+    const vault = await waitForWebappVault(8000); // 8 second timeout - allow time for dashboard vault restoration
     
     if (!vault) {
       throw new Error('Webapp vault not available - please ensure dashboard is open and vault is unlocked');
@@ -1152,8 +1152,9 @@ async function waitForWebappVault(timeoutMs = 3000) {
       // ENHANCED FIX: Try to restore vault if it exists but isn't open
       if (window.emmaWebVault && 
           !window.emmaWebVault.isOpen && 
-          typeof window.emmaWebVault.restoreVaultState === 'function') {
-        console.log('🔧 Content Script: Vault exists but not open, attempting restore...');
+          typeof window.emmaWebVault.restoreVaultState === 'function' &&
+          sessionStorage.getItem('emmaVaultActive') === 'true') {
+        console.log('🔧 Content Script: Vault exists but not open, attempting emergency restore...');
         try {
           // Use .then() instead of await since we're not in an async function
           window.emmaWebVault.restoreVaultState().then(() => {

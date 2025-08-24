@@ -6406,6 +6406,22 @@
           if (typeof EmmaWebVault !== 'undefined' && !window.emmaWebVault) {
             window.emmaWebVault = new EmmaWebVault();
             console.log('✅ DASHBOARD: EmmaWebVault instance created and ready');
+            
+            // IMMEDIATE VAULT RESTORATION for extension compatibility
+            if (sessionStorage.getItem('emmaVaultActive') === 'true') {
+              console.log('🔧 DASHBOARD: Immediately restoring vault for extension compatibility...');
+              window.emmaWebVault.restoreVaultState()
+                .then(result => {
+                  if (result) {
+                    console.log('✅ DASHBOARD: Vault restored successfully for extension');
+                  } else {
+                    console.log('⚠️ DASHBOARD: Vault restore returned false');
+                  }
+                })
+                .catch(error => {
+                  console.warn('⚠️ DASHBOARD: Could not restore vault:', error);
+                });
+            }
           } else if (window.emmaWebVault) {
             console.log('✅ DASHBOARD: EmmaWebVault instance already exists');
           } else {
@@ -6445,24 +6461,9 @@
               }
             }, 100);
           });
-        } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault && !window.emmaWebVault.isOpen) {
-          (async () => {
-            try {
-
-              const result = await window.emmaWebVault.restoreVaultState();
-              if (result) {                // If in fallback mode, show affordance to re-enable direct save
-                try {
-                  if (window.emmaWebVault && window.emmaWebVault.isFallbackMode && window.emmaWebVault.isFallbackMode()) {
-                    window.emmaWebVault.showDirectSaveAffordance && window.emmaWebVault.showDirectSaveAffordance();
-                  }
-                } catch (_) {}
-              }
-            } catch (error) {
-              console.warn('⚠️ DASHBOARD: Could not restore elegant vault state:', error);
-            }
-          })();
         } else if (window.emmaWebVault && window.emmaWebVault.isOpen) {
-
+          // Vault is already open and ready
+          console.log('✅ DASHBOARD: Vault is already open and ready');
         }
 
         }, 100); // Small delay for DOM elements to be available
