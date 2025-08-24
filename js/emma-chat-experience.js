@@ -529,6 +529,536 @@ class EmmaChatExperience extends ExperiencePopup {
     }
   }
 
+  /**
+   * 👤 Detect if user is asking about a specific person
+   * Returns { personName, requestType } if detected, null otherwise
+   */
+  detectPersonRequest(message) {
+    const lowerMessage = message.toLowerCase().trim();
+    
+    // Common patterns for asking about people
+    const personPatterns = [
+      /(?:show me|tell me about|who is|about|where is)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      /(?:what about|how about)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      /([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s*\??\s*$/i, // Just a name, potentially with question mark
+    ];
+
+    for (const pattern of personPatterns) {
+      const match = message.match(pattern);
+      if (match && match[1]) {
+        const potentialName = match[1].trim();
+        
+        // Filter out common words that aren't names
+        const commonWords = ['you', 'me', 'us', 'that', 'this', 'what', 'where', 'when', 'how', 'why', 'who', 'and', 'or', 'the', 'a', 'an'];
+        if (commonWords.includes(potentialName.toLowerCase())) {
+          continue;
+        }
+
+        // If name is longer than 20 chars, probably not a person name
+        if (potentialName.length > 20) {
+          continue;
+        }
+
+        return {
+          personName: potentialName,
+          requestType: this.categorizePersonRequest(lowerMessage),
+          originalMessage: message
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 🏷️ Categorize the type of person request
+   */
+  categorizePersonRequest(lowerMessage) {
+    if (lowerMessage.includes('show me')) return 'show';
+    if (lowerMessage.includes('tell me about')) return 'tell';
+    if (lowerMessage.includes('who is')) return 'who';
+    if (lowerMessage.includes('where is')) return 'where';
+    if (lowerMessage.includes('what about') || lowerMessage.includes('how about')) return 'about';
+    return 'general';
+  }
+
+  /**
+   * 👤 Handle person request by showing person card and memories
+   */
+  async handlePersonRequest(personRequest) {
+    try {
+      console.log('👤 CHAT: Handling person request:', personRequest);
+      
+      // Find the person in vault
+      const person = await this.findPersonInVault(personRequest.personName);
+      
+      if (!person) {
+        // Person not found - gentle response
+        const notFoundResponses = [
+          `I don't see anyone named "${personRequest.personName}" in your memory vault yet. Would you like to add them?`,
+          `Hmm, I can't find "${personRequest.personName}" in your people. Should we create a profile for them?`,
+          `I don't have "${personRequest.personName}" in your vault. Let's add them so I can remember them for you!`
+        ];
+        const response = notFoundResponses[Math.floor(Math.random() * notFoundResponses.length)];
+        this.addMessage(response, 'emma');
+        return;
+      }
+
+      // Generate contextual response based on request type
+      const introResponse = this.generatePersonIntroResponse(person, personRequest.requestType);
+      this.addMessage(introResponse, 'emma');
+
+      // Show beautiful person card
+      await this.displayPersonCard(person);
+
+      // Find and display connected memories
+      await this.displayPersonMemories(person);
+
+    } catch (error) {
+      console.error('👤 CHAT: Error handling person request:', error);
+      this.addMessage("I had trouble finding that person. Let me try again in a moment.", 'emma');
+    }
+  }
+
+  /**
+   * 🔍 Find person in vault by name (fuzzy matching)
+   */
+  async findPersonInVault(searchName) {
+    try {
+      if (!window.emmaWebVault?.vaultData?.content?.people) {
+        console.warn('👤 CHAT: No people data in vault');
+        return null;
+      }
+
+      const vaultPeople = window.emmaWebVault.vaultData.content.people;
+      const searchLower = searchName.toLowerCase().trim();
+
+      // Try exact match first
+      for (const [personId, person] of Object.entries(vaultPeople)) {
+        if (person.name && person.name.toLowerCase() === searchLower) {
+          return { ...person, id: personId };
+        }
+      }
+
+      // Try partial match (contains)
+      for (const [personId, person] of Object.entries(vaultPeople)) {
+        if (person.name && person.name.toLowerCase().includes(searchLower)) {
+          return { ...person, id: personId };
+        }
+      }
+
+      // Try first name match
+      for (const [personId, person] of Object.entries(vaultPeople)) {
+        if (person.name) {
+          const firstName = person.name.split(' ')[0].toLowerCase();
+          if (firstName === searchLower) {
+            return { ...person, id: personId };
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('👤 CHAT: Error finding person:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 💬 Generate contextual intro response for person
+   */
+  generatePersonIntroResponse(person, requestType) {
+    const relationship = person.relation || person.relationship || 'person';
+    
+    const responses = {
+      show: [
+        `Here's ${person.name}! They're your ${relationship}.`,
+        `Let me show you ${person.name}, your ${relationship}.`,
+        `This is ${person.name}! Such a special ${relationship}.`
+      ],
+      tell: [
+        `${person.name} is your ${relationship}. Here's what I know about them:`,
+        `Let me tell you about ${person.name}, your dear ${relationship}:`,
+        `${person.name} - your wonderful ${relationship}. Here's their profile:`
+      ],
+      who: [
+        `${person.name} is your ${relationship}!`,
+        `That's ${person.name}, your ${relationship}.`,
+        `${person.name} - they're your ${relationship}!`
+      ],
+      general: [
+        `Here's ${person.name}, your ${relationship}:`,
+        `${person.name}! Your ${relationship}. Let me show you:`,
+        `That's ${person.name}, your ${relationship}:`
+      ]
+    };
+
+    const responseList = responses[requestType] || responses.general;
+    return responseList[Math.floor(Math.random() * responseList.length)];
+  }
+
+  /**
+   * 🎨 Display beautiful person card in chat (like people picker)
+   */
+  async displayPersonCard(person) {
+    try {
+      const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      const relationship = person.relation || person.relationship || 'person';
+      
+      // Create beautiful person card HTML using the people picker design
+      const personCardHTML = `
+        <div class="chat-person-card">
+          <div class="person-card-header">
+            <div class="person-avatar-large" id="person-avatar-${person.id}">
+              ${person.avatarUrl || person.profilePicture ? 
+                `<img src="${person.avatarUrl || person.profilePicture}" alt="${person.name}" />` : 
+                `<div class="avatar-initials">${initials}</div>`
+              }
+            </div>
+            <div class="person-info">
+              <div class="person-name">${person.name}</div>
+              <div class="person-relationship">${relationship}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Add person card as Emma message with HTML content
+      const cardMessageId = this.addMessage(personCardHTML, 'emma', { isHtml: true });
+      
+      // Add person card styling
+      this.addPersonCardStyles();
+
+    } catch (error) {
+      console.error('👤 CHAT: Error displaying person card:', error);
+    }
+  }
+
+  /**
+   * 🎨 Add elegant person card styling
+   */
+  addPersonCardStyles() {
+    // Check if styles already exist to avoid duplicates
+    if (document.getElementById('chat-person-card-styles')) return;
+
+    const styles = `
+      <style id="chat-person-card-styles">
+        .chat-person-card {
+          background: linear-gradient(135deg, 
+            rgba(138, 43, 226, 0.15) 0%, 
+            rgba(75, 0, 130, 0.15) 100%);
+          border: 1px solid rgba(138, 43, 226, 0.3);
+          border-radius: 16px;
+          padding: 20px;
+          margin: 8px 0;
+          backdrop-filter: blur(10px);
+          animation: personCardFadeIn 0.6s ease-out;
+        }
+
+        .person-card-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .person-avatar-large {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: linear-gradient(135deg, #8a2be2, #4b0082);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 16px rgba(138, 43, 226, 0.3);
+          position: relative;
+        }
+
+        .person-avatar-large img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .avatar-initials {
+          color: white;
+          font-size: 28px;
+          font-weight: 600;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .person-info {
+          flex: 1;
+        }
+
+        .person-name {
+          color: white;
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 4px;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .person-relationship {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 16px;
+          font-weight: 400;
+          text-transform: capitalize;
+        }
+
+        @keyframes personCardFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 480px) {
+          .person-card-header {
+            flex-direction: column;
+            text-align: center;
+            gap: 12px;
+          }
+          
+          .person-avatar-large {
+            width: 100px;
+            height: 100px;
+          }
+          
+          .person-name {
+            font-size: 20px;
+          }
+          
+          .person-relationship {
+            font-size: 14px;
+          }
+        }
+      </style>
+    `;
+
+    document.head.insertAdjacentHTML('beforeend', styles);
+  }
+
+  /**
+   * 📚 Display connected memories for person
+   */
+  async displayPersonMemories(person) {
+    try {
+      console.log('📚 CHAT: Finding memories for person:', person.name);
+      
+      // Find connected memories using same logic as people page
+      let connectedMemories = [];
+      
+      if (window.emmaWebVault?.vaultData?.content?.memories) {
+        const vaultMemories = window.emmaWebVault.vaultData.content.memories;
+        
+        for (const [memoryId, memory] of Object.entries(vaultMemories)) {
+          // Check if person is in memory's people metadata
+          if (memory.metadata && memory.metadata.people && 
+              Array.isArray(memory.metadata.people) && 
+              memory.metadata.people.includes(person.id)) {
+            connectedMemories.push({ ...memory, id: memoryId });
+          }
+          
+          // Also check if person's name is mentioned in content
+          if (person.name && memory.content) {
+            const personName = person.name.toLowerCase();
+            const memoryContent = memory.content.toLowerCase();
+            if (memoryContent.includes(personName)) {
+              // Avoid duplicates
+              if (!connectedMemories.find(m => m.id === memoryId)) {
+                connectedMemories.push({ ...memory, id: memoryId });
+              }
+            }
+          }
+        }
+      }
+
+      console.log(`📚 CHAT: Found ${connectedMemories.length} memories for ${person.name}`);
+
+      if (connectedMemories.length === 0) {
+        this.addMessage(`I don't see any memories with ${person.name} yet. Would you like to create some together?`, 'emma');
+        return;
+      }
+
+      // Generate memories introduction
+      const memoryCount = connectedMemories.length;
+      const memoryIntros = [
+        `I found ${memoryCount} ${memoryCount === 1 ? 'memory' : 'memories'} with ${person.name}:`,
+        `Here are ${memoryCount} precious ${memoryCount === 1 ? 'moment' : 'moments'} you've shared with ${person.name}:`,
+        `${person.name} appears in ${memoryCount} of your ${memoryCount === 1 ? 'memory' : 'memories'}:`
+      ];
+      const intro = memoryIntros[Math.floor(Math.random() * memoryIntros.length)];
+      this.addMessage(intro, 'emma');
+
+      // Display memory cards (limit to 5 most recent)
+      const recentMemories = connectedMemories
+        .sort((a, b) => new Date(b.created || b.date || 0) - new Date(a.created || a.date || 0))
+        .slice(0, 5);
+
+      for (const memory of recentMemories) {
+        await this.displayMemoryCard(memory, person);
+      }
+
+      // If there are more memories, mention it
+      if (connectedMemories.length > 5) {
+        const moreCount = connectedMemories.length - 5;
+        this.addMessage(`...and ${moreCount} more ${moreCount === 1 ? 'memory' : 'memories'} with ${person.name}. Would you like to see them all?`, 'emma');
+      }
+
+    } catch (error) {
+      console.error('📚 CHAT: Error displaying person memories:', error);
+      this.addMessage(`I had trouble loading memories for ${person.name}. Let me try again.`, 'emma');
+    }
+  }
+
+  /**
+   * 💝 Display individual memory card for person
+   */
+  async displayMemoryCard(memory, person) {
+    try {
+      const memoryDate = memory.created || memory.date || memory.timestamp;
+      const formattedDate = memoryDate ? new Date(memoryDate).toLocaleDateString() : 'Unknown date';
+      const preview = memory.content ? memory.content.substring(0, 100) + (memory.content.length > 100 ? '...' : '') : 'No content';
+      
+      // Get media thumbnail if available
+      let thumbnail = '';
+      if (memory.attachments && memory.attachments.length > 0 && window.emmaWebVault?.vaultData?.content?.media) {
+        const firstAttachment = memory.attachments[0];
+        const mediaData = window.emmaWebVault.vaultData.content.media[firstAttachment.id];
+        if (mediaData) {
+          const mediaUrl = mediaData.data.startsWith('data:') ? mediaData.data : `data:${mediaData.type};base64,${mediaData.data}`;
+          thumbnail = `<img src="${mediaUrl}" alt="Memory thumbnail" />`;
+        }
+      }
+
+      const memoryCardHTML = `
+        <div class="chat-memory-card" onclick="window.chatExperience.openMemoryFromChat('${memory.id}')">
+          <div class="memory-card-content">
+            ${thumbnail ? `<div class="memory-thumbnail">${thumbnail}</div>` : ''}
+            <div class="memory-details">
+              <div class="memory-date">${formattedDate}</div>
+              <div class="memory-preview">${preview}</div>
+              <div class="memory-action">Click to view full memory →</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Add memory card as Emma message
+      this.addMessage(memoryCardHTML, 'emma', { isHtml: true });
+      
+      // Add memory card styling
+      this.addMemoryCardStyles();
+
+    } catch (error) {
+      console.error('💝 CHAT: Error displaying memory card:', error);
+    }
+  }
+
+  /**
+   * 🎨 Add memory card styling for chat
+   */
+  addMemoryCardStyles() {
+    // Check if styles already exist to avoid duplicates
+    if (document.getElementById('chat-memory-card-styles')) return;
+
+    const styles = `
+      <style id="chat-memory-card-styles">
+        .chat-memory-card {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 16px;
+          margin: 8px 0;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(5px);
+        }
+
+        .chat-memory-card:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(138, 43, 226, 0.5);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(138, 43, 226, 0.2);
+        }
+
+        .memory-card-content {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+        }
+
+        .memory-thumbnail {
+          width: 60px;
+          height: 60px;
+          border-radius: 8px;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .memory-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .memory-details {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .memory-date {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 12px;
+          margin-bottom: 4px;
+        }
+
+        .memory-preview {
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 14px;
+          line-height: 1.4;
+          margin-bottom: 8px;
+          word-wrap: break-word;
+        }
+
+        .memory-action {
+          color: rgba(138, 43, 226, 0.8);
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        @media (max-width: 480px) {
+          .memory-card-content {
+            flex-direction: column;
+          }
+          
+          .memory-thumbnail {
+            width: 100%;
+            height: 120px;
+          }
+        }
+      </style>
+    `;
+
+    document.head.insertAdjacentHTML('beforeend', styles);
+  }
+
+  /**
+   * 🔗 Open memory from chat (navigation helper)
+   */
+  openMemoryFromChat(memoryId) {
+    console.log('🔗 CHAT: Opening memory from chat:', memoryId);
+    
+    // Use the existing edit memory functionality
+    this.editMemoryDetails(memoryId);
+  }
+
   setupKeyboardShortcuts() {
     this.keyboardHandler = (e) => {
       if (!this.isVisible || !this.element) return;
@@ -977,6 +1507,14 @@ class EmmaChatExperience extends ExperiencePopup {
 
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
+
+    // 👤 PERSON REQUEST DETECTION: Check if user is asking about a specific person
+    const personRequest = this.detectPersonRequest(userMessage);
+    if (personRequest) {
+      console.log('👤 CHAT: Person request detected:', personRequest);
+      await this.handlePersonRequest(personRequest);
+      return;
+    }
 
     // 💝 Check if this message has detected memory - if so, focus on capture instead of search
     const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
