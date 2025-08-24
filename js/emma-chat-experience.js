@@ -1524,7 +1524,7 @@ class EmmaChatExperience extends ExperiencePopup {
       padding: 16px 24px;
       border-radius: 12px;
       font-weight: 600;
-      z-index: 10002;
+      z-index: 20000;
       backdrop-filter: blur(10px);
       border: 2px solid rgba(255, 255, 255, 0.2);
       transform: translateX(100%);
@@ -1747,7 +1747,9 @@ class EmmaChatExperience extends ExperiencePopup {
       /time to (add|save|upload) (photos?|pictures?|videos?|images?)/i
     ];
     
-    return mediaRequestPatterns.some(pattern => pattern.test(text));
+    const isMatch = mediaRequestPatterns.some(pattern => pattern.test(text));
+    console.log('🔍 MEDIA DETECTION:', { text, isMatch, patterns: mediaRequestPatterns.length });
+    return isMatch;
   }
 
   /**
@@ -1778,6 +1780,7 @@ class EmmaChatExperience extends ExperiencePopup {
       // Store memory in temporary storage for editing
       this.temporaryMemories.set(memory.id, memory);
       console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
+      console.log('🎯 MEDIA REQUEST: Memory metadata:', memory.metadata);
       
       // Show the much better edit dialog we just perfected!
       this.editMemoryDetails(memory.id);
@@ -2703,10 +2706,34 @@ class EmmaChatExperience extends ExperiencePopup {
       this.showToast('💾 Changes saved!', 'success');
       closeModal();
       
-      // Refresh preview if user wants to see it again
-      setTimeout(() => {
-        this.showMemoryPreviewDialog(memory);
-      }, 300);
+      // 🎯 CRITICAL FIX: For media request workflows, save to vault automatically
+      console.log('🔍 EDIT: Checking mediaUpload flag:', memory.metadata?.mediaUpload, 'Full metadata:', memory.metadata);
+      if (memory.metadata?.mediaUpload) {
+        console.log('💾 EDIT: Media request workflow detected - automatically saving to vault');
+        setTimeout(async () => {
+          try {
+            await this.saveMemoryToVault(memory.id);
+            
+            // 🎯 TRIGGER CONSTELLATION REFRESH
+            console.log('🔄 EDIT: Triggering constellation refresh after vault save...');
+            window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+              detail: { 
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now()
+              }
+            }));
+            
+          } catch (error) {
+            console.error('❌ EDIT: Error auto-saving to vault:', error);
+          }
+        }, 500);
+      } else {
+        // Regular edit flow - refresh preview
+        setTimeout(() => {
+          this.showMemoryPreviewDialog(memory);
+        }, 300);
+      }
     });
 
     // Focus title input
