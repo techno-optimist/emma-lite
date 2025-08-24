@@ -92,6 +92,13 @@ class EmmaChatExperience extends ExperiencePopup {
     console.log('  🔍 Search existing memories (vectorless engine)');
     console.log('  💬 Intelligent conversation (requires OpenAI key)');
     
+    console.log('');
+    console.log('🧠 DEMENTIA-FRIENDLY FEATURES:');
+    console.log('  🔤 Case-insensitive name recognition');
+    console.log('  🗣️ Natural language processing');
+    console.log('  🎯 Ultra-robust name extraction');
+    console.log('  💝 Always works without technical setup');
+    
     if (!this.apiKey) {
       console.log('');
       console.log('💡 Note: Core vault operations work without API key!');
@@ -2072,9 +2079,24 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     // 🏛️ CORE VAULT OPERATIONS (Emma's primary job - always works!)
-    if (/\b(add|create|new|save)\b.*\b(person|people|memory|memories|vault)\b/i.test(message) ||
-        /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(message) ||
-        /\blet'?s?\s+(add|create|save)\b/i.test(message)) {
+    // ULTRA-ROBUST for dementia users - catch every possible way they might ask
+    if (
+      // Direct vault operations
+      /\b(add|create|new|save)\b.*\b(person|people|memory|memories|vault)\b/i.test(message) ||
+      /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(message) ||
+      /\blet'?s?\s+(add|create|save)\b/i.test(message) ||
+      
+      // Natural language patterns for dementia users
+      /\b(?:want|need|would\s+like)\s+(?:to\s+)?(?:add|save|create|put)\b/i.test(message) ||
+      /\b(?:please|can\s+you)\s+(?:add|save|create|put)\b/i.test(message) ||
+      /\b(?:put|place)\s+[a-zA-Z]+\b/i.test(message) ||
+      
+      // Simple "add [name]" pattern
+      /\badd\s+[a-zA-Z]+/i.test(message) ||
+      
+      // "I have a person/friend/family member" patterns
+      /\b(?:have|met|know)\s+(?:a\s+)?(?:person|friend|family|someone)\b/i.test(message)
+    ) {
       return { type: 'vault_operation', confidence: 0.95 };
     }
 
@@ -2250,14 +2272,20 @@ RULES:
     
     // 👤 Adding a person to the vault
     if (/\b(add|create|new|save)\b.*\b(person|people)\b/i.test(userMessage) ||
-        /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(userMessage)) {
+        /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(userMessage) ||
+        /\blet'?s?\s+add\b/i.test(userMessage) ||
+        /\badd\s+[a-zA-Z]+/i.test(userMessage)) {
+      
+      console.log('🏛️ PERSON ADDITION DETECTED');
       
       // Extract person name from message
       const personName = this.extractPersonNameFromMessage(userMessage);
       
       if (personName) {
+        console.log('🏛️ PROCEEDING WITH PERSON ADDITION:', personName);
         await this.addPersonToVault(personName, userMessage);
       } else {
+        console.log('🏛️ NO NAME FOUND - ASKING FOR CLARIFICATION');
         this.addMessage("I'd love to help you add someone to your vault! What's their name?", 'emma');
       }
       return;
@@ -2282,41 +2310,117 @@ RULES:
 
   /**
    * 🎯 EXTRACT PERSON NAME from user message
+   * ULTRA-ROBUST for dementia users - must be PERFECT
    */
   extractPersonNameFromMessage(message) {
-    console.log('🎯 Extracting person name from:', message);
+    console.log('🎯 EXTRACTING PERSON NAME FROM:', message);
     
-    // Look for patterns like "add mandy", "save john to vault", etc. (case-insensitive!)
-    const patterns = [
-      /\b(?:add|create|new|save)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\b/i,
-      /\b(?:add|save)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s+to\b/i,
-      /\blet'?s?\s+add\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\b/i,
-      /\badd\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\b/i
+    // 🧠 DEMENTIA-FRIENDLY: Handle the most natural phrases
+    // Split on connecting words to isolate the name
+    const connectingWords = /\b(to|in|into|from|for|with|at|on|by|the|vault|emma)\b/gi;
+    
+    // Split message on connecting words and take the part with the name
+    const parts = message.split(connectingWords);
+    console.log('🧠 MESSAGE PARTS:', parts);
+    
+    // Look for name patterns in each clean part
+    const namePatterns = [
+      // Basic patterns: "add mandy", "create john", "save sarah"
+      /\b(?:add|create|new|save)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      
+      // "Let's" patterns: "lets add mandy", "let's create john"
+      /\blet'?s?\s+(?:add|create|save)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      
+      // Person-specific: "person named mandy", "new person john"
+      /\b(?:person|people)\s+(?:named|called)?\s*([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      /\bnew\s+(?:person|people)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      
+      // Natural language: "I want to add mandy", "please add john", "can you add sarah"
+      /\b(?:want|need|would\s+like)\s+(?:to\s+)?(?:add|save|create)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      /\b(?:please|can\s+you)\s+(?:add|save|create)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      
+      // Put/place patterns: "put mandy", "place john"
+      /\b(?:put|place)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      
+      // Simple name at end: "add mandy please"
+      /\badd\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s*(?:please|thanks)?/i
     ];
     
-    for (const pattern of patterns) {
-      const match = message.match(pattern);
-      if (match && match[1]) {
-        const rawName = match[1].trim();
-        console.log('🎯 Found potential name:', rawName);
-        
-        // Filter out common words that aren't names
-        if (!/^(person|people|memory|memories|vault|emma|new|the|a|an|to|in|from|them|him|her|it|this|that)$/i.test(rawName)) {
-          // Capitalize the name properly (first letter of each word)
-          const properName = rawName.split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
+    for (const part of parts) {
+      const cleanPart = part.trim();
+      if (!cleanPart || cleanPart.length < 3) continue;
+      
+      console.log('🔍 CHECKING PART:', cleanPart);
+      
+      for (const pattern of namePatterns) {
+        const match = cleanPart.match(pattern);
+        if (match && match[1]) {
+          const rawName = match[1].trim();
+          console.log('🎯 FOUND POTENTIAL NAME:', rawName);
           
-          console.log('✅ Name extracted and capitalized:', properName);
-          return properName;
-        } else {
-          console.log('❌ Name rejected (common word):', rawName);
+          // Clean the name - remove any remaining connecting words
+          const cleanName = rawName.replace(/\b(to|in|into|from|for|with|at|on|by|the|vault|emma)\b/gi, '').trim();
+          console.log('🧹 CLEANED NAME:', cleanName);
+          
+          // Validate it's actually a name
+          if (this.isValidPersonName(cleanName)) {
+            // Capitalize properly
+            const properName = cleanName.split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ');
+            
+            console.log('✅ FINAL NAME EXTRACTED:', properName);
+            return properName;
+          } else {
+            console.log('❌ NAME VALIDATION FAILED:', cleanName);
+          }
         }
       }
     }
     
-    console.log('❌ No valid name found in message');
+    console.log('❌ NO VALID NAME FOUND IN MESSAGE');
     return null;
+  }
+
+  /**
+   * 🔍 VALIDATE if extracted text is actually a person name
+   */
+  isValidPersonName(name) {
+    if (!name || typeof name !== 'string') {
+      console.log('❌ VALIDATION: Not a string');
+      return false;
+    }
+    
+    const trimmed = name.trim();
+    if (trimmed.length < 2 || trimmed.length > 50) {
+      console.log('❌ VALIDATION: Length invalid:', trimmed.length);
+      return false;
+    }
+    
+    // Check if it's all letters and spaces (names should only be letters)
+    if (!/^[a-zA-Z\s]+$/.test(trimmed)) {
+      console.log('❌ VALIDATION: Contains non-letters:', trimmed);
+      return false;
+    }
+    
+    // Exclude common words that definitely aren't names
+    const excludedWords = [
+      'person', 'people', 'memory', 'memories', 'vault', 'emma', 'new', 'the', 'a', 'an',
+      'to', 'in', 'into', 'from', 'for', 'with', 'at', 'on', 'by', 'of', 'and', 'or',
+      'them', 'him', 'her', 'it', 'this', 'that', 'there', 'here', 'where', 'when',
+      'what', 'who', 'how', 'why', 'add', 'create', 'save', 'lets', 'let', 'please'
+    ];
+    
+    const words = trimmed.toLowerCase().split(/\s+/);
+    for (const word of words) {
+      if (excludedWords.includes(word)) {
+        console.log('❌ VALIDATION: Contains excluded word:', word);
+        return false;
+      }
+    }
+    
+    console.log('✅ VALIDATION: Name is valid:', trimmed);
+    return true;
   }
 
   /**
