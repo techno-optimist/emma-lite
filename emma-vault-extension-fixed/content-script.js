@@ -71,6 +71,55 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       currentTime: Date.now()
     });
     
+    // 🚨 CRITICAL FIX: Access vault from page context via DOM
+    console.log('🚨🔧 Content Script: Attempting to access vault from page context...');
+    
+    // Method 1: Try to access via injected script
+    const pageVaultCheck = () => {
+      return {
+        exists: !!window.emmaWebVault,
+        isOpen: window.emmaWebVault?.isOpen,
+        canAddMemory: typeof window.emmaWebVault?.addMemory === 'function'
+      };
+    };
+    
+    // Inject script to check vault in page context
+    const script = document.createElement('script');
+    script.textContent = `
+      window.__EMMA_VAULT_STATUS__ = {
+        exists: !!window.emmaWebVault,
+        isOpen: window.emmaWebVault?.isOpen,
+        canAddMemory: typeof window.emmaWebVault?.addMemory === 'function',
+        timestamp: Date.now()
+      };
+      
+      // Store the addMemory function reference
+      if (window.emmaWebVault && window.emmaWebVault.addMemory) {
+        window.__EMMA_ADD_MEMORY__ = window.emmaWebVault.addMemory.bind(window.emmaWebVault);
+      }
+    `;
+    document.head.appendChild(script);
+    document.head.removeChild(script);
+    
+    // Check what we got from page context
+    console.log('🚨🔧 Content Script: Page context vault status:', window.__EMMA_VAULT_STATUS__);
+    
+    // If vault is available in page context, use it directly
+    if (window.__EMMA_VAULT_STATUS__?.exists && window.__EMMA_VAULT_STATUS__?.isOpen && window.__EMMA_ADD_MEMORY__) {
+      console.log('🚨✅ Content Script: FOUND VAULT IN PAGE CONTEXT! Using directly...');
+      
+      window.__EMMA_ADD_MEMORY__(request.memoryData)
+        .then(result => {
+          console.log('🚨✅ Content Script: PAGE CONTEXT SAVE SUCCESS:', result);
+          sendResponse({ success: true, result });
+        })
+        .catch(error => {
+          console.error('🚨❌ Content Script: PAGE CONTEXT SAVE FAILED:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // Keep message channel open
+    }
+    
     // IMMEDIATE VAULT CHECK - before waitForWebappVault timeout
     if (window.emmaWebVault && window.emmaWebVault.isOpen) {
       console.log('🚨✅ Content Script: VAULT IS ALREADY READY! Skipping wait...');
