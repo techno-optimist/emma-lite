@@ -316,20 +316,16 @@
 
             async initializeChatExperience() {
                 try {
-                    // Check if EmmaChatExperience is available
+                    // Simple initialization - just create the instance
                     if (typeof EmmaChatExperience !== 'undefined') {
-                        console.log('🚀 Initializing Emma Chat Experience...');
-                        this.chatExperience = new EmmaChatExperience();
-                        await this.chatExperience.initializeBaseSystems();
-                        console.log('✅ Emma Chat Experience initialized and ready!');
-                        
-                        // Dispatch custom event to signal chat experience is ready
-                        window.dispatchEvent(new CustomEvent('emmaChatExperienceReady'));
+                        console.log('🚀 Creating Emma Chat Experience...');
+                        new EmmaChatExperience(); // Auto-sets window.chatExperience
+                        console.log('✅ Emma Chat Experience created!');
                     } else {
                         console.warn('⚠️ EmmaChatExperience class not available');
                     }
                 } catch (error) {
-                    console.error('❌ Failed to initialize Emma Chat Experience:', error);
+                    console.error('❌ Failed to create Emma Chat Experience:', error);
                 }
             }
 
@@ -748,21 +744,17 @@
                 if (memoryIdToEdit && mode === 'chat') {
                     console.log('🎯 URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
                     
-                    // Function to open edit dialog
-                    const openEditDialog = () => {
+                    // Simple polling approach - just wait for window.chatExperience to be available
+                    const checkAndOpen = () => {
                         if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
                             console.log('✅ Opening enhanced edit dialog for memory:', memoryIdToEdit);
                             window.chatExperience.editMemoryDetails(memoryIdToEdit);
                         } else {
-                            console.error('❌ Emma Chat Experience not available when trying to open edit dialog');
+                            setTimeout(checkAndOpen, 100); // Check again in 100ms
                         }
                     };
                     
-                    // Listen for chat experience ready event
-                    window.addEventListener('emmaChatExperienceReady', openEditDialog, { once: true });
-                    
-                    // Also try immediately in case it's already ready
-                    setTimeout(openEditDialog, 100);
+                    setTimeout(checkAndOpen, 500); // Start checking after 500ms
                 }
 
                 // Show browser compatibility status
