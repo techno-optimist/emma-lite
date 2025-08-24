@@ -3682,15 +3682,29 @@
 
       // Shrink central Emma orb when memories are visible
       shrinkCentralOrb() {
-        const orbContainer = this.orb.querySelector('.emma-orb-webgl');
-        if (orbContainer) {
-          orbContainer.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-          orbContainer.style.transform = 'scale(0.7)';
-        }
-
-        // Also shrink the entire orb container
-        this.orb.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-        this.orb.style.transform = 'scale(0.7)';
+        console.log('🌟 ORB: Fading out and repositioning to bottom center');
+        
+        // 🎭 FADE OUT orb first
+        this.orb.style.transition = 'opacity 0.4s ease, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        this.orb.style.opacity = '0';
+        
+        // After fade out, reposition to bottom center
+        setTimeout(() => {
+          // 📍 REPOSITION: Move to bottom center
+          this.orb.style.position = 'fixed';
+          this.orb.style.top = 'auto';
+          this.orb.style.bottom = '40px';
+          this.orb.style.left = '50%';
+          this.orb.style.transform = 'translateX(-50%) scale(0.6)';
+          this.orb.style.zIndex = '9999'; // Above constellation nodes
+          
+          // 🎭 FADE IN at new position
+          setTimeout(() => {
+            this.orb.style.opacity = '0.9';
+            console.log('🌟 ORB: Repositioned to bottom center and faded in');
+          }, 100);
+          
+        }, 400); // Wait for fade out to complete
 
         // Add hover effects for memory mode
         this.addOrbHoverEffects();
@@ -3705,30 +3719,48 @@
 
         this.orb.addEventListener('mouseenter', () => {
           if (this.isConstellationMode) {
-            this.orb.style.transform = 'scale(0.9)';
-            if (orbContainer) {
-              orbContainer.style.transform = 'scale(0.9)';
-            }
+            // 🎯 HOVER: Scale up while maintaining bottom center position
+            this.orb.style.transform = 'translateX(-50%) scale(0.8)';
+            this.orb.style.opacity = '1';
           }
         });
 
         this.orb.addEventListener('mouseleave', () => {
           if (this.isConstellationMode) {
-            this.orb.style.transform = 'scale(0.7)';
-            if (orbContainer) {
-              orbContainer.style.transform = 'scale(0.7)';
-            }
+            // 🎯 HOVER OUT: Return to normal size at bottom center
+            this.orb.style.transform = 'translateX(-50%) scale(0.6)';
+            this.orb.style.opacity = '0.9';
           }
         });
       }
 
-      // Restore central Emma orb size
+      // Restore central Emma orb to original center position
       restoreCentralOrb() {
-        const orbContainer = this.orb.querySelector('.emma-orb-webgl');
-        if (orbContainer) {
-          orbContainer.style.transform = 'scale(1)';
-        }
-        this.orb.style.transform = 'scale(1)';
+        console.log('🌟 ORB: Restoring to center position');
+        
+        // 🎭 FADE OUT from bottom position
+        this.orb.style.transition = 'opacity 0.3s ease';
+        this.orb.style.opacity = '0';
+        
+        setTimeout(() => {
+          // 📍 RESTORE: Move back to center
+          this.orb.style.position = 'fixed';
+          this.orb.style.top = '50%';
+          this.orb.style.bottom = 'auto';
+          this.orb.style.left = '50%';
+          this.orb.style.transform = 'translate(-50%, -50%) scale(1)';
+          this.orb.style.zIndex = '10';
+          
+          // Reset transitions for normal behavior
+          this.orb.style.transition = 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+          
+          // 🎭 FADE IN at center
+          setTimeout(() => {
+            this.orb.style.opacity = '1';
+            console.log('🌟 ORB: Restored to center and faded in');
+          }, 100);
+          
+        }, 300); // Wait for fade out
       }
 
       // Load memories for constellation
@@ -6505,17 +6537,11 @@
        * (Reused from memories.js constellation)
        */
       async loadFullMediaForMemory(memory) {
-        console.log('🔍 MEDIA DEBUG: Starting loadFullMediaForMemory for memory:', memory.id);
-        console.log('🔍 MEDIA DEBUG: Memory attachments:', memory.attachments);
-        
         // Check if this memory has lazy-loaded attachments that need full loading
         const hasLazyAttachments = memory.attachments?.some(att => att.isLazyLoaded && att.hasMedia);
         
-        console.log('🔍 MEDIA DEBUG: hasLazyAttachments:', hasLazyAttachments);
-        
         if (!hasLazyAttachments) {
           console.log('💾 DASHBOARD: Memory already has full media, no loading needed');
-          console.log('🔍 MEDIA DEBUG: Returning original memory with attachments:', memory.attachments);
           return memory;
         }
         
@@ -6568,18 +6594,12 @@
        * 📱💻🖥️ RESPONSIVE MEMORY DIALOG - Works on ALL screen sizes!
        */
       showResponsiveMemoryDialog(memory) {
-        console.log('🎯 DIALOG DEBUG: Creating dialog for memory:', memory.id);
-        console.log('🎯 DIALOG DEBUG: Memory attachments in dialog:', memory.attachments);
-        
         // Prepare memory data  
         const hasImages = memory.attachments?.some(att => att.type?.startsWith('image/')) || 
                          memory.mediaItems?.some(item => item.type?.startsWith('image/'));
         const hasVideo = memory.attachments?.some(att => att.type?.startsWith('video/')) || 
                         memory.mediaItems?.some(item => item.type?.startsWith('video/'));
         const peopleList = memory.metadata?.people || memory.people || [];
-        
-        console.log('🎯 DIALOG DEBUG: hasImages:', hasImages, 'hasVideo:', hasVideo);
-        console.log('🎯 DIALOG DEBUG: Image attachments:', memory.attachments?.filter(att => att.type?.startsWith('image/')));
         
         // Create fully responsive dialog for ALL screen sizes
         const dialog = document.createElement('div');
@@ -6982,7 +7002,6 @@
                     .slice(0, 5)
                     .map((image, index) => {
                       const imageUrl = image.url || image.dataUrl || image.data || image.previewUrl;
-                      console.log('🖼️ IMAGE DEBUG: Processing image', index, ':', image.name, 'URL:', imageUrl?.substring(0, 100) + '...');
                       
                       // 🔧 FIX: Use img tag instead of background-image for better compatibility
                       return `
@@ -7054,7 +7073,7 @@
                   ${(memory.attachments || memory.mediaItems || []).map((attachment, index) => `
                     <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
                       ${attachment.type?.startsWith('image/') ? `
-                        <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                        <img src="${attachment.url || attachment.dataUrl || attachment.data || attachment.previewUrl}" alt="${attachment.name}" />
                       ` : attachment.type?.startsWith('video/') ? `
                         <video src="${attachment.dataUrl || attachment.url}" muted>
                         <div class="video-play-overlay">▶️</div>
