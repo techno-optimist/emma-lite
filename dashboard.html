@@ -1741,47 +1741,8 @@
     <div class="aurora"></div>
   </div>
 
-  <!-- Memory Constellation Redirect -->
-  <div id="constellation-redirect" class="constellation-redirect" style="
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: rgba(255, 255, 255, 0.9);
-    z-index: 1000;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.5s ease;
-  ">
-    <div style="
-      background: rgba(134, 88, 255, 0.1);
-      border: 1px solid rgba(134, 88, 255, 0.3);
-      border-radius: 20px;
-      padding: 40px;
-      backdrop-filter: blur(10px);
-      max-width: 400px;
-    ">
-      <h2 style="margin: 0 0 20px 0; font-size: 2em;">💝 Memory Constellation</h2>
-      <p style="margin: 0 0 30px 0; opacity: 0.8; line-height: 1.6;">
-        Your memories are beautifully organized in the Memory Gallery.<br>
-        Click below to explore your memory constellation.
-      </p>
-      <button onclick="window.location.href='pages/gallery.html'" style="
-        background: linear-gradient(135deg, rgba(134, 88, 255, 0.8), rgba(240, 147, 251, 0.8));
-        border: none;
-        padding: 16px 32px;
-        border-radius: 30px;
-        color: white;
-        font-weight: 600;
-        font-size: 1.1em;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-        View Memory Constellation →
-      </button>
-    </div>
-  </div>
+  <!-- Memory Constellation Canvas -->
+  <canvas id="constellation" class="constellation-canvas"></canvas>
 
   <!-- Welcome Text -->
   <div class="welcome-text">
@@ -2132,7 +2093,11 @@
         this.initLoadingOrb();
 
         // Initialize constellation background
-        this.initConstellation();        // Setup event listeners
+        console.log('🔍 DEBUG: About to initialize constellation, DOM ready state:', document.readyState);
+        console.log('🔍 DEBUG: Constellation canvas exists?', !!document.getElementById('constellation'));
+        this.initConstellation();
+        
+        // Setup event listeners
         this.setupEventListeners();
 
         // Load initial data
@@ -2152,7 +2117,16 @@
 
       initConstellation() {
         const canvas = document.getElementById('constellation');
+        if (!canvas) {
+          console.warn('⚠️ Constellation canvas not found, skipping initialization');
+          return;
+        }
+        
         const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.warn('⚠️ Could not get constellation canvas context, skipping initialization');
+          return;
+        }
 
         // Set canvas size
         const resize = () => {
@@ -3498,20 +3472,13 @@
         // PERSISTENCE: Save constellation state for page refresh
         localStorage.setItem('emmaConstellationActive', 'true');
 
-        // Show constellation redirect instead of broken rendering
-        const redirect = document.getElementById('constellation-redirect');
-        if (redirect) {
-          redirect.style.opacity = '1';
-          redirect.style.pointerEvents = 'all';
-        }
-
-        // Add constellation-active class to hide all UI  
+        // Add constellation-active class to hide all UI
         document.body.classList.add('constellation-active');
 
         // Shrink central orb
         this.shrinkCentralOrb();
 
-        // Skip memory data loading - redirect to working gallery instead
+        // Load memory data for constellation
         await this.loadMemoriesForConstellation();
 
         // Fade out current nodes
@@ -3637,6 +3604,8 @@
 
               return {
                 ...memory,
+                // FIXED: Transform like gallery pages do - extract title from content/metadata
+                title: memory.metadata?.title || memory.title || memory.subject || memory.summary || memory.content?.substring(0, 50) + '...' || `Memory`,
                 attachments,
                 isVaultMemory: true
               };
@@ -3660,6 +3629,8 @@
 
             allMemories = [...memoriesWithThumbnails];
             console.log('💝 CONSTELLATION: Loaded', allMemories.length, 'vault memories');
+            console.log('💝 CONSTELLATION DEBUG: First memory structure:', allMemories[0]);
+            console.log('💝 CONSTELLATION DEBUG: First memory keys:', Object.keys(allMemories[0] || {}));
           }
 
           // Note: All memories should be stored directly in vault - no fallback needed
@@ -5625,13 +5596,6 @@
           this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
         }
 
-        // Hide constellation redirect
-        const redirect = document.getElementById('constellation-redirect');
-        if (redirect) {
-          redirect.style.opacity = '0';
-          redirect.style.pointerEvents = 'none';
-        }
-
         // Remove constellation-active class to restore UI
         document.body.classList.remove('constellation-active');
         document.body.classList.remove('menu-active');
@@ -6350,12 +6314,15 @@
 
     // Initialize dashboard
     document.addEventListener('DOMContentLoaded', () => {
-      window.emmaDashboard = new EmmaDashboard();
+      // Small delay to ensure all elements are definitely available
+      setTimeout(() => {
+        console.log('🔍 DEBUG: Creating EmmaDashboard instance...');
+        window.emmaDashboard = new EmmaDashboard();
+        
+        // Setup vault modal event listeners AFTER dashboard is created
+        const dashboard = window.emmaDashboard;
 
-      // Setup vault modal event listeners
-      const dashboard = window.emmaDashboard;
-
-      // Close button
+        // Close button
       document.getElementById('close-vault-modal').addEventListener('click', () => {
         dashboard.closeVaultModal();
       });
@@ -6498,7 +6465,7 @@
 
         }
 
-      }, 1000); // Wait 1 second for all scripts to load
+      }, 100); // Small delay for DOM elements to be available
     });
   </script>
 </body>
