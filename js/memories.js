@@ -1961,98 +1961,760 @@ function openMemoryDetail(memoryId) {
   const memory = allMemories.find(m => m.id == memoryId);
   if (!memory) return;
 
-  // Create modal for memory detail
-  const modal = document.createElement('div');
-  modal.className = 'memory-detail-modal';
-  modal.innerHTML = `
-    <div class="memory-detail-overlay"></div>
-    <div class="memory-detail-content">
-      <div class="memory-detail-header">
-        <input id="memory-title-input" class="memory-title-input" value="${escapeHtml(memory.title || 'Untitled Memory')}" placeholder="Enter memory title..." />
-        <div class="memory-header-actions">
-          <div id="save-status" class="save-status" style="display: none;">
-            <span id="save-status-text">Saved</span>
+  console.log('🎯 CONSTELLATION: Opening responsive memory dialog for:', memory.title || memory.id);
+
+  // 📱💻🖥️ USE THE NEW RESPONSIVE MEMORY DIALOG!
+  showResponsiveMemoryDialog(memory);
+}
+
+/**
+ * 📱💻🖥️ RESPONSIVE MEMORY DIALOG - Works on ALL screen sizes!
+ */
+function showResponsiveMemoryDialog(memory) {
+  // Prepare memory data  
+  const hasImages = memory.attachments?.some(att => att.type?.startsWith('image/'));
+  const hasVideo = memory.attachments?.some(att => att.type?.startsWith('video/'));
+  const peopleList = memory.metadata?.people || [];
+  
+  // Create fully responsive dialog for ALL screen sizes
+  const dialog = document.createElement('div');
+  dialog.className = 'memory-preview-dialog responsive constellation';
+  dialog.style.cssText = `
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 10000 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 0;
+    animation: dialogFadeIn 0.3s ease forwards;
+    background: rgba(0, 0, 0, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    padding: 0;
+  `;
+
+  dialog.innerHTML = `
+    <style>
+      /* 🎯 RESPONSIVE DIALOG STYLES FOR ALL SCREEN SIZES */
+      @keyframes dialogFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      
+      .responsive-memory-container {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+        border-radius: clamp(16px, 3vw, 24px);
+        max-width: 95vw;
+        max-height: 95vh;
+        width: 100%;
+        overflow-y: auto;
+        position: relative;
+        animation: dialogFadeIn 0.3s ease forwards;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      }
+      
+      /* 📱 MOBILE FIRST (320px+) */
+      .responsive-memory-container {
+        margin: 10px;
+        padding: 20px;
+      }
+      
+      /* 📱 TABLET (768px+) */
+      @media (min-width: 768px) {
+        .responsive-memory-container {
+          margin: 20px;
+          padding: 30px;
+          max-width: 700px;
+        }
+      }
+      
+      /* 💻 LAPTOP (1024px+) */
+      @media (min-width: 1024px) {
+        .responsive-memory-container {
+          margin: 40px;
+          padding: 40px;
+          max-width: 900px;
+        }
+      }
+      
+      /* 🖥️ DESKTOP (1440px+) */
+      @media (min-width: 1440px) {
+        .responsive-memory-container {
+          max-width: 1100px;
+          padding: 50px;
+        }
+      }
+      
+      /* HEADER STYLES */
+      .memory-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: clamp(20px, 4vw, 30px);
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+      
+      .header-info h2 {
+        margin: 0;
+        color: white;
+        font-size: clamp(20px, 4vw, 28px);
+        font-weight: 700;
+        line-height: 1.2;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .memory-date {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: clamp(14px, 2.5vw, 16px);
+        margin-top: 5px;
+      }
+      
+      .close-btn {
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: white;
+        width: clamp(40px, 6vw, 48px);
+        height: clamp(40px, 6vw, 48px);
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        flex-shrink: 0;
+      }
+      
+      .close-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: scale(1.1);
+      }
+      
+      /* HERO CAROUSEL STYLES */
+      .hero-carousel {
+        margin-bottom: clamp(25px, 5vw, 35px);
+        border-radius: clamp(12px, 2.5vw, 16px);
+        overflow: hidden;
+        position: relative;
+        aspect-ratio: 16/9;
+        background: rgba(0, 0, 0, 0.3);
+      }
+      
+      .carousel-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      
+      .hero-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      
+      .hero-image.active {
+        opacity: 1;
+      }
+      
+      .image-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.4));
+      }
+      
+      .carousel-dots {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+      }
+      
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .dot.active {
+        background: white;
+        transform: scale(1.2);
+      }
+      
+      /* PEOPLE SECTION */
+      .people-section {
+        margin-bottom: clamp(25px, 5vw, 35px);
+      }
+      
+      .section-title {
+        color: white;
+        font-size: clamp(16px, 3vw, 20px);
+        font-weight: 600;
+        margin: 0 0 clamp(15px, 3vw, 20px) 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      
+      .people-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(clamp(80px, 15vw, 120px), 1fr));
+        gap: clamp(12px, 3vw, 20px);
+        justify-items: center;
+      }
+      
+      .memory-person-avatar {
+        width: clamp(70px, 12vw, 100px);
+        height: clamp(70px, 12vw, 100px);
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.9);
+        overflow: hidden;
+        position: relative;
+        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(12px, 2.5vw, 16px);
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      }
+      
+      .memory-person-avatar:hover {
+        transform: scale(1.05);
+        border-color: white;
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+      }
+      
+      .memory-person-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      /* CONTENT SECTION */
+      .content-section {
+        margin-bottom: clamp(25px, 5vw, 35px);
+      }
+      
+      .memory-story p {
+        color: white;
+        font-size: clamp(16px, 3vw, 18px);
+        line-height: 1.6;
+        margin: 0 0 clamp(15px, 3vw, 20px) 0;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+      
+      .memory-tags {
+        display: flex;
+        align-items: center;
+        gap: clamp(10px, 2vw, 15px);
+        margin-bottom: clamp(10px, 2vw, 15px);
+        flex-wrap: wrap;
+      }
+      
+      .tag-label {
+        font-size: clamp(16px, 3vw, 18px);
+        flex-shrink: 0;
+      }
+      
+      .emotions-list {
+        display: flex;
+        gap: clamp(6px, 1.5vw, 10px);
+        flex-wrap: wrap;
+      }
+      
+      .emotion-tag, .location-tag {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 12px);
+        border-radius: clamp(12px, 2vw, 16px);
+        font-size: clamp(12px, 2.5vw, 14px);
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+      }
+      
+      /* MEDIA SECTION */
+      .media-section {
+        margin-bottom: clamp(25px, 5vw, 35px);
+      }
+      
+      .media-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 25vw, 200px), 1fr));
+        gap: clamp(10px, 2vw, 15px);
+      }
+      
+      .media-item {
+        aspect-ratio: 1;
+        border-radius: clamp(8px, 2vw, 12px);
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.1);
+        position: relative;
+        transition: transform 0.3s ease;
+      }
+      
+      .media-item:hover {
+        transform: scale(1.05);
+      }
+      
+      .media-item img, .media-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      .video-play-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: clamp(20px, 4vw, 30px);
+        color: white;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      
+      /* ACTION BUTTONS */
+      .action-buttons {
+        display: flex;
+        gap: clamp(12px, 3vw, 20px);
+        margin-top: clamp(30px, 5vw, 40px);
+        flex-wrap: wrap;
+      }
+      
+      .action-btn {
+        flex: 1;
+        min-width: clamp(120px, 25vw, 150px);
+        padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 30px);
+        border: none;
+        border-radius: clamp(10px, 2vw, 14px);
+        font-size: clamp(14px, 2.5vw, 16px);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(6px, 1.5vw, 8px);
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      
+      .action-btn.primary {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        color: #8b5cf6;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+      }
+      
+      .action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+      }
+      
+      .action-btn.secondary {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+      }
+      
+      .action-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+      }
+    </style>
+    
+    <div class="responsive-memory-container">
+      <!-- HEADER -->
+      <div class="memory-header">
+        <div class="header-info">
+          <h2>${memory.title || 'Beautiful Memory'}</h2>
+          <div class="memory-date">${memory.metadata?.date || formatMemoryDate(memory.timestamp)}</div>
           </div>
-          <button class="btn" id="memory-save-btn">💾 Save</button>
+        <button class="close-btn" onclick="this.closest('.memory-preview-dialog').remove()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
         </div>
-        <button class="close-btn">×</button>
+      
+      <!-- HERO CAROUSEL -->
+      ${hasImages ? `
+        <div class="hero-carousel">
+          <div class="carousel-container">
+            ${memory.attachments
+              .filter(att => att.type?.startsWith('image/'))
+              .slice(0, 5)
+              .map((image, index) => `
+                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                  <div class="image-overlay"></div>
       </div>
-      <div class="memory-tabs">
-        <button class="tab-btn active" data-tab="overview">Overview</button>
-        <button class="tab-btn" data-tab="meta">Meta</button>
-        <button class="tab-btn" data-tab="media">Media <span class="tab-count" id="tab-media-count">0</span></button>
-        <button class="tab-btn" data-tab="people">People <span class="tab-count" id="tab-people-count">0</span></button>
-        <button class="tab-btn" data-tab="related">Related <span class="tab-count" id="tab-related-count">0</span></button>
-        <div style="margin-left:auto; padding:8px 12px;">
-          <button class="btn secondary" id="share-memory-btn">Share</button>
+              `).join('')}
         </div>
+          ${memory.attachments.filter(att => att.type?.startsWith('image/')).length > 1 ? `
+            <div class="carousel-dots">
+              ${memory.attachments
+                .filter(att => att.type?.startsWith('image/'))
+                .slice(0, 5)
+                .map((_, index) => `
+                  <div class="dot ${index === 0 ? 'active' : ''}" onclick="switchConstellationCarouselImage(${index})"></div>
+                `).join('')}
       </div>
-      <div class="memory-detail-body" id="memory-detail-body"></div>
+          ` : ''}
+        </div>
+      ` : ''}
+      
+      <!-- PEOPLE SECTION -->
+      ${peopleList.length > 0 ? `
+        <div class="people-section">
+          <h3 class="section-title">👥 People in this memory</h3>
+          <div class="people-grid" id="people-grid-${memory.id}">
+            <!-- People avatars will be loaded here -->
+          </div>
+        </div>
+      ` : ''}
+      
+      <!-- CONTENT -->
+      <div class="content-section">
+        <div class="memory-story">
+          <p>${memory.content}</p>
+        </div>
+        
+        ${memory.metadata?.emotions?.length > 0 ? `
+          <div class="memory-tags">
+            <span class="tag-label">💭</span>
+            <div class="emotions-list">
+              ${memory.metadata.emotions.map(emotion => `
+                <span class="emotion-tag">${emotion}</span>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${memory.metadata?.location ? `
+          <div class="memory-tags">
+            <span class="tag-label">📍</span>
+            <span class="location-tag">${memory.metadata.location}</span>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- MEDIA GRID -->
+      ${memory.attachments?.length > 1 || hasVideo ? `
+        <div class="media-section">
+          <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+          <div class="media-grid">
+            ${memory.attachments.map((attachment, index) => `
+              <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
+                ${attachment.type?.startsWith('image/') ? `
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                ` : attachment.type?.startsWith('video/') ? `
+                  <video src="${attachment.dataUrl || attachment.url}" muted>
+                  <div class="video-play-overlay">▶️</div>
+                  </video>
+                ` : `
+                  <div class="file-item">
+                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                    <div class="file-name">${attachment.name}</div>
+                  </div>
+                `}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      
+      <!-- ACTION BUTTONS -->
+      <div class="action-buttons">
+        <button class="action-btn secondary" onclick="editConstellationMemory('${memory.id}')">
+          ✏️ Edit Memory
+        </button>
+        <button class="action-btn primary" onclick="shareConstellationMemory('${memory.id}')">
+          🔗 Share Memory
+        </button>
+      </div>
     </div>
   `;
 
-  document.body.appendChild(modal);
-
-  // Add event listeners for closing
-  const overlay = modal.querySelector('.memory-detail-overlay');
-  const closeBtn = modal.querySelector('.close-btn');
-
-  overlay.addEventListener('click', () => closeMemoryDetail());
-  closeBtn.addEventListener('click', () => closeMemoryDetail());
-
-  // Close on Escape key
-  const handleEscape = (e) => {
-    if (e.key === 'Escape') {
-      closeMemoryDetail();
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) {
+      dialog.remove();
     }
-  };
-  document.addEventListener('keydown', handleEscape);
+  });
 
-  // Store the handler on the modal for cleanup
-  modal._escapeHandler = handleEscape;
+  document.body.appendChild(dialog);
+  
+  // Animate in
+  setTimeout(() => {
+    dialog.style.opacity = '1';
+    // Load people avatars if needed
+    loadConstellationPeopleAvatars(memory);
+  }, 100);
+}
 
-  // Local tab state & lazy loading
-  let activeTab = 'overview';
-  const bodyHost = modal.querySelector('#memory-detail-body');
-  const tabButtons = Array.from(modal.querySelectorAll('.tab-btn'));
-  tabButtons.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-  modal.querySelector('#share-memory-btn').addEventListener('click', () => openShareModal(memory));
-
-  // Save handler (MVP: updates title/content)
-  const saveBtn = modal.querySelector('#memory-save-btn');
-  const saveStatus = modal.querySelector('#save-status');
-  const saveStatusText = modal.querySelector('#save-status-text');
-  const titleInput = modal.querySelector('#memory-title-input');
-
-  function showSaveStatus(type, message) {
-    if (!saveStatus || !saveStatusText) return;
-    saveStatus.className = `save-status ${type}`;
-    saveStatusText.textContent = message;
-    saveStatus.style.display = 'inline-flex';
-
-    if (type === 'saved') {
-      setTimeout(() => {
-        saveStatus.style.display = 'none';
-      }, 3000);
-    }
+// Helper functions for the new responsive dialog
+function formatMemoryDate(timestamp) {
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch (error) {
+    return 'Recent';
   }
+}
 
-  // Add keyboard shortcuts and save handler
-  const handleSave = async () => {
-    const title = titleInput.value.trim() || 'Untitled Memory';
-    const content = getOverviewEditedContent();
+function switchConstellationCarouselImage(index) {
+  const dialog = document.querySelector('.memory-preview-dialog.constellation');
+  if (!dialog) return;
+  
+  // Update active image
+  const images = dialog.querySelectorAll('.hero-image');
+  const dots = dialog.querySelectorAll('.dot');
+  
+  images.forEach((img, i) => {
+    img.classList.toggle('active', i === index);
+  });
+  
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
+  });
+}
 
-    try {
-      showSaveStatus('saving', 'Saving...');
-      if (saveBtn) saveBtn.disabled = true;
+async function loadConstellationPeopleAvatars(memory) {
+  const grid = document.getElementById(`people-grid-${memory.id}`);
+  if (!grid) return;
 
-      const updated = await saveMemoryEdits({ id: memory.id, title, content });
-      if (updated && updated.success) {
-        showSaveStatus('saved', '✓ Saved');
+  try {
+    // Get people from vault if available
+    const peopleIds = memory.metadata?.people || [];
+    if (peopleIds.length === 0) return;
 
-        // Update local state and rerender
-        const idx = allMemories.findIndex(m => m.id === memory.id);
-        if (idx >= 0) {
+    let people = [];
+    
+    // Try to get people from vault
+    if (window.emmaWebVault?.vaultData?.content?.people) {
+      const rawPeople = Object.values(window.emmaWebVault.vaultData.content.people) || [];
+      const media = window.emmaWebVault.vaultData.content.media || {};
+      
+      people = rawPeople.map(person => {
+        let avatarUrl = person.avatarUrl;
+        
+        if (!avatarUrl && person.avatarId && media[person.avatarId]) {
+          const mediaItem = media[person.avatarId];
+          if (mediaItem?.data) {
+            avatarUrl = mediaItem.data.startsWith('data:')
+              ? mediaItem.data
+              : `data:${mediaItem.type};base64,${mediaItem.data}`;
+          }
+        }
+        
+        return { ...person, avatarUrl };
+      });
+    }
+
+    // Filter to people in this memory
+    const memoryPeople = people.filter(person => 
+      peopleIds.some(p => (typeof p === 'string' ? p : p.id) === person.id)
+    );
+
+    if (memoryPeople.length === 0) {
+      grid.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center;">No people found.</p>';
+      return;
+    }
+
+    // Create responsive people avatars
+    memoryPeople.forEach(person => {
+      const personDiv = document.createElement('div');
+      personDiv.className = 'memory-person-avatar';
+      personDiv.dataset.personId = person.id;
+      personDiv.dataset.personName = person.name;
+
+      // Create name label below avatar
+      const nameLabel = document.createElement('div');
+      nameLabel.textContent = person.name;
+      nameLabel.style.cssText = `
+        color: white;
+        font-size: clamp(12px, 2.5vw, 14px);
+        font-weight: 500;
+        margin-top: 8px;
+        text-align: center;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      `;
+
+      if (person.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = person.avatarUrl;
+        img.alt = person.name;
+        img.onload = () => {
+          personDiv.innerHTML = '';
+          personDiv.appendChild(img);
+        };
+        img.onerror = () => {
+          // Fallback to initials
+          personDiv.textContent = person.name.split(' ').map(n => n[0]).join('').toUpperCase();
+        };
+      } else {
+        // Show initials
+        personDiv.textContent = person.name.split(' ').map(n => n[0]).join('').toUpperCase();
+      }
+
+      const container = document.createElement('div');
+      container.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
+      container.appendChild(personDiv);
+      container.appendChild(nameLabel);
+      
+      grid.appendChild(container);
+    });
+
+  } catch (error) {
+    console.error('❌ Error loading constellation people avatars:', error);
+    grid.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center;">Error loading people.</p>';
+  }
+}
+
+function editConstellationMemory(memoryId) {
+  // Navigate to Emma Chat for editing
+  console.log('🔗 CONSTELLATION: Navigating to Emma Chat for editing memory:', memoryId);
+  
+  // Close the dialog first
+  document.querySelector('.memory-preview-dialog.constellation')?.remove();
+  
+  // Navigate to Emma Chat (assuming it's in the pages directory)
+  window.location.href = `../index.html?mode=chat&memory=${memoryId}`;
+}
+
+function shareConstellationMemory(memoryId) {
+  console.log('🔗 CONSTELLATION: Sharing memory:', memoryId);
+  
+  // Basic share functionality - copy link to clipboard
+  const shareUrl = `${window.location.origin}${window.location.pathname}?memory=${memoryId}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: 'Emma Memory',
+      text: 'Check out this memory!',
+      url: shareUrl
+    }).catch(console.error);
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      // Show success message
+      const toast = document.createElement('div');
+      toast.textContent = '🔗 Memory link copied to clipboard!';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(139, 92, 246, 0.95);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10001;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }).catch(console.error);
+  }
+}
+
+function closeMemoryDetail() {
+  const modal = document.querySelector('.memory-detail-modal');
+  if (modal) {
+    modal.classList.remove('active');
+
+    // Clean up escape key listener
+    if (modal._escapeHandler) {
+      document.removeEventListener('keydown', modal._escapeHandler);
+    }
+
+      setTimeout(() => {
+      modal.remove();
+    }, 300);
+  }
+}
+
+// Make it globally available
+window.closeMemoryDetail = closeMemoryDetail;
+
+function getTimeAgo(date) {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 30) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// --- Data loaders (bridge to background / mtap) ---
+async function preloadCounts(memory) {
+  const [media, people, related] = await Promise.all([
+    loadMedia(memory).catch(() => []),
+    loadPeople(memory).catch(() => []),
+    loadRelated(memory).catch(() => [])
+  ]);
+  return { mediaCount: media.length, peopleCount: people.length, relatedCount: related.length };
+}
+
+async function loadMedia(memory) {
+  // Ask background for attachments for this capsule
+  try {
+    const resp = await browser.runtime.sendMessage({ action: 'getMemoryAttachments', memoryId: memory.id });
+    if (resp && resp.success && Array.isArray(resp.items)) return resp.items;
+  } catch {}
+  return [];
+}
+
+async function loadPeople(memory) {
+  try {
+    const resp = await browser.runtime.sendMessage({ action: 'getMemoryPeople', memoryId: memory.id });
+    if (resp && resp.success && Array.isArray(resp.items)) return resp.items;
+  } catch {}
+  return [];
+}
+
+async function loadRelated(memory) {
+  try {
+    const resp = await browser.runtime.sendMessage({ action: 'getRelatedMemories', memoryId: memory.id });
+    if (resp && resp.success && Array.isArray(resp.items)) return resp.items;
+  } catch {}
+  return [];
+}
           allMemories[idx] = { ...allMemories[idx], title, content };
         }
         renderTab();
