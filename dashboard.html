@@ -2955,9 +2955,17 @@
             if (!nodeElement || nodeElement.style.display === 'none') {
               return; // Skip animation for hidden nodes
             }
-            // Gentle organic floating movement (petri dish feel)
-            const floatX = Math.sin(time * 0.3 + i) * 12;
-            const floatY = Math.cos(time * 0.2 + i * 0.5) * 8;
+            // Different floating movement for radial vs constellation nodes
+            let floatX, floatY;
+            if (node.orbBound) {
+              // 🎯 RADIAL MENU NODES: Much tighter floating to stay within 50px radius
+              floatX = Math.sin(time * 0.3 + i) * 3; // Reduced from 12px to 3px
+              floatY = Math.cos(time * 0.2 + i * 0.5) * 2; // Reduced from 8px to 2px
+            } else {
+              // 🌌 CONSTELLATION NODES: Normal floating movement
+              floatX = Math.sin(time * 0.3 + i) * 12;
+              floatY = Math.cos(time * 0.2 + i * 0.5) * 8;
+            }
 
             // Gentle elastic force back to base position (petri dish feel)
             const dx = (node.baseX + floatX) - node.x;
@@ -3022,6 +3030,26 @@
             // Update position
             node.x += node.vx;
             node.y += node.vy;
+
+            // 🎯 RADIAL MENU CONSTRAINT: Hard limit radial nodes to 50px from orb center
+            if (node.orbBound && this.orbNeuralNode) {
+              const orbDx = node.x - this.orbNeuralNode.x;
+              const orbDy = node.y - this.orbNeuralNode.y;
+              const orbDistance = Math.sqrt(orbDx * orbDx + orbDy * orbDy);
+              
+              const MAX_RADIAL_DISTANCE = 50; // Never exceed 50px from orb
+              if (orbDistance > MAX_RADIAL_DISTANCE) {
+                // Constrain to exactly 50px from orb center
+                const constrainedX = this.orbNeuralNode.x + (orbDx / orbDistance) * MAX_RADIAL_DISTANCE;
+                const constrainedY = this.orbNeuralNode.y + (orbDy / orbDistance) * MAX_RADIAL_DISTANCE;
+                node.x = constrainedX;
+                node.y = constrainedY;
+                
+                // Zero out velocity to prevent further drift
+                node.vx *= 0.5;
+                node.vy *= 0.5;
+              }
+            }
 
             // Update DOM element position
             node.element.style.left = node.x - 45 + 'px';
