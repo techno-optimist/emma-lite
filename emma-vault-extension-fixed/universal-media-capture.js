@@ -287,4 +287,29 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = _UniversalMediaCapture;
 }
 
+// 🚨 CRITICAL FIX: Add SAVE_MEMORY_TO_WEBAPP_VAULT handler for non-Emma pages
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('🚨📡 UNIVERSAL: MESSAGE RECEIVED!', request.action, 'on page:', window.location.href);
+  
+  if (request.action === 'SAVE_MEMORY_TO_WEBAPP_VAULT') {
+    console.log('🚨⚠️ UNIVERSAL: Got save request on non-Emma page! Redirecting to background...');
+    console.log('🚨⚠️ UNIVERSAL: This should have been sent to Emma dashboard tab!');
+    
+    // Forward to background to handle properly
+    chrome.runtime.sendMessage({
+      action: 'RELAY_SAVE_TO_WEBAPP',
+      originalData: request.memoryData,
+      fromPage: window.location.href
+    }).then(result => {
+      console.log('🚨⚠️ UNIVERSAL: Relay result:', result);
+      sendResponse(result);
+    }).catch(error => {
+      console.error('🚨❌ UNIVERSAL: Relay failed:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    
+    return true; // Keep message channel open for async response
+  }
+});
+
 }
