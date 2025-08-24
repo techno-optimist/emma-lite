@@ -705,13 +705,33 @@ class EmmaChatExperience extends ExperiencePopup {
       const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
       const relationship = person.relation || person.relationship || 'person';
       
-      // Create beautiful person card HTML using the people picker design
+      // 🎯 FIXED: Resolve avatar properly like other parts of the system
+      let resolvedAvatarUrl = person.avatarUrl || person.profilePicture;
+      
+      // If no direct avatar URL, try to resolve from avatarId in media vault
+      if (!resolvedAvatarUrl && person.avatarId && window.emmaWebVault?.vaultData?.content?.media) {
+        const mediaItem = window.emmaWebVault.vaultData.content.media[person.avatarId];
+        if (mediaItem && mediaItem.data) {
+          resolvedAvatarUrl = mediaItem.data.startsWith('data:')
+            ? mediaItem.data
+            : `data:${mediaItem.type};base64,${mediaItem.data}`;
+          console.log(`📸 CHAT: Resolved avatar for ${person.name} from avatarId`);
+        }
+      }
+      
+      console.log(`👤 CHAT: Person card for ${person.name}:`, {
+        avatarUrl: person.avatarUrl ? 'has avatarUrl' : 'no avatarUrl',
+        avatarId: person.avatarId || 'no avatarId', 
+        resolved: resolvedAvatarUrl ? 'resolved!' : 'using initials'
+      });
+      
+      // Create beautiful person card HTML using proper avatar resolution
       const personCardHTML = `
         <div class="chat-person-card">
           <div class="person-card-header">
             <div class="person-avatar-large" id="person-avatar-${person.id}">
-              ${person.avatarUrl || person.profilePicture ? 
-                `<img src="${person.avatarUrl || person.profilePicture}" alt="${person.name}" />` : 
+              ${resolvedAvatarUrl ? 
+                `<img src="${resolvedAvatarUrl}" alt="${person.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />` : 
                 `<div class="avatar-initials">${initials}</div>`
               }
             </div>
@@ -923,28 +943,61 @@ class EmmaChatExperience extends ExperiencePopup {
   async displayMemoryCard(memory, person) {
     try {
       const memoryDate = memory.created || memory.date || memory.timestamp;
-      const formattedDate = memoryDate ? new Date(memoryDate).toLocaleDateString() : 'Unknown date';
-      const preview = memory.content ? memory.content.substring(0, 100) + (memory.content.length > 100 ? '...' : '') : 'No content';
+      const formattedDate = memoryDate ? new Date(memoryDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric'
+      }) : 'Unknown date';
       
-      // Get media thumbnail if available
-      let thumbnail = '';
-      if (memory.attachments && memory.attachments.length > 0 && window.emmaWebVault?.vaultData?.content?.media) {
-        const firstAttachment = memory.attachments[0];
-        const mediaData = window.emmaWebVault.vaultData.content.media[firstAttachment.id];
-        if (mediaData) {
-          const mediaUrl = mediaData.data.startsWith('data:') ? mediaData.data : `data:${mediaData.type};base64,${mediaData.data}`;
-          thumbnail = `<img src="${mediaUrl}" alt="Memory thumbnail" />`;
+      // Clean up the preview text - remove extra whitespace and format nicely
+      let preview = 'No content available';
+      if (memory.content) {
+        preview = memory.content
+          .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+          .trim()
+          .substring(0, 80); // Shorter preview
+        if (memory.content.length > 80) {
+          preview += '...';
         }
       }
+      
+      // Get media thumbnail if available with better error handling
+      let thumbnail = '';
+      try {
+        if (memory.attachments && memory.attachments.length > 0 && window.emmaWebVault?.vaultData?.content?.media) {
+          const firstAttachment = memory.attachments[0];
+          if (firstAttachment && firstAttachment.id) {
+            const mediaData = window.emmaWebVault.vaultData.content.media[firstAttachment.id];
+            if (mediaData && mediaData.data) {
+              const mediaUrl = mediaData.data.startsWith('data:') 
+                ? mediaData.data 
+                : `data:${mediaData.type || 'image/jpeg'};base64,${mediaData.data}`;
+              thumbnail = mediaUrl;
+            }
+          }
+        }
+      } catch (thumbError) {
+        console.warn('💝 CHAT: Error loading thumbnail:', thumbError);
+        thumbnail = '';
+      }
 
+      // 🎯 COMPLETELY REDESIGNED: Clean, beautiful memory card
       const memoryCardHTML = `
         <div class="chat-memory-card" onclick="window.chatExperience.openMemoryFromChat('${memory.id}')">
-          <div class="memory-card-content">
-            ${thumbnail ? `<div class="memory-thumbnail">${thumbnail}</div>` : ''}
-            <div class="memory-details">
+          <div class="memory-card-inner">
+            ${thumbnail ? `
+              <div class="memory-thumbnail">
+                <img src="${thumbnail}" alt="Memory photo" />
+              </div>
+            ` : `
+              <div class="memory-icon">
+                💝
+              </div>
+            `}
+            <div class="memory-content">
               <div class="memory-date">${formattedDate}</div>
-              <div class="memory-preview">${preview}</div>
-              <div class="memory-action">Click to view full memory →</div>
+              <div class="memory-text">${preview}</div>
+              <div class="memory-action">💜 View this memory</div>
             </div>
           </div>
         </div>
@@ -971,35 +1024,44 @@ class EmmaChatExperience extends ExperiencePopup {
     const styles = `
       <style id="chat-memory-card-styles">
         .chat-memory-card {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          padding: 16px;
-          margin: 8px 0;
+          background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.08) 0%, 
+            rgba(255, 255, 255, 0.03) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 16px;
+          padding: 0;
+          margin: 12px 0;
           cursor: pointer;
-          transition: all 0.3s ease;
-          backdrop-filter: blur(5px);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(10px);
+          overflow: hidden;
         }
 
         .chat-memory-card:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(138, 43, 226, 0.5);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(138, 43, 226, 0.2);
+          background: linear-gradient(135deg, 
+            rgba(138, 43, 226, 0.15) 0%, 
+            rgba(75, 0, 130, 0.10) 100%);
+          border-color: rgba(138, 43, 226, 0.4);
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 8px 24px rgba(138, 43, 226, 0.25);
         }
 
-        .memory-card-content {
+        .memory-card-inner {
           display: flex;
-          gap: 12px;
-          align-items: flex-start;
+          align-items: center;
+          gap: 16px;
+          padding: 16px;
+          height: 100%;
         }
 
         .memory-thumbnail {
-          width: 60px;
-          height: 60px;
-          border-radius: 8px;
+          width: 70px;
+          height: 70px;
+          border-radius: 12px;
           overflow: hidden;
           flex-shrink: 0;
+          background: linear-gradient(135deg, #8a2be2, #4b0082);
+          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
         }
 
         .memory-thumbnail img {
@@ -1008,39 +1070,83 @@ class EmmaChatExperience extends ExperiencePopup {
           object-fit: cover;
         }
 
-        .memory-details {
+        .memory-icon {
+          width: 70px;
+          height: 70px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #8a2be2, #4b0082);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+        }
+
+        .memory-content {
           flex: 1;
           min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
         }
 
         .memory-date {
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(138, 43, 226, 0.9);
           font-size: 12px;
-          margin-bottom: 4px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
-        .memory-preview {
-          color: rgba(255, 255, 255, 0.9);
+        .memory-text {
+          color: rgba(255, 255, 255, 0.95);
           font-size: 14px;
           line-height: 1.4;
-          margin-bottom: 8px;
+          margin: 2px 0 8px 0;
           word-wrap: break-word;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
         }
 
         .memory-action {
-          color: rgba(138, 43, 226, 0.8);
+          color: rgba(138, 43, 226, 0.7);
           font-size: 12px;
           font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          transition: color 0.2s ease;
         }
 
+        .chat-memory-card:hover .memory-action {
+          color: rgba(138, 43, 226, 1);
+        }
+
+        /* Mobile optimization */
         @media (max-width: 480px) {
-          .memory-card-content {
+          .memory-card-inner {
             flex-direction: column;
+            text-align: center;
+            gap: 12px;
+            padding: 16px;
           }
           
-          .memory-thumbnail {
-            width: 100%;
-            height: 120px;
+          .memory-thumbnail,
+          .memory-icon {
+            width: 80px;
+            height: 80px;
+          }
+          
+          .memory-content {
+            align-items: center;
+          }
+          
+          .memory-text {
+            text-align: center;
+            -webkit-line-clamp: 3;
           }
         }
       </style>
