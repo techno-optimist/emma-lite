@@ -2318,10 +2318,16 @@
         // CRITICAL: Initialize vault system for options page
         console.log('⚙️ OPTIONS: Initializing vault system...');
         
-        // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
-        console.log('🔍 OPTIONS: Using existing vault instances (no new creation)');
-        console.log('🔍 emmaWebVault exists:', !!window.emmaWebVault);
-        console.log('🔍 webVaultStatus exists:', !!window.webVaultStatus);
+        // FIXED: Create vault instance like other pages do!
+        if (!window.emmaWebVault) {
+          window.emmaWebVault = new EmmaWebVault();
+          console.log('✅ OPTIONS: Vault instance created successfully');
+        } else {
+          console.log('✅ OPTIONS: Vault instance already exists');
+        }
+        
+        console.log('🔍 OPTIONS: emmaWebVault exists:', !!window.emmaWebVault);
+        console.log('🔍 OPTIONS: webVaultStatus exists:', !!window.webVaultStatus);
         
         // ELEGANT: Restore complete vault state if session is active
         if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {

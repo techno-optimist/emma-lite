@@ -721,15 +721,18 @@
       document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL: Initialize vault system for memory saving
         setTimeout(() => {
-          console.log('🚀 GALLERY: Initializing vault system...');
+          console.log('🚀 MEMORY-GALLERY: Initializing vault system...');
           
-          // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
-          console.log('🔍 GALLERY: Using existing vault instances (no new creation)');
-          console.log('🔍 emmaWebVault exists:', !!window.emmaWebVault);
-          console.log('🔍 webVaultStatus exists:', !!window.webVaultStatus);
+          // FIXED: Create vault instance like other pages do!
+          if (!window.emmaWebVault) {
+            window.emmaWebVault = new EmmaWebVault();
+            console.log('✅ MEMORY-GALLERY: Vault instance created successfully');
+          } else {
+            console.log('✅ MEMORY-GALLERY: Vault instance already exists');
+          }
           
-          console.log('🔍 GALLERY VAULT DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
-          console.log('🔍 GALLERY VAULT DEBUG: webVaultStatus exists?', !!window.webVaultStatus);
+          console.log('🔍 MEMORY-GALLERY: emmaWebVault exists:', !!window.emmaWebVault);
+          console.log('🔍 MEMORY-GALLERY: webVaultStatus exists:', !!window.webVaultStatus);
           
           // Pure web app mode - Check if vault is loaded in web app
           if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
