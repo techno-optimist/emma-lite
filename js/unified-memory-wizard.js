@@ -1798,10 +1798,12 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           const vaultAttachments = [];
           for (const mediaItem of this.mediaItems || []) {
             if (mediaItem.file) {
+              // FIXED: Convert File object to data URL for proper processing
+              const dataUrl = await this.fileToDataUrl(mediaItem.file);
               vaultAttachments.push({
                 type: mediaItem.type,
                 name: mediaItem.name,
-                file: mediaItem.file
+                data: dataUrl  // Always use data property with converted file
               });
             } else if (mediaItem.preview && mediaItem.preview.url) {
               vaultAttachments.push({
