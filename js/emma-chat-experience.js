@@ -585,11 +585,11 @@ class EmmaChatExperience extends ExperiencePopup {
   detectPersonRequest(message) {
     const lowerMessage = message.toLowerCase().trim();
     
-    // 🎯 MUCH MORE RESTRICTIVE: Only detect when explicitly asking ABOUT someone
+    // 🎯 DETECT person inquiries (case-insensitive names!)
     const personPatterns = [
-      /(?:show me|tell me about|who is)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i, // Capitalized names only
-      /(?:what about|how about)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
-      /^([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*\?+\s*$/i, // Only if it's JUST a capitalized name with question mark
+      /(?:show me|tell me about|who is)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      /(?:what about|how about)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
+      /^([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s*\?+\s*$/i, // Just a name with question mark
     ];
 
     // 🚫 EXCLUDE common non-person requests
@@ -608,20 +608,25 @@ class EmmaChatExperience extends ExperiencePopup {
     for (const pattern of personPatterns) {
       const match = message.match(pattern);
       if (match && match[1]) {
-        const potentialName = match[1].trim();
+        const rawName = match[1].trim();
         
-        // 🎯 STRICTER VALIDATION: Only proper names (capitalized, 2-15 chars)
-        if (potentialName.length < 2 || potentialName.length > 15) {
+        // 🎯 VALIDATION: Reasonable name length and not common words
+        if (rawName.length < 2 || rawName.length > 15) {
           continue;
         }
 
-        // Must start with capital letter (proper name)
-        if (!/^[A-Z]/.test(potentialName)) {
+        // Filter out common words
+        if (/^(you|me|us|that|this|what|where|when|how|why|who|and|or|the|a|an)$/i.test(rawName)) {
           continue;
         }
+
+        // Capitalize the name properly
+        const properName = rawName.split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
 
         return {
-          personName: potentialName,
+          personName: properName,
           requestType: this.categorizePersonRequest(lowerMessage),
           originalMessage: message
         };
@@ -2279,24 +2284,38 @@ RULES:
    * 🎯 EXTRACT PERSON NAME from user message
    */
   extractPersonNameFromMessage(message) {
-    // Look for patterns like "add Mandy", "save John to vault", etc.
+    console.log('🎯 Extracting person name from:', message);
+    
+    // Look for patterns like "add mandy", "save john to vault", etc. (case-insensitive!)
     const patterns = [
-      /\b(add|create|new|save)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i,
-      /\b(add|save)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+to/i,
-      /\blet'?s?\s+add\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i
+      /\b(?:add|create|new|save)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\b/i,
+      /\b(?:add|save)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s+to\b/i,
+      /\blet'?s?\s+add\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\b/i,
+      /\badd\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\b/i
     ];
     
     for (const pattern of patterns) {
       const match = message.match(pattern);
-      if (match && match[2]) {
-        const name = match[2].trim();
-        // Filter out common words
-        if (!/^(person|people|memory|memories|vault|emma|new|the|a|an)$/i.test(name)) {
-          return name;
+      if (match && match[1]) {
+        const rawName = match[1].trim();
+        console.log('🎯 Found potential name:', rawName);
+        
+        // Filter out common words that aren't names
+        if (!/^(person|people|memory|memories|vault|emma|new|the|a|an|to|in|from|them|him|her|it|this|that)$/i.test(rawName)) {
+          // Capitalize the name properly (first letter of each word)
+          const properName = rawName.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+          
+          console.log('✅ Name extracted and capitalized:', properName);
+          return properName;
+        } else {
+          console.log('❌ Name rejected (common word):', rawName);
         }
       }
     }
     
+    console.log('❌ No valid name found in message');
     return null;
   }
 
@@ -2305,11 +2324,12 @@ RULES:
    */
   async addPersonToVault(personName, originalMessage) {
     try {
-      console.log('👤 Adding person to vault:', personName);
+      console.log('👤 ADDING PERSON: Starting process for:', personName);
       
       // Check if person already exists
       const existingPerson = await this.findPersonInVault(personName);
       if (existingPerson) {
+        console.log('👤 Person already exists:', existingPerson.name);
         this.addMessage(`${personName} is already in your vault! Would you like me to show you their information?`, 'emma');
         return;
       }
@@ -2320,9 +2340,11 @@ RULES:
         name: personName,
         createdAt: new Date().toISOString(),
         memories: [],
-        notes: `Added from chat: "${originalMessage}"`,
+        notes: `Added via Emma chat: "${originalMessage}"`,
         relationships: []
       };
+      
+      console.log('👤 Created person object:', newPerson);
       
       // Add to vault
       if (window.emmaWebVault && window.emmaWebVault.vaultData) {
@@ -2331,20 +2353,26 @@ RULES:
         }
         
         window.emmaWebVault.vaultData.content.people[newPerson.id] = newPerson;
+        console.log('👤 Added to vault data structure');
         
         // Trigger save
         await window.emmaWebVault.scheduleElegantSave();
+        console.log('👤 Vault save scheduled');
         
-        this.addMessage(`✅ I've added ${personName} to your vault! They're now part of your memory collection.`, 'emma');
+        this.addMessage(`✅ Perfect! I've added ${personName} to your vault. They're now part of your memory collection and I can help you track memories with them.`, 'emma');
         this.addVaultOperationIndicator(); // Show that this was a core vault operation
-        console.log('✅ Person added successfully:', newPerson);
+        console.log('✅ PERSON ADDED SUCCESSFULLY:', personName);
         
       } else {
+        console.error('❌ Vault not available:', { 
+          hasWebVault: !!window.emmaWebVault, 
+          hasVaultData: !!window.emmaWebVault?.vaultData 
+        });
         this.addMessage("I'm having trouble accessing your vault right now. Please make sure it's unlocked and try again.", 'emma');
       }
       
     } catch (error) {
-      console.error('❌ Error adding person to vault:', error);
+      console.error('❌ PERSON ADD ERROR:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
     }
   }
