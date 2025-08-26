@@ -3189,9 +3189,26 @@ RULES:
    */
   async loadVectorlessEngine() {
     return new Promise((resolve, reject) => {
-      if (typeof EmmaVectorlessEngine !== 'undefined') {
+      // CRITICAL FIX: Check both global scope and window object
+      if (typeof EmmaVectorlessEngine !== 'undefined' || window.EmmaVectorlessEngine) {
         console.log('💬 EmmaVectorlessEngine already available - using existing instance');
         resolve();
+        return;
+      }
+
+      // CRITICAL FIX: Check if script is already loaded to prevent duplicates
+      const existingScript = document.querySelector('script[src*="emma-vectorless-engine.js"]');
+      if (existingScript) {
+        console.log('💬 EmmaVectorlessEngine script already loaded, waiting for class to be available...');
+        // Wait a bit for the script to execute
+        setTimeout(() => {
+          if (typeof EmmaVectorlessEngine !== 'undefined' || window.EmmaVectorlessEngine) {
+            resolve();
+          } else {
+            console.warn('💬 Script loaded but class not available - proceeding without vectorless engine');
+            resolve(); // Don't reject, just proceed without it
+          }
+        }, 100);
         return;
       }
 
