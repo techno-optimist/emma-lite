@@ -4974,24 +4974,44 @@
       // Open person summary modal with connected memories
       async openPersonSummaryModal(person) {
 
-        // Get all memories from vault to find real connections
-        let allMemories = [];
+        // 🎯 FIXED: Use same memory loading approach as people-emma.html
+        let connectedMemories = [];
         try {
-          if (window.emmaWebVault && window.emmaWebVault.extensionAvailable) {
-            allMemories = await window.emmaWebVault.listMemories(1000);
-
+          if (!window.emmaWebVault || !window.emmaWebVault.vaultData?.content) {
+            console.error('❌ CONSTELLATION: Vault data not available');
+            return;
           }
+
+          const vaultData = window.emmaWebVault.vaultData;
+          const allMemories = vaultData.content.memories || {};
+
+          // Find memories that include this person - SAME LOGIC AS PEOPLE-EMMA.HTML
+          for (const [memoryId, memory] of Object.entries(allMemories)) {
+            // Check if person is in memory's people metadata
+            if (memory.metadata && memory.metadata.people && 
+                Array.isArray(memory.metadata.people) && 
+                memory.metadata.people.includes(person.id)) {
+              connectedMemories.push(memory);
+            }
+            
+            // Also check if person's name is mentioned in content
+            if (memory.content) {
+              const personName = person.name.toLowerCase();
+              const memoryContent = memory.content.toLowerCase();
+              if (memoryContent.includes(personName)) {
+                // Avoid duplicates
+                if (!connectedMemories.find(m => m.id === memory.id)) {
+                  connectedMemories.push(memory);
+                }
+              }
+            }
+          }
+
+          console.log(`🔗 CONSTELLATION: Found ${connectedMemories.length} memories for person ${person.id}`);
+
         } catch (error) {
-          console.error('👤 SUMMARY: Error loading memories:', error);
+          console.error('❌ CONSTELLATION: Error loading memories:', error);
         }
-
-        // Find memories that have this person in their metadata.people array
-        const connectedMemories = allMemories.filter(memory => {
-          const peopleInMemory = memory.metadata?.people || [];
-          const isConnected = peopleInMemory.includes(person.id);
-
-          return isConnected;
-        });
 
         // Create modal HTML
         const modalHTML = `

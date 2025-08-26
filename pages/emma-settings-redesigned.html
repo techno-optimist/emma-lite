@@ -502,6 +502,67 @@
     .api-btn-link:hover {
       background: rgba(255, 255, 255, 0.1);
     }
+
+    /* Font Size Controls */
+    .font-size-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .font-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .font-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .font-btn:active {
+      transform: scale(0.95);
+    }
+
+    .font-reset {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    }
+
+    .font-size-value {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      min-width: 60px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Responsive font controls */
+    @media (max-width: 768px) {
+      .font-size-controls {
+        gap: 8px;
+      }
+      
+      .font-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -668,34 +729,11 @@
           <strong>Font Size</strong>
           <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <button id="decrease-font" style="
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">−</button>
-          <span id="font-size-display" style="min-width: 80px; text-align: center; font-weight: 600;">100%</span>
-          <button id="increase-font" style="
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">+</button>
+        <div class="font-size-controls">
+          <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">A⁻</button>
+          <span id="font-size-display" class="font-size-value">100%</span>
+          <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">A⁺</button>
+          <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">↺</button>
         </div>
       </div>
       
@@ -853,6 +891,12 @@
         // Update font size
         this.updateFontSize();
         
+        // Sync with EmmaFontScaler if available
+        if (window.emmaFontScaler) {
+          const currentScale = window.emmaFontScaler.getScale();
+          this.settings.fontSize = Math.round(currentScale * 100);
+        }
+        
         // Update AI status
         this.updateAIStatus();
       }
@@ -915,17 +959,18 @@
         // Font size controls
         const decreaseFont = document.getElementById('decrease-font');
         const increaseFont = document.getElementById('increase-font');
+        const resetFont = document.getElementById('reset-font');
         
         if (decreaseFont) {
-          decreaseFont.addEventListener('click', () => {
-            this.changeFontSize(-10);
-          });
+          decreaseFont.addEventListener('click', () => this.decreaseFont());
         }
         
         if (increaseFont) {
-          increaseFont.addEventListener('click', () => {
-            this.changeFontSize(10);
-          });
+          increaseFont.addEventListener('click', () => this.increaseFont());
+        }
+
+        if (resetFont) {
+          resetFont.addEventListener('click', () => this.resetFont());
         }
         
         // Save button
@@ -939,13 +984,50 @@
         });
       }
       
+      increaseFont() {
+        if (window.emmaFontScaler) {
+          window.emmaFontScaler.increaseFont();
+          this.syncWithFontScaler();
+        } else {
+          this.changeFontSize(10);
+        }
+      }
+
+      decreaseFont() {
+        if (window.emmaFontScaler) {
+          window.emmaFontScaler.decreaseFont();
+          this.syncWithFontScaler();
+        } else {
+          this.changeFontSize(-10);
+        }
+      }
+
+      resetFont() {
+        if (window.emmaFontScaler) {
+          window.emmaFontScaler.resetFont();
+          this.syncWithFontScaler();
+        } else {
+          this.settings.fontSize = 100;
+          this.updateFontSize();
+        }
+      }
+
+      syncWithFontScaler() {
+        if (window.emmaFontScaler) {
+          const currentScale = window.emmaFontScaler.getScale();
+          this.settings.fontSize = Math.round(currentScale * 100);
+          this.updateFontSize();
+          this.saveSettings();
+        }
+      }
+      
       changeFontSize(delta) {
-        this.settings.fontSize = Math.max(80, Math.min(140, this.settings.fontSize + delta));
+        this.settings.fontSize = Math.max(80, Math.min(200, this.settings.fontSize + delta));
         this.updateFontSize();
         
         // Apply to Emma Font Scaler if available
-        if (window.EmmaFontScaler) {
-          window.EmmaFontScaler.setFontSize(this.settings.fontSize);
+        if (window.emmaFontScaler) {
+          window.emmaFontScaler.setScale(this.settings.fontSize / 100);
         }
       }
       
@@ -955,8 +1037,10 @@
           display.textContent = `${this.settings.fontSize}%`;
         }
         
-        // Apply font scaling to document
-        document.documentElement.style.fontSize = `${this.settings.fontSize}%`;
+        // Apply font scaling to document root if no EmmaFontScaler
+        if (!window.emmaFontScaler) {
+          document.documentElement.style.fontSize = `${this.settings.fontSize}%`;
+        }
       }
       
       applyAccessibilitySettings() {

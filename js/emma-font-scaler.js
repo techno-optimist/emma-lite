@@ -416,31 +416,12 @@ class EmmaFontScaler {
   }
 
   /**
-   * Create floating font size controls
+   * Create floating font size controls (DISABLED - controls moved to settings)
    */
   createControls() {
-    if (document.getElementById('emmaFontControls')) return;
-
-    const controlsHTML = `
-      <div id="emmaFontControls" class="emma-font-controls">
-        <div class="emma-font-controls-inner">
-          <button id="fontDecrease" class="emma-font-btn" title="Decrease font size (Ctrl + -)">
-            A⁻
-          </button>
-          <span id="fontScale" class="emma-font-scale">${Math.round(this.currentScale * 100)}%</span>
-          <button id="fontIncrease" class="emma-font-btn" title="Increase font size (Ctrl + +)">
-            A⁺
-          </button>
-          <button id="fontReset" class="emma-font-btn emma-font-reset" title="Reset font size (Ctrl + 0)">
-            ↺
-          </button>
-        </div>
-      </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', controlsHTML);
-    this.addControlStyles();
-    this.bindControlEvents();
+    // Font controls are now in the settings panel - no floating controls needed
+    console.log('🔤 Font controls moved to settings panel - skipping floating controls');
+    return;
   }
 
   /**
@@ -548,12 +529,12 @@ class EmmaFontScaler {
   }
 
   /**
-   * Bind control button events
+   * Bind control button events (for settings panel integration)
    */
   bindControlEvents() {
-    document.getElementById('fontIncrease').addEventListener('click', () => this.increaseFont());
-    document.getElementById('fontDecrease').addEventListener('click', () => this.decreaseFont());
-    document.getElementById('fontReset').addEventListener('click', () => this.resetFont());
+    // Settings panel will call our public methods directly
+    // No need to bind floating control events
+    console.log('🔤 Font control events handled by settings panel');
   }
 
   /**
