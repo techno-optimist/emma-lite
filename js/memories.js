@@ -2957,15 +2957,37 @@ async function loadConstellationPeopleAvatars(memory) {
 function editConstellationMemory(memoryId) {
   console.log('✏️ CONSTELLATION: Opening edit dialog for memory:', memoryId);
   
-  // Close the dialog first
-  document.querySelector('.memory-preview-dialog.constellation')?.remove();
+  // 🎯 ELEGANT SOLUTION: Proper modal cleanup sequence
+  const backgroundDialog = document.querySelector('.memory-preview-dialog.constellation');
   
-  // Simple approach: Create temporary instance JUST for the edit dialog
-  if (typeof EmmaChatExperience !== 'undefined') {
-    const tempChatExperience = new EmmaChatExperience();
-    tempChatExperience.editMemoryDetails(memoryId);
+  if (backgroundDialog) {
+    // Add fade-out animation before removal
+    backgroundDialog.style.opacity = '0';
+    backgroundDialog.style.transition = 'opacity 0.2s ease';
+    
+    // Wait for fade-out, then remove and open edit modal
+    setTimeout(() => {
+      backgroundDialog.remove();
+      
+      // Ensure constellation interactions are properly disabled
+      document.body.classList.add('modal-open');
+      
+      // Now open edit modal after background is completely gone
+      if (typeof EmmaChatExperience !== 'undefined') {
+        const tempChatExperience = new EmmaChatExperience();
+        tempChatExperience.editMemoryDetails(memoryId);
+      } else {
+        console.error('❌ EmmaChatExperience not available');
+      }
+    }, 200);
   } else {
-    console.error('❌ EmmaChatExperience not available');
+    // No background dialog - proceed directly
+    if (typeof EmmaChatExperience !== 'undefined') {
+      const tempChatExperience = new EmmaChatExperience();
+      tempChatExperience.editMemoryDetails(memoryId);
+    } else {
+      console.error('❌ EmmaChatExperience not available');
+    }
   }
 }
 

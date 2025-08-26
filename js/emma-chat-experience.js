@@ -5322,8 +5322,10 @@ RULES:
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: rgba(0, 0, 0, 0.9) !important;
+      background: rgba(0, 0, 0, 0.95) !important;
       backdrop-filter: blur(20px) !important;
+      overflow: hidden !important;
+      overscroll-behavior: contain !important;
     `;
 
     editModal.innerHTML = `
@@ -5334,11 +5336,17 @@ RULES:
         max-width: 600px;
         width: 90%;
         max-height: 80vh;
-        overflow-y: auto;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain !important;
+        -webkit-overflow-scrolling: touch !important;
         color: white;
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        position: relative !important;
+        z-index: 15001 !important;
+        pointer-events: auto !important;
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
           <h2 style="margin: 0; font-size: 24px; font-weight: 600;">✏️ Edit Memory</h2>
