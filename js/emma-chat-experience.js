@@ -6345,14 +6345,46 @@ RULES:
   }
 
   /**
-   * Start new person onboarding flow
+   * Start new person onboarding flow - HANDLES ALL NEW PEOPLE
    */
   async startNewPersonOnboarding(memoryId, newPeople) {
-    const personName = newPeople[0]; // Handle one at a time for simplicity
+    // Store all pending people in captureSession for sequential processing
+    this.captureSession = this.captureSession || {};
+    this.captureSession.pendingNewPeople = [...newPeople]; // Copy array
+    this.captureSession.memoryId = memoryId;
     
-    this.addMessage(`Great! Let me add ${personName} to your vault first. What's your relationship with ${personName}?`, 'emma', {
+    console.log('👥 EMMA CHAT: Starting onboarding for ALL new people:', newPeople);
+    
+    // Start with the first person
+    await this.processNextNewPerson();
+  }
+
+  /**
+   * Process next person in the queue
+   */
+  async processNextNewPerson() {
+    if (!this.captureSession || !this.captureSession.pendingNewPeople || this.captureSession.pendingNewPeople.length === 0) {
+      // All people processed - finalize memory save
+      console.log('👥 EMMA CHAT: All new people processed, finalizing memory save');
+      const memory = this.temporaryMemories.get(this.captureSession.memoryId);
+      if (memory) {
+        await this.finalizeMemorySave(memory, this.captureSession.memoryId);
+      }
+      return;
+    }
+
+    const personName = this.captureSession.pendingNewPeople.shift(); // Remove first person from queue
+    const remaining = this.captureSession.pendingNewPeople.length;
+    
+    let message = `Great! Let me add ${personName} to your vault first.`;
+    if (remaining > 0) {
+      message += ` After ${personName}, I'll ask about ${remaining} more ${remaining === 1 ? 'person' : 'people'}.`;
+    }
+    message += ` What's your relationship with ${personName}?`;
+    
+    this.addMessage(message, 'emma', {
       isNewPersonPrompt: true,
-      memoryId: memoryId,
+      memoryId: this.captureSession.memoryId,
       personName: personName,
       requiresRelationshipSelection: true
     });
@@ -6385,7 +6417,14 @@ RULES:
       // Update the memory metadata to replace temp ID with real ID
       await this.updateMemoryWithRealPersonId(memoryId, personName);
 
-      // Proceed to finalize memory save
+      // Check if there are more people to process
+      if (this.captureSession && this.captureSession.pendingNewPeople && this.captureSession.pendingNewPeople.length > 0) {
+        console.log('👥 EMMA CHAT: Person added, continuing with next person...');
+        await this.processNextNewPerson();
+        return;
+      }
+
+      // All people processed - finalize memory save
       const state = this.enrichmentState.get(memoryId);
       if (state && state.memory) {
         await this.finalizeMemorySave(state.memory, memoryId);
@@ -6583,8 +6622,8 @@ RULES:
           // Method 2: If we're on dashboard, navigate to constellation 
           else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
             console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
-            // Force constellation view with full URL to prevent redirect confusion
-            window.location.href = window.location.origin + '/pages/memories.html?view=constellation';
+            // Force constellation view in dashboard with full URL
+            window.location.href = window.location.origin + '/dashboard.html?view=constellation';
           }
           // Method 3: Dispatch event for constellation to listen
           else {
@@ -6657,7 +6696,7 @@ RULES:
             // Method 2: If we're on dashboard, navigate to constellation 
             else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
               console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
-              window.location.href = 'pages/memories.html?view=constellation';
+              window.location.href = 'dashboard.html?view=constellation';
             }
             // Method 3: If we're on memories page but constellation function not available, reload with constellation view
             else if (window.location.pathname.includes('memories.html')) {
@@ -6670,7 +6709,7 @@ RULES:
             else {
               console.log('🔄 EMMA CHAT: Fallback navigation to constellation view');
               const baseUrl = window.location.origin;
-              window.location.href = baseUrl + '/pages/memories.html?view=constellation';
+              window.location.href = baseUrl + '/dashboard.html?view=constellation';
             }
           }, 500);
         }, 1500);
