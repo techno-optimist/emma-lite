@@ -5291,9 +5291,8 @@ RULES:
         height: 100vh !important;
         z-index: 999999 !important;
         background: rgba(0, 0, 0, 0.9) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        display: block !important;
+        padding: 10vh 5vw !important;
         overflow: hidden !important;
       }
       
@@ -5303,7 +5302,7 @@ RULES:
         padding: 30px !important;
         width: 90vw !important;
         max-width: 600px !important;
-        height: 80vh !important;
+        max-height: 80vh !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
         color: white !important;
@@ -5311,6 +5310,7 @@ RULES:
         scrollbar-width: thin !important;
         box-sizing: border-box !important;
         display: block !important;
+        margin: 0 auto !important;
       }
       
       #nuclear-content::-webkit-scrollbar {
