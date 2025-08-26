@@ -5478,26 +5478,65 @@ RULES:
 
     document.body.appendChild(editModal);
 
-    // 🛡️ CRITICAL: Add scroll event isolation (learned from nuclear testing)
-    const blockBackgroundScroll = (e) => {
+    // 🛡️ CRITICAL: Selective scroll event isolation
+    const content = editModal.querySelector('.edit-modal-content');
+    
+    // Only block scroll events that happen OUTSIDE the content area
+    editModal.addEventListener('wheel', (e) => {
+      // If the event target is the content or a child of content, allow it
+      if (content && (e.target === content || content.contains(e.target))) {
+        return; // Allow normal scrolling on content
+      }
+      // Otherwise, block background scrolling
       e.preventDefault();
       e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
+    }, { passive: false, capture: false });
+    
+    // Block body scroll completely while modal is open
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    
+    // Restore body scroll when modal closes
+    const closeModal = () => {
+      document.body.style.overflow = originalOverflow;
+      editModal.remove();
     };
-
-    // Block scroll events on the overlay but allow them on content
-    editModal.addEventListener('wheel', blockBackgroundScroll, { passive: false, capture: true });
-    editModal.addEventListener('scroll', blockBackgroundScroll, { passive: false, capture: true });
-    editModal.addEventListener('touchmove', blockBackgroundScroll, { passive: false, capture: true });
-
-    // Allow scroll on the content area
-    const content = editModal.querySelector('.edit-modal-content');
-    if (content) {
-      content.addEventListener('wheel', (e) => {
-        e.stopPropagation(); // Don't let it bubble to overlay
-      }, { passive: false, capture: false });
+    
+    // Update close buttons to restore scroll
+    const closeBtn = editModal.querySelector('.close-edit-btn');
+    if (closeBtn) {
+      closeBtn.onclick = closeModal;
     }
+    
+    // 🧪 SHERLOCK: Add keyboard scroll support
+    content.setAttribute('tabindex', '0'); // Make it focusable
+    content.focus(); // Auto-focus for immediate keyboard scroll
+    
+    content.addEventListener('keydown', (e) => {
+      // Enable keyboard scrolling
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        content.scrollTop += 40;
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        content.scrollTop -= 40;
+        e.preventDefault();
+      }
+    });
+    
+    // 🔍 SHERLOCK: Debug wheel events specifically on content
+    content.addEventListener('wheel', (e) => {
+      console.log('🎯 WHEEL EVENT on content:', {
+        deltaY: e.deltaY,
+        target: e.target,
+        scrollTop: content.scrollTop,
+        scrollHeight: content.scrollHeight,
+        clientHeight: content.clientHeight
+      });
+      
+      // Ensure the wheel event works
+      content.scrollTop += e.deltaY;
+      e.stopPropagation(); // Don't let it bubble
+    }, { passive: false });
 
     // Add event listeners
     const titleInput = editModal.querySelector('.edit-title-input');
