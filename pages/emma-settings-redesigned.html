@@ -356,8 +356,36 @@
         🧠 Artificial Intelligence
       </h2>
       <p class="section-description">
-        Emma's AI works entirely offline using intelligent heuristics to understand conversations, detect memories, and provide helpful responses. No external servers required.
+        Emma's AI works beautifully offline with intelligent heuristics. For even more advanced understanding and nuanced conversations, connect your OpenAI API key to unlock Emma's full potential.
       </p>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>OpenAI API Key</strong>
+          <span>Enable Emma's most advanced AI responses with your OpenAI API key. Emma works great offline with smart heuristics, but an API key unlocks deeper understanding and more nuanced conversations.</span>
+        </div>
+        <input 
+          type="password" 
+          id="api-key-input" 
+          class="api-key-input"
+          placeholder="sk-proj-..." 
+          autocomplete="off"
+          style="
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            min-width: 280px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 14px;
+            margin-top: 8px;
+          "
+        >
+      </div>
+      <div class="help-text" style="margin-top: 8px;">
+        🔒 Your API key is stored locally and never transmitted to our servers. <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--emma-pink);">Get your API key here</a>
+      </div>
       
       <div class="setting-item">
         <div class="setting-label">
@@ -605,6 +633,7 @@
           // Load from localStorage
           const saved = localStorage.getItem('emmaSettings');
           this.settings = saved ? JSON.parse(saved) : {
+            apiKey: '',
             memoryDetection: true,
             peopleRecognition: true,
             fontSize: 100,
@@ -616,6 +645,7 @@
         } catch (error) {
           console.error('⚙️ Failed to load settings:', error);
           this.settings = {
+            apiKey: '',
             memoryDetection: true,
             peopleRecognition: true,
             fontSize: 100,
@@ -637,6 +667,10 @@
       }
       
       updateUI() {
+        // Update API key input
+        const apiKeyInput = document.getElementById('api-key-input');
+        if (apiKeyInput) apiKeyInput.value = this.settings.apiKey || '';
+        
         // Update toggle elements
         const memoryToggle = document.getElementById('memory-detection-toggle');
         const peopleToggle = document.getElementById('people-recognition-toggle');
@@ -659,16 +693,25 @@
         const statusDot = document.getElementById('ai-status-dot');
         const statusText = document.getElementById('ai-status-text');
         
-        if (this.settings.apiKey) {
+        if (this.settings.apiKey && this.settings.apiKey.startsWith('sk-')) {
           statusDot.classList.add('active');
-          statusText.textContent = 'AI Enhanced (OpenAI)';
+          statusText.textContent = 'Enhanced AI Mode (OpenAI)';
         } else {
           statusDot.classList.remove('active');
-          statusText.textContent = 'Heuristics Mode (Local)';
+          statusText.textContent = 'Intelligent Offline Mode';
         }
       }
       
       setupEventListeners() {
+        // API Key input
+        const apiKeyInput = document.getElementById('api-key-input');
+        if (apiKeyInput) {
+          apiKeyInput.addEventListener('input', (e) => {
+            this.settings.apiKey = e.target.value.trim();
+            this.updateAIStatus();
+          });
+        }
+        
         // Toggle switches
         const memoryToggle = document.getElementById('memory-detection-toggle');
         const peopleToggle = document.getElementById('people-recognition-toggle');
