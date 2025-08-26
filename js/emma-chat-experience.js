@@ -5370,6 +5370,55 @@ RULES:
     `;
     
     document.body.appendChild(nuclear);
+    
+    // 🚨 CRITICAL: Block ALL scroll events from reaching background
+    const blockScroll = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    };
+    
+    // Add scroll event blockers to the overlay
+    nuclear.addEventListener('wheel', blockScroll, { passive: false, capture: true });
+    nuclear.addEventListener('scroll', blockScroll, { passive: false, capture: true });
+    nuclear.addEventListener('touchmove', blockScroll, { passive: false, capture: true });
+    
+    // But allow scroll ONLY on the content area
+    const content = nuclear.querySelector('#nuclear-content');
+    content.addEventListener('wheel', (e) => {
+      e.stopPropagation(); // Don't let it bubble to overlay
+    }, { passive: false, capture: false });
+    
+    console.log('🚨 NUCLEAR: Event isolation deployed!');
+    
+    // 🚨 CRITICAL: Completely disable body scroll
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    
+    // Restore body scroll when modal closes
+    const restoreBodyScroll = () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+    
+    // Add restore to close buttons
+    nuclear.querySelectorAll('button').forEach(btn => {
+      if (btn.onclick && btn.onclick.toString().includes('remove()')) {
+        const originalClick = btn.onclick;
+        btn.onclick = () => {
+          restoreBodyScroll();
+          originalClick();
+        };
+      }
+    });
   }
 
   /**
