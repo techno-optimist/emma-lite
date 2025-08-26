@@ -333,6 +333,175 @@
     body.high-contrast .toggle-switch .toggle-slider {
       border: 2px solid rgba(255, 255, 255, 0.7);
     }
+
+    /* API Key Modal Styles */
+    .api-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .api-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+    }
+
+    .api-modal-content {
+      position: relative;
+      background: linear-gradient(135deg, #8658ff 0%, #6a4fd8 100%);
+      border-radius: 16px;
+      padding: 0;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .api-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 24px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .api-modal-header h3 {
+      margin: 0;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .api-modal-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: background 0.2s ease;
+    }
+
+    .api-modal-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .api-modal-body {
+      padding: 24px;
+    }
+
+    .api-modal-description {
+      color: rgba(255, 255, 255, 0.9);
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+
+    .api-key-input-section label {
+      display: block;
+      color: white;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .api-key-textarea {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      color: white;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .api-key-textarea::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .api-key-textarea:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .api-key-hint {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .api-modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .api-btn-primary {
+      background: white;
+      color: #8658ff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    .api-btn-primary:hover {
+      transform: translateY(-1px);
+    }
+
+    .api-btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .api-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .api-btn-link {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 12px 16px;
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
+
+    .api-btn-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
   </style>
 </head>
 <body>
@@ -364,27 +533,27 @@
           <strong>OpenAI API Key</strong>
           <span>Enable Emma's most advanced AI responses with your OpenAI API key. Emma works great offline with smart heuristics, but an API key unlocks deeper understanding and more nuanced conversations.</span>
         </div>
-        <input 
-          type="password" 
-          id="api-key-input" 
-          class="api-key-input"
-          placeholder="sk-proj-..." 
-          autocomplete="off"
+        <button 
+          id="api-key-setup-btn" 
+          class="api-key-button"
           style="
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 12px 16px;
+            padding: 12px 20px;
             border-radius: 8px;
-            min-width: 280px;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
             font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
             margin-top: 8px;
+            min-width: 200px;
           "
+          onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'"
+          onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.borderColor='rgba(255, 255, 255, 0.3)'"
         >
-      </div>
-      <div class="help-text" style="margin-top: 8px;">
-        🔒 Your API key is stored locally and never transmitted to our servers. <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--emma-pink);">Get your API key here</a>
+          <span id="api-key-status">🔑 Setup API Key</span>
+        </button>
       </div>
       
       <div class="setting-item">
@@ -667,9 +836,8 @@
       }
       
       updateUI() {
-        // Update API key input
-        const apiKeyInput = document.getElementById('api-key-input');
-        if (apiKeyInput) apiKeyInput.value = this.settings.apiKey || '';
+        // Update API key button text
+        this.updateAPIKeyButton();
         
         // Update toggle elements
         const memoryToggle = document.getElementById('memory-detection-toggle');
@@ -703,14 +871,14 @@
       }
       
       setupEventListeners() {
-        // API Key input
-        const apiKeyInput = document.getElementById('api-key-input');
-        if (apiKeyInput) {
-          apiKeyInput.addEventListener('input', (e) => {
-            this.settings.apiKey = e.target.value.trim();
-            this.updateAIStatus();
-          });
+        // API Key button
+        const apiKeyBtn = document.getElementById('api-key-setup-btn');
+        if (apiKeyBtn) {
+          apiKeyBtn.addEventListener('click', () => this.openAPIKeyModal());
         }
+        
+        // API Key modal events
+        this.setupAPIKeyModal();
         
         // Toggle switches
         const memoryToggle = document.getElementById('memory-detection-toggle');
@@ -833,6 +1001,127 @@
           setTimeout(() => toast.remove(), 300);
         }, 3000);
       }
+
+      updateAPIKeyButton() {
+        const statusSpan = document.getElementById('api-key-status');
+        if (statusSpan) {
+          if (this.settings.apiKey && this.settings.apiKey.startsWith('sk-')) {
+            statusSpan.textContent = '✅ API Key Connected';
+          } else {
+            statusSpan.textContent = '🔑 Setup API Key';
+          }
+        }
+      }
+
+      openAPIKeyModal() {
+        const modal = document.getElementById('api-key-modal');
+        const textarea = document.getElementById('api-key-input-modal');
+        
+        if (modal && textarea) {
+          // Pre-populate with existing key
+          textarea.value = this.settings.apiKey || '';
+          modal.style.display = 'flex';
+          
+          // Focus on textarea for immediate input
+          setTimeout(() => textarea.focus(), 100);
+        }
+      }
+
+      closeAPIKeyModal() {
+        const modal = document.getElementById('api-key-modal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+
+      setupAPIKeyModal() {
+        // Close button
+        const closeBtn = document.querySelector('.api-modal-close');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => this.closeAPIKeyModal());
+        }
+
+        // Overlay click to close
+        const overlay = document.querySelector('.api-modal-overlay');
+        if (overlay) {
+          overlay.addEventListener('click', () => this.closeAPIKeyModal());
+        }
+
+        // Save button
+        const saveBtn = document.getElementById('api-save-btn');
+        if (saveBtn) {
+          saveBtn.addEventListener('click', () => this.saveAPIKey());
+        }
+
+        // Clear button
+        const clearBtn = document.getElementById('api-clear-btn');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => this.clearAPIKey());
+        }
+
+        // ESC key to close
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            this.closeAPIKeyModal();
+          }
+        });
+
+        // Drag and drop support
+        const textarea = document.getElementById('api-key-input-modal');
+        if (textarea) {
+          textarea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            textarea.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+          });
+
+          textarea.addEventListener('dragleave', (e) => {
+            textarea.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+          });
+
+          textarea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            textarea.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            
+            const text = e.dataTransfer.getData('text/plain');
+            if (text) {
+              textarea.value = text.trim();
+            }
+          });
+        }
+      }
+
+      saveAPIKey() {
+        const textarea = document.getElementById('api-key-input-modal');
+        if (textarea) {
+          const apiKey = textarea.value.trim();
+          
+          // Basic validation
+          if (apiKey && !apiKey.startsWith('sk-')) {
+            this.showToast('⚠️ API key should start with "sk-"', 'warning');
+            return;
+          }
+
+          this.settings.apiKey = apiKey;
+          this.saveSettings();
+          this.updateAPIKeyButton();
+          this.updateAIStatus();
+          this.closeAPIKeyModal();
+          
+          if (apiKey) {
+            this.showToast('🔑 API key saved successfully!', 'success');
+          } else {
+            this.showToast('API key removed', 'info');
+          }
+        }
+      }
+
+      clearAPIKey() {
+        const textarea = document.getElementById('api-key-input-modal');
+        if (textarea) {
+          textarea.value = '';
+          textarea.focus();
+        }
+      }
     }
     
     // Initialize when DOM is ready
@@ -840,5 +1129,43 @@
       window.emmaSettingsManager = new EmmaSettingsManager();
     });
   </script>
+
+  <!-- API Key Modal -->
+  <div id="api-key-modal" class="api-modal" style="display: none;">
+    <div class="api-modal-overlay"></div>
+    <div class="api-modal-content">
+      <div class="api-modal-header">
+        <h3>🔑 OpenAI API Key Setup</h3>
+        <button class="api-modal-close">&times;</button>
+      </div>
+      
+      <div class="api-modal-body">
+        <p class="api-modal-description">
+          Connect your OpenAI API key to unlock Emma's most advanced AI capabilities. 
+          Your key is stored locally and never transmitted to our servers.
+        </p>
+        
+        <div class="api-key-input-section">
+          <label for="api-key-input-modal">Paste or drop your API key:</label>
+          <textarea 
+            id="api-key-input-modal" 
+            class="api-key-textarea"
+            placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            rows="3"
+          ></textarea>
+          <div class="api-key-hint">
+            💡 Your API key should start with "sk-proj-" or "sk-"
+          </div>
+        </div>
+        
+        <div class="api-modal-actions">
+          <button class="api-btn-secondary" id="api-clear-btn">Clear Key</button>
+          <a href="https://platform.openai.com/api-keys" target="_blank" class="api-btn-link">Get API Key</a>
+          <button class="api-btn-primary" id="api-save-btn">Save Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
