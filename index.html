@@ -8,6 +8,17 @@
   <meta http-equiv="Expires" content="0">
   <title>Emma - Your Intelligent Memory Companion</title>
 
+  <!-- Environment bootstrap (must load first) -->
+  <script src="js/emma-env.js"></script>
+  <!-- Production-safe logging (must be early) -->
+  <script src="js/emma-logger.js"></script>
+  <!-- Dementia-friendly modal system -->
+  <script src="js/emma-dementia-modals.js"></script>
+  <!-- Dynamic font scaling system -->
+  <script src="js/emma-font-scaler.js"></script>
+  <!-- Performance optimization system -->
+  <script src="js/emma-performance-optimizer.js"></script>
+
     <!-- Emma Core Systems -->
   <script src="js/emma-input-modal.js"></script>
   <script src="js/clean-password-modal.js"></script>
@@ -20,6 +31,12 @@
   <!-- Experience Popup Base - Required dependency for chat experience -->
   <script src="js/experience-popup-base.js"></script>
 
+  <!-- Emma Vectorless AI Engine - CRITICAL for intelligent memory queries -->
+  <script src="js/emma-vectorless-engine.js"></script>
+  
+  <!-- Emma Intelligent Capture - Memory detection and enrichment -->
+  <script src="js/emma-intelligent-capture.js"></script>
+  
   <!-- Emma Chat Experience - CRITICAL for edit memory functionality -->
   <script src="js/emma-chat-experience.js"></script>
 
@@ -456,7 +473,7 @@
                     // Set session storage
                     sessionStorage.setItem('emmaVaultActive', 'true');
                     sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
-                    sessionStorage.setItem('emmaVaultPassphrase', passphrase); // CRITICAL: Store passphrase for session
+                    // SECURITY: Never store passphrase in web storage - keep in memory only
                     localStorage.setItem('emmaVaultActive', 'true');
                     localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
 
@@ -611,14 +628,25 @@
                         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
                     `;
 
-                    modal.innerHTML = `
-                        <div style="text-align: center; margin-bottom: 20px;">
-                            <h2 style="color: white; margin-bottom: 10px;">${isCreate ? '🔒 Secure Your Vault' : '🔐 Unlock Vault'}</h2>
-                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 15px;">
-                                ${isCreate ? `Create a passphrase for "${fileName}":` : `Enter the passphrase for "${fileName}":`}
-                            </p>
-                </div>
+                    // SECURITY: Create DOM elements safely without innerHTML injection
+                    const modalContent = document.createElement('div');
+                    
+                    const header = document.createElement('div');
+                    header.style.cssText = 'text-align: center; margin-bottom: 20px;';
+                    
+                    const title = document.createElement('h2');
+                    title.style.cssText = 'color: white; margin-bottom: 10px;';
+                    title.textContent = isCreate ? '🔒 Secure Your Vault' : '🔐 Unlock Vault';
+                    
+                    const description = document.createElement('p');
+                    description.style.cssText = 'color: rgba(255,255,255,0.8); margin-bottom: 15px;';
+                    description.textContent = isCreate ? `Create a passphrase for "${fileName}":` : `Enter the passphrase for "${fileName}":`;
+                    
+                    header.appendChild(title);
+                    header.appendChild(description);
+                    modalContent.appendChild(header);
 
+                    modalContent.innerHTML += `
                         <form id="emmaPassphraseForm">
                             <div style="margin-bottom: 15px;">
                                 <input type="password" id="emmaPassphrase" placeholder="Enter passphrase" required autofocus style="
@@ -672,6 +700,8 @@
                         </form>
                     `;
 
+                    // SECURITY: Append safely constructed content
+                    modal.appendChild(modalContent);
                     modalOverlay.appendChild(modal);
                     document.body.appendChild(modalOverlay);
 
@@ -683,7 +713,10 @@
                         if (isCreate) {
                             const confirmPassphrase = document.getElementById('emmaPassphraseConfirm').value.trim();
                             if (passphrase !== confirmPassphrase) {
-                                alert('Passwords do not match. Please try again.');
+                                emmaError('The passwords don\'t match. Let\'s try entering them again.', {
+                                  title: 'Let\'s fix that together',
+                                  helpText: 'Take your time - getting passwords right can be tricky.'
+                                });
                                 return;
                             }
                         }
@@ -705,16 +738,17 @@
                             const confirm = confirmInput.value;
 
                             if (confirm.length === 0) {
-                                matchDiv.innerHTML = '';
+                                matchDiv.textContent = '';
                                 return;
                             }
 
                             const matches = password === confirm;
-                            matchDiv.innerHTML = `
-                                <span style="color: ${matches ? '#10b981' : '#ef4444'};">
-                                    ${matches ? '✅ Passwords match' : '❌ Passwords do not match'}
-                                </span>
-                            `;
+                            // SECURITY: Use textContent and safe DOM manipulation
+                            matchDiv.innerHTML = '';
+                            const span = document.createElement('span');
+                            span.style.color = matches ? '#10b981' : '#ef4444';
+                            span.textContent = matches ? '✅ Passwords match' : '❌ Passwords do not match';
+                            matchDiv.appendChild(span);
                         };
 
                         passwordInput.addEventListener('input', updateMatch);

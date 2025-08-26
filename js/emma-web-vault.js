@@ -38,14 +38,9 @@ class EmmaWebVault {
           if (vaultData) {
             this.vaultData = vaultData;
 
-            // CRITICAL: Also restore passphrase from sessionStorage during IndexedDB restoration
-            const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
-            if (sessionPassphrase) {
-              this.passphrase = sessionPassphrase;
-
-            } else {
-              console.warn('⚠️ CONSTRUCTOR: No passphrase in sessionStorage - vault restored but not fully unlocked');
-            }
+            // SECURITY: Passphrase no longer stored in sessionStorage for security
+            // User will be prompted for passphrase when needed
+            console.log('🔒 CONSTRUCTOR: Vault restored from IndexedDB - passphrase required for operations');
 
             console.log('✅ CONSTRUCTOR: Vault data restored from IndexedDB with',
               Object.keys(vaultData.content?.memories || {}).length, 'memories');
@@ -129,7 +124,7 @@ class EmmaWebVault {
       // Set session storage for dashboard
       sessionStorage.setItem('emmaVaultActive', 'true');
       sessionStorage.setItem('emmaVaultName', name);
-      sessionStorage.setItem('emmaVaultPassphrase', passphrase); // CRITICAL: Store passphrase for session
+      // SECURITY: Never store passphrase in web storage - keep in memory only
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
@@ -231,7 +226,7 @@ class EmmaWebVault {
       // Set session storage for dashboard
       sessionStorage.setItem('emmaVaultActive', 'true');
       sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || 'Web Vault');
-      sessionStorage.setItem('emmaVaultPassphrase', passphrase); // CRITICAL: Store passphrase for session
+      // SECURITY: Never store passphrase in web storage - keep in memory only
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
@@ -275,12 +270,11 @@ class EmmaWebVault {
           // EMERGENCY FIX: Always ensure passphrase is available for any memory save
       if (!this.passphrase) {
         // FIRST: Try to restore passphrase from session storage
-        const sessionPassphrase = sessionStorage.getItem('emmaVaultPassphrase');
-        console.log('🔐 EMERGENCY FIX: Restoring passphrase for memory save');
+        // SECURITY: Passphrase no longer stored in sessionStorage for security
+        console.log('🔐 EMERGENCY FIX: Checking passphrase for memory save');
 
-        if (sessionPassphrase) {
-          this.passphrase = sessionPassphrase;
-          console.log('✅ EMERGENCY FIX: Passphrase restored from session');
+        if (this.passphrase) {
+          console.log('✅ EMERGENCY FIX: Passphrase available in memory');
         } else {
           console.error('🔐 CRITICAL: No passphrase available - emergency re-authentication required');
 
@@ -295,7 +289,7 @@ class EmmaWebVault {
 
               // Restore sessionStorage after emergency unlock
               if (this.passphrase) {
-                sessionStorage.setItem('emmaVaultPassphrase', this.passphrase);
+                // SECURITY: Never store passphrase in web storage
                 console.log('✅ EMERGENCY FIX: Passphrase restored and cached');
               }
             } catch (error) {
@@ -2443,7 +2437,7 @@ window.emmaAPI = {
             // Set session storage for dashboard
             sessionStorage.setItem('emmaVaultActive', 'true');
             sessionStorage.setItem('emmaVaultName', decryptedData.metadata?.name || decryptedData.name || 'Web Vault');
-            sessionStorage.setItem('emmaVaultPassphrase', data.passphrase);
+            // SECURITY: Never store passphrase in web storage
 
             console.log('✅ Vault unlocked successfully via API!');
             return { success: true, stats: window.emmaWebVault.getStats() };
@@ -2457,7 +2451,7 @@ window.emmaAPI = {
           window.emmaWebVault.isOpen = true;
           if (data.passphrase) {
             window.emmaWebVault.passphrase = data.passphrase;
-            sessionStorage.setItem('emmaVaultPassphrase', data.passphrase);
+            // SECURITY: Never store passphrase in web storage - keep in memory only
           }
 
           sessionStorage.setItem('emmaVaultActive', 'true');
@@ -2712,11 +2706,17 @@ EmmaWebVault.prototype.showFileSyncError = function() {
         this.showToast && this.showToast('✅ File access restored! Saving to .emma file...', 'success');
         // The autoSave will retry automatically
       } else {
-        alert('Could not restore file access. Please ensure you select the correct .emma file.');
+        window.emmaError('Could not restore file access. Please ensure you select the correct .emma file.', {
+          title: 'File Access Issue',
+          helpText: 'Let\'s try selecting your .emma file again.'
+        });
       }
     } catch (error) {
       console.error('File restoration failed:', error);
-      alert('Failed to restore file access: ' + error.message);
+      window.emmaError('Failed to restore file access: ' + error.message, {
+        title: 'File Access Problem',
+        helpText: 'Let\'s try again together.'
+      });
     }
   };
   

@@ -504,8 +504,15 @@ class EmmaShareExperience extends ExperiencePopup {
     }
   }
 
-  revokeShare(shareId) {
-    if (confirm('Are you sure you want to revoke this share? This action cannot be undone.')) {
+  async revokeShare(shareId) {
+    const confirmed = await window.emmaConfirm('Would you like to stop sharing this memory?', {
+      title: 'Stop Sharing',
+      helpText: 'This will remove access for the people you shared it with.',
+      confirmText: 'Yes, Stop Sharing',
+      cancelText: 'Keep Sharing',
+      isDestructive: true
+    });
+    if (confirmed) {
       const success = this.qrService.revokeShare(shareId);
       if (success) {
         this.showToast('Share revoked successfully', 'success');

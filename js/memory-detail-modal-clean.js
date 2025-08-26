@@ -84,7 +84,10 @@ function openMemoryDetailModal(memory) {
   
   } catch (error) {
     console.error('❌ CLEAN MODAL ERROR:', error);
-    alert('Modal creation failed: ' + error.message);
+    window.emmaError('Had trouble opening the memory details. Let\'s try again.', {
+      title: 'Memory Details Issue',
+      helpText: 'Sometimes these things take a moment to work.'
+    });
     throw error;
   }
 }

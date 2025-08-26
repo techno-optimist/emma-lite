@@ -570,7 +570,10 @@ function openMemoryDetail(memory) {
     return openMemoryDetailModal(memory);
   } else {
     console.error('❌ GALLERY: Memory modal system not loaded!');
-    alert('Memory detail modal not available. Please refresh the page.');
+    window.emmaError('Memory details aren\'t available right now. Let\'s try refreshing the page.', {
+      title: 'Memory Details',
+      helpText: 'Sometimes a page refresh helps things work better.'
+    });
   }
 }
 

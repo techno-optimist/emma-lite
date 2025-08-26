@@ -2171,15 +2171,32 @@ class EmmaChatExperience extends ExperiencePopup {
    * This is where the real AI magic happens!
    */
   async generateIntelligentEmmaResponse(userMessage, intent) {
-    console.log('🤖 Generating intelligent response with OpenAI...');
-    
+    const env = (typeof window !== 'undefined' && window.EMMA_ENV) ? window.EMMA_ENV : 'production';
+    const useLLM = env !== 'production' && !!this.apiKey;
+
     try {
       // Get vault context for personalization
       const vaultContext = await this.getVaultContextForAI();
-      
+
+      if (!useLLM) {
+        // Gentle, local-first fallback aligned with Emma ethos
+        const topics = (vaultContext.recentTopics || []).slice(0, 3);
+        const topicStr = topics.length ? ` I remember recent topics like ${topics.join(', ')}.` : '';
+        const suggestions = [
+          'Would you like me to save this as a memory?',
+          'Should we look for related photos together?',
+          'Want to add who was with you in this memory?'
+        ];
+        const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+        return (
+          `I’m here with you. Let’s explore this together.${topicStr} ` +
+          `${suggestion}`
+        );
+      }
+
       // Build the prompt based on intent and context
       const prompt = this.buildEmmaPrompt(userMessage, intent, vaultContext);
-      
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -2189,37 +2206,24 @@ class EmmaChatExperience extends ExperiencePopup {
         body: JSON.stringify({
           model: 'gpt-4',
           messages: [
-            {
-              role: 'system',
-              content: prompt.system
-            },
-            {
-              role: 'user', 
-              content: prompt.user
-            }
+            { role: 'system', content: prompt.system },
+            { role: 'user', content: prompt.user }
           ],
           max_tokens: 300,
           temperature: 0.7
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
       const data = await response.json();
       const aiResponse = data.choices[0]?.message?.content;
-      
-      if (aiResponse) {
-        console.log('✅ OpenAI response generated successfully');
-        return aiResponse.trim();
-      } else {
-        throw new Error('No response content from OpenAI');
-      }
+      if (aiResponse) return aiResponse.trim();
+      throw new Error('No response content from OpenAI');
 
     } catch (error) {
-      console.error('🤖 OpenAI API error:', error);
-      throw error; // Let caller handle fallback
+      // Final safe fallback to ensure no broken UX
+      const calm = 'I’m here with you. Let’s take this step by step.';
+      return `${calm} Would you like me to save this as a memory?`;
     }
   }
 
@@ -3118,7 +3122,7 @@ RULES:
         }
       }
 
-      // Initialize the engine
+      // Initialize the engine (works offline without API key!)
       this.vectorlessEngine = new EmmaVectorlessEngine({
         apiKey: this.apiKey,
         dementiaMode: this.dementiaMode || false,
@@ -3128,8 +3132,14 @@ RULES:
       // Try to load vault data (non-blocking)
       await this.loadVaultForVectorless();
 
+      // Enable vectorless even without API keys (offline mode)
+      if (this.vectorlessEngine && !this.isVectorlessEnabled) {
+        this.isVectorlessEnabled = true;
+        console.log('💜 Emma: Vectorless engine enabled in offline mode for demo');
+      }
+
       this.updateVectorlessStatus();
-      console.log('✅ Full Vectorless AI system initialized!');
+      console.log('✅ Emma Vectorless AI system initialized (offline mode ready)!');
 
     } catch (error) {
       console.warn('⚠️ Vectorless AI initialization failed, using intelligent fallbacks:', error.message);
@@ -3545,7 +3555,10 @@ RULES:
     // Load API key
     const apiKeyInput = document.getElementById('api-key-input');
     if (apiKeyInput) {
-      apiKeyInput.value = this.apiKey || localStorage.getItem('emma-openai-api-key') || '';
+      // DEMO SECURITY: API key input disabled for family demo
+      apiKeyInput.value = '';
+      apiKeyInput.placeholder = '🔒 API features disabled for demo security';
+      apiKeyInput.disabled = true;
     }
 
     // Load debug mode
@@ -3572,12 +3585,15 @@ RULES:
     const debugMode = document.getElementById('debug-mode-toggle')?.checked || false;
     const dementiaMode = document.getElementById('dementia-mode-toggle')?.checked || false;
 
-    // Save to localStorage
+    // SECURITY WARNING: API keys stored in localStorage (temporary for development)
+    // TODO: Move to secure vault storage for production
+    // DEMO SECURITY: API key storage completely disabled
     if (apiKey) {
-      localStorage.setItem('emma-openai-api-key', apiKey);
-    } else {
-      localStorage.removeItem('emma-openai-api-key');
+      console.warn('🔒 DEMO MODE: API key storage disabled for security');
+      // Do not store API keys in any form during demo
     }
+    // Always remove any existing API keys for demo safety
+    localStorage.removeItem('emma-openai-api-key');
     localStorage.setItem('emma-debug-mode', debugMode);
     localStorage.setItem('emma-dementia-mode', dementiaMode);
 
@@ -3598,8 +3614,15 @@ RULES:
   /**
    * Reset settings to defaults
    */
-  resetSettings() {
-    if (confirm('🔄 Reset all chat settings to defaults?')) {
+  async resetSettings() {
+    const confirmed = await window.emmaConfirm('Would you like to reset all chat settings to their original values?', {
+      title: 'Reset Chat Settings',
+      helpText: 'This will clear your current preferences.',
+      confirmText: 'Yes, Reset',
+      cancelText: 'Keep Current Settings'
+    });
+    if (confirmed) {
+      // DEMO SECURITY: Always remove API keys for safety
       localStorage.removeItem('emma-openai-api-key');
       localStorage.removeItem('emma-debug-mode');
       localStorage.removeItem('emma-dementia-mode');
@@ -3741,10 +3764,10 @@ RULES:
    */
   loadVectorlessSettings() {
     try {
-      // 🚀 CHECK MULTIPLE API KEY SOURCES (Fixed!)
-      
-      // 1. Check the correct settings UI location
-      this.apiKey = localStorage.getItem('emma-openai-api-key');
+          // 🚀 DEMO SECURITY: API keys disabled for family demo
+    
+    // 1. SECURITY LOCKDOWN: No API key access for demo safety
+    this.apiKey = null; // DEMO MODE: API keys disabled for security
       
       // 2. Check old vectorless settings format (backup)
       if (!this.apiKey) {
@@ -5004,7 +5027,10 @@ RULES:
     } catch (error) {
       console.error('❌ Error showing enhanced memory preview:', error);
       // Fallback to simple alert
-      alert("I'd love to help you save photos! Please try the regular memory capture for now.");
+      window.emmaInfo("I'd love to help you save photos! Please try the regular memory capture for now.", {
+        title: "Photo Saving",
+        helpText: "The memory capture feature works beautifully for photos."
+      });
     }
   }
 
@@ -8044,7 +8070,10 @@ Just the question:`;
     
     files.forEach(file => {
       if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        alert(`File ${file.name} is too large. Maximum size is 50MB.`);
+        window.emmaError(`That file (${file.name}) is quite large. Let's try a smaller one for better performance.`, {
+          title: "Large File Detected",
+          helpText: "Smaller files work better for everyone."
+        });
         return;
       }
       
@@ -8098,7 +8127,10 @@ Just the question:`;
       const content = contentTextarea ? contentTextarea.value.trim() : '';
       
       if (!content) {
-        alert('Please add a description for this memory.');
+        window.emmaError('Please add a description for this memory.', {
+          title: "Missing Description",
+          helpText: "A few words about this memory will help preserve the moment."
+        });
         return;
       }
 

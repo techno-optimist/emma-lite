@@ -146,7 +146,7 @@ class VaultStatusChecker {
    * Open webapp to unlock vault
    */
   openWebappToUnlock() {
-    const webappUrl = window.location.origin.includes('localhost') 
+    const webappUrl = window.EMMA_ENV === 'development'
       ? 'http://localhost:3000'
       : 'https://emma-lite-extension.onrender.com';
     

@@ -2346,7 +2346,8 @@ ${status.sessionExpiresAt ? `• Session Expires: ${new Date(status.sessionExpir
 ${status.lastUnlockedAt ? `• Last Unlocked: ${new Date(status.lastUnlockedAt).toLocaleString()}` : ''}
       `.trim();
 
-      alert(statusText);
+      // Use gentle notification for popup status
+      console.log('🔔 Popup Status:', statusText);
 
       // Update the status subtitle
       const statusSubtitle = document.getElementById('vault-status-text');

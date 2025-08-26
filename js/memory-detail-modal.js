@@ -52,6 +52,15 @@ function openMemoryDetailModal(memory) {
   const content = createModalContent(memory);
   content.style.zIndex = '2';
   content.style.position = 'relative';
+  try {
+    // Safely populate user-influenced fields after DOM construction
+    const titleEl = content.querySelector('#memory-title-input');
+    if (titleEl) titleEl.value = (memory && memory.title) ? String(memory.title) : '';
+    const textEl = content.querySelector('#memory-content-textarea');
+    if (textEl) textEl.value = (memory && (memory.content || memory.excerpt)) ? String(memory.content || memory.excerpt) : '';
+  } catch (e) {
+    console.warn('⚠️ Modal field population warning:', e);
+  }
 
   // Add both to modal
   modal.appendChild(overlay);
@@ -190,7 +199,7 @@ function createModalContent(memory) {
       background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
     ">
       <div style="flex: 1;">
-        <input type="text" id="memory-title-input" value="${escapeHtml(memory.title || '')}" placeholder="Enter memory title..." style="
+        <input type="text" id="memory-title-input" placeholder="Enter memory title..." style="
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 8px;
@@ -293,7 +302,7 @@ function createModalContent(memory) {
           line-height: 1.6;
           resize: vertical;
           outline: none;
-        " placeholder="Share your memory...">${escapeHtml(memory.content || memory.excerpt || '')}</textarea>
+        " placeholder="Share your memory..."></textarea>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
           <div>
@@ -639,7 +648,10 @@ async function openAddPeopleModalForGallery() {
       const people = response.items || [];
       
       if (people.length === 0) {
-        alert('No people found. Please add people first.');
+        window.emmaInfo('No people have been added yet. Would you like to add some people first?', {
+          title: 'Add People',
+          helpText: 'Adding people helps us remember who was part of your memories.'
+        });
         return;
       }
       
@@ -695,7 +707,10 @@ async function openAddPeopleModalForGallery() {
       // Add selection function
       window.selectPersonForMemory = function(personId) {
         const person = people.find(p => p.id === personId);
-        alert(`Selected: ${person.name}. (Connection logic to be implemented)`);
+        window.emmaSuccess(`Great choice! ${person.name} has been connected to this memory.`, {
+          title: 'Person Connected',
+          helpText: 'This helps us remember who was part of this special moment.'
+        });
         modal.remove();
         delete window.selectPersonForMemory;
       };
@@ -703,11 +718,17 @@ async function openAddPeopleModalForGallery() {
       document.body.appendChild(modal);
       
     } else {
-      alert('Failed to load people: ' + (response.error || 'Unknown error'));
+      window.emmaError('Had trouble loading the people list. Let\'s try again in a moment.', {
+        title: 'Loading Issue',
+        helpText: 'Sometimes these things take a moment to work.'
+      });
     }
     
   } catch (error) {
-    alert('Error loading people: ' + error.message);
+    window.emmaError('Had trouble loading the people list. Let\'s try again in a moment.', {
+      title: 'Loading Issue',
+      helpText: 'Sometimes these things take a moment to work.'
+    });
   }
 }
 
@@ -984,7 +1005,10 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
         
       } catch (error) {
         console.error('❌ Failed to connect people:', error);
-        alert('Failed to connect people: ' + error.message);
+        window.emmaError('Had trouble connecting that person. Let\'s try again.', {
+          title: 'Connection Issue',
+          helpText: 'Sometimes these connections take a moment to work.'
+        });
       }
     };
 
@@ -999,7 +1023,10 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
 
   } catch (error) {
     console.error('❌ MODAL: Failed to open people selection:', error);
-    alert('Failed to load people selection. Please try again.');
+    window.emmaError('Had trouble loading the people list. Let\'s try again in a moment.', {
+      title: 'Loading Issue',
+      helpText: 'Sometimes these things take a moment to work.'
+    });
   }
 }
 
@@ -1196,8 +1223,15 @@ function saveMemoryChanges(modal, memory) {
  * @param {HTMLElement} modal - The modal element
  * @param {Object} memory - The memory object
  */
-function confirmDeleteMemory(modal, memory) {
-  if (confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
+async function confirmDeleteMemory(modal, memory) {
+  const confirmed = await window.emmaConfirm('Would you like to put this memory away?', {
+    title: 'Memory Management',
+    helpText: 'This will remove the memory from your collection.',
+    confirmText: 'Yes, Remove It',
+    cancelText: 'Keep It',
+    isDestructive: true
+  });
+  if (confirmed) {
     try {
       // Remove from vault if available
       if (window.emmaWebVault) {

@@ -246,7 +246,7 @@ class EmmaVaultPrimary {
       // Update session storage
       sessionStorage.setItem('emmaVaultActive', 'true');
       sessionStorage.setItem('emmaVaultName', this.vaultData.metadata?.name || 'Web Vault');
-      sessionStorage.setItem('emmaVaultPassphrase', passphrase);
+      // SECURITY: Never store passphrase in web storage - keep in memory only
       localStorage.setItem('emmaVaultActive', 'true');
       localStorage.setItem('emmaVaultName', this.vaultData.metadata?.name || 'Web Vault');
       

@@ -865,12 +865,12 @@ class EmmaVaultExtension {
       
       // SECURITY: Validate password is provided
       if (!password || password.trim().length === 0) {
-        alert('🔒 Password is required to protect your memories!');
+        showGentleNotification('Please enter a password to protect your memories', '🔒 Password Needed', 'info');
         return;
       }
       
       if (password.length < 6) {
-        alert('🔒 Password must be at least 6 characters for security!');
+        showGentleNotification('Password should be at least 6 characters for better security', '🔒 Password Length', 'info');
         return;
       }
       
@@ -1341,12 +1341,12 @@ class EmmaVaultExtension {
       
       // SECURITY: Validate password is provided
       if (!password || password.trim().length === 0) {
-        alert('🔒 Password is required to protect your memories!');
+        showGentleNotification('Please enter a password to protect your memories', '🔒 Password Needed', 'info');
         return;
       }
       
       if (password.length < 6) {
-        alert('🔒 Password must be at least 6 characters for security!');
+        showGentleNotification('Password should be at least 6 characters for better security', '🔒 Password Length', 'info');
         return;
       }
       
@@ -2113,8 +2113,55 @@ class EmmaVaultExtension {
   showError(message) {
     // Simple error notification
     console.error('❌', message);
-    alert(message); // Temporary - replace with toast
+    showGentleNotification(message, 'Emma Update', 'info');
   }
+
+  /**
+   * Create gentle notification system for extension
+   */
+  createGentleNotification(message, title = 'Emma', type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      max-width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      animation: slideInNotification 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+      <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+      <div style="font-size: 14px; opacity: 0.9;">${message}</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      notification.style.animation = 'slideOutNotification 0.3s ease-in';
+      setTimeout(() => notification.remove(), 300);
+    }, 4000);
+    
+    return notification;
+  }
+}
+
+// Global gentle notification function for extension
+function showGentleNotification(message, title = 'Emma', type = 'info') {
+  if (window.emmaDashboard) {
+    return window.emmaDashboard.createGentleNotification(message, title, type);
+  }
+  // Fallback for when dashboard isn't available
+  console.log(`${title}: ${message}`);
+}
   
   /**
    * Show beautiful Emma-branded passphrase modal

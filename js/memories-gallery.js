@@ -300,7 +300,14 @@ function handleMemoryClick(memoryId) {
 
 // Handle delete memory
 async function handleDeleteMemory(memoryId) {
-  if (!confirm('Are you sure you want to delete this memory?')) {
+  const confirmed = await window.emmaConfirm('Would you like to put this memory away?', {
+    title: 'Memory Management',
+    helpText: 'This will remove the memory from your collection.',
+    confirmText: 'Yes, Remove It',
+    cancelText: 'Keep It',
+    isDestructive: true
+  });
+  if (!confirmed) {
     return;
   }
   

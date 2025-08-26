@@ -927,7 +927,13 @@ async function saveSettings() {
 
 // Reset to defaults
 async function resetSettings() {
-  if (!confirm('Reset all settings to defaults?')) return;
+  const confirmed = await window.emmaConfirm('Would you like to reset all settings to their original values?', {
+    title: 'Reset Settings',
+    helpText: 'This will clear your current preferences.',
+    confirmText: 'Yes, Reset All',
+    cancelText: 'Keep Current Settings'
+  });
+  if (!confirmed) return;
 
   const defaults = {
     autoCapture: true,
@@ -2318,8 +2324,14 @@ async function saveDialogSettings() {
   }
 }
 
-function resetDialogSettings() {
-  if (!confirm('Reset all settings for this orb to defaults?')) return;
+async function resetDialogSettings() {
+  const confirmed = await window.emmaConfirm('Would you like to reset all orb settings to their original values?', {
+    title: 'Reset Orb Settings',
+    helpText: 'This will clear your current orb preferences.',
+    confirmText: 'Yes, Reset Orb',
+    cancelText: 'Keep Current Settings'
+  });
+  if (!confirmed) return;
 
   // Reset to default values
   document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));

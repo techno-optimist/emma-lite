@@ -166,7 +166,8 @@ To unlock your vault:
 This design keeps your memories safe while providing seamless access.
   `.trim();
   
-  alert(helpMessage); // Simple alert for now, could be enhanced with a proper modal
+  // Show help in console for now (demo mode - no UI disruption)
+  console.log('📖 Emma Help:', helpMessage);
 }
 
 /**

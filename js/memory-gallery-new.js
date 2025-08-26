@@ -1123,8 +1123,15 @@ function saveMemoryChanges(modal, memory) {
   showSaveStatus('saved', '✓ Saved');
 }
 
-function deleteMemoryFromModal(modal, memory) {
-  if (confirm('Are you sure you want to delete this memory?')) {
+async function deleteMemoryFromModal(modal, memory) {
+  const confirmed = await window.emmaConfirm('Would you like to put this memory away?', {
+    title: 'Memory Management',
+    helpText: 'This will remove the memory from your collection.',
+    confirmText: 'Yes, Remove It',
+    cancelText: 'Keep It',
+    isDestructive: true
+  });
+  if (confirmed) {
     console.log('🗑️ Deleting memory...');
     modal.remove();
   }

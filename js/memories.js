@@ -879,7 +879,13 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
       // Offer to create an HML identity
       const message = `You need an HML identity to sync memories with ${peopleWithFingerprints.map(p => p.name).join(', ')}.\n\nWould you like to create your HML identity now? This will enable peer-to-peer collaboration.`;
 
-      if (!confirm(message)) {
+      const confirmed = await window.emmaConfirm('Would you like to create your HML identity to sync memories with your people?', {
+        title: 'Enable Memory Sharing',
+        helpText: 'This will let you collaborate on memories with the people you\'ve tagged.',
+        confirmText: 'Yes, Enable Sharing',
+        cancelText: 'Maybe Later'
+      });
+      if (!confirmed) {
         return;
       }
 
@@ -1414,7 +1420,16 @@ async function loadConstellationView() {
     if (id) {
       const item = items.find(x => x.id === id);
       if (item) {
-        tip.innerHTML = `${escapeHtml(item.title || '(Untitled)')}<br/><span style="opacity:.8">${new Date(item.timestamp).toLocaleString()}</span>`;
+        // SECURITY: Safe DOM creation to prevent XSS injection
+        tip.innerHTML = ''; // Clear first
+        const titleDiv = document.createElement('div');
+        titleDiv.textContent = item.title || '(Untitled)';
+        const timeSpan = document.createElement('span');
+        timeSpan.style.opacity = '0.8';
+        timeSpan.textContent = new Date(item.timestamp).toLocaleString();
+        tip.appendChild(titleDiv);
+        tip.appendChild(document.createElement('br'));
+        tip.appendChild(timeSpan);
         tip.style.left = `${mx + 10}px`;
         tip.style.top = `${my - 10}px`;
         tip.style.display = 'block';
@@ -1653,7 +1668,14 @@ async function loadConstellationView() {
 async function deleteMemory(memoryId) {
 
   // Confirm deletion
-  if (!confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
+  const confirmed = await window.emmaConfirm('Would you like to put this memory away?', {
+    title: 'Memory Management',
+    helpText: 'This will remove the memory from your collection.',
+    confirmText: 'Yes, Remove It',
+    cancelText: 'Keep It',
+    isDestructive: true
+  });
+  if (!confirmed) {
     return;
   }
 
@@ -1711,9 +1733,19 @@ async function injectHeaderLockStatus() {
 
       if (vaultUnlocked) {
         // Unlocked state - show status with lock button
-        node.innerHTML = `🔓 ${vaultName} <button id="emma-lock-now" class="btn-secondary" style="margin-left:8px">Lock</button>`;
-        const lockBtn = document.getElementById('emma-lock-now');
-        if (lockBtn) lockBtn.onclick = async () => {
+        // SECURITY: Safe DOM creation to prevent XSS injection
+        node.innerHTML = ''; // Clear first
+        const statusSpan = document.createElement('span');
+        statusSpan.textContent = `🔓 ${vaultName} `;
+        const lockBtn = document.createElement('button');
+        lockBtn.id = 'emma-lock-now';
+        lockBtn.className = 'btn-secondary';
+        lockBtn.style.marginLeft = '8px';
+        lockBtn.textContent = 'Lock';
+        node.appendChild(statusSpan);
+        node.appendChild(lockBtn);
+        // Set up lock button click handler
+        lockBtn.onclick = async () => {
           try {
             // CRITICAL: Ask for passphrase to encrypt vault before locking
             const passphrase = await showSimplePasswordPrompt('🔐 Enter passphrase to encrypt and lock vault');
@@ -1727,7 +1759,10 @@ async function injectHeaderLockStatus() {
             }
           } catch (error) {
             console.error('❌ VAULT: Lock failed:', error);
-            alert('Failed to lock vault: ' + error.message);
+            window.emmaError('Had trouble locking the vault. Let\'s try again.', {
+              title: 'Vault Lock Issue',
+              helpText: 'Sometimes this takes a moment to work properly.'
+            });
           }
         };
       } else {
@@ -1749,7 +1784,10 @@ async function injectHeaderLockStatus() {
               }
             } catch (error) {
               console.error('🔒 Unlock failed:', error);
-              alert('Failed to unlock vault: ' + error.message);
+              window.emmaError('Had trouble unlocking the vault. Let\'s try again.', {
+                title: 'Vault Unlock Issue',
+                helpText: 'Sometimes this takes a moment to work properly.'
+              });
             }
           };
         }
@@ -1768,11 +1806,17 @@ async function injectHeaderLockStatus() {
             if (unlockResult && unlockResult.success) {
 
             } else {
-              alert('Failed to unlock vault. Please check your passphrase.');
+              window.emmaError('The passphrase doesn\'t seem to match. Let\'s try entering it again.', {
+                title: 'Passphrase Issue',
+                helpText: 'Take your time - these can be tricky to remember.'
+              });
             }
           } catch (error) {
             console.error('🛡️ Unlock failed:', error);
-            alert('Failed to unlock vault: ' + error.message);
+            window.emmaError('Had trouble unlocking the vault. Let\'s try again.', {
+              title: 'Vault Unlock Issue',
+              helpText: 'Sometimes this takes a moment to work properly.'
+            });
           }
         };
       }
@@ -3465,7 +3509,10 @@ async function openAddPeopleModal() {
     const allPeople = Array.isArray(store.emma_people) ? store.emma_people : [];
 
     if (allPeople.length === 0) {
-      alert('No people found. Please add people in the People page first.');
+      window.emmaInfo('No people have been added yet. Would you like to add some people first?', {
+        title: 'Add People',
+        helpText: 'Adding people helps us remember who was part of your memories.'
+      });
       return;
     }
 
@@ -3478,7 +3525,10 @@ async function openAddPeopleModal() {
     const availablePeople = allPeople.filter(person => !taggedPeopleIds.has(String(person.id)));
 
     if (availablePeople.length === 0) {
-      alert('All people are already tagged to this memory.');
+      window.emmaInfo('All your people are already connected to this memory!', {
+        title: 'Everyone\'s Connected',
+        helpText: 'This memory includes all the people you\'ve added.'
+      });
       return;
     }
 
@@ -3644,7 +3694,10 @@ async function openAddPeopleModal() {
 
   } catch (error) {
     console.error('Failed to open add people modal:', error);
-    alert('Failed to load people. Please try again.');
+    window.emmaError('Had trouble loading the people list. Let\'s try again in a moment.', {
+      title: 'Loading Issue',
+      helpText: 'Sometimes these things take a moment to work.'
+    });
   }
 }
 

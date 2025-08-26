@@ -5,6 +5,13 @@
 
 class EmmaAutomation {
   constructor() {
+    // Only allow automation service in development
+    if (window.EMMA_ENV !== 'development') {
+      console.warn('⚠️ Emma Automation disabled in production for security');
+      this.disabled = true;
+      return;
+    }
+    
     this.wsUrl = 'ws://localhost:8000/ws';
     this.httpUrl = 'http://localhost:8000';
     this.websocket = null;
@@ -12,12 +19,18 @@ class EmmaAutomation {
     this.reconnectInterval = 5000;
     this.isConnected = false;
     this.messageHandlers = new Map();
+    this.disabled = false;
   }
 
   /**
    * Connect to the automation service via WebSocket
    */
   async connect() {
+    if (this.disabled) {
+      console.warn('Emma Automation: Disabled in production');
+      return Promise.resolve(false);
+    }
+    
     return new Promise((resolve, reject) => {
       try {
         console.log('Emma Automation: Connecting to service...');

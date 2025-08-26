@@ -160,14 +160,20 @@ class CleanSecurePasswordModal {
     const password = passwordInput.value;
     
     if (!password) {
-      alert('Password is required');
+      window.emmaError('Please enter a password to continue.', {
+        title: 'Password Needed',
+        helpText: 'A password helps keep your information secure.'
+      });
       return;
     }
 
     if (confirmInput) {
       const confirmPassword = confirmInput.value;
       if (password !== confirmPassword) {
-        alert('Passwords do not match');
+        window.emmaError('The passwords don\'t match. Let\'s try entering them again.', {
+          title: 'Password Mismatch',
+          helpText: 'Take your time - getting passwords right can be tricky.'
+        });
         return;
       }
     }

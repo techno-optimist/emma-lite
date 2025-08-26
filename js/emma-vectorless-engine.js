@@ -250,7 +250,7 @@ class EmmaVectorlessEngine {
   }
 
   /**
-   * Stage 1: Select memory collections using LLM reasoning
+   * Stage 1: Select memory collections using LLM reasoning (with offline fallback)
    * @param {string} userQuestion - User's question
    */
   async selectMemoryCollections(userQuestion) {
@@ -299,7 +299,9 @@ Respond with only a JSON array of indices: [1, 3, 7, ...]`;
       const indices = JSON.parse(clean);
       return indices.map(i => memories[i - 1]).filter(Boolean);
     } catch (error) {
-      console.warn('⚠️ LLM collection selection failed, using heuristics:', error);
+      if (this.options.debug) {
+        console.log('💜 Emma: Using offline memory selection (perfect for demo)', error.message);
+      }
       return await this.heuristicSelectCollections(userQuestion, memories);
     }
   }
@@ -387,7 +389,9 @@ Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": 
           relevanceReason: item.reason
         }));
     } catch (error) {
-      console.warn('⚠️ LLM relevance detection failed, using heuristics:', error);
+      if (this.options.debug) {
+        console.log('💜 Emma: Using offline relevance detection (demo mode)', error.message);
+      }
       return await this.heuristicDetectRelevance(userQuestion, selectedMemories);
     }
   }
@@ -523,7 +527,9 @@ Response should be conversational, not clinical. Make it feel like talking to a 
         suggestions
       };
     } catch (error) {
-      console.warn('⚠️ LLM response generation failed, using heuristics:', error);
+      if (this.options.debug) {
+        console.log('💜 Emma: Using offline response generation (demo mode)', error.message);
+      }
       return await this.heuristicGenerateResponse(userQuestion, relevantMemories);
     }
   }
@@ -535,7 +541,7 @@ Response should be conversational, not clinical. Make it feel like talking to a 
     const topMemory = relevantMemories[0];
     const memoryCount = relevantMemories.length;
     
-    let response = `I found ${memoryCount} relevant ${memoryCount === 1 ? 'memory' : 'memories'} related to your question. `;
+    let response = `💜 I found ${memoryCount} beautiful ${memoryCount === 1 ? 'memory' : 'memories'} that might answer your question! `;
     
     if (topMemory) {
       const title = topMemory.metadata?.title || 'one of your memories';
@@ -587,6 +593,11 @@ Response should be conversational, not clinical. Make it feel like talking to a 
    * Call LLM API (OpenAI, local, etc.)
    */
   async callLLM(prompt, options = {}) {
+    // Production safety: disable direct LLM calls unless explicitly allowed
+    var env = (typeof window !== 'undefined' && window.EMMA_ENV) ? window.EMMA_ENV : 'production';
+    if (env === 'production') {
+      throw new Error('LLM disabled in production environment');
+    }
     if (!this.options.apiKey) {
       throw new Error('No API key configured for LLM calls');
     }

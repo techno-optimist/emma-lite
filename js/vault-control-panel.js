@@ -641,7 +641,12 @@ class EmmaVaultControlPanel {
    */
   async lockVault() {
     try {
-      const confirmed = confirm('🔒 Are you sure you want to lock your vault?\n\nYou will need to enter your passphrase to unlock it again.');
+      const confirmed = await window.emmaConfirm('Would you like to lock your vault for security?', {
+        title: 'Lock Vault',
+        helpText: 'You\'ll need to enter your passphrase to unlock it again.',
+        confirmText: 'Yes, Lock It',
+        cancelText: 'Keep Unlocked'
+      });
       if (!confirmed) return;
       
       console.log('🔒 Locking vault...');

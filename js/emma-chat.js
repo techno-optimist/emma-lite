@@ -316,7 +316,12 @@ function displayMemoryCapsule(memory) {
   
   const sourceDiv = document.createElement('div');
   sourceDiv.className = 'memory-source';
-  sourceDiv.innerHTML = `<span>${getSourceIcon(memory.source)}</span> ${memory.source || 'Unknown'}`;
+  // SECURITY: Safe DOM creation to prevent XSS injection
+  const iconSpan = document.createElement('span');
+  iconSpan.innerHTML = getSourceIcon(memory.source); // getSourceIcon returns safe icons
+  const sourceText = document.createTextNode(` ${memory.source || 'Unknown'}`);
+  sourceDiv.appendChild(iconSpan);
+  sourceDiv.appendChild(sourceText);
   
   const dateDiv = document.createElement('div');
   dateDiv.className = 'memory-date';
@@ -441,8 +446,14 @@ function autoResizeTextarea(event) {
 }
 
 // Clear chat
-function clearChat() {
-  if (confirm('Clear all chat history?')) {
+async function clearChat() {
+  const confirmed = await window.emmaConfirm('Would you like to clear all chat history?', {
+    title: 'Clear Chat History',
+    helpText: 'This will remove all previous conversations.',
+    confirmText: 'Yes, Clear',
+    cancelText: 'Keep History'
+  });
+  if (confirmed) {
     chatHistory = [];
     saveChatHistory();
     document.getElementById('chat-messages').innerHTML = '';
