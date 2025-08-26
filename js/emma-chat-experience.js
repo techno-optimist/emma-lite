@@ -6241,6 +6241,15 @@ RULES:
 
       // CRITICAL "DEBBE STANDARD" FLOW: Check for new people that need to be added
       const newPeople = memory.metadata.newPeopleDetected || [];
+      const existingPeople = memory.metadata.people || [];
+      const peopleNames = memory.metadata.peopleNames || [];
+      
+      console.log('👥 EMMA CHAT: Memory people analysis:', {
+        newPeople,
+        existingPeople, 
+        peopleNames,
+        hasNewPeople: newPeople.length > 0
+      });
       
       if (newPeople.length > 0) {
         console.log('👥 EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
@@ -6277,13 +6286,20 @@ RULES:
     try {
       console.log(`👥 ADDING PERSON: ${personName} as ${relationship}`);
       
-      // Add person to vault
-      await window.emmaWebVault.addPerson({
+      // CRITICAL: Check vault access first
+      if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+        throw new Error('Vault is not accessible');
+      }
+      
+      // Add person to vault with error handling
+      const result = await window.emmaWebVault.addPerson({
         name: personName,
-        relationship: relationship,
-        createdAt: new Date().toISOString(),
-        createdBy: 'emma-chat'
+        relation: relationship, // CRITICAL FIX: API expects 'relation' not 'relationship'
+        contact: '', // Add default contact
+        avatar: null // Add default avatar
       });
+
+      console.log('✅ PERSON ADDED SUCCESSFULLY:', result);
 
       this.addMessage(`Perfect! I've added ${personName} as a ${relationship} to your vault. Now let me create your memory capsule...`, 'emma');
 
@@ -6295,16 +6311,21 @@ RULES:
       if (state && state.memory) {
         await this.finalizeMemorySave(state.memory, memoryId);
       } else {
-        console.error('ADD PERSON: No state or memory found, cannot proceed with enrichment');
+        console.error('❌ ADD PERSON: No state or memory found, cannot proceed with enrichment');
+        // Try to save anyway with basic memory structure
+        await this.fallbackMemorySave(memoryId, personName);
       }
       
     } catch (error) {
-      console.error('❌ Failed to add person to vault:', error);
-      this.addMessage(`I had trouble adding ${personName} to your vault, but let me save your memory anyway.`, 'emma');
+      console.error('❌ CRITICAL: Failed to add person to vault:', error);
+      this.addMessage(`I had trouble adding ${personName} to your vault (${error.message}), but let me save your memory anyway.`, 'emma');
       
+      // Always try to save the memory even if person addition fails
       const state = this.enrichmentState.get(memoryId);
       if (state && state.memory) {
         await this.finalizeMemorySave(state.memory, memoryId);
+      } else {
+        await this.fallbackMemorySave(memoryId, personName);
       }
     }
   }
@@ -6318,6 +6339,44 @@ RULES:
     const state = this.enrichmentState.get(memoryId);
     if (state && state.memory) {
       await this.finalizeMemorySave(state.memory, memoryId);
+    }
+  }
+
+  /**
+   * Fallback memory save when enrichment state is lost
+   */
+  async fallbackMemorySave(memoryId, personName = null) {
+    try {
+      console.log('🚨 FALLBACK: Attempting to save memory without enrichment state');
+      
+      // Try to find the memory in detected memories
+      let memory = null;
+      for (const [msgId, analysis] of this.detectedMemories) {
+        if (analysis.memory && analysis.memory.id === memoryId) {
+          memory = analysis.memory;
+          break;
+        }
+      }
+      
+      if (!memory) {
+        console.error('❌ FALLBACK: No memory found for ID:', memoryId);
+        this.addMessage("I'm sorry, I couldn't find the memory to save. Please try creating it again.", 'emma');
+        return;
+      }
+      
+      // If we have a person name, try to add them to metadata
+      if (personName && memory.metadata) {
+        if (!memory.metadata.peopleNames) memory.metadata.peopleNames = [];
+        if (!memory.metadata.peopleNames.includes(personName)) {
+          memory.metadata.peopleNames.push(personName);
+        }
+      }
+      
+      await this.finalizeMemorySave(memory, memoryId);
+      
+    } catch (error) {
+      console.error('❌ FALLBACK SAVE FAILED:', error);
+      this.addMessage("I'm having trouble saving your memory. Please try again.", 'emma');
     }
   }
 
@@ -7044,9 +7103,9 @@ RULES:
       console.log('👥 EMMA CHAT: Creating new person:', name, 'with relationship:', relationship);
       const newPerson = await window.emmaWebVault.addPerson({
         name: name,
-        relationship: relationship,
-        createdAt: new Date().toISOString(),
-        createdBy: 'emma-chat'
+        relation: relationship, // CRITICAL FIX: API expects 'relation' not 'relationship'
+        contact: '', // Add default contact
+        avatar: null // Add default avatar
       });
 
       console.log('✅ EMMA CHAT: Created new person:', newPerson);

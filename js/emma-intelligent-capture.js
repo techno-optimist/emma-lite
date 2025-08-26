@@ -627,12 +627,12 @@ class EmmaIntelligentCapture {
     
     // Extract metadata with VAULT INTEGRATION
     const extractedPeopleNames = this.extractPeopleNames(signals.people || []);
-    // console.log('🎯 MEMORY DEBUG: Creating metadata with people names:', extractedPeopleNames);
+    console.log('🎯 MEMORY DEBUG: Creating metadata with people names:', extractedPeopleNames);
     
     // CRITICAL FIX: Convert people names to vault IDs and handle new people
     const { peopleIds, newPeople } = await this.resolvePeopleToVaultIds(extractedPeopleNames);
-    // console.log('🎯 MEMORY DEBUG: Resolved people IDs:', peopleIds);
-    // console.log('🎯 MEMORY DEBUG: New people detected:', newPeople);
+    console.log('🎯 MEMORY DEBUG: Resolved people IDs:', peopleIds);
+    console.log('🎯 MEMORY DEBUG: New people detected:', newPeople);
     
     const metadata = {
       emotions: signals.emotions || [],
