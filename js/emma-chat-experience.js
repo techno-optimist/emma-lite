@@ -5181,11 +5181,32 @@ RULES:
         // Start with letter (constellation style)
         avatar.textContent = person.name.charAt(0).toUpperCase();
 
-        // Apply NEW person styling if needed
+        // 🎯 CRITICAL FIX: Apply proper styling for ALL avatars
+        avatar.style.cssText = `
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 18px;
+          color: white;
+          margin-right: 8px;
+          flex-shrink: 0;
+        `;
+
+        // Apply styling based on person type
         if (person.isNew) {
+          // NEW person styling (bright and attention-grabbing)
           avatar.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%)';
           avatar.style.border = '2px solid #ffeb3b';
           avatar.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.5)';
+        } else {
+          // EXISTING person styling (consistent with constellation)
+          avatar.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+          avatar.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+          avatar.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
         }
 
         // Try to load person's avatar if they have one (existing people)
@@ -6562,7 +6583,8 @@ RULES:
           // Method 2: If we're on dashboard, navigate to constellation 
           else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
             console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
-            window.location.href = 'pages/memories.html?view=constellation';
+            // Force constellation view with full URL to prevent redirect confusion
+            window.location.href = window.location.origin + '/pages/memories.html?view=constellation';
           }
           // Method 3: Dispatch event for constellation to listen
           else {
