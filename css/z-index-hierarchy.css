@@ -268,21 +268,37 @@ body:has(.edit-memory-modal) .memories-container {
    BUTTON COLOR FIXES - Emma UX
 ============================================================================= */
 
-/* CRITICAL FIX: Add Person button needs white text for readability */
+/* CRITICAL FIX: Add Person button needs white background for visibility */
 button[style*="background: #8658ff"],
 button[style*="background:#8658ff"],
 .add-person-btn,
 button:contains("Add Person") {
-  color: white !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  background: white !important;
+  color: #8658ff !important;
+  border: 2px solid #8658ff !important;
+  font-weight: 600 !important;
+  text-shadow: none !important;
 }
 
 /* Fix dashed border add person buttons */
 .add-person-placeholder,
 .person-add-button,
 [style*="border: 2px dashed"] {
-  color: white !important;
-  opacity: 0.9 !important;
+  background: white !important;
+  color: #8658ff !important;
+  border: 2px dashed #8658ff !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+/* Target any button with "Add" text for extra coverage */
+button[title*="Add"],
+button[aria-label*="Add"],
+*[onclick*="addPerson"] {
+  background: white !important;
+  color: #8658ff !important;
+  border: 2px solid #8658ff !important;
+  font-weight: 600 !important;
 }
 
 /* =============================================================================
