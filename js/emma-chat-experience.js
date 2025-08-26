@@ -5084,10 +5084,16 @@ RULES:
       console.log('👥 Found avatars container:', avatarsContainer);
 
       // Get people connected to this memory
+      console.log('👥 AVATAR DEBUG: Memory metadata:', memory.metadata);
+      console.log('👥 AVATAR DEBUG: People in memory:', memory.metadata?.people);
+      
       if (!memory.metadata?.people?.length) {
+        console.warn('👥 AVATAR DEBUG: No people found in memory metadata');
         avatarsContainer.innerHTML = '<span style="color: #888;">No people connected</span>';
         return;
       }
+      
+      console.log('👥 AVATAR DEBUG: Will create avatars for', memory.metadata.people.length, 'people');
 
       // Load people data from vault
       if (!window.emmaWebVault?.isOpen || !window.emmaWebVault.vaultData) {
