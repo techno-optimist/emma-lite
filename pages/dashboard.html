@@ -4657,32 +4657,66 @@
           existingModal.remove();
         }
 
-        // Get connected memories (same logic as before)
+        // 🔍 SHERLOCK DEBUG: Get connected memories with detailed logging
         let connectedMemories = [];
         try {
-          if (window.emmaWebVault && window.emmaWebVault.vaultData?.content?.memories) {
-            const vaultMemories = window.emmaWebVault.vaultData.content.memories;
+          console.log('🔍 CONSTELLATION DEBUG: Starting memory connection check for person:', person);
+          console.log('🔍 Vault state:', {
+            hasEmmaWebVault: !!window.emmaWebVault,
+            isOpen: window.emmaWebVault?.isOpen,
+            hasVaultData: !!window.emmaWebVault?.vaultData,
+            hasContent: !!window.emmaWebVault?.vaultData?.content,
+            hasMemories: !!window.emmaWebVault?.vaultData?.content?.memories
+          });
+
+          // Use same logic as people-emma.html: check vault is open
+          if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+            console.warn('⚠️ CONSTELLATION: Vault not open, cannot load memories');
+            return;
+          }
+
+          const vaultData = window.emmaWebVault.vaultData;
+          if (!vaultData || !vaultData.content || !vaultData.content.memories) {
+            console.warn('⚠️ CONSTELLATION: No memories found in vault data structure');
+            return;
+          }
+
+          const vaultMemories = vaultData.content.memories;
+          console.log('🔍 Total memories in vault:', Object.keys(vaultMemories).length);
+          
+          for (const [memoryId, memory] of Object.entries(vaultMemories)) {
+            console.log(`🔍 Checking memory ${memoryId}:`, {
+              hasMetadata: !!memory.metadata,
+              hasPeople: !!memory.metadata?.people,
+              peopleArray: memory.metadata?.people,
+              searchingForPersonId: person.id
+            });
+
+            // Check if person is in memory's people metadata
+            if (memory.metadata && memory.metadata.people && 
+                Array.isArray(memory.metadata.people) && 
+                memory.metadata.people.includes(person.id)) {
+              console.log('✅ Found person in memory metadata:', memoryId);
+              connectedMemories.push({ ...memory, id: memoryId });
+            }
             
-            for (const [memoryId, memory] of Object.entries(vaultMemories)) {
-              if (memory.metadata && memory.metadata.people && 
-                  Array.isArray(memory.metadata.people) && 
-                  memory.metadata.people.includes(person.id)) {
-                connectedMemories.push({ ...memory, id: memoryId });
-              }
-              
-              if (person.name && memory.content) {
-                const personName = person.name.toLowerCase();
-                const memoryContent = memory.content.toLowerCase();
-                if (memoryContent.includes(personName)) {
-                  if (!connectedMemories.find(m => m.id === memoryId)) {
-                    connectedMemories.push({ ...memory, id: memoryId });
-                  }
+            // Also check if person's name is mentioned in content
+            if (person.name && memory.content) {
+              const personName = person.name.toLowerCase();
+              const memoryContent = memory.content.toLowerCase();
+              if (memoryContent.includes(personName)) {
+                console.log('✅ Found person name in memory content:', memoryId);
+                // Avoid duplicates
+                if (!connectedMemories.find(m => m.id === memoryId)) {
+                  connectedMemories.push({ ...memory, id: memoryId });
                 }
               }
             }
           }
+
+          console.log(`🔗 CONSTELLATION FINAL: Found ${connectedMemories.length} memories for person ${person.id}:`, connectedMemories);
         } catch (error) {
-          console.error('👤 UNIFIED: Error loading memories:', error);
+          console.error('❌ CONSTELLATION: Error loading memories:', error);
         }
 
         // Create the people-emma.html style person modal
