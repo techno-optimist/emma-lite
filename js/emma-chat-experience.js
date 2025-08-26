@@ -5091,8 +5091,8 @@ RULES:
    */
   async createCapsulePeopleAvatars(memory) {
     try {
-      console.log('👥 Looking for avatars container:', `capsule-people-${memory.id}`);
-      const avatarsContainer = document.getElementById(`capsule-people-${memory.id}`);
+      console.log('👥 Looking for avatars container:', `people-grid-${memory.id}`);
+      const avatarsContainer = document.getElementById(`people-grid-${memory.id}`);
       if (!avatarsContainer) {
         console.warn('👥 Avatars container not found for memory:', memory.id);
         console.log('👥 Available elements:', document.querySelectorAll('[id*="capsule"]'));
@@ -6549,6 +6549,34 @@ RULES:
         // Close any preview dialogs
         const dialogs = document.querySelectorAll('.memory-preview-dialog');
         dialogs.forEach(dialog => dialog.remove());
+        
+        // 🌟 CRITICAL: Refresh constellation IMMEDIATELY after memory save
+        setTimeout(() => {
+          console.log('🔄 EMMA CHAT: Forcing constellation refresh after memory save');
+          
+          // Method 1: If we're on memories page, directly refresh constellation
+          if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
+            console.log('🔄 EMMA CHAT: Calling loadConstellationView() directly');
+            window.loadConstellationView();
+          }
+          // Method 2: If we're on dashboard, navigate to constellation 
+          else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
+            console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
+            window.location.href = 'pages/memories.html?view=constellation';
+          }
+          // Method 3: Dispatch event for constellation to listen
+          else {
+            console.log('🔄 EMMA CHAT: Dispatching memory added event for constellation');
+            window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+              detail: { 
+                action: 'refresh_constellation',
+                source: 'emma_chat',
+                memoryId: memoryId,
+                timestamp: new Date().toISOString()
+              }
+            }));
+          }
+        }, 500);
         
       } else {
         throw new Error(result.error || 'Failed to save memory');
