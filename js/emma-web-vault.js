@@ -1138,26 +1138,34 @@ class EmmaWebVault {
       }
       
     } else if (hasFileSystemAccess && !this.fileHandle) {
-      // 🚨 CRITICAL: Try to restore file handle first
-      console.warn('⛔ CRITICAL: No file handle - attempting restoration...');
+      // 🔄 GRACEFUL: No file handle - save to IndexedDB and defer file save
+      console.warn('⚠️ GRACEFUL: No file handle - saving to IndexedDB, will prompt for file access on next user interaction');
       
+      // Save to IndexedDB immediately as backup
       try {
-        const restored = await this.reEstablishFileAccess();
-        // If successful, retry save
-        if (restored && this.fileHandle) {
-          console.log('✅ File handle restored - retrying save');
-          return await this.autoSave();
+        await this.saveToIndexedDB();
+        console.log('✅ GRACEFUL: Saved to IndexedDB backup');
+        
+        // Mark that we need file re-authentication 
+        this.needsFileReauth = true;
+        
+        // Show gentle notification (not blocking error)
+        if (window.emmaSyncStatus) {
+          window.emmaSyncStatus.show('warning', 'Changes saved locally - will sync to .emma file when ready');
         }
-      } catch (restoreError) {
-        console.error('❌ File handle restoration failed:', restoreError);
+        
+        // Don't throw error - allow operation to continue
+        return;
+        
+      } catch (indexedDBError) {
+        console.error('❌ GRACEFUL: IndexedDB backup also failed:', indexedDBError);
+        
+        // Only now show error since both methods failed
+        if (window.emmaSyncStatus) {
+          window.emmaSyncStatus.show('error', 'Cannot save changes - storage unavailable');
+        }
+        throw new Error('CRITICAL: Cannot save to any storage method');
       }
-      
-      // 🚨 CRITICAL: Cannot save to .emma file - BLOCK THE OPERATION
-      if (window.emmaSyncStatus) {
-        window.emmaSyncStatus.show('error', '.emma file access lost');
-      }
-      this.showFileSyncError();
-      throw new Error('CRITICAL: Cannot save to .emma file - file access lost');
       
     } else {
       // 🔄 FALLBACK: File System Access API not supported
@@ -1246,13 +1254,30 @@ class EmmaWebVault {
       // Generate encrypted vault data
       const encryptedData = await this.encryptVaultData();
 
-      // Perform atomic write
+      // Perform atomic write with handle preservation
       const writable = await this.fileHandle.createWritable({ keepExistingData: false });
       await writable.write(encryptedData);
       await writable.close(); // Atomic commit
+      
+      // CRITICAL: Verify file handle is still valid after write
+      try {
+        // Test handle validity by attempting to get file info
+        await this.fileHandle.getFile();
+        console.log('✅ ATOMIC: File handle preserved after write');
+      } catch (handleError) {
+        console.warn('⚠️ ATOMIC: File handle invalidated after write, will need re-auth:', handleError);
+        // Don't throw - just log for debugging
+      }
 
     } catch (error) {
       console.error('❌ ATOMIC: File update failed:', error);
+      
+      // If write failed, check if it's a handle issue
+      if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
+        console.warn('⚠️ ATOMIC: Permission denied - file handle may be invalid');
+        this.fileHandle = null; // Clear invalid handle
+      }
+      
       throw error;
     }
   }
