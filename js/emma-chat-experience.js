@@ -5258,330 +5258,12 @@ RULES:
     }
   }
 
-  /**
-   * SHERLOCK NUCLEAR OPTION: Zero-dependency modal with guaranteed scroll
-   */
-  createNuclearEditModal(memoryId) {
-    // Get memory data
-    let memory = this.temporaryMemories.get(memoryId);
-    if (!memory && window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
-      const memories = window.emmaWebVault.vaultData.content.memories || {};
-      memory = memories[memoryId];
-    }
-    
-    if (!memory) {
-      alert('Memory not found!');
-      return;
-    }
-    
-    // Remove ALL existing modals
-    document.querySelectorAll('.memory-preview-dialog, .memory-edit-modal, .memory-modal').forEach(el => el.remove());
-    
-    // Create nuclear modal with ZERO CSS dependencies
-    const nuclear = document.createElement('div');
-    nuclear.id = 'nuclear-edit-modal';
-    
-    // NUCLEAR STYLING - completely isolated
-    const nuclearCSS = `
-      #nuclear-edit-modal {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        z-index: 999999 !important;
-        background: rgba(0, 0, 0, 0.9) !important;
-        display: block !important;
-        padding: 10vh 5vw !important;
-        overflow: hidden !important;
-      }
-      
-      #nuclear-content {
-        background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
-        border-radius: 20px !important;
-        padding: 30px !important;
-        width: 90vw !important;
-        max-width: 600px !important;
-        max-height: 80vh !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        color: white !important;
-        position: relative !important;
-        scrollbar-width: thin !important;
-        box-sizing: border-box !important;
-        display: block !important;
-        margin: 0 auto !important;
-      }
-      
-      #nuclear-content::-webkit-scrollbar {
-        width: 8px !important;
-      }
-      
-      #nuclear-content::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.1) !important;
-      }
-      
-      #nuclear-content::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.3) !important;
-        border-radius: 4px !important;
-      }
-    `;
-    
-    // Inject CSS
-    const style = document.createElement('style');
-    style.textContent = nuclearCSS;
-    document.head.appendChild(style);
-    
-    nuclear.innerHTML = `
-      <div id="nuclear-content">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-          <h2>🚨 NUCLEAR EDIT MODAL</h2>
-          <button onclick="document.getElementById('nuclear-edit-modal').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; border-radius: 50%; cursor: pointer;">×</button>
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 10px; font-weight: bold;">Title:</label>
-          <input type="text" value="${memory.metadata?.title || memory.title || ''}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; background: rgba(255,255,255,0.1); color: white;">
-        </div>
-        
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 10px; font-weight: bold;">Content:</label>
-          <textarea style="width: 100%; height: 200px; padding: 10px; border: none; border-radius: 5px; background: rgba(255,255,255,0.1); color: white; resize: none;">${memory.content || ''}</textarea>
-        </div>
-        
-        <!-- MASSIVE SCROLL TEST CONTENT -->
-        <div style="margin-bottom: 20px;">
-          <h3>📜 MASSIVE SCROLL TEST</h3>
-          <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 10px 0;">
-            <p><strong>🧪 DEBUG INFO:</strong></p>
-            <p>Container Height: 80vh (should be ~${Math.round(window.innerHeight * 0.8)}px)</p>
-            <p>Content Height: Much larger than container</p>
-            <p>Expected: Scrollbar should appear and work</p>
-          </div>
-          
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 1:</strong> This is the beginning of extensive test content...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 2:</strong> More content to force scrolling behavior...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 3:</strong> Each line has substantial height and content...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 4:</strong> Testing scroll functionality thoroughly...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 5:</strong> Content continues with more test data...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 6:</strong> Additional content for scroll testing...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 7:</strong> More scrollable content appears here...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 8:</strong> Continuing with extensive test content...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 9:</strong> Even more content to test scrolling...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 10:</strong> Additional test content continues...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 11:</strong> More content for comprehensive testing...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 12:</strong> Extensive content to force overflow...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 13:</strong> Testing continues with more content...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 14:</strong> Additional scrollable test content...</p>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
-            <p><strong>Line 15:</strong> Final extensive test line!</p>
-          </div>
-          
-          <div style="background: rgba(255,0,0,0.2); padding: 15px; border-radius: 10px; margin: 10px 0;">
-            <p><strong>🎯 SCROLL INDICATOR:</strong></p>
-            <p>If you can see this red box, scrolling is working!</p>
-            <p>This should only be visible after scrolling down.</p>
-          </div>
-        </div>
-        
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-          <button onclick="document.getElementById('nuclear-edit-modal').remove()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Cancel</button>
-          <button style="background: rgba(255,255,255,0.9); border: none; color: #8b5cf6; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">Save Changes</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(nuclear);
-    
-    // 🚨 CRITICAL: Block ALL scroll events from reaching background
-    const blockScroll = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    };
-    
-    // Add scroll event blockers to the overlay
-    nuclear.addEventListener('wheel', blockScroll, { passive: false, capture: true });
-    nuclear.addEventListener('scroll', blockScroll, { passive: false, capture: true });
-    nuclear.addEventListener('touchmove', blockScroll, { passive: false, capture: true });
-    
-    // But allow scroll ONLY on the content area
-    const content = nuclear.querySelector('#nuclear-content');
-    content.addEventListener('wheel', (e) => {
-      e.stopPropagation(); // Don't let it bubble to overlay
-    }, { passive: false, capture: false });
-    
-    console.log('🚨 NUCLEAR: Event isolation deployed!');
-    
-    // 🔍 VISUAL DEBUG: Bypass Emma Logger with visual debug overlay
-    setTimeout(() => {
-      const debugInfo = {
-        clientHeight: content.clientHeight,
-        scrollHeight: content.scrollHeight,
-        offsetHeight: content.offsetHeight,
-        canScroll: content.scrollHeight > content.clientHeight,
-        overflowY: window.getComputedStyle(content).overflowY,
-        position: window.getComputedStyle(content).position,
-        display: window.getComputedStyle(content).display,
-        boxSizing: window.getComputedStyle(content).boxSizing
-      };
-      
-      // Create visual debug overlay
-      const debugOverlay = document.createElement('div');
-      debugOverlay.style.cssText = `
-        position: fixed !important;
-        top: 10px !important;
-        right: 10px !important;
-        background: rgba(0, 0, 0, 0.9) !important;
-        color: lime !important;
-        padding: 15px !important;
-        border-radius: 10px !important;
-        font-family: monospace !important;
-        font-size: 12px !important;
-        z-index: 999999 !important;
-        max-width: 300px !important;
-        border: 2px solid lime !important;
-      `;
-      
-      const scrollStatus = debugInfo.canScroll ? 
-        `✅ CAN SCROLL (${debugInfo.scrollHeight - debugInfo.clientHeight}px overflow)` : 
-        `❌ CANNOT SCROLL (no overflow)`;
-      
-      debugOverlay.innerHTML = `
-        <div><strong>🔍 NUCLEAR DEBUG</strong></div>
-        <div>Status: ${scrollStatus}</div>
-        <div>Client Height: ${debugInfo.clientHeight}px</div>
-        <div>Scroll Height: ${debugInfo.scrollHeight}px</div>
-        <div>Overflow-Y: ${debugInfo.overflowY}</div>
-        <div>Position: ${debugInfo.position}</div>
-        <div>Display: ${debugInfo.display}</div>
-        <div>Box-Sizing: ${debugInfo.boxSizing}</div>
-        <button onclick="this.parentElement.remove()" style="margin-top: 10px; background: lime; color: black; border: none; padding: 5px;">Close</button>
-      `;
-      
-      document.body.appendChild(debugOverlay);
-      
-      // Also try to force scroll programmatically
-      content.scrollTop = 50;
-      setTimeout(() => {
-        if (content.scrollTop === 50) {
-          debugOverlay.innerHTML += '<div style="color: yellow;">⚡ PROGRAMMATIC SCROLL: Working!</div>';
-        } else {
-          debugOverlay.innerHTML += '<div style="color: red;">❌ PROGRAMMATIC SCROLL: Blocked!</div>';
-        }
-      }, 100);
-      
-    }, 100);
-    
-    // 🚨 CRITICAL: Completely disable body scroll
-    const originalOverflow = document.body.style.overflow;
-    const originalPosition = document.body.style.position;
-    
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    
-    // Restore body scroll when modal closes
-    const restoreBodyScroll = () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.position = originalPosition;
-      document.body.style.width = '';
-      document.body.style.height = '';
-    };
-    
-    // Add restore to close buttons
-    nuclear.querySelectorAll('button').forEach(btn => {
-      if (btn.onclick && btn.onclick.toString().includes('remove()')) {
-        const originalClick = btn.onclick;
-        btn.onclick = () => {
-          restoreBodyScroll();
-          originalClick();
-        };
-      }
-    });
-  }
 
-  /**
-   * SHERLOCK: Test scroll functionality first
-   */
-  testScrollModal() {
-    const testModal = document.createElement('div');
-    testModal.style.cssText = `
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      z-index: 20000 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      background: rgba(255, 0, 0, 0.8) !important;
-    `;
-    
-    testModal.innerHTML = `
-      <div style="
-        background: white;
-        padding: 20px;
-        max-width: 400px;
-        max-height: 300px;
-        overflow-y: auto !important;
-        border: 3px solid blue;
-      ">
-        <h3>SCROLL TEST</h3>
-        <p>Line 1</p><p>Line 2</p><p>Line 3</p><p>Line 4</p><p>Line 5</p>
-        <p>Line 6</p><p>Line 7</p><p>Line 8</p><p>Line 9</p><p>Line 10</p>
-        <p>Line 11</p><p>Line 12</p><p>Line 13</p><p>Line 14</p><p>Line 15</p>
-        <p>Line 16</p><p>Line 17</p><p>Line 18</p><p>Line 19</p><p>Line 20</p>
-        <button onclick="this.parentElement.parentElement.remove()">Close Test</button>
-      </div>
-    `;
-    
-    document.body.appendChild(testModal);
-    return; // Exit early for testing
-  }
 
   /**
    * Edit memory details with proper modal
    */
   editMemoryDetails(memoryId) {
-    // 🚨 SHERLOCK NUCLEAR OPTION: Completely bypass all CSS conflicts
-    this.createNuclearEditModal(memoryId);
-    return;
-    
-    // SHERLOCK: Run scroll test first
-    // this.testScrollModal();
-    // return;
     // 🎯 CRITICAL FIX: Check temporary memories first (for preview editing)
     let memory = this.temporaryMemories.get(memoryId);
     
@@ -5795,6 +5477,27 @@ RULES:
     `;
 
     document.body.appendChild(editModal);
+
+    // 🛡️ CRITICAL: Add scroll event isolation (learned from nuclear testing)
+    const blockBackgroundScroll = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    };
+
+    // Block scroll events on the overlay but allow them on content
+    editModal.addEventListener('wheel', blockBackgroundScroll, { passive: false, capture: true });
+    editModal.addEventListener('scroll', blockBackgroundScroll, { passive: false, capture: true });
+    editModal.addEventListener('touchmove', blockBackgroundScroll, { passive: false, capture: true });
+
+    // Allow scroll on the content area
+    const content = editModal.querySelector('.edit-modal-content');
+    if (content) {
+      content.addEventListener('wheel', (e) => {
+        e.stopPropagation(); // Don't let it bubble to overlay
+      }, { passive: false, capture: false });
+    }
 
     // Add event listeners
     const titleInput = editModal.querySelector('.edit-title-input');
