@@ -37,8 +37,8 @@ class EmmaIntelligentCapture {
     // Normalized decision thresholds for the new MemoryWorthinessEngine (0..1 scale)
     // LOWERED for better sensitivity - Emma should catch more memories
     this.thresholdsNormalized = {
-      memoryWorthy: 0.25,   // maximum sensitivity for Debbe
-      autoCapture: 0.55     // easier auto-capture
+      memoryWorthy: 0.25,   // maximum sensitivity for Debbe  
+      autoCapture: 0.35     // LOWERED: "hike with eric and mark" should auto-capture
     };
     
     // Conversation state
@@ -515,17 +515,32 @@ class EmmaIntelligentCapture {
     });
     score += Math.min(0.25, temporalHits * 0.08); // Up to 0.25 for strong temporal
 
-    // Event/story indicators (NEW)
+    // Event/story indicators (ENHANCED for activities)
     const eventPatterns = [
       /\b(fell|hit|hurt|accident|happened|story|time|moment)\b/i,
-      /\b(climbing|playing|running|walking|going)\b/i,
+      /\b(climbing|playing|running|walking|going|went)\b/i,
       /\b(tree|house|park|hospital|doctor)\b/i
     ];
+    
+    // Activity patterns (NEW - boost for activities like "hike")
+    const activityPatterns = [
+      /\b(hike|hiking|walk|trip|visit|adventure|outing)\b/i,
+      /\b(beach|mountain|restaurant|movie|concert|party)\b/i,
+      /\b(traveled|drove|flew|sailed|rode)\b/i,
+      /\b(dinner|lunch|breakfast|meal|coffee)\b/i
+    ];
+    
     let eventHits = 0;
     eventPatterns.forEach(pattern => {
       if (pattern.test(content)) eventHits++;
     });
     score += Math.min(0.15, eventHits * 0.05); // Up to 0.15 for events
+    
+    let activityHits = 0;
+    activityPatterns.forEach(pattern => {
+      if (pattern.test(content)) activityHits++;
+    });
+    score += Math.min(0.20, activityHits * 0.10); // Up to 0.20 for activities
 
     // Length bonus (reasonable stories)
     const len = content.length;
@@ -560,7 +575,19 @@ class EmmaIntelligentCapture {
       }
     }
 
-    // Heuristics calculation complete (debug disabled for production)
+    // Heuristics calculation complete 
+    if (this.options.debug) {
+      console.log(`🎯 HEURISTICS SCORE BREAKDOWN for "${content.substring(0, 50)}...":`, {
+        firstPersonBonus: firstPersonMatches.length > 0 ? Math.min(0.40, 0.35 + (firstPersonMatches.length - 1) * 0.05) : 0,
+        pastTenseBonus: Math.min(0.25, pastTenseHits * 0.08),
+        temporalBonus: Math.min(0.25, temporalHits * 0.08),
+        eventBonus: Math.min(0.15, eventHits * 0.05),
+        activityBonus: Math.min(0.20, activityHits * 0.10),
+        lengthBonus: (content.length > 50 ? 0.10 : 0) + (content.length > 20 ? 0.05 : 0),
+        intentBonus: intentHits > 0 ? 0.30 : 0,
+        finalScore: this.clamp01(score)
+      });
+    }
 
     return this.clamp01(score);
   }
