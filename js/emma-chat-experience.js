@@ -5304,11 +5304,13 @@ RULES:
         width: 90vw !important;
         max-width: 600px !important;
         height: 80vh !important;
-        overflow-y: scroll !important;
+        overflow-y: auto !important;
         overflow-x: hidden !important;
         color: white !important;
         position: relative !important;
         scrollbar-width: thin !important;
+        box-sizing: border-box !important;
+        display: block !important;
       }
       
       #nuclear-content::-webkit-scrollbar {
@@ -5347,19 +5349,67 @@ RULES:
           <textarea style="width: 100%; height: 200px; padding: 10px; border: none; border-radius: 5px; background: rgba(255,255,255,0.1); color: white; resize: none;">${memory.content || ''}</textarea>
         </div>
         
-        <!-- SCROLL TEST CONTENT -->
+        <!-- MASSIVE SCROLL TEST CONTENT -->
         <div style="margin-bottom: 20px;">
-          <h3>📜 SCROLL TEST SECTION</h3>
-          <p>Test Line 1 - If you can scroll through this content, the modal works!</p>
-          <p>Test Line 2 - Keep scrolling to see more...</p>
-          <p>Test Line 3 - This should be scrollable content...</p>
-          <p>Test Line 4 - More content to test scrolling...</p>
-          <p>Test Line 5 - Even more content...</p>
-          <p>Test Line 6 - Content continues...</p>
-          <p>Test Line 7 - More scrollable content...</p>
-          <p>Test Line 8 - Keep testing the scroll...</p>
-          <p>Test Line 9 - Almost at the end...</p>
-          <p>Test Line 10 - Final test line!</p>
+          <h3>📜 MASSIVE SCROLL TEST</h3>
+          <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 10px 0;">
+            <p><strong>🧪 DEBUG INFO:</strong></p>
+            <p>Container Height: 80vh (should be ~${Math.round(window.innerHeight * 0.8)}px)</p>
+            <p>Content Height: Much larger than container</p>
+            <p>Expected: Scrollbar should appear and work</p>
+          </div>
+          
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 1:</strong> This is the beginning of extensive test content...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 2:</strong> More content to force scrolling behavior...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 3:</strong> Each line has substantial height and content...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 4:</strong> Testing scroll functionality thoroughly...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 5:</strong> Content continues with more test data...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 6:</strong> Additional content for scroll testing...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 7:</strong> More scrollable content appears here...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 8:</strong> Continuing with extensive test content...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 9:</strong> Even more content to test scrolling...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 10:</strong> Additional test content continues...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 11:</strong> More content for comprehensive testing...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 12:</strong> Extensive content to force overflow...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 13:</strong> Testing continues with more content...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 14:</strong> Additional scrollable test content...</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.05); padding: 10px; margin: 5px 0;">
+            <p><strong>Line 15:</strong> Final extensive test line!</p>
+          </div>
+          
+          <div style="background: rgba(255,0,0,0.2); padding: 15px; border-radius: 10px; margin: 10px 0;">
+            <p><strong>🎯 SCROLL INDICATOR:</strong></p>
+            <p>If you can see this red box, scrolling is working!</p>
+            <p>This should only be visible after scrolling down.</p>
+          </div>
         </div>
         
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
@@ -5391,6 +5441,33 @@ RULES:
     }, { passive: false, capture: false });
     
     console.log('🚨 NUCLEAR: Event isolation deployed!');
+    
+    // 🔍 DEBUG: Check scroll container properties
+    setTimeout(() => {
+      const debugInfo = {
+        contentElement: content,
+        clientHeight: content.clientHeight,
+        scrollHeight: content.scrollHeight,
+        offsetHeight: content.offsetHeight,
+        computedStyle: window.getComputedStyle(content),
+        canScroll: content.scrollHeight > content.clientHeight,
+        overflowY: window.getComputedStyle(content).overflowY,
+        position: window.getComputedStyle(content).position,
+        display: window.getComputedStyle(content).display
+      };
+      
+      console.log('🔍 NUCLEAR DEBUG:', debugInfo);
+      
+      if (!debugInfo.canScroll) {
+        console.error('❌ SCROLL ISSUE: Content height not exceeding container!', {
+          contentHeight: debugInfo.scrollHeight,
+          containerHeight: debugInfo.clientHeight,
+          difference: debugInfo.scrollHeight - debugInfo.clientHeight
+        });
+      } else {
+        console.log('✅ SCROLL READY: Content overflows container by', debugInfo.scrollHeight - debugInfo.clientHeight, 'px');
+      }
+    }, 100);
     
     // 🚨 CRITICAL: Completely disable body scroll
     const originalOverflow = document.body.style.overflow;
