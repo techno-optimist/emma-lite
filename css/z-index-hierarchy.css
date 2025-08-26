@@ -96,20 +96,31 @@
 }
 
 /* =============================================================================
-   MODALS & DIALOGS (3000-3999)
+   MODALS & DIALOGS (3000-3999, 10000+ for constellation)
 ============================================================================= */
 
-/* CRITICAL FIX: Memory detail modal proper layering */
+/* CRITICAL FIX: Constellation memory modal proper layering */
+.memory-preview-dialog.constellation,
+.memory-preview-dialog.responsive {
+  z-index: 10000 !important;
+}
+
 .memory-modal {
-  z-index: 3000 !important;
+  z-index: 10000 !important;
 }
 
 .memory-detail-overlay {
-  z-index: 2999 !important; /* Just behind the modal content */
+  z-index: 9999 !important; /* Just behind the modal content */
 }
 
 .memory-detail-content {
-  z-index: 3001 !important; /* Above the overlay */
+  z-index: 10001 !important; /* Above the overlay */
+}
+
+/* Constellation modal content container */
+.responsive-memory-container {
+  z-index: 10001 !important;
+  position: relative !important;
 }
 
 /* Other modals in proper hierarchy */
@@ -177,28 +188,31 @@
 }
 
 /* =============================================================================
-   SCROLL AND INTERACTION FIXES
+   SCROLL AND INTERACTION FIXES - CRITICAL FOR CONSTELLATION
 ============================================================================= */
 
-/* Ensure modal content can scroll properly */
+/* CRITICAL: Ensure constellation modal content can scroll properly */
+.memory-preview-dialog.constellation .responsive-memory-container,
+.memory-preview-dialog.responsive .responsive-memory-container,
 .memory-detail-body,
 .modal-scrollable-content {
   position: relative !important;
-  z-index: auto !important; /* Let it inherit from parent */
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
+  /* CRITICAL: Ensure scrolling works */
+  pointer-events: auto !important;
+  z-index: 10001 !important;
 }
 
 /* Prevent constellation interference with modal scrolling */
-.memory-modal.show {
+.memory-modal,
+.memory-preview-dialog.constellation,
+.memory-preview-dialog.responsive {
   pointer-events: auto !important;
+  overflow: hidden !important; /* Prevent body scroll */
 }
 
-.memory-modal.show .memory-detail-content {
-  pointer-events: auto !important;
-}
-
-/* Ensure constellation doesn't capture scroll events over modals */
+/* CRITICAL: Disable constellation canvas when modal is open */
 .memories-container canvas {
   pointer-events: none !important;
 }
@@ -207,9 +221,21 @@
   pointer-events: auto !important;
 }
 
-/* When modal is open, disable constellation interactions */
-body.modal-open .memories-container canvas {
+/* When modal is open, COMPLETELY disable constellation interactions */
+body.modal-open .memories-container,
+body.modal-open .memories-container canvas,
+body.modal-open .memories-container * {
   pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+/* CRITICAL: Force constellation to ignore all events when modal exists */
+.memory-preview-dialog.constellation ~ .memories-container,
+.memory-preview-dialog.responsive ~ .memories-container,
+.memory-modal ~ .memories-container {
+  pointer-events: none !important;
+  user-select: none !important;
+  touch-action: none !important;
 }
 
 /* =============================================================================

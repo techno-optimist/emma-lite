@@ -4190,6 +4190,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMemories();
   }
 
+  // 🌟 CRITICAL: Listen for new content events to auto-refresh constellation
+  window.addEventListener('emmaMemoryAdded', (event) => {
+    console.log('🌟 CONSTELLATION: Memory added event received, refreshing...');
+    if (isConstellation || window.location.search.includes('constellation')) {
+      setTimeout(() => loadConstellationView(), 500);
+    }
+  });
+
+  window.addEventListener('emmaPersonAdded', (event) => {
+    console.log('🌟 CONSTELLATION: Person added event received, refreshing...');
+    if (isConstellation || window.location.search.includes('constellation')) {
+      setTimeout(() => loadConstellationView(), 500);
+    }
+  });
+
   // Set up event listeners
   const searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.addEventListener('input', filterMemories);

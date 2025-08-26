@@ -882,6 +882,11 @@ async function addPerson(event) {
     // Refresh display
     displayPeople();
 
+    // 🌟 CRITICAL: Refresh constellation if user came from there
+    setTimeout(() => {
+      refreshConstellationAfterPersonAdd();
+    }, 500);
+
     // Close modal after delay
     setTimeout(() => {
       closeAddPersonModal();
@@ -904,6 +909,31 @@ async function addPerson(event) {
       submitButton.textContent = 'Add Person';
       submitButton.disabled = false;
     }
+  }
+}
+
+/**
+ * 🌟 REFRESH CONSTELLATION AFTER PERSON ADD
+ * Ensure new person appears immediately in constellation
+ */
+function refreshConstellationAfterPersonAdd() {
+  console.log('🌟 PEOPLE PAGE: Refreshing constellation after person add');
+  
+  // Method 1: If constellation view function is available, call it
+  if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
+    console.log('🌟 PEOPLE PAGE: Calling loadConstellationView() after person add');
+    window.loadConstellationView();
+  }
+  // Method 2: Dispatch event for constellation to listen
+  else {
+    console.log('🌟 PEOPLE PAGE: Dispatching person added event for constellation');
+    window.dispatchEvent(new CustomEvent('emmaPersonAdded', {
+      detail: { 
+        action: 'refresh_constellation',
+        source: 'people_page',
+        timestamp: new Date().toISOString()
+      }
+    }));
   }
 }
 

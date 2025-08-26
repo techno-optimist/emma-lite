@@ -63,6 +63,9 @@ class EmmaModalManager {
   checkForModal(element) {
     const modalSelectors = [
       '.memory-modal',
+      '.memory-preview-dialog', // CRITICAL: Constellation modals
+      '.memory-preview-dialog.constellation',
+      '.memory-preview-dialog.responsive',
       '.slideshow-modal', 
       '.share-modal',
       '.memory-wizard-modal',
@@ -247,7 +250,8 @@ class EmmaModalManager {
    * Get modal type for z-index assignment
    */
   getModalType(modalElement) {
-    if (modalElement.matches('.memory-modal')) return 'memory';
+    if (modalElement.matches('.memory-preview-dialog.constellation, .memory-preview-dialog.responsive')) return 'constellation';
+    if (modalElement.matches('.memory-modal, .memory-preview-dialog')) return 'memory';
     if (modalElement.matches('.slideshow-modal')) return 'slideshow';
     if (modalElement.matches('.share-modal')) return 'share';
     if (modalElement.matches('.memory-wizard-modal')) return 'wizard';
@@ -261,13 +265,14 @@ class EmmaModalManager {
    */
   getZIndexForModalType(type) {
     const zIndexMap = {
-      memory: 3000,
+      constellation: 10000, // CRITICAL: Match constellation modal z-index
+      memory: 10000,
       slideshow: 3100,
       share: 3200, 
       wizard: 3300,
       emma: 4000,
       alert: 4100,
-      default: 3000
+      default: 10000
     };
     
     return zIndexMap[type];

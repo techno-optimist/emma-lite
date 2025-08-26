@@ -2589,6 +2589,11 @@ RULES:
         this.addVaultOperationIndicator(); // Show that this was a core vault operation
         console.log('✅ PERSON ADDED SUCCESSFULLY:', personName);
         
+        // 🌟 CRITICAL: Refresh constellation after adding new person
+        setTimeout(() => {
+          this.refreshConstellationAfterPersonAdd();
+        }, 500);
+        
         // 🤔 GENTLE FOLLOW-UP CONVERSATION
         setTimeout(() => {
           this.startPersonEnrichmentFlow(personName);
@@ -2605,6 +2610,36 @@ RULES:
     } catch (error) {
       console.error('❌ PERSON ADD ERROR:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
+    }
+  }
+
+  /**
+   * 🌟 REFRESH CONSTELLATION AFTER PERSON ADD
+   * Ensure new person appears immediately in constellation
+   */
+  refreshConstellationAfterPersonAdd() {
+    console.log('🌟 EMMA CHAT: Refreshing constellation after person add');
+    
+    // Method 1: If we're on memories page with constellation, directly refresh
+    if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
+      console.log('🌟 EMMA CHAT: Calling loadConstellationView() after person add');
+      window.loadConstellationView();
+    }
+    // Method 2: If we're on people page, refresh people view
+    else if (window.location.pathname.includes('people-emma.html') && window.loadPeople) {
+      console.log('🌟 EMMA CHAT: Refreshing people page after person add');
+      window.loadPeople();
+    }
+    // Method 3: Dispatch event for any listening components
+    else {
+      console.log('🌟 EMMA CHAT: Dispatching person added event');
+      window.dispatchEvent(new CustomEvent('emmaPersonAdded', {
+        detail: { 
+          action: 'refresh_constellation',
+          source: 'emma_chat',
+          timestamp: new Date().toISOString()
+        }
+      }));
     }
   }
 
@@ -6408,6 +6443,7 @@ RULES:
           .filter(name => name.toLowerCase() !== personName.toLowerCase());
           
         console.log('✅ Updated memory with real person ID:', newPerson.id);
+        console.log('💾 FINAL MEMORY PEOPLE:', state.memory.metadata.people);
       }
     } catch (error) {
       console.error('❌ Failed to update memory with real person ID:', error);
@@ -6540,47 +6576,28 @@ RULES:
           setTimeout(() => {
             console.log('🔄 EMMA CHAT: Forcing constellation refresh after memory save');
             
-            // Method 1: Direct dashboard refresh if available
-            if (window.emmaDashboard) {
-              // Force reload memories first
-              if (typeof window.emmaDashboard.loadMemoriesForConstellation === 'function') {
-                window.emmaDashboard.loadMemoriesForConstellation().then(() => {
-                  console.log('🔄 EMMA CHAT: Memories reloaded for constellation');
-                  
-                  // Then enter constellation mode
-                  if (typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
-                    window.emmaDashboard.enterMemoryConstellation();
-                    console.log('🔄 EMMA CHAT: Constellation mode entered with fresh data');
-                  }
-                });
-              } else if (typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
-                // Fallback: just enter constellation
-                window.emmaDashboard.enterMemoryConstellation();
-              }
+            // Method 1: If we're on memories page, directly refresh constellation
+            if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
+              console.log('🔄 EMMA CHAT: Calling loadConstellationView() directly');
+              window.loadConstellationView();
             }
-            
-            // Method 2: Force full page refresh if dashboard not available
+            // Method 2: If we're on dashboard, navigate to constellation 
+            else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
+              console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
+              window.location.href = 'pages/memories.html?view=constellation';
+            }
+            // Method 3: If we're on memories page but constellation function not available, reload with constellation view
+            else if (window.location.pathname.includes('memories.html')) {
+              console.log('🔄 EMMA CHAT: On memories page, forcing constellation view');
+              const currentUrl = new URL(window.location);
+              currentUrl.searchParams.set('view', 'constellation');
+              window.location.href = currentUrl.toString();
+            }
+            // Method 4: Fallback - navigate to constellation from any other page
             else {
-              console.log('🔄 EMMA CHAT: Dashboard not available, triggering manual constellation refresh');
-              
-              // Dispatch custom event to force refresh
-              window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
-                detail: { 
-                  action: 'refresh_constellation',
-                  source: 'emma_chat',
-                  timestamp: new Date().toISOString()
-                }
-              }));
-              
-              // Try to click constellation button as backup
-              const constellationBtn = document.querySelector('[onclick*="enterMemoryConstellation"]') ||
-                                     document.querySelector('[data-action="memories"]') ||
-                                     document.querySelector('.radial-item[data-action="memories"]');
-
-              if (constellationBtn) {
-                constellationBtn.click();
-                console.log('🔄 EMMA CHAT: Clicked constellation button to refresh');
-              }
+              console.log('🔄 EMMA CHAT: Fallback navigation to constellation view');
+              const baseUrl = window.location.origin;
+              window.location.href = baseUrl + '/pages/memories.html?view=constellation';
             }
           }, 500);
         }, 1500);

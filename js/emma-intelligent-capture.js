@@ -272,20 +272,23 @@ class EmmaIntelligentCapture {
     
     // console.log('👥 PEOPLE DEBUG: Raw people detected:', signals.people);
 
-    // CRITICAL FIX: Smart compound name handling without adding compound phrases
-    const compoundPattern = /\b[A-Z][a-z]+ (?:and|&) [A-Z][a-z]+\b/g;
+    // CRITICAL FIX: Smart compound name handling - CASE INSENSITIVE for names
+    const compoundPattern = /\b[A-Za-z][a-z]+ (?:and|&) [A-Za-z][a-z]+\b/g;
     const compoundMatches = content.match(compoundPattern);
     if (compoundMatches) {
-      // console.log('👥 PEOPLE DEBUG: Found compound phrases:', compoundMatches);
+      console.log('👥 PEOPLE DEBUG: Found compound phrases:', compoundMatches);
       compoundMatches.forEach(compound => {
         // Split compound phrases into individual names
         const names = compound.split(/\s+(?:and|&)\s+/);
         names.forEach(name => {
           const trimmed = name.trim();
-          if (trimmed && /^[A-Z][a-z]+$/.test(trimmed)) {
-            // console.log('👥 PEOPLE DEBUG: Individual from compound:', trimmed);
-            if (!signals.people.includes(trimmed)) {
-              signals.people.push(trimmed);
+          // CRITICAL FIX: Accept both capitalized and lowercase names
+          if (trimmed && /^[A-Za-z][a-z]+$/.test(trimmed) && trimmed.length > 2) {
+            // Capitalize first letter for consistency
+            const capitalizedName = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+            console.log('👥 PEOPLE DEBUG: Individual from compound:', capitalizedName);
+            if (!signals.people.includes(capitalizedName)) {
+              signals.people.push(capitalizedName);
               signals.score += 1;
             }
           }
@@ -422,20 +425,27 @@ class EmmaIntelligentCapture {
         
         // console.log(`🔍 PROPER NAMES DEBUG: Word ${w}: "${word}" (first word: ${w === 0})`);
         
-        // Skip first word of sentence to avoid capitalization bias
-        if (w === 0) {
+        // Skip first word of sentence to avoid capitalization bias (unless it's a known name context)
+        const previousWord = w > 0 ? words[w-1].toLowerCase() : '';
+        const isNameContext = ['with', 'and', 'met', 'saw', 'called', 'named'].includes(previousWord);
+        
+        if (w === 0 && !isNameContext) {
           // console.log('🔍 PROPER NAMES DEBUG: Skipping first word:', word);
           continue;
         }
         
+        // CRITICAL FIX: Accept both capitalized and lowercase names in name contexts
         const isProperName = /^[A-Z][a-z'-]{1,}$/.test(word);
-        const isExcluded = excluded.has(word);
+        const isLowercaseName = /^[a-z][a-z'-]{1,}$/.test(word) && isNameContext && word.length > 2;
+        const isExcluded = excluded.has(word) || excluded.has(word.charAt(0).toUpperCase() + word.slice(1));
         
-        // console.log(`🔍 PROPER NAMES DEBUG: "${word}" - Proper format: ${isProperName}, Excluded: ${isExcluded}`);
+        console.log(`🔍 PROPER NAMES DEBUG: "${word}" - Proper: ${isProperName}, Lowercase in context: ${isLowercaseName}, Excluded: ${isExcluded}`);
         
-        if (isProperName && !isExcluded) {
-          names.add(word);
-          // console.log('✅ PROPER NAMES DEBUG: Added name:', word);
+        if ((isProperName || isLowercaseName) && !isExcluded) {
+          // Capitalize first letter for consistency
+          const capitalizedName = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+          names.add(capitalizedName);
+          console.log('✅ PROPER NAMES DEBUG: Added name:', capitalizedName);
         }
       }
     }
