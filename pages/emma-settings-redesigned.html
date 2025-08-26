@@ -317,6 +317,22 @@
     .settings-section:nth-child(2) { animation-delay: 0.1s; }
     .settings-section:nth-child(3) { animation-delay: 0.2s; }
     .settings-section:nth-child(4) { animation-delay: 0.3s; }
+
+    /* High Contrast Mode */
+    body.high-contrast {
+      --emma-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #333333 100%);
+      --emma-glass: rgba(255, 255, 255, 0.2);
+      --emma-border: rgba(255, 255, 255, 0.5);
+      --emma-text: #ffffff;
+    }
+    
+    body.high-contrast .settings-section {
+      border: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    
+    body.high-contrast .toggle-switch .toggle-slider {
+      border: 2px solid rgba(255, 255, 255, 0.7);
+    }
   </style>
 </head>
 <body>
@@ -340,24 +356,29 @@
         🧠 Artificial Intelligence
       </h2>
       <p class="section-description">
-        Configure Emma's AI capabilities for intelligent memory analysis and conversation.
+        Emma's AI works entirely offline using intelligent heuristics to understand conversations, detect memories, and provide helpful responses. No external servers required.
       </p>
       
       <div class="setting-item">
         <div class="setting-label">
-          <strong>OpenAI API Key</strong>
-          <span>Enable advanced AI responses with your OpenAI API key. Emma uses intelligent heuristics if no key is provided.</span>
+          <strong>Memory Detection</strong>
+          <span>Emma automatically recognizes when you're sharing meaningful memories and gently suggests saving them to your vault.</span>
         </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="memory-detection-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
       </div>
-      <input 
-        type="password" 
-        id="api-key-input" 
-        class="api-key-input"
-        placeholder="sk-proj-..." 
-        autocomplete="off"
-      >
-      <div class="help-text">
-        🔒 Your API key is stored locally and never transmitted to our servers
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>People Recognition</strong>
+          <span>Emma identifies names mentioned in conversations and connects them to people in your vault or suggests adding new ones.</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="people-recognition-toggle" checked>
+          <span class="toggle-slider"></span>
+        </label>
       </div>
       
       <div class="setting-item">
@@ -436,41 +457,125 @@
       </div>
     </div>
 
-    <!-- Developer Options -->
+    <!-- Dementia Care & Accessibility -->
     <div class="settings-section">
       <h2 class="section-title">
-        🔧 Developer Options
+        ❤️ Dementia Care & Accessibility
       </h2>
       <p class="section-description">
-        Advanced options for development and debugging.
+        Specialized features designed for users with memory impairment and their caregivers. Emma adapts to provide gentle, supportive interactions.
       </p>
       
       <div class="setting-item">
         <div class="setting-label">
-          <strong>Debug Mode</strong>
-          <span>Show detailed processing information and performance metrics in the console.</span>
+          <strong>Font Size</strong>
+          <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="decrease-font" style="
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">−</button>
+          <span id="font-size-display" style="min-width: 80px; text-align: center; font-weight: 600;">100%</span>
+          <button id="increase-font" style="
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">+</button>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Reduced Motion</strong>
+          <span>Minimize animations and transitions to reduce disorientation. Helpful for users sensitive to visual motion.</span>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" id="debug-mode-toggle" checked>
+          <input type="checkbox" id="reduced-motion-toggle">
           <span class="toggle-slider"></span>
         </label>
       </div>
       
       <div class="setting-item">
         <div class="setting-label">
-          <strong>Browser Compatibility</strong>
-          <span>View detailed browser compatibility information and run diagnostic tests.</span>
+          <strong>High Contrast Mode</strong>
+          <span>Increase color contrast for better visibility. Makes text and interface elements easier to distinguish.</span>
         </div>
-        <button onclick="window.open('../browser-compatibility-test.html', '_blank')" style="
-          background: rgba(255, 255, 255, 0.1);
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          color: white;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: all 0.3s ease;
-        ">Test Compatibility</button>
+        <label class="toggle-switch">
+          <input type="checkbox" id="high-contrast-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Gentle Reminders</strong>
+          <span>Emma uses encouraging language and avoids correcting or contradicting. Based on validation therapy principles.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span>Always Enabled</span>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Repetition Tolerance</strong>
+          <span>Emma patiently handles repeated questions without highlighting repetition. Maintains dignity and reduces anxiety.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span>Always Enabled</span>
+        </div>
+      </div>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Response Pacing</strong>
+          <span>Emma waits 2-3 seconds before responding to reduce pressure and allow processing time.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span>Always Enabled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="settings-section">
+      <h2 class="section-title">
+        ℹ️ System Information
+      </h2>
+      <p class="section-description">
+        Basic system information and compatibility status.
+      </p>
+      
+      <div class="setting-item">
+        <div class="setting-label">
+          <strong>Emma Version</strong>
+          <span>Current version of Emma and compatibility information.</span>
+        </div>
+        <div class="status-indicator">
+          <div class="status-dot active"></div>
+          <span>v1.0 Beta</span>
+        </div>
       </div>
     </div>
 
@@ -500,20 +605,22 @@
           // Load from localStorage
           const saved = localStorage.getItem('emmaSettings');
           this.settings = saved ? JSON.parse(saved) : {
-            apiKey: '',
-            dementiaMode: false,
-            autoCapture: true,
-            debugMode: true
+            memoryDetection: true,
+            peopleRecognition: true,
+            fontSize: 100,
+            reducedMotion: false,
+            highContrast: false
           };
           
           console.log('⚙️ Settings loaded:', this.settings);
         } catch (error) {
           console.error('⚙️ Failed to load settings:', error);
           this.settings = {
-            apiKey: '',
-            dementiaMode: false,
-            autoCapture: true,
-            debugMode: true
+            memoryDetection: true,
+            peopleRecognition: true,
+            fontSize: 100,
+            reducedMotion: false,
+            highContrast: false
           };
         }
       }
@@ -530,11 +637,19 @@
       }
       
       updateUI() {
-        // Update form elements
-        document.getElementById('api-key-input').value = this.settings.apiKey || '';
-        document.getElementById('dementia-mode-toggle').checked = this.settings.dementiaMode || false;
-        document.getElementById('auto-capture-toggle').checked = this.settings.autoCapture !== false;
-        document.getElementById('debug-mode-toggle').checked = this.settings.debugMode !== false;
+        // Update toggle elements
+        const memoryToggle = document.getElementById('memory-detection-toggle');
+        const peopleToggle = document.getElementById('people-recognition-toggle');
+        const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
+        const highContrastToggle = document.getElementById('high-contrast-toggle');
+        
+        if (memoryToggle) memoryToggle.checked = this.settings.memoryDetection !== false;
+        if (peopleToggle) peopleToggle.checked = this.settings.peopleRecognition !== false;
+        if (reducedMotionToggle) reducedMotionToggle.checked = this.settings.reducedMotion || false;
+        if (highContrastToggle) highContrastToggle.checked = this.settings.highContrast || false;
+        
+        // Update font size
+        this.updateFontSize();
         
         // Update AI status
         this.updateAIStatus();
@@ -554,24 +669,53 @@
       }
       
       setupEventListeners() {
-        // API Key input
-        document.getElementById('api-key-input').addEventListener('input', (e) => {
-          this.settings.apiKey = e.target.value.trim();
-          this.updateAIStatus();
-        });
-        
         // Toggle switches
-        document.getElementById('dementia-mode-toggle').addEventListener('change', (e) => {
-          this.settings.dementiaMode = e.target.checked;
-        });
+        const memoryToggle = document.getElementById('memory-detection-toggle');
+        const peopleToggle = document.getElementById('people-recognition-toggle');
+        const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
+        const highContrastToggle = document.getElementById('high-contrast-toggle');
         
-        document.getElementById('auto-capture-toggle').addEventListener('change', (e) => {
-          this.settings.autoCapture = e.target.checked;
-        });
+        if (memoryToggle) {
+          memoryToggle.addEventListener('change', (e) => {
+            this.settings.memoryDetection = e.target.checked;
+          });
+        }
         
-        document.getElementById('debug-mode-toggle').addEventListener('change', (e) => {
-          this.settings.debugMode = e.target.checked;
-        });
+        if (peopleToggle) {
+          peopleToggle.addEventListener('change', (e) => {
+            this.settings.peopleRecognition = e.target.checked;
+          });
+        }
+        
+        if (reducedMotionToggle) {
+          reducedMotionToggle.addEventListener('change', (e) => {
+            this.settings.reducedMotion = e.target.checked;
+            this.applyAccessibilitySettings();
+          });
+        }
+        
+        if (highContrastToggle) {
+          highContrastToggle.addEventListener('change', (e) => {
+            this.settings.highContrast = e.target.checked;
+            this.applyAccessibilitySettings();
+          });
+        }
+        
+        // Font size controls
+        const decreaseFont = document.getElementById('decrease-font');
+        const increaseFont = document.getElementById('increase-font');
+        
+        if (decreaseFont) {
+          decreaseFont.addEventListener('click', () => {
+            this.changeFontSize(-10);
+          });
+        }
+        
+        if (increaseFont) {
+          increaseFont.addEventListener('click', () => {
+            this.changeFontSize(10);
+          });
+        }
         
         // Save button
         document.getElementById('save-all-settings').addEventListener('click', () => {
@@ -582,6 +726,42 @@
         document.addEventListener('change', () => {
           setTimeout(() => this.saveSettings(), 500);
         });
+      }
+      
+      changeFontSize(delta) {
+        this.settings.fontSize = Math.max(80, Math.min(140, this.settings.fontSize + delta));
+        this.updateFontSize();
+        
+        // Apply to Emma Font Scaler if available
+        if (window.EmmaFontScaler) {
+          window.EmmaFontScaler.setFontSize(this.settings.fontSize);
+        }
+      }
+      
+      updateFontSize() {
+        const display = document.getElementById('font-size-display');
+        if (display) {
+          display.textContent = `${this.settings.fontSize}%`;
+        }
+        
+        // Apply font scaling to document
+        document.documentElement.style.fontSize = `${this.settings.fontSize}%`;
+      }
+      
+      applyAccessibilitySettings() {
+        // Apply reduced motion
+        if (this.settings.reducedMotion) {
+          document.documentElement.style.setProperty('--emma-motion', 'none');
+        } else {
+          document.documentElement.style.removeProperty('--emma-motion');
+        }
+        
+        // Apply high contrast
+        if (this.settings.highContrast) {
+          document.body.classList.add('high-contrast');
+        } else {
+          document.body.classList.remove('high-contrast');
+        }
       }
       
       showToast(message, type = 'info') {
