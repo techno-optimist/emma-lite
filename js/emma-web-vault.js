@@ -1605,7 +1605,8 @@ class EmmaWebVault {
 
       // Ensure it's Uint8Array for assembly
       salt = new Uint8Array(salt);
-      const encryptedArray = new Uint8Array(encryptedData); // Convert ArrayBuffer to Uint8Array      const totalLength = header.length + version.length + salt.length + encryptedArray.length;
+      const encryptedArray = new Uint8Array(encryptedData); // Convert ArrayBuffer to Uint8Array
+      const totalLength = header.length + version.length + salt.length + encryptedArray.length;
 
       // Combine header + version + salt + encrypted data
       const result = new Uint8Array(totalLength);

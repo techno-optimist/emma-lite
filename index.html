@@ -432,6 +432,16 @@
 
                     if (!vaultName) return;
 
+                    // 🎯 CRITICAL: Validate vault name to prevent technical errors
+                    const validation = this.validateVaultName(vaultName);
+                    if (!validation.isValid) {
+                        window.emmaError(validation.message, {
+                            title: "Invalid Vault Name",
+                            helpText: "Vault names should be descriptive and memorable!"
+                        });
+                        return;
+                    }
+
                     // Use working Emma modal (copied from extension)
                     const passphrase = await this.showEmmaPassphraseModal(vaultName, true);
 
