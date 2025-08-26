@@ -8645,3 +8645,99 @@ AFTER: ✅ UNIFIED WORKING SYSTEM
 🎉 **MISSION ACCOMPLISHED!** The people-memory relationship system is now enterprise-grade and ready for the Emma beta launch. All critical data loss pathways have been sealed, and the user experience is dramatically improved.
 
 **Ready for Production**: Emma can now reliably capture, persist, and display people connections across all interaction methods, providing users with the rich memory context they need for meaningful reminiscence.
+
+## 📋 Planner: CTO Production-Readiness Audit (Pre-Demo)
+
+### Background and Motivation (Updated)
+Presenting Emma to Debbe tomorrow requires zero-surprise reliability, privacy by default, and a soothing, accessible experience. We will prioritize safeguards over features and ensure that all primary user paths are fail-safe and dementia-friendly.
+
+### Key Challenges and Analysis (CTO View)
+- Security posture is incomplete (missing CSP/HSTS/etc.) and extension permissions are overly broad.
+- Multiple DOM injection points (`innerHTML`/`insertAdjacentHTML`) risk XSS if any untrusted content is interpolated.
+- Direct client calls to OpenAI risk key exposure; must be disabled in prod or proxied.
+- Fallbacks to `localStorage` for sensitive data violate vault supremacy and privacy-first ethos.
+- Dev endpoints/logging appear in prod paths; needs build-time gating.
+- UX must meet dementia principles: validation, gentle pacing, clear feedback, no blame language, reduced motion, strong contrast.
+- Performance risk from very large pages; need pragmatic optimizations for smoothness on modest hardware.
+
+### High-level Task Breakdown (Executor Roadmap)
+1) Harden security headers
+   - Add CSP (script-src 'self' plus explicit allowed domains; no 'unsafe-inline'; use nonces where needed)
+   - Add HSTS, frame-ancestors, referrer-policy, permissions-policy, X-Content-Type-Options, COOP/COEP
+   - Success: Headers present on deployed app; CSP report-only passes → enforce
+
+2) Restrict extension permissions
+   - Remove `<all_urls>` from host permissions/content scripts; scope to our domains only
+   - Tighten `web_accessible_resources`
+   - Success: Store-compliant manifest; features still work on our origins
+
+3) Disable direct OpenAI calls in prod
+   - Add environment toggle; in prod, calls are disabled or proxied via secure backend
+   - Provide offline graceful messaging matching Emma ethos
+   - Success: No API keys in client; no network to openai.com from prod build
+
+4) Sanitize DOM injections
+   - Replace risky `innerHTML`/`insertAdjacentHTML` with DOM APIs or sanitize interpolations
+   - Audit all user-influenced strings before insertion
+   - Success: No unsafe sinks remaining in primary flows
+
+5) Remove dev endpoints/logs for prod
+   - Gate `http://localhost`, `ws://localhost`, and verbose logs behind `DEBUG`
+   - Success: Production build has no localhost endpoints and minimal logs
+
+6) Storage hardening
+   - Eliminate sensitive data `localStorage` fallback; enforce vault save or explicit warning with user choice
+   - Success: No unencrypted persistence of memories in browser storage by default
+
+7) Error handling and dementia-friendly UX
+   - Centralize error capture; accessible modals with validation language and clear remediation
+   - Respect 2–3s response pacing in companion mode
+   - Success: Errors never feel like blame; flows recover gracefully
+
+8) Accessibility and comfort
+   - Increase contrast, support reduced motion, focus states, aria roles/labels
+   - Success: Lighthouse accessibility ≥ 95 on key pages; manual checks pass
+
+9) Performance and stability
+   - Lazy-load heavy modules; preconnect/preload critical; budget for main thread
+   - Success: Lighthouse perf ≥ 85 on key pages; TTI under target on mid hardware
+
+10) Repo hygiene and release prep
+   - Remove stray files; tighten .gitignore; add release checklist and rollback plan
+   - Success: Clean repo; reproducible build with version tag
+
+### Success Criteria (Demo-Ready)
+- Zero silent failures: every memory operation updates the `.emma` file or clearly informs the user with a guided fix.
+- No unencrypted storage of sensitive data by default.
+- No client-side exposure of secrets; no outbound calls to AI providers in prod without a proxy.
+- Security headers effective; CSP enforced without breakage on key pages.
+- Extension operates only on Emma domains with minimal permissions.
+- UX language validates and reassures; consistent pacing; no flashing/repetition callouts.
+- Accessibility: keyboard-only flows, screen reader labels, high contrast.
+- Performance: smooth interactions; no long main-thread stalls on dashboard.
+
+### Emma Ethos Review (Debate Notes for Executor PRs)
+- Privacy-first: `.emma` is the source of truth; no hidden browser-only persistence.
+- Transparency: show sync state clearly; never imply success if file not updated.
+- Gentleness: validation therapy tone; avoid corrective/blame wording.
+- Simplicity: reduce choices under stress; clear next best action.
+- Local-first: avoid cloud dependencies during the demo.
+
+### Project Status Board (Planner Updates)
+- [ ] Harden security headers (CSP, HSTS, Referrer, Frame, Permissions)
+- [ ] Restrict extension permissions; remove `<all_urls>`; scope content scripts
+- [ ] Disable direct OpenAI calls in prod; add secure proxy or offline mode
+- [ ] Sanitize/replace unsafe DOM injections (innerHTML/insertAdjacentHTML)
+- [ ] Remove dev endpoints (http/ws localhost) from prod build
+- [ ] Eliminate localStorage fallback for sensitive data; enforce vault or explicit warning
+- [ ] Gate/strip debug logs; add runtime log level
+- [ ] Unify error handling UX; accessible, dementia-friendly messages
+- [ ] Accessibility and dementia UX pass (speech, delay, repetition, contrast)
+- [ ] Performance pass: budgets, lazy-load large pages, reduce motion
+- [ ] Remove stray files; tighten .gitignore for production
+- [ ] Final pre-demo test matrix and rollback plan executed
+
+### Executor Handoff Notes
+- Implement tasks in the above order; after each, update "Current Status / Progress Tracking" with evidence (header dumps, Lighthouse screenshots, diffs).
+- Where risk of regressions exists (CSP/DOM changes), add temporary report-only and feature flags; flip after verification.
+- For any uncertainty, ask in "Executor's Feedback or Assistance Requests" and flag potential user impact and mitigation.
