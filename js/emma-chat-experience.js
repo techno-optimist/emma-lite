@@ -5502,11 +5502,7 @@ RULES:
       editModal.remove();
     };
     
-    // Update close buttons to restore scroll
-    const closeBtn = editModal.querySelector('.close-edit-btn');
-    if (closeBtn) {
-      closeBtn.onclick = closeModal;
-    }
+    // (closeBtn will be declared below with other UI elements)
     
     // 🧪 SHERLOCK: Add keyboard scroll support
     content.setAttribute('tabindex', '0'); // Make it focusable
@@ -5547,8 +5543,7 @@ RULES:
     const addMediaBtn = editModal.querySelector('.add-media-btn');
     const fileInput = editModal.querySelector('.media-file-input');
 
-    // Close handlers
-    const closeModal = () => editModal.remove();
+    // Close handlers (use the enhanced closeModal from above)
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
     editModal.addEventListener('click', (e) => {
