@@ -7,11 +7,16 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Emma - Your Intelligent Memory Companion</title>
+  
+  <!-- Z-Index Hierarchy Fix - Prevents modal conflicts -->
+  <link rel="stylesheet" href="css/z-index-hierarchy.css">
 
   <!-- Environment bootstrap (must load first) -->
   <script src="js/emma-env.js"></script>
   <!-- Production-safe logging (must be early) -->
   <script src="js/emma-logger.js"></script>
+  <!-- Modal management system - prevents constellation conflicts -->
+  <script src="js/modal-manager.js"></script>
   <!-- Dementia-friendly modal system -->
   <script src="js/emma-dementia-modals.js"></script>
   <!-- Dynamic font scaling system -->

@@ -1,0 +1,303 @@
+/**
+ * Emma Z-Index Hierarchy - Proper Modal Layering
+ * Fixes constellation background conflicts with modals
+ * 
+ * 💜 EMMA ETHOS: Clear layering for accessible, non-conflicting UX
+ */
+
+/*
+🎯 Z-INDEX HIERARCHY SYSTEM:
+- Background Elements: 1-99
+- Content Layers: 100-999  
+- UI Components: 1000-1999
+- Overlays & Dropdowns: 2000-2999
+- Modals & Dialogs: 3000-3999
+- Critical Alerts: 4000-4999
+- Emergency/System: 5000+
+*/
+
+/* =============================================================================
+   BACKGROUND LAYERS (1-99)
+============================================================================= */
+
+/* Constellation and canvas backgrounds */
+.memories-container canvas,
+.constellation-canvas,
+.background-animation {
+  z-index: 1 !important;
+}
+
+/* Gradient backgrounds and decorative elements */
+.background-gradient,
+.decorative-blur,
+.floating-elements {
+  z-index: 2 !important;
+}
+
+/* =============================================================================
+   CONTENT LAYERS (100-999)
+============================================================================= */
+
+/* Main content areas */
+.memories-container,
+.main-content,
+.page-content {
+  z-index: 100 !important;
+}
+
+/* Memory cards and interactive content */
+.memory-card,
+.memory-item,
+.interactive-content {
+  z-index: 200 !important;
+}
+
+/* =============================================================================
+   UI COMPONENTS (1000-1999)
+============================================================================= */
+
+/* Navigation and headers */
+.memories-header,
+.navigation,
+.sidebar {
+  z-index: 1000 !important;
+}
+
+/* Buttons and form elements */
+.btn-primary,
+.memory-action-btn,
+.interactive-btn {
+  z-index: 1100 !important;
+}
+
+/* Tooltips and small popups */
+.tooltip,
+.popup-hint,
+.status-indicator {
+  z-index: 1200 !important;
+}
+
+/* =============================================================================
+   OVERLAYS & DROPDOWNS (2000-2999)
+============================================================================= */
+
+/* Dropdown menus and context menus */
+.dropdown-menu,
+.context-menu,
+.filter-dropdown {
+  z-index: 2000 !important;
+}
+
+/* Search overlays and filter panels */
+.search-overlay,
+.filter-panel,
+.quick-actions {
+  z-index: 2100 !important;
+}
+
+/* =============================================================================
+   MODALS & DIALOGS (3000-3999)
+============================================================================= */
+
+/* CRITICAL FIX: Memory detail modal proper layering */
+.memory-modal {
+  z-index: 3000 !important;
+}
+
+.memory-detail-overlay {
+  z-index: 2999 !important; /* Just behind the modal content */
+}
+
+.memory-detail-content {
+  z-index: 3001 !important; /* Above the overlay */
+}
+
+/* Other modals in proper hierarchy */
+.slideshow-modal {
+  z-index: 3100 !important;
+}
+
+.share-modal {
+  z-index: 3200 !important;
+}
+
+.memory-wizard-modal {
+  z-index: 3300 !important;
+}
+
+/* Chat and conversation modals */
+.chat-modal,
+.conversation-popup {
+  z-index: 3400 !important;
+}
+
+/* Settings and configuration modals */
+.settings-modal,
+.preferences-dialog {
+  z-index: 3500 !important;
+}
+
+/* =============================================================================
+   CRITICAL ALERTS (4000-4999)
+============================================================================= */
+
+/* Emma's dementia-friendly modals */
+.emma-modal-overlay,
+.emma-gentle-dialog {
+  z-index: 4000 !important;
+}
+
+/* Error and warning dialogs */
+.error-modal,
+.warning-dialog,
+.confirmation-dialog {
+  z-index: 4100 !important;
+}
+
+/* Vault security modals */
+.vault-unlock-modal,
+.security-dialog {
+  z-index: 4200 !important;
+}
+
+/* =============================================================================
+   EMERGENCY/SYSTEM (5000+)
+============================================================================= */
+
+/* System notifications */
+.system-notification,
+.emergency-alert {
+  z-index: 5000 !important;
+}
+
+/* Loading overlays that must be on top */
+.loading-overlay,
+.processing-modal {
+  z-index: 5100 !important;
+}
+
+/* =============================================================================
+   SCROLL AND INTERACTION FIXES
+============================================================================= */
+
+/* Ensure modal content can scroll properly */
+.memory-detail-body,
+.modal-scrollable-content {
+  position: relative !important;
+  z-index: auto !important; /* Let it inherit from parent */
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Prevent constellation interference with modal scrolling */
+.memory-modal.show {
+  pointer-events: auto !important;
+}
+
+.memory-modal.show .memory-detail-content {
+  pointer-events: auto !important;
+}
+
+/* Ensure constellation doesn't capture scroll events over modals */
+.memories-container canvas {
+  pointer-events: none !important;
+}
+
+.memories-container canvas.interactive {
+  pointer-events: auto !important;
+}
+
+/* When modal is open, disable constellation interactions */
+body.modal-open .memories-container canvas {
+  pointer-events: none !important;
+}
+
+/* =============================================================================
+   ACCESSIBILITY & UX IMPROVEMENTS
+============================================================================= */
+
+/* Ensure focus trapping works properly in modals */
+.modal-content[aria-modal="true"] {
+  z-index: inherit !important;
+}
+
+/* Make sure close buttons are always clickable */
+.close-btn,
+.modal-close {
+  z-index: 1 !important;
+  position: relative !important;
+}
+
+/* =============================================================================
+   RESPONSIVE CONSIDERATIONS
+============================================================================= */
+
+@media (max-width: 768px) {
+  /* On mobile, modals should take full priority */
+  .memory-modal {
+    z-index: 3000 !important;
+  }
+  
+  .memory-detail-content {
+    z-index: 3001 !important;
+  }
+  
+  /* Disable constellation interactions on mobile when modal open */
+  body.modal-open .memories-container {
+    overflow: hidden !important;
+  }
+}
+
+/* =============================================================================
+   DEBUG HELPERS (remove in production)
+============================================================================= */
+
+/* Uncomment for z-index debugging */
+/*
+[style*="z-index"]::after {
+  content: "z:" attr(style);
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(255, 0, 0, 0.8);
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  pointer-events: none;
+}
+*/
+
+/* =============================================================================
+   LEGACY OVERRIDES (for existing conflicting styles)
+============================================================================= */
+
+/* Override any existing problematic z-index values */
+.memory-detail-overlay[style*="z-index: -1"] {
+  z-index: 2999 !important;
+}
+
+/* Force proper modal hierarchy */
+.modal[style*="z-index: 2147483650"] {
+  z-index: 3000 !important;
+}
+
+/* Ensure Emma's gentle modals are always on top */
+[class*="emma-"][class*="modal"] {
+  z-index: 4000 !important;
+}
+
+/* =============================================================================
+   FINAL SAFETY NET
+============================================================================= */
+
+/* If any modal has issues, this should fix most cases */
+[role="dialog"],
+[aria-modal="true"] {
+  z-index: 3000 !important;
+  position: fixed !important;
+}
+
+[role="dialog"] + .modal-backdrop,
+[aria-modal="true"] + .modal-backdrop {
+  z-index: 2999 !important;
+}
