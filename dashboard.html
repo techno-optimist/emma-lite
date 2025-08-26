@@ -219,23 +219,14 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: opacity 0.4s ease, transform 0.2s ease;
       opacity: 0;
-      transform: scale(0);
       box-shadow: 0 0 30px rgba(134, 88, 255, 0.2);
-      animation: float 6s ease-in-out infinite;
       z-index: 10;
     }
 
     .radial-menu.active .radial-item {
       opacity: 1;
-      transform: scale(1);
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      33% { transform: translateY(-10px) scale(1.02); }
-      66% { transform: translateY(5px) scale(0.98); }
     }
 
     /* Elegant add node glow animation */
@@ -659,21 +650,17 @@
       box-shadow: 0 8px 25px rgba(134, 88, 255, 0.4);
     }
 
-    .radial-item:nth-child(1) { animation-delay: 0s; }
-    .radial-item:nth-child(2) { animation-delay: 0.5s; }
-    .radial-item:nth-child(3) { animation-delay: 1s; }
-    .radial-item:nth-child(4) { animation-delay: 1.5s; }
-    .radial-item:nth-child(5) { animation-delay: 2s; }
-    .radial-item:nth-child(6) { animation-delay: 2.5s; }
-    .radial-item:nth-child(7) { animation-delay: 3s; }
-    .radial-item:nth-child(8) { animation-delay: 3.5s; }
+    /* Simplified fade-in timing for menu items */
+    .radial-item:nth-child(1) { transition-delay: 0.1s; }
+    .radial-item:nth-child(2) { transition-delay: 0.15s; }
+    .radial-item:nth-child(3) { transition-delay: 0.2s; }
+    .radial-item:nth-child(4) { transition-delay: 0.25s; }
 
     .radial-item:hover {
       background: rgba(134, 88, 255, 0.3);
       border-color: var(--emma-purple);
-      transform: scale(1.15);
-      box-shadow: 0 0 40px rgba(134, 88, 255, 0.6);
-      animation-play-state: paused;
+      transform: scale(1.05);
+      box-shadow: 0 0 40px rgba(134, 88, 255, 0.4);
     }
 
     .radial-item.pulsing {
@@ -2602,32 +2589,42 @@
 
           this.updateVaultNodeStatus(); // Update vault node based on status
 
-          // Initialize neural network bound to orb center
-          this.initNeuralNetwork();
-          this.animateNeuralNetwork();
-
-          // 🧠 NEURAL EXPANSION: Use physics to expand nodes naturally from orb
-          this.expandRadialNeuralNetwork();
+          // Simple positioning around the orb (no aggressive physics)
+          this.positionMenuItemsAroundOrb();
 
         } else {
-          // 🧠 NEURAL COLLAPSE: Use physics to collapse nodes back to orb naturally
-          this.collapseRadialNeuralNetwork();
+          this.radialMenu.classList.remove('active');
+          document.body.classList.remove('menu-active');
 
-          // Cleanup after natural physics collapse
-          setTimeout(() => {
-            this.radialMenu.classList.remove('active');
-            document.body.classList.remove('menu-active');
+          // Clear any neural animation
+          if (this.neuralAnimationId) {
+            cancelAnimationFrame(this.neuralAnimationId);
+            this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+          }
 
-            // Clear neural animation
-            if (this.neuralAnimationId) {
-              cancelAnimationFrame(this.neuralAnimationId);
-              this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
-            }
-
-            // Reset nodes array
-            this.nodes = [];
-          }, 200); // Allow time for natural neural collapse
+          // Reset nodes array
+          this.nodes = [];
         }
+      }
+
+      // Simple method to position menu items around orb with gentle fade-in
+      positionMenuItemsAroundOrb() {
+        const orbRect = this.orb.getBoundingClientRect();
+        const orbCenterX = orbRect.left + orbRect.width / 2;
+        const orbCenterY = orbRect.top + orbRect.height / 2;
+        const radius = 140; // Consistent distance from orb
+
+        const menuItems = this.radialMenu.querySelectorAll('.radial-item');
+        
+        menuItems.forEach((item, i) => {
+          const angle = (i / menuItems.length) * Math.PI * 2 - Math.PI / 2;
+          const targetX = orbCenterX + Math.cos(angle) * radius;
+          const targetY = orbCenterY + Math.sin(angle) * radius;
+          
+          // Position the item (center the 90px item)
+          item.style.left = (targetX - 45) + 'px';
+          item.style.top = (targetY - 45) + 'px';
+        });
       }
 
       // 🧠 NEURAL EXPANSION: Expand radial nodes using neural network physics
