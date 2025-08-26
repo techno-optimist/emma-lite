@@ -2047,6 +2047,18 @@ async function loadDecryptedLLMKey() {
  * LLM scoring call (uses fetch to OpenAI with stored key). Returns normalized score and rationale only.
  */
 async function scoreMemoryWorthinessWithLLM(content, context) {
+  // Disable network LLM in production; provide stable local default
+  try {
+    const env = (typeof self !== 'undefined' && self.location && (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1')) ? 'development' : 'production';
+    const llmEnabled = (await chrome.storage.local.get('llm_enabled'))?.llm_enabled === true;
+    if (env !== 'development' || !llmEnabled) {
+      return { score0to10: 5, rationale: 'local default (offline)' };
+    }
+  } catch(e) {
+    // On error, return safe default
+    return { score0to10: 5, rationale: 'local default (offline)' };
+  }
+
   const apiKey = await loadDecryptedLLMKey();
   // Safety: trim content size
   const maxLen = 800;

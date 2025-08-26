@@ -2171,15 +2171,32 @@ class EmmaChatExperience extends ExperiencePopup {
    * This is where the real AI magic happens!
    */
   async generateIntelligentEmmaResponse(userMessage, intent) {
-    console.log('🤖 Generating intelligent response with OpenAI...');
-    
+    const env = (typeof window !== 'undefined' && window.EMMA_ENV) ? window.EMMA_ENV : 'production';
+    const useLLM = env !== 'production' && !!this.apiKey;
+
     try {
       // Get vault context for personalization
       const vaultContext = await this.getVaultContextForAI();
-      
+
+      if (!useLLM) {
+        // Gentle, local-first fallback aligned with Emma ethos
+        const topics = (vaultContext.recentTopics || []).slice(0, 3);
+        const topicStr = topics.length ? ` I remember recent topics like ${topics.join(', ')}.` : '';
+        const suggestions = [
+          'Would you like me to save this as a memory?',
+          'Should we look for related photos together?',
+          'Want to add who was with you in this memory?'
+        ];
+        const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+        return (
+          `I’m here with you. Let’s explore this together.${topicStr} ` +
+          `${suggestion}`
+        );
+      }
+
       // Build the prompt based on intent and context
       const prompt = this.buildEmmaPrompt(userMessage, intent, vaultContext);
-      
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -2189,37 +2206,24 @@ class EmmaChatExperience extends ExperiencePopup {
         body: JSON.stringify({
           model: 'gpt-4',
           messages: [
-            {
-              role: 'system',
-              content: prompt.system
-            },
-            {
-              role: 'user', 
-              content: prompt.user
-            }
+            { role: 'system', content: prompt.system },
+            { role: 'user', content: prompt.user }
           ],
           max_tokens: 300,
           temperature: 0.7
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
       const data = await response.json();
       const aiResponse = data.choices[0]?.message?.content;
-      
-      if (aiResponse) {
-        console.log('✅ OpenAI response generated successfully');
-        return aiResponse.trim();
-      } else {
-        throw new Error('No response content from OpenAI');
-      }
+      if (aiResponse) return aiResponse.trim();
+      throw new Error('No response content from OpenAI');
 
     } catch (error) {
-      console.error('🤖 OpenAI API error:', error);
-      throw error; // Let caller handle fallback
+      // Final safe fallback to ensure no broken UX
+      const calm = 'I’m here with you. Let’s take this step by step.';
+      return `${calm} Would you like me to save this as a memory?`;
     }
   }
 

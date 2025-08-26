@@ -587,6 +587,11 @@ Response should be conversational, not clinical. Make it feel like talking to a 
    * Call LLM API (OpenAI, local, etc.)
    */
   async callLLM(prompt, options = {}) {
+    // Production safety: disable direct LLM calls unless explicitly allowed
+    var env = (typeof window !== 'undefined' && window.EMMA_ENV) ? window.EMMA_ENV : 'production';
+    if (env === 'production') {
+      throw new Error('LLM disabled in production environment');
+    }
     if (!this.options.apiKey) {
       throw new Error('No API key configured for LLM calls');
     }
