@@ -1120,6 +1120,16 @@ class EmmaWebVault {
       this.pendingChanges = true;
       this.scheduleElegantSave();
       
+      // CRITICAL: Also sync to extension if available (merged from removed duplicate)
+      if (this.extensionAvailable && this.extensionSyncEnabled) {
+        try {
+          await this.syncToExtension();
+          console.log('✅ VAULT: Extension sync completed');
+        } catch (extensionError) {
+          console.warn('⚠️ EXTENSION: Sync failed (non-critical):', extensionError);
+        }
+      }
+      
       // Save to IndexedDB as backup only AFTER file save is scheduled
       try {
         await this.saveToIndexedDB();
@@ -2180,37 +2190,9 @@ class EmmaWebVault {
   }
 
   /**
-   * Override autoSave to sync with extension
+   * 🚨 REMOVED DUPLICATE autoSave - was overriding .emma file saving!
+   * Original autoSave (line ~1106) handles proper .emma file persistence.
    */
-  async autoSave() {
-    if (!this.isOpen || !this.pendingChanges) return;
-
-    // Clear existing timer
-    clearTimeout(this.saveDebounceTimer);
-
-    // Debounce saves
-    this.saveDebounceTimer = setTimeout(async () => {
-      try {
-        // Update stats before saving
-        await this.updateStats();
-
-        // Sync to extension if available
-        if (this.extensionAvailable && this.extensionSyncEnabled) {
-          await this.syncToExtension();
-        }
-
-        // Regular auto-save to localStorage
-        const vaultKey = `emma_vault_${this.currentVault}`;
-        localStorage.setItem(vaultKey, JSON.stringify(this.vaultData));
-
-        // Reset pending changes flag
-        this.pendingChanges = false;
-
-      } catch (error) {
-        console.error('❌ Auto-save failed:', error);
-      }
-    }, 1000); // 1 second debounce
-  }
 
   /**
    * Notify UI about extension status
