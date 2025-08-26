@@ -432,12 +432,11 @@
 
                     if (!vaultName) return;
 
-                    // 🎯 CRITICAL: Validate vault name to prevent technical errors
-                    const validation = this.validateVaultName(vaultName);
-                    if (!validation.isValid) {
-                        window.emmaError(validation.message, {
+                    // 🎯 BASIC VALIDATION: Ensure vault name is reasonable
+                    if (vaultName.trim().length < 2) {
+                        window.emmaError("Vault name should be at least 2 characters long.", {
                             title: "Invalid Vault Name",
-                            helpText: "Vault names should be descriptive and memorable!"
+                            helpText: "Choose a meaningful name for your vault!"
                         });
                         return;
                     }
