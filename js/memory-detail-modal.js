@@ -52,6 +52,15 @@ function openMemoryDetailModal(memory) {
   const content = createModalContent(memory);
   content.style.zIndex = '2';
   content.style.position = 'relative';
+  try {
+    // Safely populate user-influenced fields after DOM construction
+    const titleEl = content.querySelector('#memory-title-input');
+    if (titleEl) titleEl.value = (memory && memory.title) ? String(memory.title) : '';
+    const textEl = content.querySelector('#memory-content-textarea');
+    if (textEl) textEl.value = (memory && (memory.content || memory.excerpt)) ? String(memory.content || memory.excerpt) : '';
+  } catch (e) {
+    console.warn('⚠️ Modal field population warning:', e);
+  }
 
   // Add both to modal
   modal.appendChild(overlay);
@@ -190,7 +199,7 @@ function createModalContent(memory) {
       background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
     ">
       <div style="flex: 1;">
-        <input type="text" id="memory-title-input" value="${escapeHtml(memory.title || '')}" placeholder="Enter memory title..." style="
+        <input type="text" id="memory-title-input" placeholder="Enter memory title..." style="
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 8px;
@@ -293,7 +302,7 @@ function createModalContent(memory) {
           line-height: 1.6;
           resize: vertical;
           outline: none;
-        " placeholder="Share your memory...">${escapeHtml(memory.content || memory.excerpt || '')}</textarea>
+        " placeholder="Share your memory..."></textarea>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
           <div>
