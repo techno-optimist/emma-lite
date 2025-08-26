@@ -4571,10 +4571,10 @@
           this.loadPersonAvatar(person, personElement, avatar);
         }
 
-        // Add click handler to open person summary modal
+        // Add click handler to open person detail modal (unified with people-emma.html)
         personElement.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.openPersonSummaryModal(person);
+          this.openUnifiedPersonModal(person);
         });
 
         // Add hover effects with relation-based glow
@@ -4649,97 +4649,230 @@
       }
 
       // Open person summary modal with connected memories
-      async openPersonSummaryModal(person) {
+      // 🔄 UNIFIED: Use people-emma.html style person modal for consistency
+      async openUnifiedPersonModal(person) {
+        // Remove any existing person modal
+        const existingModal = document.getElementById('person-detail-modal');
+        if (existingModal) {
+          existingModal.remove();
+        }
 
-        // 🎯 FIXED: Use direct vault access like people page for consistent memory connections
+        // Get connected memories (same logic as before)
         let connectedMemories = [];
         try {
           if (window.emmaWebVault && window.emmaWebVault.vaultData?.content?.memories) {
             const vaultMemories = window.emmaWebVault.vaultData.content.memories;
-            const vaultPeople = window.emmaWebVault.vaultData.content.people || {};
             
-            // Find memories that include this person (same logic as people page)
             for (const [memoryId, memory] of Object.entries(vaultMemories)) {
-              // Check if person is in memory's people metadata
               if (memory.metadata && memory.metadata.people && 
                   Array.isArray(memory.metadata.people) && 
                   memory.metadata.people.includes(person.id)) {
                 connectedMemories.push({ ...memory, id: memoryId });
               }
               
-              // Also check if person's name is mentioned in content
               if (person.name && memory.content) {
                 const personName = person.name.toLowerCase();
                 const memoryContent = memory.content.toLowerCase();
                 if (memoryContent.includes(personName)) {
-                  // Avoid duplicates
                   if (!connectedMemories.find(m => m.id === memoryId)) {
                     connectedMemories.push({ ...memory, id: memoryId });
                   }
                 }
               }
             }
-            
-            console.log(`🔗 DASHBOARD: Found ${connectedMemories.length} memories for person ${person.id}`);
           }
         } catch (error) {
-          console.error('👤 SUMMARY: Error loading memories:', error);
+          console.error('👤 UNIFIED: Error loading memories:', error);
         }
 
-        // Create modal HTML
+        // Create the people-emma.html style person modal
         const modalHTML = `
-          <div class="person-summary-modal-overlay" id="person-summary-overlay" onclick="window.memoryConstellation.closePersonSummaryModal()">
-            <div class="person-summary-modal" onclick="event.stopPropagation()">
-              <button class="modal-close" onclick="window.memoryConstellation.closePersonSummaryModal()">×</button>
+          <div class="modal-overlay active" id="person-detail-modal" style="
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(10px) !important;
+            z-index: 10000 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+          ">
+            <div class="modal person-detail-modal" style="
+              background: linear-gradient(135deg, #2d1b69, #1e1b4b);
+              border-radius: 20px;
+              padding: 0;
+              width: 90%;
+              max-width: 500px;
+              color: white;
+              box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              overflow: hidden;
+              position: relative;
+            ">
+              <button class="modal-close" onclick="document.getElementById('person-detail-modal').remove()" style="
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                color: white;
+                width: 35px;
+                height: 35px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 18px;
+                z-index: 1;
+              ">×</button>
 
-              <div class="person-summary-header">
-                <div class="person-summary-avatar" id="person-summary-avatar">
+              <div class="person-detail-header" style="
+                display: flex;
+                align-items: center;
+                padding: 30px;
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(124, 58, 237, 0.3));
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+              ">
+                <div class="person-detail-avatar" id="person-detail-avatar" style="
+                  width: 80px;
+                  height: 80px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 32px;
+                  font-weight: 700;
+                  color: white;
+                  margin-right: 20px;
+                  border: 3px solid rgba(255, 255, 255, 0.2);
+                  overflow: hidden;
+                ">
                   ${person.name.charAt(0).toUpperCase()}
                 </div>
-                <div class="person-summary-info">
-                  <h2 class="person-summary-name">${person.name}</h2>
-                  <p class="person-summary-relation">${person.relation || 'other'}</p>
-                  <p class="person-summary-contact">${person.contact || 'No contact info'}</p>
+                <div class="person-detail-info">
+                  <h2 class="person-detail-name" style="
+                    margin: 0 0 5px 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                  ">${person.name}</h2>
+                  <p class="person-detail-relation" style="
+                    margin: 0;
+                    font-size: 16px;
+                    color: rgba(255, 255, 255, 0.8);
+                    text-transform: capitalize;
+                  ">${person.relation || 'Family'}</p>
                 </div>
               </div>
 
-              <div class="person-summary-content">
-                <h3 class="summary-section-title">Connected Memories</h3>
-                <div class="connected-memories">
-                  ${connectedMemories.length > 0 ?
-                    connectedMemories.map(memory => {
-                      // Get thumbnail from attachments or fallback
-                      const thumbnail = memory.thumbnail ||
-                                       (memory.attachments && memory.attachments.length > 0 && memory.attachments[0].url ? memory.attachments[0].url : null);
-                      const memoryTitle = memory.metadata?.title || memory.title || memory.subject || 'Untitled Memory';
-                      const memoryDate = memory.created || memory.date || memory.timestamp;
-
-                      return `
-                        <div class="connected-memory-item" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')">
-                          <div class="memory-preview">
-                            ${thumbnail ? `<img src="${thumbnail}" alt="Memory">` : '💝'}
-                          </div>
-                          <div class="memory-info">
-                            <div class="memory-title">${memoryTitle}</div>
-                            <div class="memory-date">${memoryDate ? new Date(memoryDate).toLocaleDateString() : 'Unknown date'}</div>
-                          </div>
-                        </div>
-                      `;
-                    }).join('') :
-                    '<div class="no-memories">No connected memories yet</div>'
-                  }
+              <div class="person-detail-content" style="padding: 30px;">
+                <div class="detail-section" style="margin-bottom: 25px;">
+                  <h3 class="section-title" style="
+                    margin: 0 0 15px 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #8b5cf6;
+                    display: flex;
+                    align-items: center;
+                  ">
+                    <span style="margin-right: 8px;">📞</span>
+                    Contact Information
+                  </h3>
+                  <div class="detail-item" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                  ">
+                    <span class="detail-label" style="color: rgba(255, 255, 255, 0.7);">Contact:</span>
+                    <span class="detail-value">${person.contact || 'No contact information'}</span>
+                  </div>
+                  <div style="text-align: right; margin-top: 10px;">
+                    <span style="color: rgba(139, 92, 246, 0.8); font-size: 14px;">${connectedMemories.length} shared memor${connectedMemories.length === 1 ? 'y' : 'ies'}</span>
+                  </div>
                 </div>
 
-                <div class="person-summary-actions">
-                  <button class="btn btn-primary" onclick="window.memoryConstellation.createMemoryWithPersonFromConstellation('${person.id}')">
-                    <span>✨</span>
-                    Create Memory Together
-                  </button>
-                  <button class="btn btn-secondary" onclick="window.location.href='pages/people-emma.html'">
-                    <span>👥</span>
-                    Manage People
-                  </button>
+                <div class="detail-section">
+                  <h3 class="section-title" style="
+                    margin: 0 0 15px 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #8b5cf6;
+                    display: flex;
+                    align-items: center;
+                  ">
+                    <span style="margin-right: 8px;">🧠</span>
+                    Memory Connection
+                  </h3>
+                  <div class="detail-item" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                  ">
+                    <span class="detail-label" style="color: rgba(255, 255, 255, 0.7);">Added:</span>
+                    <span class="detail-value">Recently</span>
+                  </div>
+                  <div class="detail-item" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 0;
+                  ">
+                    <span class="detail-label" style="color: rgba(255, 255, 255, 0.7);">Memories:</span>
+                    <span class="detail-value">${connectedMemories.length} shared memor${connectedMemories.length === 1 ? 'y' : 'ies'}</span>
+                  </div>
                 </div>
+
+                ${connectedMemories.length > 0 ? this.getPersonMemoriesHTML(connectedMemories) : ''}
+              </div>
+
+              <div class="person-detail-actions" style="
+                display: flex;
+                gap: 15px;
+                padding: 20px 30px 30px 30px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+              ">
+                <button class="btn btn-secondary" onclick="window.location.href='pages/people-emma.html'" style="
+                  flex: 1;
+                  background: rgba(255, 255, 255, 0.1);
+                  border: 1px solid rgba(255, 255, 255, 0.2);
+                  color: white;
+                  padding: 12px 20px;
+                  border-radius: 10px;
+                  cursor: pointer;
+                  font-weight: 600;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 8px;
+                ">
+                  <span>✏️</span>
+                  Edit Person
+                </button>
+                <button class="btn btn-primary" onclick="window.memoryConstellation.createMemoryWithPersonFromConstellation('${person.id}')" style="
+                  flex: 1;
+                  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                  border: none;
+                  color: white;
+                  padding: 12px 20px;
+                  border-radius: 10px;
+                  cursor: pointer;
+                  font-weight: 600;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 8px;
+                  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+                ">
+                  <span>✨</span>
+                  Create Memory
+                </button>
               </div>
             </div>
           </div>
@@ -4748,20 +4881,90 @@
         // Add modal to body
         document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-        // Make constellation functions globally accessible for modal
+        // Make constellation functions globally accessible
         window.memoryConstellation = this;
 
-        // Load avatar if available - CRITICAL for showing person's image
-        if (person.avatarUrl) {
-          this.loadAvatarForSummary(person);
-        } else {
-
+        // Load avatar if available
+        if (person.avatarUrl || person.avatarId) {
+          this.loadUnifiedPersonAvatar(person);
         }
 
-        // Show modal with animation
-        setTimeout(() => {
-          document.getElementById('person-summary-overlay').classList.add('active');
-        }, 10);
+        // Close modal when clicking outside
+        document.getElementById('person-detail-modal').addEventListener('click', (e) => {
+          if (e.target.id === 'person-detail-modal') {
+            e.target.remove();
+          }
+        });
+      }
+
+      // Load avatar for unified person modal
+      async loadUnifiedPersonAvatar(person) {
+        try {
+          let avatarUrl = null;
+          
+          if (person.avatarId && window.emmaWebVault) {
+            const media = await window.emmaWebVault.getMedia(person.avatarId);
+            if (media && media.data) {
+              avatarUrl = media.data.startsWith('data:') ? media.data : `data:${media.type};base64,${media.data}`;
+            }
+          } else if (person.avatarUrl) {
+            avatarUrl = person.avatarUrl;
+          }
+
+          if (avatarUrl) {
+            const avatarElement = document.getElementById('person-detail-avatar');
+            if (avatarElement) {
+              avatarElement.style.backgroundImage = `url(${avatarUrl})`;
+              avatarElement.style.backgroundSize = 'cover';
+              avatarElement.style.backgroundPosition = 'center';
+              avatarElement.textContent = ''; // Remove letter
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error loading avatar for unified person modal:', error);
+        }
+      }
+
+      // Get person memories HTML section
+      getPersonMemoriesHTML(connectedMemories) {
+        return `
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            ${connectedMemories.map(memory => {
+              const memoryTitle = memory.metadata?.title || memory.title || memory.subject || 'Untitled Memory';
+              const memoryDate = memory.created || memory.date || memory.timestamp;
+              
+              return `
+                <div style="
+                  background: rgba(139, 92, 246, 0.1);
+                  border-radius: 10px;
+                  padding: 15px;
+                  border: 1px solid rgba(139, 92, 246, 0.2);
+                  cursor: pointer;
+                  transition: all 0.2s ease;
+                  margin-bottom: 10px;
+                " onmouseover="this.style.background='rgba(139, 92, 246, 0.15)'" onmouseout="this.style.background='rgba(139, 92, 246, 0.1)'" onclick="window.memoryConstellation.openMemoryFromPerson('${memory.id}')">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="
+                      width: 40px;
+                      height: 40px;
+                      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                      border-radius: 8px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 18px;
+                    ">🌟</div>
+                    <div style="flex: 1;">
+                      <div style="font-weight: 600; margin-bottom: 4px;">${memoryTitle}</div>
+                      <div style="font-size: 14px; color: rgba(255, 255, 255, 0.6);">📅 ${memoryDate ? new Date(memoryDate).toLocaleDateString() : 'Recent'}</div>
+                    </div>
+                    <div style="color: rgba(139, 92, 246, 0.8);">→</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
       }
 
       async loadAvatarForSummary(person) {
