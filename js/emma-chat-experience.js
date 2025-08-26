@@ -5259,9 +5259,170 @@ RULES:
   }
 
   /**
+   * SHERLOCK NUCLEAR OPTION: Zero-dependency modal with guaranteed scroll
+   */
+  createNuclearEditModal(memoryId) {
+    // Get memory data
+    let memory = this.temporaryMemories.get(memoryId);
+    if (!memory && window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
+      const memories = window.emmaWebVault.vaultData.content.memories || {};
+      memory = memories[memoryId];
+    }
+    
+    if (!memory) {
+      alert('Memory not found!');
+      return;
+    }
+    
+    // Remove ALL existing modals
+    document.querySelectorAll('.memory-preview-dialog, .memory-edit-modal, .memory-modal').forEach(el => el.remove());
+    
+    // Create nuclear modal with ZERO CSS dependencies
+    const nuclear = document.createElement('div');
+    nuclear.id = 'nuclear-edit-modal';
+    
+    // NUCLEAR STYLING - completely isolated
+    const nuclearCSS = `
+      #nuclear-edit-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 999999 !important;
+        background: rgba(0, 0, 0, 0.9) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: hidden !important;
+      }
+      
+      #nuclear-content {
+        background: linear-gradient(135deg, #8b5cf6, #ec4899) !important;
+        border-radius: 20px !important;
+        padding: 30px !important;
+        width: 90vw !important;
+        max-width: 600px !important;
+        height: 80vh !important;
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        color: white !important;
+        position: relative !important;
+        scrollbar-width: thin !important;
+      }
+      
+      #nuclear-content::-webkit-scrollbar {
+        width: 8px !important;
+      }
+      
+      #nuclear-content::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.1) !important;
+      }
+      
+      #nuclear-content::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.3) !important;
+        border-radius: 4px !important;
+      }
+    `;
+    
+    // Inject CSS
+    const style = document.createElement('style');
+    style.textContent = nuclearCSS;
+    document.head.appendChild(style);
+    
+    nuclear.innerHTML = `
+      <div id="nuclear-content">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+          <h2>🚨 NUCLEAR EDIT MODAL</h2>
+          <button onclick="document.getElementById('nuclear-edit-modal').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; border-radius: 50%; cursor: pointer;">×</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 10px; font-weight: bold;">Title:</label>
+          <input type="text" value="${memory.metadata?.title || memory.title || ''}" style="width: 100%; padding: 10px; border: none; border-radius: 5px; background: rgba(255,255,255,0.1); color: white;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 10px; font-weight: bold;">Content:</label>
+          <textarea style="width: 100%; height: 200px; padding: 10px; border: none; border-radius: 5px; background: rgba(255,255,255,0.1); color: white; resize: none;">${memory.content || ''}</textarea>
+        </div>
+        
+        <!-- SCROLL TEST CONTENT -->
+        <div style="margin-bottom: 20px;">
+          <h3>📜 SCROLL TEST SECTION</h3>
+          <p>Test Line 1 - If you can scroll through this content, the modal works!</p>
+          <p>Test Line 2 - Keep scrolling to see more...</p>
+          <p>Test Line 3 - This should be scrollable content...</p>
+          <p>Test Line 4 - More content to test scrolling...</p>
+          <p>Test Line 5 - Even more content...</p>
+          <p>Test Line 6 - Content continues...</p>
+          <p>Test Line 7 - More scrollable content...</p>
+          <p>Test Line 8 - Keep testing the scroll...</p>
+          <p>Test Line 9 - Almost at the end...</p>
+          <p>Test Line 10 - Final test line!</p>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button onclick="document.getElementById('nuclear-edit-modal').remove()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Cancel</button>
+          <button style="background: rgba(255,255,255,0.9); border: none; color: #8b5cf6; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">Save Changes</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(nuclear);
+  }
+
+  /**
+   * SHERLOCK: Test scroll functionality first
+   */
+  testScrollModal() {
+    const testModal = document.createElement('div');
+    testModal.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 20000 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(255, 0, 0, 0.8) !important;
+    `;
+    
+    testModal.innerHTML = `
+      <div style="
+        background: white;
+        padding: 20px;
+        max-width: 400px;
+        max-height: 300px;
+        overflow-y: auto !important;
+        border: 3px solid blue;
+      ">
+        <h3>SCROLL TEST</h3>
+        <p>Line 1</p><p>Line 2</p><p>Line 3</p><p>Line 4</p><p>Line 5</p>
+        <p>Line 6</p><p>Line 7</p><p>Line 8</p><p>Line 9</p><p>Line 10</p>
+        <p>Line 11</p><p>Line 12</p><p>Line 13</p><p>Line 14</p><p>Line 15</p>
+        <p>Line 16</p><p>Line 17</p><p>Line 18</p><p>Line 19</p><p>Line 20</p>
+        <button onclick="this.parentElement.parentElement.remove()">Close Test</button>
+      </div>
+    `;
+    
+    document.body.appendChild(testModal);
+    return; // Exit early for testing
+  }
+
+  /**
    * Edit memory details with proper modal
    */
   editMemoryDetails(memoryId) {
+    // 🚨 SHERLOCK NUCLEAR OPTION: Completely bypass all CSS conflicts
+    this.createNuclearEditModal(memoryId);
+    return;
+    
+    // SHERLOCK: Run scroll test first
+    // this.testScrollModal();
+    // return;
     // 🎯 CRITICAL FIX: Check temporary memories first (for preview editing)
     let memory = this.temporaryMemories.get(memoryId);
     

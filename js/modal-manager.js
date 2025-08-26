@@ -63,8 +63,9 @@ class EmmaModalManager {
   checkForModal(element) {
     const modalSelectors = [
       '.memory-modal',
-      '.memory-detail-modal',
+      '.memory-detail-modal', 
       '.edit-memory-modal',
+      '.memory-edit-modal', // CRITICAL: Actual class used by Emma Chat Experience
       '.memory-preview-dialog', // CRITICAL: Constellation modals
       '.memory-preview-dialog.constellation',
       '.memory-preview-dialog.responsive',
