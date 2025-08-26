@@ -63,6 +63,8 @@ class EmmaModalManager {
   checkForModal(element) {
     const modalSelectors = [
       '.memory-modal',
+      '.memory-detail-modal',
+      '.edit-memory-modal',
       '.memory-preview-dialog', // CRITICAL: Constellation modals
       '.memory-preview-dialog.constellation',
       '.memory-preview-dialog.responsive',
@@ -73,7 +75,8 @@ class EmmaModalManager {
       '.settings-modal',
       '.emma-modal-overlay',
       '[role="dialog"]',
-      '[aria-modal="true"]'
+      '[aria-modal="true"]',
+      '[data-modal]'
     ];
 
     const isModal = modalSelectors.some(selector => {
