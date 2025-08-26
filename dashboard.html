@@ -2421,6 +2421,14 @@
 
         // CRITICAL FIX: Listen for vault status changes from extension
         this.setupVaultStatusListener();
+        
+        // Auto-trigger constellation mode if hash is present
+        if (window.location.hash === '#constellation') {
+          console.log('🌟 DASHBOARD: Auto-triggering constellation mode from URL hash');
+          setTimeout(() => {
+            this.enterMemoryConstellation();
+          }, 1000); // Wait for vault to load
+        }
       }
 
       // Listen for vault status changes and update UI

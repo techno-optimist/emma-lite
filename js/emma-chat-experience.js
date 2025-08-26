@@ -6330,6 +6330,8 @@ RULES:
         hasNewPeople: newPeople.length > 0
       });
       
+      console.log('🚨 DEBUG: confirmSaveMemory called with memoryId:', memoryId);
+      
       if (newPeople.length > 0) {
         console.log('👥 EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
         await this.startNewPersonOnboarding(memoryId, newPeople);
@@ -6619,11 +6621,16 @@ RULES:
             console.log('🔄 EMMA CHAT: Calling loadConstellationView() directly');
             window.loadConstellationView();
           }
-          // Method 2: If we're on dashboard, navigate to constellation 
+          // Method 2: If we're on dashboard, trigger constellation mode directly
           else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
-            console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
-            // Force constellation view in dashboard with full URL
-            window.location.href = window.location.origin + '/dashboard.html?view=constellation';
+            console.log('🔄 EMMA CHAT: Triggering constellation mode on dashboard');
+            // Trigger constellation mode directly (same as clicking "Memories" menu)
+            if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+              await window.emmaDashboard.enterMemoryConstellation();
+            } else {
+              // Fallback: reload page and auto-trigger constellation
+              window.location.href = window.location.origin + '/dashboard.html#constellation';
+            }
           }
           // Method 3: Dispatch event for constellation to listen
           else {
@@ -6693,10 +6700,16 @@ RULES:
               console.log('🔄 EMMA CHAT: Calling loadConstellationView() directly');
               window.loadConstellationView();
             }
-            // Method 2: If we're on dashboard, navigate to constellation 
+            // Method 2: If we're on dashboard, trigger constellation mode directly
             else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
-              console.log('🔄 EMMA CHAT: Navigating from dashboard to constellation view');
-              window.location.href = 'dashboard.html?view=constellation';
+              console.log('🔄 EMMA CHAT: Triggering constellation mode on dashboard');
+              // Trigger constellation mode directly (same as clicking "Memories" menu)
+              if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+                await window.emmaDashboard.enterMemoryConstellation();
+              } else {
+                // Fallback: reload page and auto-trigger constellation
+                window.location.href = 'dashboard.html#constellation';
+              }
             }
             // Method 3: If we're on memories page but constellation function not available, reload with constellation view
             else if (window.location.pathname.includes('memories.html')) {
@@ -6709,7 +6722,7 @@ RULES:
             else {
               console.log('🔄 EMMA CHAT: Fallback navigation to constellation view');
               const baseUrl = window.location.origin;
-              window.location.href = baseUrl + '/dashboard.html?view=constellation';
+              window.location.href = baseUrl + '/dashboard.html#constellation';
             }
           }, 500);
         }, 1500);
