@@ -6626,7 +6626,7 @@ RULES:
             console.log('🔄 EMMA CHAT: Triggering constellation mode on dashboard');
             // Trigger constellation mode directly (same as clicking "Memories" menu)
             if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
-              await window.emmaDashboard.enterMemoryConstellation();
+              window.emmaDashboard.enterMemoryConstellation();
             } else {
               // Fallback: reload page and auto-trigger constellation
               window.location.href = window.location.origin + '/dashboard.html#constellation';
@@ -6705,7 +6705,7 @@ RULES:
               console.log('🔄 EMMA CHAT: Triggering constellation mode on dashboard');
               // Trigger constellation mode directly (same as clicking "Memories" menu)
               if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
-                await window.emmaDashboard.enterMemoryConstellation();
+                window.emmaDashboard.enterMemoryConstellation();
               } else {
                 // Fallback: reload page and auto-trigger constellation
                 window.location.href = 'dashboard.html#constellation';

@@ -11,9 +11,18 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 
+  <!-- Load Emma Core Systems -->
+  <script src="js/emma-env.js"></script>
+  <script src="js/emma-logger.js"></script>
+  <script src="js/modal-manager.js"></script>
+  <script src="js/emma-dementia-modals.js"></script>
+  <script src="js/emma-font-scaler.js"></script>
+  <script src="js/emma-performance-optimizer.js"></script>
+  
   <!-- Load Emma Web Vault System -->
   <script src="js/emma-input-modal.js"></script>
   <script src="js/clean-password-modal.js"></script>
+  <script src="js/modal-helpers.js"></script>
   <script src="js/emma-feature-flags.js"></script>
   <script src="js/emma-vault-primary.js"></script>
   <script src="js/emma-web-vault.js"></script>
@@ -2044,6 +2053,10 @@
   <script src="js/experience-popup-base.js"></script>
   <script src="js/voice-capture-experience.js"></script>
   <script src="js/emma-voice-transcription.js"></script>
+  
+  <!-- Emma Intelligence & Chat System -->
+  <script src="js/emma-vectorless-engine.js"></script>
+  <script src="js/emma-intelligent-capture.js"></script>
   <script src="js/emma-chat-experience.js"></script>
   <script src="js/emma-qr-generator.js"></script>
   <script src="js/qr-service.js"></script>
@@ -2063,6 +2076,9 @@
         this.orb = document.getElementById('emma-orb');
         this.radialMenu = document.getElementById('radial-menu');
         this.voiceIndicator = document.getElementById('voice-indicator');
+        
+        // CRITICAL: Expose dashboard globally for Emma Chat Experience
+        window.emmaDashboard = this;
         this.loading = document.getElementById('loading');
 
         console.log('🔧 Constructor - radial items:', this.radialMenu ? this.radialMenu.querySelectorAll('.radial-item').length : 'NULL');
