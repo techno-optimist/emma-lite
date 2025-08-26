@@ -5442,31 +5442,64 @@ RULES:
     
     console.log('🚨 NUCLEAR: Event isolation deployed!');
     
-    // 🔍 DEBUG: Check scroll container properties
+    // 🔍 VISUAL DEBUG: Bypass Emma Logger with visual debug overlay
     setTimeout(() => {
       const debugInfo = {
-        contentElement: content,
         clientHeight: content.clientHeight,
         scrollHeight: content.scrollHeight,
         offsetHeight: content.offsetHeight,
-        computedStyle: window.getComputedStyle(content),
         canScroll: content.scrollHeight > content.clientHeight,
         overflowY: window.getComputedStyle(content).overflowY,
         position: window.getComputedStyle(content).position,
-        display: window.getComputedStyle(content).display
+        display: window.getComputedStyle(content).display,
+        boxSizing: window.getComputedStyle(content).boxSizing
       };
       
-      console.log('🔍 NUCLEAR DEBUG:', debugInfo);
+      // Create visual debug overlay
+      const debugOverlay = document.createElement('div');
+      debugOverlay.style.cssText = `
+        position: fixed !important;
+        top: 10px !important;
+        right: 10px !important;
+        background: rgba(0, 0, 0, 0.9) !important;
+        color: lime !important;
+        padding: 15px !important;
+        border-radius: 10px !important;
+        font-family: monospace !important;
+        font-size: 12px !important;
+        z-index: 999999 !important;
+        max-width: 300px !important;
+        border: 2px solid lime !important;
+      `;
       
-      if (!debugInfo.canScroll) {
-        console.error('❌ SCROLL ISSUE: Content height not exceeding container!', {
-          contentHeight: debugInfo.scrollHeight,
-          containerHeight: debugInfo.clientHeight,
-          difference: debugInfo.scrollHeight - debugInfo.clientHeight
-        });
-      } else {
-        console.log('✅ SCROLL READY: Content overflows container by', debugInfo.scrollHeight - debugInfo.clientHeight, 'px');
-      }
+      const scrollStatus = debugInfo.canScroll ? 
+        `✅ CAN SCROLL (${debugInfo.scrollHeight - debugInfo.clientHeight}px overflow)` : 
+        `❌ CANNOT SCROLL (no overflow)`;
+      
+      debugOverlay.innerHTML = `
+        <div><strong>🔍 NUCLEAR DEBUG</strong></div>
+        <div>Status: ${scrollStatus}</div>
+        <div>Client Height: ${debugInfo.clientHeight}px</div>
+        <div>Scroll Height: ${debugInfo.scrollHeight}px</div>
+        <div>Overflow-Y: ${debugInfo.overflowY}</div>
+        <div>Position: ${debugInfo.position}</div>
+        <div>Display: ${debugInfo.display}</div>
+        <div>Box-Sizing: ${debugInfo.boxSizing}</div>
+        <button onclick="this.parentElement.remove()" style="margin-top: 10px; background: lime; color: black; border: none; padding: 5px;">Close</button>
+      `;
+      
+      document.body.appendChild(debugOverlay);
+      
+      // Also try to force scroll programmatically
+      content.scrollTop = 50;
+      setTimeout(() => {
+        if (content.scrollTop === 50) {
+          debugOverlay.innerHTML += '<div style="color: yellow;">⚡ PROGRAMMATIC SCROLL: Working!</div>';
+        } else {
+          debugOverlay.innerHTML += '<div style="color: red;">❌ PROGRAMMATIC SCROLL: Blocked!</div>';
+        }
+      }, 100);
+      
     }, 100);
     
     // 🚨 CRITICAL: Completely disable body scroll
