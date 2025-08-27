@@ -66,10 +66,11 @@ class UniversalEmmaOrbMenu {
   init() {
     this.createHTML();
     this.createCanvas();
+    this.initWebGLOrb(); // RESTORED: Initialize beautiful WebGL orb
     this.setupEventListeners();
     this.positionElements();
     
-    console.log('🌟 Universal Emma Orb Menu initialized');
+    console.log('🌟 Universal Emma Orb Menu initialized with WebGL orb');
   }
   
   createHTML() {
@@ -93,24 +94,22 @@ class UniversalEmmaOrbMenu {
           z-index: 1;
         "></canvas>
         
-        <!-- Central Emma Orb -->
+        <!-- Central Emma Orb (WebGL - RESTORED!) -->
         <div class="emma-orb-center" style="
           position: absolute;
           width: ${this.options.orbSize}px;
           height: ${this.options.orbSize}px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
           cursor: pointer;
           z-index: 10;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 0 40px rgba(134, 88, 255, 0.4);
-          backdrop-filter: blur(20px);
-          border: 2px solid rgba(255, 255, 255, 0.2);
+          transition: transform 0.3s ease;
         ">
-          <span style="color: white; font-size: 24px; font-weight: 300;">💜</span>
+          <div class="emma-orb-webgl" id="webgl-orb-container" style="
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+          ">
+            <!-- Beautiful WebGL Emma Orb will be inserted here -->
+          </div>
         </div>
         
         <!-- Menu Nodes Container -->
@@ -169,6 +168,41 @@ class UniversalEmmaOrbMenu {
     const rect = this.container.getBoundingClientRect();
     this.canvas.width = rect.width;
     this.canvas.height = rect.height;
+  }
+  
+  initWebGLOrb() {
+    // RESTORED: Initialize the beautiful WebGL Emma orb
+    try {
+      const orbContainer = this.container.querySelector('#webgl-orb-container');
+      if (!orbContainer) {
+        console.warn('🌟 WebGL orb container not found');
+        return;
+      }
+
+      // Check if EmmaOrb class is available
+      if (window.EmmaOrb) {
+        console.log('🌟 Initializing beautiful WebGL Emma orb');
+        
+        // Create the gorgeous WebGL Emma Orb
+        this.webglOrb = new window.EmmaOrb(orbContainer, {
+          hue: 270, // Emma's signature purple-pink
+          hoverIntensity: 0.8,
+          rotateOnHover: true,
+          glowIntensity: 0.6,
+          size: this.options.orbSize,
+          // Add any other options that were in the original
+        });
+        
+        console.log('✨ Beautiful WebGL Emma orb restored successfully!');
+      } else {
+        console.warn('🌟 EmmaOrb class not available - WebGL orb not initialized');
+        // Fallback to simple styling if WebGL not available
+        orbContainer.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+        orbContainer.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.4)';
+      }
+    } catch (error) {
+      console.error('❌ Error initializing WebGL orb:', error);
+    }
   }
   
   setupEventListeners() {
