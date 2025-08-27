@@ -18,6 +18,7 @@
   <script src="js/emma-dementia-modals.js"></script>
   <script src="js/emma-font-scaler.js"></script>
   <script src="js/emma-performance-optimizer.js"></script>
+  <script src="js/universal-emma-orb-menu.js"></script>
   
   <!-- Load Emma Web Vault System -->
   <script src="js/emma-input-modal.js"></script>
@@ -1773,44 +1774,19 @@
   <!-- Main Dashboard -->
   <div class="dashboard">
     <div class="command-center">
-      <!-- Central Emma Orb (WebGL) with Elegant Vault Unlock -->
-      <div class="emma-orb-container" id="emma-orb">
-        <div class="emma-orb-webgl" id="webgl-orb-container">
-          <!-- WebGL Emma Orb will be inserted here -->
-        </div>
-      </div>
+      <!-- Universal Emma Orb Menu (New Connected Component) -->
+      <div id="universal-orb-menu" style="
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "></div>
     </div>
   </div>
 
-  <!-- Radial Menu (Clean 4-item layout around Emma orb) -->
-  <div class="radial-menu" id="radial-menu">
-        <div class="radial-item" data-action="memories">
-          <div class="radial-item-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-2.5 2.5M6.5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H6.5z"/>
-              <path d="M9 10h6M9 14h4"/>
-            </svg>
-          </div>
-          <div class="radial-item-label">Memories</div>
-        </div>
-        <div class="radial-item" data-action="people">
-          <div class="radial-item-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div class="radial-item-label">People</div>
-        </div>
-        <div class="radial-item" data-action="chat">
-          <div class="radial-item-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <div class="radial-item-label">Chat</div>
-        </div>
-      </div>
+
 
   <!-- Bottom Left Clean Icons -->
   <div class="clean-icons" style="
@@ -2060,15 +2036,18 @@
     // Dashboard Controller
     class EmmaDashboard {
       constructor() {
-        this.orb = document.getElementById('emma-orb');
-        this.radialMenu = document.getElementById('radial-menu');
+        // Universal Orb Menu setup
+        this.universalOrbContainer = document.getElementById('universal-orb-menu');
         this.voiceIndicator = document.getElementById('voice-indicator');
         
         // CRITICAL: Expose dashboard globally for Emma Chat Experience
         window.emmaDashboard = this;
         this.loading = document.getElementById('loading');
+        
+        // Initialize Universal Emma Orb Menu
+        this.initUniversalOrbMenu();
 
-        console.log('🔧 Constructor - radial items:', this.radialMenu ? this.radialMenu.querySelectorAll('.radial-item').length : 'NULL');
+        console.log('🔧 Constructor - Universal Orb Menu container:', this.universalOrbContainer ? 'FOUND' : 'NULL');
         this.panels = {
           dailyBrief: document.getElementById('daily-brief'),
           aiInsights: document.getElementById('ai-insights'),
@@ -2117,6 +2096,41 @@
         });
 
         this.init();
+      }
+
+      initUniversalOrbMenu() {
+        if (!this.universalOrbContainer) {
+          console.error('❌ Universal Orb Menu container not found!');
+          return;
+        }
+
+        // Create the Universal Emma Orb Menu
+        this.universalOrbMenu = new UniversalEmmaOrbMenu(this.universalOrbContainer);
+        
+        // Listen for orb menu events
+        this.universalOrbContainer.addEventListener('orb-menu-action', (e) => {
+          this.handleUniversalOrbAction(e.detail.action);
+        });
+
+        console.log('🌟 Universal Emma Orb Menu initialized successfully');
+      }
+
+      handleUniversalOrbAction(action) {
+        console.log('🎯 Universal Orb Menu: Action triggered:', action);
+        
+        switch(action) {
+          case 'memories':
+            this.enterMemoryConstellation();
+            break;
+          case 'chat':
+            this.startEmmaChatExperience();
+            break;
+          case 'people':
+            window.location.href = 'pages/people-emma.html';
+            break;
+          default:
+            console.log('🎯 Unknown action:', action);
+        }
       }
 
       async init() {
@@ -2232,25 +2246,8 @@
       }
 
       setupEventListeners() {
-        // Orb click - exit constellation or toggle menu
-        this.orb.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (this.isConstellationMode) {
-            // Simple: Exit constellation mode back to main dashboard
-            this.exitMemoryConstellation();
-          } else {
-            this.toggleRadialMenu();
-          }
-        });
-
-        // Radial menu items
-        this.radialMenu.querySelectorAll('.radial-item').forEach(item => {
-          item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const action = item.dataset.action;
-            this.handleRadialAction(action);
-          });
-        });
+        // Universal Orb Menu is handled in initUniversalOrbMenu()
+        console.log('🎯 Event listeners setup - using Universal Orb Menu');
 
         // Track mouse/touch position for neural effects
         this.mouseX = 0;
