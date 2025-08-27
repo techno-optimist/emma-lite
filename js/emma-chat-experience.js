@@ -5328,6 +5328,7 @@ RULES:
       backdrop-filter: blur(20px) !important;
       overflow: hidden !important;
       overscroll-behavior: contain !important;
+      touch-action: none !important;
     `;
 
     editModal.innerHTML = `
@@ -5349,6 +5350,8 @@ RULES:
         position: relative !important;
         z-index: 15001 !important;
         pointer-events: auto !important;
+        touch-action: pan-y !important;
+        scroll-behavior: smooth !important;
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
           <h2 style="margin: 0; font-size: 24px; font-weight: 600;">✏️ Edit Memory</h2>
@@ -5477,11 +5480,20 @@ RULES:
     `;
 
     document.body.appendChild(editModal);
+    
+    // 📱 MOBILE-SPECIFIC: Apply responsive styles for smaller screens
+    if (window.innerWidth <= 768) {
+      const modalContent = editModal.querySelector('.edit-modal-content');
+      modalContent.style.maxWidth = '95%';
+      modalContent.style.maxHeight = '90vh';
+      modalContent.style.padding = '20px';
+      modalContent.style.width = '95%';
+    }
 
-    // 🛡️ CRITICAL: Selective scroll event isolation
+    // 🛡️ CRITICAL: Multi-device scroll event isolation (desktop + mobile)
     const content = editModal.querySelector('.edit-modal-content');
     
-    // Only block scroll events that happen OUTSIDE the content area
+    // Desktop: Block wheel events outside content area
     editModal.addEventListener('wheel', (e) => {
       // If the event target is the content or a child of content, allow it
       if (content && (e.target === content || content.contains(e.target))) {
@@ -5491,6 +5503,23 @@ RULES:
       e.preventDefault();
       e.stopPropagation();
     }, { passive: false, capture: false });
+    
+    // 📱 MOBILE: Handle touch events for mobile/tablet scrolling
+    let touchStartY = 0;
+    
+    editModal.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    
+    editModal.addEventListener('touchmove', (e) => {
+      // If touch is on content area, allow normal scrolling
+      if (content && (e.target === content || content.contains(e.target))) {
+        return; // Allow normal touch scrolling on content
+      }
+      
+      // Otherwise, prevent background scrolling
+      e.preventDefault();
+    }, { passive: false });
     
     // Block body scroll completely while modal is open
     const originalOverflow = document.body.style.overflow;

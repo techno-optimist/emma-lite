@@ -2524,28 +2524,25 @@
           const startX = orbCenterX;
           const startY = orbCenterY;
 
-          // Position at orb center initially (for animation)
-          item.style.left = (startX - 45) + 'px'; // Center the 90px item
-          item.style.top = (startY - 45) + 'px';
-          item.style.transform = 'scale(0)';
-          item.style.opacity = '0';
+          // Position at target location (no scaling animation needed)
+          item.style.left = (targetX - 45) + 'px'; // Center the 90px item
+          item.style.top = (targetY - 45) + 'px';
+          // Opacity will be handled by CSS transition
 
           console.log(`🎯 Item ${i}: start(${startX}, ${startY}) → target(${targetX}, ${targetY})`);
 
-          // Store both current and target positions
+          // Store position data (simplified for gentle fade)
           const nodeData = {
             element: item,
-            x: startX,      // Current position (starts at orb center)
-            y: startY,
-            targetX: targetX,  // Final position
+            x: targetX,      // Final position
+            y: targetY,
+            targetX: targetX,
             targetY: targetY,
-            vx: 0,
-            vy: 0,
-            baseX: targetX,    // Base position for physics
+            baseX: targetX,
             baseY: targetY,
             angle: angle,
             connections: [],
-            orbBound: true     // Flag to indicate this is bound to orb
+            orbBound: true
           };
 
           this.nodes.push(nodeData);
@@ -2589,8 +2586,8 @@
 
           this.updateVaultNodeStatus(); // Update vault node based on status
 
-          // Simple positioning around the orb (no aggressive physics)
-          this.positionMenuItemsAroundOrb();
+          // Initialize the menu nodes (without aggressive physics)
+          this.initNeuralNetwork();
 
         } else {
           this.radialMenu.classList.remove('active');
