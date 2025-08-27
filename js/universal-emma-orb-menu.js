@@ -107,6 +107,10 @@ class UniversalEmmaOrbMenu {
             width: 100%;
             height: 100%;
             border-radius: 50%;
+            box-shadow: 0 0 40px rgba(134, 88, 255, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            background: transparent;
           ">
             <!-- Beautiful WebGL Emma Orb will be inserted here -->
           </div>
@@ -181,28 +185,38 @@ class UniversalEmmaOrbMenu {
 
       // Check if EmmaOrb class is available
       if (window.EmmaOrb) {
-        console.log('🌟 Initializing beautiful WebGL Emma orb');
-        
-        // Create the gorgeous WebGL Emma Orb
-        this.webglOrb = new window.EmmaOrb(orbContainer, {
-          hue: 270, // Emma's signature purple-pink
-          hoverIntensity: 0.8,
-          rotateOnHover: true,
-          glowIntensity: 0.6,
-          size: this.options.orbSize,
-          // Add any other options that were in the original
-        });
-        
-        console.log('✨ Beautiful WebGL Emma orb restored successfully!');
+        try {
+          console.log('🌟 Initializing beautiful WebGL Emma orb');
+          
+          // Create the gorgeous WebGL Emma Orb with EXACT original settings
+          this.webglOrb = new window.EmmaOrb(orbContainer, {
+            hue: 270, // Emma's signature purple-pink
+            hoverIntensity: 0.35, // ORIGINAL SETTING
+            rotateOnHover: true,
+            forceHoverState: false // ORIGINAL SETTING
+          });
+          
+          console.log('✨ Beautiful WebGL Emma orb restored successfully!');
+        } catch (webglError) {
+          console.error('❌ WebGL orb creation failed:', webglError);
+          this.applyFallbackOrb(orbContainer);
+        }
       } else {
-        console.warn('🌟 EmmaOrb class not available - WebGL orb not initialized');
-        // Fallback to simple styling if WebGL not available
-        orbContainer.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
-        orbContainer.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.4)';
+        console.warn('🌟 EmmaOrb class not available - using fallback');
+        this.applyFallbackOrb(orbContainer);
       }
     } catch (error) {
       console.error('❌ Error initializing WebGL orb:', error);
     }
+  }
+  
+  applyFallbackOrb(orbContainer) {
+    // EXACT original fallback styling
+    orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
+    orbContainer.style.borderRadius = '50%';
+    orbContainer.style.width = '100%';
+    orbContainer.style.height = '100%';
+    orbContainer.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.1)';
   }
   
   setupEventListeners() {

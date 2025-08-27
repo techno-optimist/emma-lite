@@ -2115,15 +2115,15 @@
         console.log('🌟 Universal Emma Orb Menu initialized successfully');
       }
 
-      handleUniversalOrbAction(action) {
+      async handleUniversalOrbAction(action) {
         console.log('🎯 Universal Orb Menu: Action triggered:', action);
         
         switch(action) {
           case 'memories':
-            this.enterMemoryConstellation();
+            await this.enterMemoryConstellation();
             break;
           case 'chat':
-            this.startEmmaChatExperience();
+            await this.startEmmaChatExperience();
             break;
           case 'people':
             window.location.href = 'pages/people-emma.html';
