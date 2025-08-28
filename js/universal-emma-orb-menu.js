@@ -68,9 +68,9 @@ class UniversalEmmaOrbMenu {
     this.createCanvas();
     // NO WebGL orb - original dashboard handles this
     this.setupEventListeners();
-    this.positionElements();
+    // DON'T position elements on init - only when menu is actually open
     
-    console.log('🌟 Universal Connected Nodes initialized (orb handled by original dashboard)');
+    console.log('🌟 Universal Connected Nodes initialized (lines will appear when menu opens)');
   }
   
   createHTML() {
@@ -200,26 +200,43 @@ class UniversalEmmaOrbMenu {
   }
   
   positionElements() {
-    // CRITICAL: Get ACTUAL Emma orb position from dashboard
+    // CRITICAL: Only draw lines if radial menu is actually open/active
+    const radialMenu = document.getElementById('radial-menu');
     const emmaDashboard = window.emmaDashboard;
-    let centerX, centerY;
     
+    // Check if radial menu is active/open
+    const isRadialMenuOpen = radialMenu && radialMenu.classList.contains('active');
+    const isDashboardMenuOpen = emmaDashboard && emmaDashboard.isMenuOpen;
+    
+    console.log('🔗 Universal Orb Menu positioning check:', {
+      radialMenuExists: !!radialMenu,
+      radialMenuActive: isRadialMenuOpen,
+      dashboardMenuOpen: isDashboardMenuOpen,
+      shouldDrawLines: isRadialMenuOpen || isDashboardMenuOpen
+    });
+    
+    // CRITICAL: Only proceed if menu is actually open
+    if (!isRadialMenuOpen && !isDashboardMenuOpen) {
+      console.log('🔗 Radial menu not open - clearing lines');
+      this.nodes = [];
+      this.clearCanvas();
+      return;
+    }
+    
+    // Get actual orb position
+    let centerX, centerY;
     if (emmaDashboard && emmaDashboard.orb) {
       const orbRect = emmaDashboard.orb.getBoundingClientRect();
       centerX = orbRect.left + orbRect.width / 2;
       centerY = orbRect.top + orbRect.height / 2;
-      console.log('🔗 Using ACTUAL orb position:', { centerX, centerY, orbRect });
+      console.log('🔗 Using ACTUAL orb position:', { centerX, centerY });
     } else {
-      // Fallback to viewport center
-      centerX = window.innerWidth / 2;
-      centerY = window.innerHeight / 2;
-      console.log('🔗 Fallback to viewport center:', { centerX, centerY });
+      console.log('🔗 No dashboard orb found - skipping');
+      return;
     }
     
-    // CRITICAL: Use ACTUAL radial menu items, don't create our own
-    const radialMenu = document.getElementById('radial-menu');
+    // Get actual radial menu items
     const actualRadialItems = radialMenu ? radialMenu.querySelectorAll('.radial-item') : [];
-    
     console.log('🔗 Found actual radial items:', actualRadialItems.length);
     
     // Clear our nodes array and populate with actual radial item positions
@@ -227,29 +244,38 @@ class UniversalEmmaOrbMenu {
     
     actualRadialItems.forEach((item, index) => {
       const itemRect = item.getBoundingClientRect();
-      const itemCenterX = itemRect.left + itemRect.width / 2;
-      const itemCenterY = itemRect.top + itemRect.height / 2;
       
-      // Store position for line drawing
-      this.nodes[index] = {
-        element: item,
-        x: itemCenterX,
-        y: itemCenterY,
-        centerX: centerX,
-        centerY: centerY
-      };
-      
-      console.log(`🔗 Actual radial item ${index} at:`, {
-        x: itemCenterX,
-        y: itemCenterY,
-        itemRect
-      });
+      // Only add items that are actually visible (not at 0,0 or hidden)
+      if (itemRect.width > 0 && itemRect.height > 0) {
+        const itemCenterX = itemRect.left + itemRect.width / 2;
+        const itemCenterY = itemRect.top + itemRect.height / 2;
+        
+        // Store position for line drawing
+        this.nodes[index] = {
+          element: item,
+          x: itemCenterX,
+          y: itemCenterY,
+          centerX: centerX,
+          centerY: centerY
+        };
+        
+        console.log(`🔗 Visible radial item ${index} at:`, {
+          x: itemCenterX,
+          y: itemCenterY
+        });
+      }
     });
     
-    // Draw connecting lines immediately after positioning
+    // Draw connecting lines after positioning
     setTimeout(() => {
       this.drawConnections();
     }, 100);
+  }
+  
+  clearCanvas() {
+    if (this.ctx) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
   }
   
   drawConnections() {

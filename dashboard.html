@@ -2719,6 +2719,11 @@
 
           // Reset nodes array
           this.nodes = [];
+          
+          // CRITICAL: Clear Universal Orb Menu lines when menu closes
+          if (this.universalOrbMenu && this.universalOrbMenu.clearCanvas) {
+            this.universalOrbMenu.clearCanvas();
+          }
         }
       }
 
