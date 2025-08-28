@@ -3668,7 +3668,17 @@ RULES:
       'fell', 'climbed', 'walked', 'ran', 'went', 'came', 'saw', 'met', 'talked', 'played',
       'laughed', 'cried', 'ate', 'drank', 'drove', 'flew', 'visited', 'stayed', 'left',
       'bought', 'sold', 'made', 'built', 'broke', 'fixed', 'found', 'lost', 'gave', 'got',
-      'married', 'divorced', 'moved', 'lived', 'worked', 'studied', 'graduated', 'retired'
+      'married', 'divorced', 'moved', 'lived', 'worked', 'studied', 'graduated', 'retired',
+      'mowing', 'cooking', 'cleaning', 'gardening', 'painting', 'reading', 'singing', 'dancing',
+      'fishing', 'hunting', 'camping', 'swimming', 'running', 'jogging', 'hiking', 'biking',
+      'shopping', 'traveling', 'driving', 'flying', 'sailing', 'skiing', 'golfing', 'tennis'
+    ];
+    
+    // HOUSEHOLD ACTIVITIES: Common daily activities
+    const householdActivities = [
+      'lawn mowing', 'mowing lawn', 'cutting grass', 'yard work', 'gardening', 'weeding',
+      'cooking dinner', 'making breakfast', 'washing dishes', 'doing laundry', 'cleaning house',
+      'fixing things', 'repairing', 'building', 'painting walls', 'home improvement'
     ];
     
     // CONTEXT INDICATORS: Following up on person conversation
@@ -3686,6 +3696,11 @@ RULES:
       return true;
     }
     
+    // CRITICAL: Check for household activities (like "lawn mowing")
+    if (householdActivities.some(activity => lowerMessage.includes(activity))) {
+      return true;
+    }
+    
     // Check for activity words in context of person discussion
     if (hasPersonContext && activityWords.some(word => lowerMessage.includes(word))) {
       return true;
@@ -3696,11 +3711,32 @@ RULES:
       return true;
     }
     
-    // CRITICAL: Single word responses in person context (like "husband" after asking about Mark)
-    if (hasPersonContext && lowerMessage.length <= 15 && 
-        (relationshipWords.some(word => lowerMessage === word) || 
-         lowerMessage.includes('my ') || lowerMessage.includes('he ') || lowerMessage.includes('she '))) {
-      return true;
+    // 🚨 CTO CRITICAL: Context-aware memory sharing detection
+    if (hasPersonContext) {
+      // Single word activities (like "mowing" when discussing Mark)
+      if (lowerMessage.length <= 15 && activityWords.some(word => lowerMessage.includes(word))) {
+        return true;
+      }
+      
+      // Routine/habit descriptions (like "always doing it")
+      if (lowerMessage.includes('always') || lowerMessage.includes('usually') || 
+          lowerMessage.includes('often') || lowerMessage.includes('every day') ||
+          lowerMessage.includes('doing it') || lowerMessage.includes('does it')) {
+        return true;
+      }
+      
+      // Simple confirmations in memory context (like "thats it", "yes", "exactly")
+      if (lowerMessage === 'thats it' || lowerMessage === 'that\'s it' || 
+          lowerMessage === 'exactly' || lowerMessage === 'right' || 
+          lowerMessage === 'correct' || lowerMessage === 'yep') {
+        return true;
+      }
+      
+      // Relationship words or pronouns
+      if (relationshipWords.some(word => lowerMessage === word) || 
+          lowerMessage.includes('my ') || lowerMessage.includes('he ') || lowerMessage.includes('she ')) {
+        return true;
+      }
     }
     
     // Check for simple story fragments
@@ -3742,6 +3778,22 @@ RULES:
     }
     if (lower.includes('son') || lower.includes('daughter')) {
       return `${person} is your ${lower.includes('son') ? 'son' : 'daughter'}! What a blessing. What makes you most proud of them?`;
+    }
+    
+    // ACTIVITY-SPECIFIC RESPONSES
+    if (lower.includes('mowing') || lower.includes('lawn')) {
+      return `Oh, ${person} and lawn mowing! That sounds like such a regular part of life together. I can picture that. Tell me more about those times.`;
+    }
+    if (lower.includes('cooking') || lower.includes('kitchen')) {
+      return `${person} cooking! I bet those kitchen moments were special. What did they like to make?`;
+    }
+    if (lower.includes('always doing') || lower.includes('always') || lower.includes('usually')) {
+      return `That sounds like such a meaningful pattern with ${person}! Those regular moments together can be so precious. What made those times special?`;
+    }
+    
+    // SIMPLE CONFIRMATIONS
+    if (lower === 'thats it' || lower === 'that\'s it' || lower === 'exactly' || lower === 'right') {
+      return `I understand! Sometimes the simple moments with ${person} are the most meaningful ones. Those everyday memories can hold such love.`;
     }
     
     // GENERAL MEMORY RESPONSES
