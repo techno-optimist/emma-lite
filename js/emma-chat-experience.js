@@ -611,6 +611,31 @@ class EmmaChatExperience extends ExperiencePopup {
   detectPersonRequest(message) {
     const lowerMessage = message.toLowerCase().trim();
     
+    // 🎯 CTO ENHANCEMENT: Handle pronouns with contextual resolution FIRST
+    const pronounPatterns = [
+      /(?:show me|tell me about|who is)\s+(he|she|they|him|her|them)$/i,
+      /(?:what about|how about)\s+(he|she|they|him|her|them)$/i
+    ];
+    
+    // Check for pronoun references to recent people
+    for (const pattern of pronounPatterns) {
+      const pronounMatch = message.match(pattern);
+      if (pronounMatch) {
+        const recentPeople = Array.from(this.conversationContext.recentPeople);
+        if (recentPeople.length > 0) {
+          const resolvedPerson = recentPeople[recentPeople.length - 1]; // Most recent
+          console.log(`🎯 CTO: Resolved pronoun "${pronounMatch[1]}" to "${resolvedPerson}" from context`);
+          
+          return {
+            personName: resolvedPerson,
+            requestType: this.categorizePersonRequest(lowerMessage),
+            originalMessage: message,
+            wasPronouns: true
+          };
+        }
+      }
+    }
+
     // 🎯 DETECT person inquiries (case-insensitive names!)
     const personPatterns = [
       /(?:show me|tell me about|who is)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
@@ -3319,41 +3344,116 @@ RULES:
     return null; // Let normal processing continue
   }
 
-  // Extract people from message using vault data
+  // 🧠 CTO DEEP FIX: Intelligent context-aware person extraction
   extractPeople(message) {
     const people = [];
     const lower = message.toLowerCase();
     
-    // Get all people from vault dynamically
+    console.log('🧠 CTO: Deep person extraction for:', message);
+    
+    // PRIORITY 1: Vault people (known entities) - most reliable
     const vault = window.emmaWebVault?.vaultData?.content;
     if (vault?.people) {
       Object.values(vault.people).forEach(person => {
         if (person.name && lower.includes(person.name.toLowerCase())) {
           people.push(person.name);
+          console.log(`🧠 CTO: Found vault person: ${person.name}`);
         }
       });
     }
+
+    // PRIORITY 2: Intelligent sentence structure analysis for new people
+    const potentialPeople = this.extractPeopleFromSentenceStructure(message);
+    potentialPeople.forEach(person => {
+      if (!people.includes(person)) {
+        people.push(person);
+        console.log(`🧠 CTO: Found contextual person: ${person}`);
+      }
+    });
     
-    // Also extract capitalized names (likely people not yet in vault)
-    const nameMatches = message.match(/\b[A-Z][a-z]+\b/g);
-    if (nameMatches) {
-      nameMatches.forEach(name => {
-        // 🐛 FIX: Expanded exclusion list to prevent false positives
-        const excludeWords = [
-          'I', 'Today', 'The', 'And', 'But', 'So', 'This', 'That', 'What', 'When', 'Where', 'Why', 'How',
-          'Would', 'Could', 'Should', 'Will', 'Can', 'May', 'Must', 'Shall', 'Even', 'Though', 'Their',
-          'They', 'Them', 'Then', 'Than', 'Some', 'Many', 'Most', 'All', 'Any', 'Every', 'Each', 'Both',
-          'Either', 'Neither', 'Only', 'Just', 'Even', 'Also', 'Still', 'Yet', 'Already', 'Always', 'Never',
-          'Sometimes', 'Often', 'Usually', 'Really', 'Very', 'Quite', 'Rather', 'Pretty', 'Fairly', 'About'
-        ];
-        
-        if (!excludeWords.includes(name)) {
-          people.push(name);
-        }
-      });
-    }
-    
+    console.log('🧠 CTO: Final extracted people:', people);
     return [...new Set(people)];
+  }
+
+  // 🧠 DEEP LINGUISTIC ANALYSIS: Extract people based on sentence structure
+  extractPeopleFromSentenceStructure(message) {
+    const people = [];
+    
+    // PATTERN 1: "with [Person]" - high confidence person indicator
+    const withPattern = /\bwith\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g;
+    let match;
+    while ((match = withPattern.exec(message)) !== null) {
+      const candidate = match[1];
+      if (this.isLikelyPersonName(candidate, message)) {
+        people.push(candidate);
+      }
+    }
+
+    // PATTERN 2: "and [Person]" - when preceded by another person
+    const andPattern = /\band\s+([A-Z][a-z]+)\b/g;
+    while ((match = andPattern.exec(message)) !== null) {
+      const candidate = match[1];
+      if (this.isLikelyPersonName(candidate, message)) {
+        people.push(candidate);
+      }
+    }
+
+    // PATTERN 3: Beginning of sentence names (less reliable, more filtering)
+    const sentenceStartPattern = /(?:^|\. )([A-Z][a-z]+)\s+(?:and|is|was|said|told|asked|went|came|left)/g;
+    while ((match = sentenceStartPattern.exec(message)) !== null) {
+      const candidate = match[1];
+      if (this.isLikelyPersonName(candidate, message)) {
+        people.push(candidate);
+      }
+    }
+
+    return people;
+  }
+
+  // 🧠 INTELLIGENT VALIDATION: Is this word actually a person name?
+  isLikelyPersonName(candidate, fullMessage) {
+    // EXCLUDE: Common verbs that get capitalized
+    const commonVerbs = [
+      'Went', 'Said', 'Told', 'Asked', 'Came', 'Left', 'Got', 'Had', 'Was', 'Were', 'Did', 'Made',
+      'Took', 'Gave', 'Saw', 'Found', 'Thought', 'Knew', 'Felt', 'Looked', 'Seemed', 'Became',
+      'Started', 'Stopped', 'Tried', 'Wanted', 'Needed', 'Liked', 'Loved', 'Hated', 'Hoped',
+      'Decided', 'Remembered', 'Forgot', 'Learned', 'Taught', 'Helped', 'Worked', 'Played'
+    ];
+
+    // EXCLUDE: Common sentence starters and temporal words
+    const sentenceStarters = [
+      'Today', 'Yesterday', 'Tomorrow', 'Recently', 'Later', 'Earlier', 'Soon', 'Then', 'Now',
+      'After', 'Before', 'During', 'While', 'Since', 'Until', 'When', 'Where', 'Why', 'How',
+      'Maybe', 'Perhaps', 'Probably', 'Definitely', 'Certainly', 'Obviously', 'Clearly'
+    ];
+
+    // EXCLUDE: Articles, pronouns, conjunctions when capitalized
+    const functionWords = [
+      'The', 'And', 'But', 'Or', 'So', 'Yet', 'For', 'Nor', 'If', 'As', 'Though', 'Although',
+      'Because', 'Since', 'Unless', 'Until', 'While', 'Where', 'When', 'That', 'Which', 'Who'
+    ];
+
+    const allExclusions = [...commonVerbs, ...sentenceStarters, ...functionWords];
+    
+    if (allExclusions.includes(candidate)) {
+      console.log(`🧠 CTO: Excluded '${candidate}' - recognized as non-person word`);
+      return false;
+    }
+
+    // INCLUDE: Names in person-indicating contexts (high confidence)
+    if (/\b(?:with|and|by|from|to)\s+/.test(fullMessage.substring(0, fullMessage.indexOf(candidate)))) {
+      console.log(`🧠 CTO: Included '${candidate}' - strong contextual indicators`);
+      return true;
+    }
+
+    // VALIDATE: Basic name characteristics
+    if (candidate.length >= 2 && candidate.length <= 20 && /^[A-Z][a-z]+$/.test(candidate)) {
+      console.log(`🧠 CTO: Included '${candidate}' - passes name validation`);
+      return true;
+    }
+
+    console.log(`🧠 CTO: Excluded '${candidate}' - failed validation`);
+    return false;
   }
 
   // Extract emotional tone
