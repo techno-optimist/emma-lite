@@ -3008,8 +3008,19 @@ RULES:
           if (personMemories.length > 0) {
             const recentMemory = personMemories[personMemories.length - 1];
             const memorySnippet = recentMemory.content.substring(0, 100);
-            const timeAgo = Math.floor((Date.now() - recentMemory.created) / (1000 * 60 * 60 * 24));
-            const timeContext = timeAgo === 0 ? 'today' : timeAgo === 1 ? 'yesterday' : `${timeAgo} days ago`;
+            
+            // 🐛 FIX: Safe date calculation with fallback
+            let timeContext = 'recently';
+            try {
+              const memoryDate = new Date(recentMemory.created || recentMemory.timestamp || Date.now());
+              const timeAgo = Math.floor((Date.now() - memoryDate.getTime()) / (1000 * 60 * 60 * 24));
+              if (!isNaN(timeAgo)) {
+                timeContext = timeAgo === 0 ? 'today' : timeAgo === 1 ? 'yesterday' : `${timeAgo} days ago`;
+              }
+            } catch (error) {
+              console.warn('🐛 Date calculation error:', error);
+              timeContext = 'recently';
+            }
 
             return `Oh, ${askedAboutPerson}! I have ${personMemories.length} ${personMemories.length === 1 ? 'memory' : 'memories'} about them in your vault. The most recent one was from ${timeContext}: "${memorySnippet}..." Would you like me to share more about what you've told me about ${askedAboutPerson}?`;
           }
@@ -3242,15 +3253,18 @@ RULES:
       return null; // Let the recall system handle the response
     }
     
-    // 🧠 CONTEXTUAL RECALL: Handle "show me" when person was mentioned recently
-    if ((lower.includes('show me') || lower === 'yes') && !person) {
+    // 🧠 CONTEXTUAL RECALL: Handle "show me" or "yes" when person was mentioned recently
+    if ((lower.includes('show me') || lower.trim() === 'yes') && !person) {
       // Check if someone was mentioned in recent conversation
       const recentPeople = Array.from(this.conversationContext.recentPeople);
       if (recentPeople.length > 0) {
         const lastPerson = recentPeople[recentPeople.length - 1]; // Most recent
         console.log(`💝 CONTEXTUAL RECALL: Triggering recall for recent person: ${lastPerson}`);
+        console.log(`💝 CONTEXT: Recent people available: ${recentPeople.join(', ')}`);
         this.handlePersonMemoryRecall(lastPerson);
         return null;
+      } else {
+        console.log(`💝 CONTEXT: No recent people found for 'yes' response`);
       }
     }
     
@@ -3303,7 +3317,16 @@ RULES:
     const nameMatches = message.match(/\b[A-Z][a-z]+\b/g);
     if (nameMatches) {
       nameMatches.forEach(name => {
-        if (!['I', 'Today', 'The', 'And', 'But', 'So', 'This', 'That', 'What', 'When', 'Where', 'Why', 'How'].includes(name)) {
+        // 🐛 FIX: Expanded exclusion list to prevent false positives
+        const excludeWords = [
+          'I', 'Today', 'The', 'And', 'But', 'So', 'This', 'That', 'What', 'When', 'Where', 'Why', 'How',
+          'Would', 'Could', 'Should', 'Will', 'Can', 'May', 'Must', 'Shall', 'Even', 'Though', 'Their',
+          'They', 'Them', 'Then', 'Than', 'Some', 'Many', 'Most', 'All', 'Any', 'Every', 'Each', 'Both',
+          'Either', 'Neither', 'Only', 'Just', 'Even', 'Also', 'Still', 'Yet', 'Already', 'Always', 'Never',
+          'Sometimes', 'Often', 'Usually', 'Really', 'Very', 'Quite', 'Rather', 'Pretty', 'Fairly', 'About'
+        ];
+        
+        if (!excludeWords.includes(name)) {
           people.push(name);
         }
       });
