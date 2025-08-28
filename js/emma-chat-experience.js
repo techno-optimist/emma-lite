@@ -2268,6 +2268,8 @@ CRITICAL - DEMENTIA CARE MODE (ALWAYS ACTIVE FOR THIS USER):
 - If memories seem confused, gently redirect to positive aspects
 - ALWAYS validate what they're sharing as real and meaningful
 - Never use phrases like "Do you remember" or "Are you sure"
+- When asked about people ("show me Mark"), provide warm recall assistance
+- Help them remember relationships, shared experiences, and emotional connections
 
 CONVERSATION CONTEXT:
 Recent conversation flow:
@@ -3203,6 +3205,13 @@ RULES:
     const mentionedPeople = this.extractPeople(userMessage);
     const person = mentionedPeople.length > 0 ? mentionedPeople[0] : null;
     
+    // 💝 CRITICAL: Handle memory recall requests like "show me" about a person
+    if (person && (lower.includes('show me') || lower.includes('tell me about') || lower.includes('remember'))) {
+      // Trigger comprehensive person memory recall
+      this.handlePersonMemoryRecall(person);
+      return null; // Let the recall system handle the response
+    }
+    
     // Detect if user is sharing about someone (recognize relationship context)
     if (person && !lower.includes('what') && !lower.includes('who')) {
       if (lower.includes('movies') || lower.includes('movie')) {
@@ -3291,6 +3300,117 @@ RULES:
     return Object.values(vault.people)
       .filter(person => person.name)
       .map(person => person.name);
+  }
+
+  // 💝 CRITICAL: Handle person memory recall for dementia care
+  async handlePersonMemoryRecall(personName) {
+    try {
+      console.log('💝 DEMENTIA RECALL: Helping remember', personName);
+      
+      // Find the person in vault
+      const person = await this.findPersonInVault(personName);
+      
+      if (!person) {
+        // Person not found - gentle, supportive response
+        this.addMessage(`I understand you're thinking about ${personName}. Even though I don't have their details in your vault yet, they clearly mean something special to you. Would you like to tell me about them?`, 'emma');
+        return;
+      }
+
+      // 🧠 Generate warm, personal introduction
+      const personalIntro = this.generatePersonalRecallIntro(person);
+      this.addMessage(personalIntro, 'emma');
+
+      // 💝 Show person details immediately for recognition
+      await this.displayPersonCard(person);
+
+      // 📚 Find and share connected memories
+      const memories = await this.getPersonMemories(person);
+      
+      if (memories.length > 0) {
+        // Generate contextual memory summary
+        const memorySummary = this.generateMemorySummary(person, memories);
+        this.addMessage(memorySummary, 'emma');
+        
+        // Display memories for visual recognition
+        await this.displayPersonMemories(person);
+      } else {
+        // Encourage memory creation
+        this.addMessage(`I can see ${person.name} is important to you. Would you like to share some memories about them so I can help you remember more about your time together?`, 'emma');
+      }
+
+      // 💭 Offer gentle prompts to help remember more
+      this.offerMemoryPrompts(person);
+
+    } catch (error) {
+      console.error('💝 DEMENTIA RECALL ERROR:', error);
+      this.addMessage(`I'm here to help you remember. Let's talk about ${personName} - what comes to mind when you think of them?`, 'emma');
+    }
+  }
+
+  // Generate warm personal introduction for memory recall
+  generatePersonalRecallIntro(person) {
+    const relationship = person.relationship || 'someone special';
+    const introductions = [
+      `Of course! ${person.name} is ${relationship} in your life. Let me help you remember all about them.`,
+      `Yes, ${person.name}! They're ${relationship} to you. I have some beautiful memories of them here.`,
+      `${person.name} - what a special person! I can see they're ${relationship}. Let me share what we have about them.`
+    ];
+    
+    return introductions[Math.floor(Math.random() * introductions.length)];
+  }
+
+  // Generate memory summary for person recall
+  generateMemorySummary(person, memories) {
+    const memoryCount = memories.length;
+    const recentMemory = memories[0]; // Most recent
+    
+    const summaries = [
+      `I found ${memoryCount} beautiful memories with ${person.name}. Your most recent one was "${recentMemory.title || 'a special moment'}" - such wonderful times together!`,
+      `You have ${memoryCount} precious memories featuring ${person.name}. Looking at them, I can see how much joy they bring to your life.`,
+      `There are ${memoryCount} lovely memories here with ${person.name}. Each one shows what a special bond you share.`
+    ];
+    
+    return summaries[Math.floor(Math.random() * summaries.length)];
+  }
+
+  // Get person's connected memories
+  async getPersonMemories(person) {
+    const vault = window.emmaWebVault?.vaultData?.content;
+    if (!vault?.memories) return [];
+
+    const connectedMemories = [];
+    
+    for (const [memoryId, memory] of Object.entries(vault.memories)) {
+      // Check if person is tagged in memory
+      if (memory.metadata?.people?.includes(person.id)) {
+        connectedMemories.push({ ...memory, id: memoryId });
+      }
+      
+      // Check if person's name is mentioned in content
+      if (person.name && memory.content?.toLowerCase().includes(person.name.toLowerCase())) {
+        if (!connectedMemories.find(m => m.id === memoryId)) {
+          connectedMemories.push({ ...memory, id: memoryId });
+        }
+      }
+    }
+
+    // Sort by date (most recent first)
+    return connectedMemories.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+  }
+
+  // Offer gentle memory prompts
+  offerMemoryPrompts(person) {
+    setTimeout(() => {
+      const prompts = [
+        `What's your favorite memory with ${person.name}?`,
+        `When did you first meet ${person.name}?`,
+        `What do you love most about ${person.name}?`,
+        `Do you have any photos with ${person.name} you'd like to add?`
+      ];
+      
+      const prompt = prompts[Math.floor(Math.random() * prompts.length)];
+      this.addMessage(prompt, 'emma');
+    }, 3000); // Give time to look at the information first
   }
 
   enableFocusMode() {
