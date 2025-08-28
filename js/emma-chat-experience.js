@@ -2056,6 +2056,13 @@ class EmmaChatExperience extends ExperiencePopup {
     const intent = this.classifyUserIntent(userMessage);
     console.log('🧠 CHAT: Intent classified as:', intent);
 
+    // 👥 PEOPLE LIST REQUEST: Show all people in vault
+    if (intent.type === 'people_list') {
+      console.log('👥 CHAT: People list request detected');
+      await this.handlePeopleListRequest(userMessage);
+      return;
+    }
+
     // 👤 PERSON REQUEST DETECTION: Only for specific person inquiries
     if (intent.type === 'person_inquiry') {
       const personRequest = this.detectPersonRequest(userMessage);
@@ -2141,7 +2148,14 @@ class EmmaChatExperience extends ExperiencePopup {
   classifyUserIntent(message) {
     const lower = message.toLowerCase().trim();
 
-    // 👤 Person inquiries (asking ABOUT someone)
+    // 👥 PEOPLE LISTING QUERIES (asking about ALL people)
+    if (/\b(who are|what are|show me|list|see|view)\b.*\b(my|the|all)\b.*\b(people|person|contacts|family|friends)\b/i.test(message) ||
+        /\b(my|all)\b.*\b(people|contacts|family|friends)\b/i.test(message) ||
+        /\bpeople\b.*\b(list|vault|have|know)\b/i.test(message)) {
+      return { type: 'people_list', confidence: 0.95 };
+    }
+
+    // 👤 Person inquiries (asking ABOUT someone specific)
     if (/^(who is|tell me about|show me|what about|how about)\s+[A-Z]/i.test(message) ||
         /^[A-Z][a-z]+\s*\?+\s*$/.test(message)) {
       return { type: 'person_inquiry', confidence: 0.9 };
@@ -3476,6 +3490,58 @@ RULES:
       const prompt = prompts[Math.floor(Math.random() * prompts.length)];
       this.addMessage(prompt, 'emma');
     }, 3000); // Give time to look at the information first
+  }
+
+  // 👥 CRITICAL: Handle people list requests
+  async handlePeopleListRequest(userMessage) {
+    try {
+      console.log('👥 CHAT: Handling people list request:', userMessage);
+      
+      // Get all people from vault
+      const vault = window.emmaWebVault?.vaultData?.content;
+      
+      if (!vault?.people || Object.keys(vault.people).length === 0) {
+        this.addMessage("I don't see any people in your vault yet. Would you like to add someone special to you?", 'emma');
+        return;
+      }
+
+      const allPeople = Object.values(vault.people);
+      const peopleCount = allPeople.length;
+
+      // Generate warm introduction
+      const introResponses = [
+        `You have ${peopleCount} wonderful ${peopleCount === 1 ? 'person' : 'people'} in your vault! Let me show you everyone.`,
+        `Here are the ${peopleCount} special ${peopleCount === 1 ? 'person' : 'people'} you've saved with me.`,
+        `I can see ${peopleCount} ${peopleCount === 1 ? 'person' : 'people'} who ${peopleCount === 1 ? 'is' : 'are'} important to you. Here they are:`
+      ];
+      
+      const intro = introResponses[Math.floor(Math.random() * introResponses.length)];
+      this.addMessage(intro, 'emma');
+
+      // Display each person as a card
+      for (const person of allPeople) {
+        await this.displayPersonCard(person);
+        
+        // Brief pause between cards for readability
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Offer helpful follow-up
+      setTimeout(() => {
+        const followUpPrompts = [
+          "Would you like to know more about any of these people?",
+          "Is there someone specific you'd like to tell me about?",
+          "Who would you like to add memories about?"
+        ];
+        
+        const followUp = followUpPrompts[Math.floor(Math.random() * followUpPrompts.length)];
+        this.addMessage(followUp, 'emma');
+      }, 2000);
+
+    } catch (error) {
+      console.error('👥 CHAT: Error handling people list request:', error);
+      this.addMessage("I'd love to show you your people, but I'm having trouble accessing them right now. Let me try again in a moment.", 'emma');
+    }
   }
 
   enableFocusMode() {
