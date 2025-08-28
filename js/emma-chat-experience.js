@@ -3353,6 +3353,14 @@ RULES:
     if ((lower.includes('yes') || lower === 'everything' || lower.includes('everything')) && context.conversationFlow.length > 0) {
       const currentPerson = context.lastQueriedPerson || context.currentTopic || 'that';
       
+      // 🎯 CTO CRITICAL: Check if Emma just asked about photos
+      const lastEmmaMessage = this.getLastEmmaMessage();
+      if (lastEmmaMessage && (lastEmmaMessage.includes('photos') || lastEmmaMessage.includes('pictures'))) {
+        // Trigger photo upload interface for the person
+        this.handlePhotoUploadRequest(currentPerson);
+        return `Wonderful! I'd love to help you add photos with ${currentPerson}. You can drag and drop photos here, or click to browse your files.`;
+      }
+      
       if (lower === 'everything' || lower.includes('everything')) {
         return `That's beautiful! I can feel how much ${currentPerson} means to you. Everything about them holds such special meaning. What's one of your most treasured memories with ${currentPerson}?`;
       } else {
@@ -3530,6 +3538,119 @@ RULES:
     return Object.values(vault.people)
       .filter(person => person.name)
       .map(person => person.name);
+  }
+
+  // 🎯 CTO CRITICAL: Get Emma's last message to check context
+  getLastEmmaMessage() {
+    // Look through recent messages for Emma's last response
+    const emmaMessages = document.querySelectorAll('.emma-message');
+    if (emmaMessages.length === 0) return null;
+    
+    const lastEmmaMessage = emmaMessages[emmaMessages.length - 1];
+    return lastEmmaMessage.textContent || lastEmmaMessage.innerText || '';
+  }
+
+  // 🎯 CTO CRITICAL: Handle photo upload request for person
+  handlePhotoUploadRequest(personName) {
+    console.log(`📷 CTO: Triggering photo upload for ${personName}`);
+    
+    // Create a file input for photo upload
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    
+    fileInput.addEventListener('change', (event) => {
+      const files = Array.from(event.target.files);
+      if (files.length > 0) {
+        this.handlePhotoFiles(files, personName);
+      }
+    });
+    
+    document.body.appendChild(fileInput);
+    
+    // Also set up drag and drop on the chat container
+    this.setupPhotoDragAndDrop(personName);
+    
+    // Trigger the file dialog after a brief moment
+    setTimeout(() => {
+      fileInput.click();
+    }, 500);
+  }
+
+  // 🎯 CTO CRITICAL: Handle photo files for person
+  handlePhotoFiles(files, personName) {
+    console.log(`📷 CTO: Processing ${files.length} photos for ${personName}`);
+    
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target.result;
+        
+        // Create a photo preview message
+        const photoPreview = `
+          <div style="margin: 10px 0; padding: 15px; background: rgba(134, 88, 255, 0.1); border-radius: 12px; border: 2px dashed rgba(134, 88, 255, 0.3);">
+            <img src="${imageData}" style="max-width: 200px; max-height: 200px; border-radius: 8px; object-fit: cover;">
+            <div style="margin-top: 8px; font-size: 14px; color: #8658ff;">
+              📷 Photo with ${personName} - Ready to save!
+            </div>
+          </div>
+        `;
+        
+        this.addMessage(photoPreview, 'emma', { isHtml: true });
+        
+        if (index === files.length - 1) {
+          // After last photo, offer to save
+          setTimeout(() => {
+            this.addMessage(`These photos with ${personName} look wonderful! Would you like me to create a memory with them?`, 'emma');
+          }, 1000);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 🎯 CTO CRITICAL: Setup drag and drop for photos
+  setupPhotoDragAndDrop(personName) {
+    const chatContainer = this.messageContainer || document.querySelector('.chat-messages');
+    if (!chatContainer) return;
+    
+    const handleDrop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+      if (files.length > 0) {
+        this.handlePhotoFiles(files, personName);
+      }
+      
+      // Clean up drag styles
+      chatContainer.classList.remove('drag-over');
+    };
+    
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chatContainer.classList.add('drag-over');
+    };
+    
+    const handleDragLeave = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      chatContainer.classList.remove('drag-over');
+    };
+    
+    // Add event listeners (remove any existing ones first)
+    chatContainer.removeEventListener('drop', handleDrop);
+    chatContainer.removeEventListener('dragover', handleDragOver);
+    chatContainer.removeEventListener('dragleave', handleDragLeave);
+    
+    chatContainer.addEventListener('drop', handleDrop);
+    chatContainer.addEventListener('dragover', handleDragOver);
+    chatContainer.addEventListener('dragleave', handleDragLeave);
+    
+    console.log(`📷 CTO: Drag and drop setup for ${personName} photos`);
   }
 
   // 🚨 CTO EMERGENCY: Detect when user is sharing memories
