@@ -18,7 +18,7 @@
   <script src="js/emma-dementia-modals.js"></script>
   <script src="js/emma-font-scaler.js"></script>
   <script src="js/emma-performance-optimizer.js"></script>
-  <script src="js/universal-emma-orb-menu.js"></script>
+  <!-- Removed universal-emma-orb-menu.js - keeping clean original system -->
   
   <!-- Load Emma Web Vault System -->
   <script src="js/emma-input-modal.js"></script>
@@ -1781,16 +1781,7 @@
         </div>
       </div>
       
-      <!-- Universal Connected Menu Nodes -->
-      <div id="universal-orb-menu" style="
-        position: absolute;
-        width: 100vw;
-        height: 100vh;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 5;
-      "></div>
+      <!-- Removed Universal Orb Menu - keeping clean original system -->
     </div>
   </div>
 
@@ -2077,7 +2068,6 @@
         // Original Emma Orb setup (RESTORED)
         this.orb = document.getElementById('emma-orb');
         this.radialMenu = document.getElementById('radial-menu');
-        this.universalOrbContainer = document.getElementById('universal-orb-menu');
         this.voiceIndicator = document.getElementById('voice-indicator');
         
         // CRITICAL: Expose dashboard globally for Emma Chat Experience
@@ -2086,11 +2076,8 @@
         
         // Initialize WebGL Emma Orb (RESTORED ORIGINAL)
         this.initEmmaOrb();
-        
-        // Initialize connected menu nodes
-        this.initUniversalOrbMenu();
 
-        console.log('🔧 Constructor - Universal Orb Menu container:', this.universalOrbContainer ? 'FOUND' : 'NULL');
+        console.log('🔧 Constructor - Dashboard initialized with clean original system');
         this.panels = {
           dailyBrief: document.getElementById('daily-brief'),
           aiInsights: document.getElementById('ai-insights'),
@@ -2141,45 +2128,9 @@
         this.init();
       }
 
-      initUniversalOrbMenu() {
-        if (!this.universalOrbContainer) {
-          console.error('❌ Universal Orb Menu container not found!');
-          return;
-        }
+      // Removed Universal Orb Menu - keeping clean original system
 
-        // DEFENSIVE: Only create if not already exists
-        if (!this.universalOrbMenu) {
-          console.log('🌟 Creating Universal Emma Orb Menu...');
-          this.universalOrbMenu = new UniversalEmmaOrbMenu(this.universalOrbContainer);
-          
-          // Listen for orb menu events
-          this.universalOrbContainer.addEventListener('orb-menu-action', (e) => {
-            this.handleUniversalOrbAction(e.detail.action);
-          });
-
-          console.log('✅ Universal Emma Orb Menu initialized successfully');
-        } else {
-          console.log('✅ Universal Emma Orb Menu already exists');
-        }
-      }
-
-      async handleUniversalOrbAction(action) {
-        console.log('🎯 Universal Orb Menu: Action triggered:', action);
-        
-        switch(action) {
-          case 'memories':
-            await this.enterMemoryConstellation();
-            break;
-          case 'chat':
-            await this.startEmmaChatExperience();
-            break;
-          case 'people':
-            window.location.href = 'pages/people-emma.html';
-            break;
-          default:
-            console.log('🎯 Unknown action:', action);
-        }
-      }
+      // Removed Universal Orb Menu action handler - using original radial menu system
 
       async init() {
         // Show loading
@@ -2699,13 +2650,6 @@
 
           // Initialize the menu nodes (without aggressive physics)
           this.initNeuralNetwork();
-          
-          // CRITICAL: Refresh Universal Orb Menu connections after menu positioning
-          setTimeout(() => {
-            if (this.universalOrbMenu && this.universalOrbMenu.refreshConnections) {
-              this.universalOrbMenu.refreshConnections();
-            }
-          }, 150); // Wait for positioning to complete
 
         } else {
           this.radialMenu.classList.remove('active');
@@ -2719,11 +2663,6 @@
 
           // Reset nodes array
           this.nodes = [];
-          
-          // CRITICAL: Clear Universal Orb Menu lines when menu closes
-          if (this.universalOrbMenu && this.universalOrbMenu.clearCanvas) {
-            this.universalOrbMenu.clearCanvas();
-          }
         }
       }
 
