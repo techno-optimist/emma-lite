@@ -2095,6 +2095,11 @@ class EmmaChatExperience extends ExperiencePopup {
       const personRequest = this.detectPersonRequest(userMessage);
       if (personRequest) {
         console.log('👤 CHAT: Person request detected:', personRequest);
+        
+        // 🎯 CTO CRITICAL: Track the person being queried for context continuity
+        this.conversationContext.lastQueriedPerson = personRequest.personName;
+        console.log(`🎯 CTO: Set lastQueriedPerson to: ${personRequest.personName}`);
+        
         await this.handlePersonRequest(personRequest);
         return;
       }
@@ -3263,6 +3268,11 @@ RULES:
     this.conversationContext.currentTopic = this.extractTopic(userMessage);
     this.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
     
+    // 🎯 CTO CRITICAL: Track the MAIN SUBJECT of user queries (not just mentioned people)
+    if (people.length > 0) {
+      this.conversationContext.lastQueriedPerson = people[0]; // The person user specifically asked about
+    }
+    
     console.log('💝 CTO CONTEXT UPDATE:', {
       userMessage,
       extractedPeople: people,
@@ -3301,16 +3311,18 @@ RULES:
     
     // 🧠 CONTEXTUAL RECALL: Handle "show me" or "yes" when person was mentioned recently
     if ((lower.includes('show me') || lower.trim() === 'yes') && !person) {
-      // Check if someone was mentioned in recent conversation
-      const recentPeople = Array.from(this.conversationContext.recentPeople);
-      if (recentPeople.length > 0) {
-        const lastPerson = recentPeople[recentPeople.length - 1]; // Most recent
-        console.log(`💝 CONTEXTUAL RECALL: Triggering recall for recent person: ${lastPerson}`);
-        console.log(`💝 CONTEXT: Recent people available: ${recentPeople.join(', ')}`);
-        this.handlePersonMemoryRecall(lastPerson);
+      // 🎯 CTO CRITICAL FIX: Use the person user specifically asked about, not just mentioned
+      const targetPerson = this.conversationContext.lastQueriedPerson || 
+                          Array.from(this.conversationContext.recentPeople)[0];
+      
+      if (targetPerson) {
+        console.log(`💝 CTO CONTEXT RECALL: Triggering recall for queried person: ${targetPerson}`);
+        console.log(`💝 CTO CONTEXT: lastQueriedPerson: ${this.conversationContext.lastQueriedPerson}`);
+        console.log(`💝 CTO CONTEXT: All recent people: ${Array.from(this.conversationContext.recentPeople).join(', ')}`);
+        this.handlePersonMemoryRecall(targetPerson);
         return null;
       } else {
-        console.log(`💝 CONTEXT: No recent people found for 'yes' response`);
+        console.log(`💝 CONTEXT: No queried person found for 'yes' response`);
       }
     }
     
@@ -3330,10 +3342,15 @@ RULES:
       return `What a beautiful memory! Thank you for sharing that with me. Those moments of joy and connection are so precious. What made it feel especially wonderful to you?`;
     }
 
-    // Emotional validation
-    if (lower.includes('yes') && context.conversationFlow.length > 0) {
-      const lastTopic = context.currentTopic || 'that';
-      return `I'm so glad you're open to sharing more about ${lastTopic}. These stories and memories mean so much. What else would you like to tell me?`;
+    // 💜 CTO ENHANCEMENT: Emotional validation and topic continuity
+    if ((lower.includes('yes') || lower === 'everything' || lower.includes('everything')) && context.conversationFlow.length > 0) {
+      const currentPerson = context.lastQueriedPerson || context.currentTopic || 'that';
+      
+      if (lower === 'everything' || lower.includes('everything')) {
+        return `That's beautiful! I can feel how much ${currentPerson} means to you. Everything about them holds such special meaning. What's one of your most treasured memories with ${currentPerson}?`;
+      } else {
+        return `I'm so glad you're open to sharing more about ${currentPerson}. These stories and memories mean so much. What else would you like to tell me?`;
+      }
     }
 
     // Handle curiosity with warmth
