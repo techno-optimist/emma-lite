@@ -3360,9 +3360,29 @@ RULES:
       }
     }
 
-    // Handle curiosity with warmth
-    if (lower.includes('what') && lower.length < 20) {
-      return `That's such a thoughtful question. You know, it makes me think about memory - something I've noticed comes up in your stories. What's behind your curiosity about this?`;
+    // 🚨 CTO EMERGENCY FIX: Handle memory sharing and simple responses
+    
+    // MEMORY SHARING: Recognize when user is sharing memories
+    if (this.isMemorySharing(lower, context)) {
+      return this.generateMemorySharingResponse(userMessage, context);
+    }
+    
+    // SIMPLE CONFUSION: Handle "what", "huh", "you broken" appropriately
+    if (lower === 'what' || lower === 'what?' || lower === 'huh' || lower === 'huh?' || 
+        lower.includes('broken') || lower.includes('confused')) {
+      return `I'm sorry if I confused you! Let me be clearer. You were telling me about ${context.lastQueriedPerson || 'your memories'}. Would you like to continue sharing about that?`;
+    }
+    
+    // EMOTIONAL WORDS: Validate feelings
+    if (lower.includes('funny') || lower.includes('sad') || lower.includes('happy') || 
+        lower.includes('scary') || lower.includes('exciting') || lower.includes('beautiful')) {
+      const emotion = lower.includes('funny') ? 'funny' : 
+                     lower.includes('sad') ? 'touching' :
+                     lower.includes('happy') ? 'joyful' :
+                     lower.includes('scary') ? 'intense' :
+                     lower.includes('exciting') ? 'exciting' : 'meaningful';
+      
+      return `That sounds like such a ${emotion} memory! I love hearing about moments like that. Can you tell me more about what happened?`;
     }
 
     return null; // Let normal processing continue
@@ -3510,6 +3530,58 @@ RULES:
     return Object.values(vault.people)
       .filter(person => person.name)
       .map(person => person.name);
+  }
+
+  // 🚨 CTO EMERGENCY: Detect when user is sharing memories
+  isMemorySharing(lowerMessage, context) {
+    // ACTIVITY INDICATORS: Actions that suggest memory sharing
+    const activityWords = [
+      'fell', 'climbed', 'walked', 'ran', 'went', 'came', 'saw', 'met', 'talked', 'played',
+      'laughed', 'cried', 'ate', 'drank', 'drove', 'flew', 'visited', 'stayed', 'left',
+      'bought', 'sold', 'made', 'built', 'broke', 'fixed', 'found', 'lost', 'gave', 'got'
+    ];
+    
+    // CONTEXT INDICATORS: Following up on person conversation
+    const hasPersonContext = context.lastQueriedPerson || context.currentTopic;
+    
+    // MEMORY PHRASES: Common memory sharing patterns
+    const memoryPhrases = [
+      'remember when', 'one time', 'that time', 'i remember', 'we went', 'we did',
+      'he did', 'she did', 'they did', 'it was', 'there was', 'out of', 'into the'
+    ];
+    
+    // Check for activity words in context of person discussion
+    if (hasPersonContext && activityWords.some(word => lowerMessage.includes(word))) {
+      return true;
+    }
+    
+    // Check for explicit memory phrases
+    if (memoryPhrases.some(phrase => lowerMessage.includes(phrase))) {
+      return true;
+    }
+    
+    // Check for simple story fragments (like "fell out of a tree")
+    if (lowerMessage.length > 5 && lowerMessage.length < 50 && 
+        (lowerMessage.includes('tree') || lowerMessage.includes('house') || 
+         lowerMessage.includes('car') || lowerMessage.includes('school'))) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // 🚨 CTO EMERGENCY: Generate appropriate memory sharing responses
+  generateMemorySharingResponse(userMessage, context) {
+    const person = context.lastQueriedPerson || 'someone special';
+    
+    const responses = [
+      `Oh my! That sounds like quite a story with ${person}! Tell me more about what happened.`,
+      `What a memory! I can picture that with ${person}. How did that make you feel?`,
+      `That sounds like such a moment with ${person}! What happened next?`,
+      `I love hearing about times like that with ${person}. Can you paint me more of the picture?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
   // 💝 CRITICAL: Handle person memory recall for dementia care
