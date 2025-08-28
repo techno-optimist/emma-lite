@@ -26,20 +26,17 @@ class EmmaChatExperience extends ExperiencePopup {
     this.apiKey = null;
     this.isVectorlessEnabled = false;
     
-    // 💝 CRITICAL: DEMENTIA COMPANION CONTEXT (For Tomorrow's Demo)
+    // 💝 CRITICAL: DEMENTIA COMPANION CONTEXT (Dynamic - Uses Vault People)
     this.conversationContext = {
-      userId: 'Kevin',
-      userMother: 'Debbe',
       currentTopic: null,
       recentPeople: new Set(),
       emotionalState: 'positive',
       lastMemoryMentioned: null,
       conversationFlow: [],
-      dementiaMode: true, // ALWAYS true for mom's demo
+      dementiaMode: true, // ALWAYS true for dementia care
       validationMode: true, // ALWAYS validate, never contradict
       personalContext: {
-        family: ['Kevin', 'Debbe'],
-        recentActivities: ['movies', 'spending time together'],
+        recentActivities: [],
         emotionalTone: 'warm and loving'
       }
     };
@@ -2278,7 +2275,7 @@ ${conversationHistory}
 
 People mentioned recently: ${Array.from(this.conversationContext.recentPeople).join(', ') || 'None'}
 Current emotional tone: ${this.conversationContext.emotionalState}
-Family context: Kevin (son), Debbe (user's mother with dementia)
+Family/People context: Based on vault data and conversation
 
 VAULT CONTEXT:
 - User has ${vaultContext.memoryCount} memories in their vault
@@ -3202,15 +3199,19 @@ RULES:
     const lower = userMessage.toLowerCase();
     const context = this.conversationContext;
     
-    // Detect if user is sharing about Kevin (recognize family context)
-    if (lower.includes('kevin') && !lower.includes('what') && !lower.includes('who')) {
+    // Dynamically detect people from vault and respond appropriately
+    const mentionedPeople = this.extractPeople(userMessage);
+    const person = mentionedPeople.length > 0 ? mentionedPeople[0] : null;
+    
+    // Detect if user is sharing about someone (recognize relationship context)
+    if (person && !lower.includes('what') && !lower.includes('who')) {
       if (lower.includes('movies') || lower.includes('movie')) {
-        return `That's wonderful that you and Kevin went to the movies together! Those are such special moments to share. What was your favorite part of spending that time with Kevin?`;
+        return `That's wonderful that you and ${person} went to the movies together! Those are such special moments to share. What was your favorite part of spending that time with ${person}?`;
       }
       if (lower.includes('awesome') || lower.includes('great') || lower.includes('good')) {
-        return `It sounds like you had such a lovely time with Kevin! Those moments together are so precious. I can feel the joy in your voice when you talk about him.`;
+        return `It sounds like you had such a lovely time with ${person}! Those moments together are so precious. I can feel the joy in your voice when you talk about them.`;
       }
-      return `Kevin sounds very special to you. I love hearing about the time you spend together. Tell me more about what makes those moments meaningful to you.`;
+      return `${person} sounds very special to you. I love hearing about the time you spend together. Tell me more about what makes those moments meaningful to you.`;
     }
 
     // Validate memory sharing (never question or correct)
@@ -3232,20 +3233,26 @@ RULES:
     return null; // Let normal processing continue
   }
 
-  // Extract people from message
+  // Extract people from message using vault data
   extractPeople(message) {
     const people = [];
     const lower = message.toLowerCase();
     
-    // Known family members
-    if (lower.includes('kevin')) people.push('Kevin');
-    if (lower.includes('debbe')) people.push('Debbe');
+    // Get all people from vault dynamically
+    const vault = window.emmaWebVault?.vaultData?.content;
+    if (vault?.people) {
+      Object.values(vault.people).forEach(person => {
+        if (person.name && lower.includes(person.name.toLowerCase())) {
+          people.push(person.name);
+        }
+      });
+    }
     
-    // Extract capitalized names (likely people)
+    // Also extract capitalized names (likely people not yet in vault)
     const nameMatches = message.match(/\b[A-Z][a-z]+\b/g);
     if (nameMatches) {
       nameMatches.forEach(name => {
-        if (!['I', 'Today', 'The', 'And', 'But', 'So'].includes(name)) {
+        if (!['I', 'Today', 'The', 'And', 'But', 'So', 'This', 'That', 'What', 'When', 'Where', 'Why', 'How'].includes(name)) {
           people.push(name);
         }
       });
@@ -3267,9 +3274,23 @@ RULES:
   extractTopic(message) {
     const lower = message.toLowerCase();
     if (lower.includes('movie') || lower.includes('movies')) return 'movies';
-    if (lower.includes('kevin')) return 'Kevin';
     if (lower.includes('memory') || lower.includes('remember')) return 'memories';
+    
+    // Dynamically check if any vault people are mentioned as topics
+    const mentionedPeople = this.extractPeople(message);
+    if (mentionedPeople.length > 0) return mentionedPeople[0];
+    
     return null;
+  }
+
+  // Get all people from vault dynamically
+  getVaultPeople() {
+    const vault = window.emmaWebVault?.vaultData?.content;
+    if (!vault?.people) return [];
+    
+    return Object.values(vault.people)
+      .filter(person => person.name)
+      .map(person => person.name);
   }
 
   enableFocusMode() {
