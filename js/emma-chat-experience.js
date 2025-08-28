@@ -3534,11 +3534,20 @@ RULES:
 
   // 🚨 CTO EMERGENCY: Detect when user is sharing memories
   isMemorySharing(lowerMessage, context) {
+    // RELATIONSHIP INDICATORS: Critical for dementia care!
+    const relationshipWords = [
+      'husband', 'wife', 'married', 'wedding', 'engagement', 'boyfriend', 'girlfriend',
+      'mother', 'father', 'mom', 'dad', 'son', 'daughter', 'brother', 'sister',
+      'friend', 'neighbor', 'colleague', 'partner', 'family', 'relative',
+      'grandpa', 'grandma', 'grandfather', 'grandmother', 'uncle', 'aunt', 'cousin'
+    ];
+    
     // ACTIVITY INDICATORS: Actions that suggest memory sharing
     const activityWords = [
       'fell', 'climbed', 'walked', 'ran', 'went', 'came', 'saw', 'met', 'talked', 'played',
       'laughed', 'cried', 'ate', 'drank', 'drove', 'flew', 'visited', 'stayed', 'left',
-      'bought', 'sold', 'made', 'built', 'broke', 'fixed', 'found', 'lost', 'gave', 'got'
+      'bought', 'sold', 'made', 'built', 'broke', 'fixed', 'found', 'lost', 'gave', 'got',
+      'married', 'divorced', 'moved', 'lived', 'worked', 'studied', 'graduated', 'retired'
     ];
     
     // CONTEXT INDICATORS: Following up on person conversation
@@ -3547,8 +3556,14 @@ RULES:
     // MEMORY PHRASES: Common memory sharing patterns
     const memoryPhrases = [
       'remember when', 'one time', 'that time', 'i remember', 'we went', 'we did',
-      'he did', 'she did', 'they did', 'it was', 'there was', 'out of', 'into the'
+      'he did', 'she did', 'they did', 'it was', 'there was', 'out of', 'into the',
+      'married him', 'married her', 'met him', 'met her', 'my husband', 'my wife'
     ];
+    
+    // CRITICAL: Check for relationship words (highest priority for dementia care)
+    if (relationshipWords.some(word => lowerMessage.includes(word))) {
+      return true;
+    }
     
     // Check for activity words in context of person discussion
     if (hasPersonContext && activityWords.some(word => lowerMessage.includes(word))) {
@@ -3560,10 +3575,18 @@ RULES:
       return true;
     }
     
-    // Check for simple story fragments (like "fell out of a tree")
+    // CRITICAL: Single word responses in person context (like "husband" after asking about Mark)
+    if (hasPersonContext && lowerMessage.length <= 15 && 
+        (relationshipWords.some(word => lowerMessage === word) || 
+         lowerMessage.includes('my ') || lowerMessage.includes('he ') || lowerMessage.includes('she '))) {
+      return true;
+    }
+    
+    // Check for simple story fragments
     if (lowerMessage.length > 5 && lowerMessage.length < 50 && 
         (lowerMessage.includes('tree') || lowerMessage.includes('house') || 
-         lowerMessage.includes('car') || lowerMessage.includes('school'))) {
+         lowerMessage.includes('car') || lowerMessage.includes('school') ||
+         lowerMessage.includes('church') || lowerMessage.includes('work'))) {
       return true;
     }
     
@@ -3573,7 +3596,34 @@ RULES:
   // 🚨 CTO EMERGENCY: Generate appropriate memory sharing responses
   generateMemorySharingResponse(userMessage, context) {
     const person = context.lastQueriedPerson || 'someone special';
+    const lower = userMessage.toLowerCase();
     
+    // RELATIONSHIP RESPONSES: Special handling for relationship revelations
+    if (lower === 'husband' || lower.includes('husband')) {
+      return `Oh, ${person} is your husband! What a beautiful relationship. Tell me about when you first met him.`;
+    }
+    if (lower === 'wife' || lower.includes('wife')) {
+      return `Oh, ${person} is your wife! What a wonderful bond you share. How did you two meet?`;
+    }
+    if (lower.includes('married him') || lower.includes('married her')) {
+      return `You married ${person}! That must have been such a special day. Tell me about your wedding.`;
+    }
+    if (lower.includes('married') && person !== 'someone special') {
+      return `You and ${person} are married! What a beautiful love story. When did you know they were the one?`;
+    }
+    
+    // FAMILY RELATIONSHIPS
+    if (lower.includes('mother') || lower.includes('mom')) {
+      return `${person} is your mother! She must be so important to you. What's your favorite memory with her?`;
+    }
+    if (lower.includes('father') || lower.includes('dad')) {
+      return `${person} is your father! Tell me about a special time you shared with him.`;
+    }
+    if (lower.includes('son') || lower.includes('daughter')) {
+      return `${person} is your ${lower.includes('son') ? 'son' : 'daughter'}! What a blessing. What makes you most proud of them?`;
+    }
+    
+    // GENERAL MEMORY RESPONSES
     const responses = [
       `Oh my! That sounds like quite a story with ${person}! Tell me more about what happened.`,
       `What a memory! I can picture that with ${person}. How did that make you feel?`,
