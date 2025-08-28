@@ -2147,15 +2147,20 @@
           return;
         }
 
-        // Create the Universal Emma Orb Menu
-        this.universalOrbMenu = new UniversalEmmaOrbMenu(this.universalOrbContainer);
-        
-        // Listen for orb menu events
-        this.universalOrbContainer.addEventListener('orb-menu-action', (e) => {
-          this.handleUniversalOrbAction(e.detail.action);
-        });
+        // DEFENSIVE: Only create if not already exists
+        if (!this.universalOrbMenu) {
+          console.log('🌟 Creating Universal Emma Orb Menu...');
+          this.universalOrbMenu = new UniversalEmmaOrbMenu(this.universalOrbContainer);
+          
+          // Listen for orb menu events
+          this.universalOrbContainer.addEventListener('orb-menu-action', (e) => {
+            this.handleUniversalOrbAction(e.detail.action);
+          });
 
-        console.log('🌟 Universal Emma Orb Menu initialized successfully');
+          console.log('✅ Universal Emma Orb Menu initialized successfully');
+        } else {
+          console.log('✅ Universal Emma Orb Menu already exists');
+        }
       }
 
       async handleUniversalOrbAction(action) {
@@ -2292,10 +2297,19 @@
         // RESTORED: Original Emma orb click handler
         this.orb.addEventListener('click', (e) => {
           e.stopPropagation();
+          console.log('🎯 ORB CLICKED - Debug info:', {
+            isConstellationMode: this.isConstellationMode,
+            isMenuOpen: this.isMenuOpen,
+            orbExists: !!this.orb,
+            radialMenuExists: !!this.radialMenu,
+            dashboardInstance: !!window.emmaDashboard
+          });
+          
           if (this.isConstellationMode) {
-            // Simple: Exit constellation mode back to main dashboard
+            console.log('🌌 Exiting constellation mode...');
             this.exitMemoryConstellation();
           } else {
+            console.log('🔘 Toggling radial menu...');
             this.toggleRadialMenu();
           }
         });
@@ -2659,6 +2673,12 @@
       // Removed initRadialNeuralNetwork - no longer needed since we exit constellation instead of showing menu overlay
 
       toggleRadialMenu() {
+        console.log('🔘 toggleRadialMenu called - Debug:', {
+          isMenuOpen: this.isMenuOpen,
+          radialMenuExists: !!this.radialMenu,
+          dashboardInstance: !!window.emmaDashboard
+        });
+        
         this.isMenuOpen = !this.isMenuOpen;
 
         if (this.isMenuOpen) {
@@ -7599,7 +7619,14 @@
       // Small delay to ensure all elements are definitely available
       setTimeout(() => {
         console.log('🔍 DEBUG: Creating EmmaDashboard instance...');
-      window.emmaDashboard = new EmmaDashboard();
+        
+        // CRITICAL FIX: Only create if not already exists
+        if (!window.emmaDashboard) {
+          window.emmaDashboard = new EmmaDashboard();
+          console.log('✅ EmmaDashboard created successfully');
+        } else {
+          console.log('✅ EmmaDashboard already exists, skipping duplicate creation');
+        }
 
         // Setup vault modal event listeners AFTER dashboard is created
       const dashboard = window.emmaDashboard;
