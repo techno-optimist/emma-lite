@@ -2070,33 +2070,8 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
 
-    // 🧠 CTO UNIFIED INTELLIGENCE: Try intelligent system first
-    try {
-      // Update API key if available
-      if (this.apiKey) {
-        this.unifiedIntelligence.options.apiKey = this.apiKey;
-      }
-      
-      console.log('🧠 CTO: Attempting unified intelligence response...');
-      const intelligentResponse = await this.unifiedIntelligence.analyzeAndRespond(userMessage, this);
-      
-      if (intelligentResponse && intelligentResponse.text) {
-        console.log('🧠 CTO: Unified intelligence successful:', intelligentResponse);
-        this.addMessage(intelligentResponse.text, 'emma');
-        
-        // Execute any recommended actions
-        if (intelligentResponse.actions && intelligentResponse.actions.length > 0) {
-          await this.executeIntelligentActions(intelligentResponse.actions, intelligentResponse);
-        }
-        
-        return; // Success - no need for legacy systems
-      }
-    } catch (error) {
-      console.warn('🧠 CTO: Unified intelligence failed, using legacy fallback:', error);
-    }
-
-    // 🚨 LEGACY FALLBACK SYSTEM (temporary during transition)
-    console.log('🚨 CTO: Using legacy system as fallback');
+    // 🚨 CTO EMERGENCY ROLLBACK: Unified system broken, using working legacy system
+    console.log('🚨 CTO: Using proven legacy system (unified intelligence disabled for emergency)');
 
     // 🤔 CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
     if (this.currentPersonEnrichment && 
