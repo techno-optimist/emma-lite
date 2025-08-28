@@ -3319,8 +3319,15 @@ RULES:
         console.log(`💝 CTO CONTEXT RECALL: Triggering recall for queried person: ${targetPerson}`);
         console.log(`💝 CTO CONTEXT: lastQueriedPerson: ${this.conversationContext.lastQueriedPerson}`);
         console.log(`💝 CTO CONTEXT: All recent people: ${Array.from(this.conversationContext.recentPeople).join(', ')}`);
-        this.handlePersonMemoryRecall(targetPerson);
-        return null;
+        
+        // 🚨 CTO CRITICAL: Return a placeholder response to prevent other systems from responding
+        // Then trigger the full recall asynchronously
+        setTimeout(() => {
+          this.handlePersonMemoryRecall(targetPerson);
+        }, 100);
+        
+        // Return a brief acknowledgment to prevent other systems from responding
+        return `Let me share what I know about ${targetPerson}...`;
       } else {
         console.log(`💝 CONTEXT: No queried person found for 'yes' response`);
       }
