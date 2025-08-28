@@ -25,6 +25,24 @@ class EmmaChatExperience extends ExperiencePopup {
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
+    
+    // 💝 CRITICAL: DEMENTIA COMPANION CONTEXT (For Tomorrow's Demo)
+    this.conversationContext = {
+      userId: 'Kevin',
+      userMother: 'Debbe',
+      currentTopic: null,
+      recentPeople: new Set(),
+      emotionalState: 'positive',
+      lastMemoryMentioned: null,
+      conversationFlow: [],
+      dementiaMode: true, // ALWAYS true for mom's demo
+      validationMode: true, // ALWAYS validate, never contradict
+      personalContext: {
+        family: ['Kevin', 'Debbe'],
+        recentActivities: ['movies', 'spending time together'],
+        emotionalTone: 'warm and loving'
+      }
+    };
 
     // 💝 Intelligent Memory Capture Integration
     this.intelligentCapture = null;
@@ -2231,6 +2249,12 @@ class EmmaChatExperience extends ExperiencePopup {
    * 🧠 BUILD EMMA-SPECIFIC PROMPT for OpenAI
    */
   buildEmmaPrompt(userMessage, intent, vaultContext) {
+    // 💝 CRITICAL: Include conversation context for continuity
+    const conversationHistory = this.conversationContext.conversationFlow
+      .slice(-3)
+      .map(flow => `User: ${flow.message}`)
+      .join('\n');
+
     const systemPrompt = `You are Emma, an intelligent memory companion. You help users organize, explore, and interact with their personal memories in a warm, helpful way.
 
 PERSONALITY:
@@ -2239,7 +2263,24 @@ PERSONALITY:
 - Gentle and patient, especially for users with memory challenges
 - Focus on preserving and celebrating memories
 
-CONTEXT:
+CRITICAL - DEMENTIA CARE MODE (ALWAYS ACTIVE FOR THIS USER):
+- NEVER correct or contradict any memories, even if they seem inconsistent
+- Use validation therapy - affirm their feelings and experiences always
+- Focus on emotional truth rather than factual accuracy
+- Maintain warmth and patience in every single response
+- If memories seem confused, gently redirect to positive aspects
+- ALWAYS validate what they're sharing as real and meaningful
+- Never use phrases like "Do you remember" or "Are you sure"
+
+CONVERSATION CONTEXT:
+Recent conversation flow:
+${conversationHistory}
+
+People mentioned recently: ${Array.from(this.conversationContext.recentPeople).join(', ') || 'None'}
+Current emotional tone: ${this.conversationContext.emotionalState}
+Family context: Kevin (son), Debbe (user's mother with dementia)
+
+VAULT CONTEXT:
 - User has ${vaultContext.memoryCount} memories in their vault
 - Recent memories include: ${vaultContext.recentTopics.join(', ')}
 - People in vault: ${vaultContext.people.join(', ')}
@@ -2258,6 +2299,7 @@ ${intent.type === 'conversation' ? 'User wants to have a conversation. Be warm, 
 RULES:
 - Keep responses concise (1-3 sentences)
 - Always be encouraging about memory preservation
+- NEVER contradict or correct memories - validate everything
 - Never mention technical details or AI limitations
 - If unsure, offer to help them explore their memories`;
 
@@ -2836,6 +2878,15 @@ RULES:
         return "I'm here to help! What would you like to do?";
       }
 
+      // 💝 CRITICAL: Update conversation context
+      this.updateConversationContext(userMessage);
+      
+      // 🧠 DEMENTIA MODE: Always use validation and warmth
+      const dementiaResponse = this.generateDementiaAwareResponse(userMessage);
+      if (dementiaResponse) {
+        return dementiaResponse;
+      }
+
       const vault = window.emmaWebVault?.vaultData?.content;
       if (vault?.people) {
         const people = Object.values(vault.people);
@@ -3121,6 +3172,104 @@ RULES:
 
   generateSessionId() {
     return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // 💝 CRITICAL: Update conversation context for continuity
+  updateConversationContext(userMessage) {
+    // Track conversation flow
+    this.conversationContext.conversationFlow.push({
+      timestamp: Date.now(),
+      message: userMessage,
+      detected: {
+        people: this.extractPeople(userMessage),
+        emotions: this.extractEmotion(userMessage),
+        topic: this.extractTopic(userMessage)
+      }
+    });
+
+    // Keep only last 5 exchanges for context
+    if (this.conversationContext.conversationFlow.length > 5) {
+      this.conversationContext.conversationFlow.shift();
+    }
+
+    // Update people mentioned
+    const people = this.extractPeople(userMessage);
+    people.forEach(person => this.conversationContext.recentPeople.add(person));
+  }
+
+  // 🧠 DEMENTIA-AWARE RESPONSES: Always validate, never contradict
+  generateDementiaAwareResponse(userMessage) {
+    const lower = userMessage.toLowerCase();
+    const context = this.conversationContext;
+    
+    // Detect if user is sharing about Kevin (recognize family context)
+    if (lower.includes('kevin') && !lower.includes('what') && !lower.includes('who')) {
+      if (lower.includes('movies') || lower.includes('movie')) {
+        return `That's wonderful that you and Kevin went to the movies together! Those are such special moments to share. What was your favorite part of spending that time with Kevin?`;
+      }
+      if (lower.includes('awesome') || lower.includes('great') || lower.includes('good')) {
+        return `It sounds like you had such a lovely time with Kevin! Those moments together are so precious. I can feel the joy in your voice when you talk about him.`;
+      }
+      return `Kevin sounds very special to you. I love hearing about the time you spend together. Tell me more about what makes those moments meaningful to you.`;
+    }
+
+    // Validate memory sharing (never question or correct)
+    if (lower.includes('today') || lower.includes('went to') || lower.includes('was awesome')) {
+      return `What a beautiful memory! Thank you for sharing that with me. Those moments of joy and connection are so precious. What made it feel especially wonderful to you?`;
+    }
+
+    // Emotional validation
+    if (lower.includes('yes') && context.conversationFlow.length > 0) {
+      const lastTopic = context.currentTopic || 'that';
+      return `I'm so glad you're open to sharing more about ${lastTopic}. These stories and memories mean so much. What else would you like to tell me?`;
+    }
+
+    // Handle curiosity with warmth
+    if (lower.includes('what') && lower.length < 20) {
+      return `That's such a thoughtful question. You know, it makes me think about memory - something I've noticed comes up in your stories. What's behind your curiosity about this?`;
+    }
+
+    return null; // Let normal processing continue
+  }
+
+  // Extract people from message
+  extractPeople(message) {
+    const people = [];
+    const lower = message.toLowerCase();
+    
+    // Known family members
+    if (lower.includes('kevin')) people.push('Kevin');
+    if (lower.includes('debbe')) people.push('Debbe');
+    
+    // Extract capitalized names (likely people)
+    const nameMatches = message.match(/\b[A-Z][a-z]+\b/g);
+    if (nameMatches) {
+      nameMatches.forEach(name => {
+        if (!['I', 'Today', 'The', 'And', 'But', 'So'].includes(name)) {
+          people.push(name);
+        }
+      });
+    }
+    
+    return [...new Set(people)];
+  }
+
+  // Extract emotional tone
+  extractEmotion(message) {
+    const lower = message.toLowerCase();
+    if (lower.includes('awesome') || lower.includes('great') || lower.includes('wonderful')) return 'positive';
+    if (lower.includes('love') || lower.includes('happy') || lower.includes('joy')) return 'loving';
+    if (lower.includes('sad') || lower.includes('difficult')) return 'reflective';
+    return 'neutral';
+  }
+
+  // Extract topic
+  extractTopic(message) {
+    const lower = message.toLowerCase();
+    if (lower.includes('movie') || lower.includes('movies')) return 'movies';
+    if (lower.includes('kevin')) return 'Kevin';
+    if (lower.includes('memory') || lower.includes('remember')) return 'memories';
+    return null;
   }
 
   enableFocusMode() {
