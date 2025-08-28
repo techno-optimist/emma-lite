@@ -66,11 +66,11 @@ class UniversalEmmaOrbMenu {
   init() {
     this.createHTML();
     this.createCanvas();
-    this.initWebGLOrb(); // RESTORED: Initialize beautiful WebGL orb
+    // NO WebGL orb - original dashboard handles this
     this.setupEventListeners();
     this.positionElements();
     
-    console.log('🌟 Universal Emma Orb Menu initialized with WebGL orb');
+    console.log('🌟 Universal Connected Nodes initialized (orb handled by original dashboard)');
   }
   
   createHTML() {
@@ -94,27 +94,7 @@ class UniversalEmmaOrbMenu {
           z-index: 1;
         "></canvas>
         
-        <!-- Central Emma Orb (WebGL - RESTORED!) -->
-        <div class="emma-orb-center" style="
-          position: absolute;
-          width: ${this.options.orbSize}px;
-          height: ${this.options.orbSize}px;
-          cursor: pointer;
-          z-index: 10;
-          transition: transform 0.3s ease;
-        ">
-          <div class="emma-orb-webgl" id="webgl-orb-container" style="
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            box-shadow: 0 0 40px rgba(134, 88, 255, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-            background: transparent;
-          ">
-            <!-- Beautiful WebGL Emma Orb will be inserted here -->
-          </div>
-        </div>
+        <!-- NO CENTRAL ORB - Original handles this -->
         
         <!-- Menu Nodes Container -->
         <div class="menu-nodes" style="
@@ -220,27 +200,15 @@ class UniversalEmmaOrbMenu {
   }
   
   setupEventListeners() {
-    // Orb click to toggle menu
-    const orb = this.container.querySelector('.emma-orb-center');
-    orb.addEventListener('click', () => this.toggle());
+    // NO orb click - original dashboard handles this
     
-    // Orb hover effects
-    orb.addEventListener('mouseenter', () => {
-      orb.style.transform = 'scale(1.05)';
-      orb.style.boxShadow = '0 0 60px rgba(134, 88, 255, 0.6)';
-    });
-    
-    orb.addEventListener('mouseleave', () => {
-      orb.style.transform = 'scale(1)';
-      orb.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.4)';
-    });
-    
-    // Node click handlers
+    // Node click handlers (visual feedback only)
     const nodes = this.container.querySelectorAll('.menu-node');
     nodes.forEach(node => {
       node.addEventListener('click', (e) => {
         const action = node.dataset.action;
-        this.handleAction(action);
+        console.log('🔗 Connected node clicked (visual feedback):', action);
+        // Original radial menu will handle the actual action
       });
       
       // Node hover effects

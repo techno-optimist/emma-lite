@@ -1774,15 +1774,63 @@
   <!-- Main Dashboard -->
   <div class="dashboard">
     <div class="command-center">
-      <!-- Universal Emma Orb Menu (New Connected Component) -->
+      <!-- Central Emma Orb (WebGL) with Elegant Vault Unlock -->
+      <div class="emma-orb-container" id="emma-orb">
+        <div class="emma-orb-webgl" id="webgl-orb-container">
+          <!-- WebGL Emma Orb will be inserted here -->
+        </div>
+      </div>
+      
+      <!-- Universal Connected Menu Nodes -->
       <div id="universal-orb-menu" style="
-        position: relative;
+        position: absolute;
         width: 100vw;
         height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 5;
       "></div>
+    </div>
+  </div>
+
+  <!-- Radial Menu (Clean 4-item layout around Emma orb) -->
+  <div class="radial-menu" id="radial-menu">
+    <div class="radial-item" data-action="memories">
+      <div class="radial-item-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-2.5 2.5M6.5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H6.5z"/>
+          <path d="M9 10h6M9 14h4"/>
+        </svg>
+      </div>
+      <div class="radial-item-label">Memories</div>
+    </div>
+    <div class="radial-item" data-action="people">
+      <div class="radial-item-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="5"/>
+          <path d="M20 21a8 8 0 1 0-16 0"/>
+        </svg>
+      </div>
+      <div class="radial-item-label">People</div>
+    </div>
+    <div class="radial-item" data-action="chat">
+      <div class="radial-item-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <div class="radial-item-label">Chat</div>
+    </div>
+    <div class="radial-item" data-action="vault">
+      <div class="radial-item-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <circle cx="12" cy="16" r="1"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div class="radial-item-label">Vault</div>
     </div>
   </div>
 
@@ -2036,7 +2084,9 @@
     // Dashboard Controller
     class EmmaDashboard {
       constructor() {
-        // Universal Orb Menu setup
+        // Original Emma Orb setup (RESTORED)
+        this.orb = document.getElementById('emma-orb');
+        this.radialMenu = document.getElementById('radial-menu');
         this.universalOrbContainer = document.getElementById('universal-orb-menu');
         this.voiceIndicator = document.getElementById('voice-indicator');
         
@@ -2044,7 +2094,10 @@
         window.emmaDashboard = this;
         this.loading = document.getElementById('loading');
         
-        // Initialize Universal Emma Orb Menu
+        // Initialize WebGL Emma Orb (RESTORED ORIGINAL)
+        this.initEmmaOrb();
+        
+        // Initialize connected menu nodes
         this.initUniversalOrbMenu();
 
         console.log('🔧 Constructor - Universal Orb Menu container:', this.universalOrbContainer ? 'FOUND' : 'NULL');
@@ -2246,8 +2299,27 @@
       }
 
       setupEventListeners() {
-        // Universal Orb Menu is handled in initUniversalOrbMenu()
-        console.log('🎯 Event listeners setup - using Universal Orb Menu');
+        // RESTORED: Original Emma orb click handler
+        this.orb.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.isConstellationMode) {
+            // Simple: Exit constellation mode back to main dashboard
+            this.exitMemoryConstellation();
+          } else {
+            this.toggleRadialMenu();
+          }
+        });
+
+        // RESTORED: Radial menu items
+        this.radialMenu.querySelectorAll('.radial-item').forEach(item => {
+          item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = item.dataset.action;
+            this.handleRadialAction(action);
+          });
+        });
+
+        console.log('🎯 Event listeners setup - RESTORED original orb & radial menu');
 
         // Track mouse/touch position for neural effects
         this.mouseX = 0;
@@ -2418,6 +2490,28 @@
 
         // Initialize keyboard shortcuts
         this.setupKeyboardShortcuts();
+        
+        // RESTORED: Click outside to close menu
+        document.addEventListener('click', (e) => {
+          if (this.isMenuOpen && !this.orb.contains(e.target) && !this.radialMenu.contains(e.target)) {
+            this.toggleRadialMenu();
+          }
+        });
+
+        // RESTORED: Hover effects for orb
+        this.orb.addEventListener('mouseenter', () => {
+          document.querySelectorAll('.quick-stats').forEach(el => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(-10px) scale(1.02)';
+          });
+        });
+
+        this.orb.addEventListener('mouseleave', () => {
+          document.querySelectorAll('.quick-stats').forEach(el => {
+            el.style.opacity = '0.7';
+            el.style.transform = 'translateY(0) scale(1)';
+          });
+        });
 
         // CRITICAL FIX: Listen for vault status changes from extension
         this.setupVaultStatusListener();
