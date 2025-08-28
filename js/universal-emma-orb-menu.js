@@ -96,43 +96,7 @@ class UniversalEmmaOrbMenu {
         
         <!-- NO CENTRAL ORB - Original handles this -->
         
-        <!-- Menu Nodes Container -->
-        <div class="menu-nodes" style="
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-        ">
-          ${this.menuItems.map((item, index) => `
-            <div class="menu-node" data-action="${item.action}" style="
-              position: absolute;
-              width: ${this.options.nodeSize}px;
-              height: ${this.options.nodeSize}px;
-              border-radius: 50%;
-              background: rgba(26, 16, 51, 0.9);
-              backdrop-filter: blur(20px);
-              border: 2px solid rgba(134, 88, 255, 0.3);
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              opacity: 0;
-              transition: opacity ${this.options.animationDuration}ms ease ${index * 50}ms, transform 0.2s ease;
-              pointer-events: auto;
-              z-index: 5;
-              color: white;
-              box-shadow: 0 0 30px rgba(134, 88, 255, 0.2);
-            ">
-              <div style="margin-bottom: 4px;">
-                ${item.icon}
-              </div>
-              <div style="font-size: 12px; font-weight: 500;">
-                ${item.label}
-              </div>
-            </div>
-          `).join('')}
-        </div>
+        <!-- NO MENU NODES - Using actual radial menu items -->
       </div>
     `;
   }
@@ -222,74 +186,63 @@ class UniversalEmmaOrbMenu {
   }
   
   setupEventListeners() {
-    // NO orb click - original dashboard handles this
+    // NO event listeners needed - just drawing lines to actual radial menu
+    console.log('🔗 Universal Orb Menu: Setup complete (lines only, no interactive nodes)');
     
-    // Node click handlers (visual feedback only)
-    const nodes = this.container.querySelectorAll('.menu-node');
-    nodes.forEach(node => {
-      node.addEventListener('click', (e) => {
-        const action = node.dataset.action;
-        console.log('🔗 Connected node clicked (visual feedback):', action);
-        // Original radial menu will handle the actual action
-      });
-      
-      // Node hover effects
-      node.addEventListener('mouseenter', () => {
-        node.style.transform = 'scale(1.05)';
-        node.style.boxShadow = '0 0 40px rgba(134, 88, 255, 0.4)';
-      });
-      
-      node.addEventListener('mouseleave', () => {
-        node.style.transform = 'scale(1)';
-        node.style.boxShadow = '0 0 30px rgba(134, 88, 255, 0.2)';
-      });
-    });
-    
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (this.isOpen && !this.container.contains(e.target)) {
-        this.close();
-      }
+    // Handle resize to redraw lines
+    window.addEventListener('resize', () => {
+      this.resizeCanvas();
+      // Redraw connections after resize
+      setTimeout(() => {
+        this.positionElements();
+      }, 100);
     });
   }
   
   positionElements() {
-    // CRITICAL: Use viewport center, not container center
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    // CRITICAL: Get ACTUAL Emma orb position from dashboard
+    const emmaDashboard = window.emmaDashboard;
+    let centerX, centerY;
     
-    console.log('🔗 Positioning elements:', {
-      centerX,
-      centerY,
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight
-    });
+    if (emmaDashboard && emmaDashboard.orb) {
+      const orbRect = emmaDashboard.orb.getBoundingClientRect();
+      centerX = orbRect.left + orbRect.width / 2;
+      centerY = orbRect.top + orbRect.height / 2;
+      console.log('🔗 Using ACTUAL orb position:', { centerX, centerY, orbRect });
+    } else {
+      // Fallback to viewport center
+      centerX = window.innerWidth / 2;
+      centerY = window.innerHeight / 2;
+      console.log('🔗 Fallback to viewport center:', { centerX, centerY });
+    }
     
-    // Position nodes around the orb in a triangle
-    const nodes = this.container.querySelectorAll('.menu-node');
-    nodes.forEach((node, index) => {
-      // Triangle layout: start from top and go clockwise
-      const angle = (index / this.menuItems.length) * Math.PI * 2 - Math.PI / 2;
-      const x = centerX + Math.cos(angle) * this.options.radius - this.options.nodeSize / 2;
-      const y = centerY + Math.sin(angle) * this.options.radius - this.options.nodeSize / 2;
+    // CRITICAL: Use ACTUAL radial menu items, don't create our own
+    const radialMenu = document.getElementById('radial-menu');
+    const actualRadialItems = radialMenu ? radialMenu.querySelectorAll('.radial-item') : [];
+    
+    console.log('🔗 Found actual radial items:', actualRadialItems.length);
+    
+    // Clear our nodes array and populate with actual radial item positions
+    this.nodes = [];
+    
+    actualRadialItems.forEach((item, index) => {
+      const itemRect = item.getBoundingClientRect();
+      const itemCenterX = itemRect.left + itemRect.width / 2;
+      const itemCenterY = itemRect.top + itemRect.height / 2;
       
-      node.style.left = x + 'px';
-      node.style.top = y + 'px';
-      
-      // Store position for line drawing (canvas coordinates)
+      // Store position for line drawing
       this.nodes[index] = {
-        element: node,
-        x: x + this.options.nodeSize / 2,
-        y: y + this.options.nodeSize / 2,
+        element: item,
+        x: itemCenterX,
+        y: itemCenterY,
         centerX: centerX,
         centerY: centerY
       };
       
-      console.log(`🔗 Node ${index} positioned:`, {
-        angle: angle * 180 / Math.PI,
-        x, y,
-        nodeX: x + this.options.nodeSize / 2,
-        nodeY: y + this.options.nodeSize / 2
+      console.log(`🔗 Actual radial item ${index} at:`, {
+        x: itemCenterX,
+        y: itemCenterY,
+        itemRect
       });
     });
     
@@ -305,9 +258,19 @@ class UniversalEmmaOrbMenu {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // CRITICAL: Use viewport center for line drawing
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    // CRITICAL: Get ACTUAL Emma orb position for line drawing
+    const emmaDashboard = window.emmaDashboard;
+    let centerX, centerY;
+    
+    if (emmaDashboard && emmaDashboard.orb) {
+      const orbRect = emmaDashboard.orb.getBoundingClientRect();
+      centerX = orbRect.left + orbRect.width / 2;
+      centerY = orbRect.top + orbRect.height / 2;
+    } else {
+      // Fallback to viewport center
+      centerX = window.innerWidth / 2;
+      centerY = window.innerHeight / 2;
+    }
     
     this.ctx.strokeStyle = this.options.lineColor;
     this.ctx.lineWidth = this.options.lineWidth;
@@ -326,6 +289,12 @@ class UniversalEmmaOrbMenu {
       this.ctx.lineTo(node.x, node.y);
       this.ctx.stroke();
     });
+  }
+  
+  // Refresh connections when radial menu state changes
+  refreshConnections() {
+    console.log('🔗 Refreshing Universal Orb Menu connections');
+    this.positionElements();
   }
   
   toggle() {

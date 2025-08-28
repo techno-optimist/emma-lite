@@ -2699,6 +2699,13 @@
 
           // Initialize the menu nodes (without aggressive physics)
           this.initNeuralNetwork();
+          
+          // CRITICAL: Refresh Universal Orb Menu connections after menu positioning
+          setTimeout(() => {
+            if (this.universalOrbMenu && this.universalOrbMenu.refreshConnections) {
+              this.universalOrbMenu.refreshConnections();
+            }
+          }, 150); // Wait for positioning to complete
 
         } else {
           this.radialMenu.classList.remove('active');
