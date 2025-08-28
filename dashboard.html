@@ -2622,7 +2622,17 @@
           // Position at target location (no scaling animation needed)
           item.style.left = (targetX - 45) + 'px'; // Center the 90px item
           item.style.top = (targetY - 45) + 'px';
-          // Opacity will be handled by CSS transition
+          
+          // CRITICAL FIX: Ensure item is visible after exitMemoryConstellation reset
+          item.style.opacity = '1';
+          item.style.transform = 'scale(1)';
+          
+          console.log(`🔧 Item ${i} restored:`, {
+            left: item.style.left,
+            top: item.style.top,
+            opacity: item.style.opacity,
+            transform: item.style.transform
+          });
 
           console.log(`🎯 Item ${i}: start(${startX}, ${startY}) → target(${targetX}, ${targetY})`);
 
@@ -6612,6 +6622,12 @@
 
       // Exit constellation mode
       exitMemoryConstellation() {
+        console.log('🌌 exitMemoryConstellation called - Current state:', {
+          isConstellationMode: this.isConstellationMode,
+          isMenuOpen: this.isMenuOpen,
+          orbExists: !!this.orb,
+          radialMenuExists: !!this.radialMenu
+        });
 
         this.isConstellationMode = false;
 
@@ -6677,13 +6693,19 @@
         const radialItems = this.radialMenu.querySelectorAll('.radial-item');
 
         radialItems.forEach((item, i) => {
-
           item.style.opacity = '0';
           item.style.transform = 'scale(0)';
           // CRITICAL: Reset positioning to default
           item.style.left = '';
           item.style.top = '';
           item.style.animationPlayState = 'running';
+        });
+        
+        console.log('🌌 exitMemoryConstellation complete - Final state:', {
+          isConstellationMode: this.isConstellationMode,
+          isMenuOpen: this.isMenuOpen,
+          radialMenuClasses: this.radialMenu?.className,
+          bodyClasses: document.body.className
         });
       }
 

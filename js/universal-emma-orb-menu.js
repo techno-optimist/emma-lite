@@ -141,6 +141,17 @@ class UniversalEmmaOrbMenu {
     this.canvas = this.container.querySelector('.orb-connections');
     this.ctx = this.canvas.getContext('2d');
     
+    // CRITICAL: Set canvas to full viewport size immediately
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    
+    console.log('🔗 Canvas created:', {
+      width: this.canvas.width,
+      height: this.canvas.height,
+      canvasElement: !!this.canvas,
+      context: !!this.ctx
+    });
+    
     // Set canvas size
     this.resizeCanvas();
     
@@ -152,6 +163,17 @@ class UniversalEmmaOrbMenu {
     const rect = this.container.getBoundingClientRect();
     this.canvas.width = rect.width;
     this.canvas.height = rect.height;
+    
+    console.log('🔗 Canvas resized:', {
+      width: this.canvas.width,
+      height: this.canvas.height,
+      containerRect: rect
+    });
+    
+    // Redraw connections after resize
+    setTimeout(() => {
+      this.drawConnections();
+    }, 50);
   }
   
   initWebGLOrb() {
@@ -232,9 +254,16 @@ class UniversalEmmaOrbMenu {
   }
   
   positionElements() {
-    const containerRect = this.container.getBoundingClientRect();
-    const centerX = containerRect.width / 2;
-    const centerY = containerRect.height / 2;
+    // CRITICAL: Use viewport center, not container center
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    
+    console.log('🔗 Positioning elements:', {
+      centerX,
+      centerY,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight
+    });
     
     // Position nodes around the orb in a triangle
     const nodes = this.container.querySelectorAll('.menu-node');
@@ -247,7 +276,7 @@ class UniversalEmmaOrbMenu {
       node.style.left = x + 'px';
       node.style.top = y + 'px';
       
-      // Store position for line drawing
+      // Store position for line drawing (canvas coordinates)
       this.nodes[index] = {
         element: node,
         x: x + this.options.nodeSize / 2,
@@ -255,6 +284,13 @@ class UniversalEmmaOrbMenu {
         centerX: centerX,
         centerY: centerY
       };
+      
+      console.log(`🔗 Node ${index} positioned:`, {
+        angle: angle * 180 / Math.PI,
+        x, y,
+        nodeX: x + this.options.nodeSize / 2,
+        nodeY: y + this.options.nodeSize / 2
+      });
     });
     
     // Draw connecting lines immediately after positioning
@@ -269,16 +305,22 @@ class UniversalEmmaOrbMenu {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // ALWAYS draw lines as visual enhancement (not dependent on isOpen)
-    const containerRect = this.container.getBoundingClientRect();
-    const centerX = containerRect.width / 2;
-    const centerY = containerRect.height / 2;
+    // CRITICAL: Use viewport center for line drawing
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
     
     this.ctx.strokeStyle = this.options.lineColor;
     this.ctx.lineWidth = this.options.lineWidth;
     this.ctx.lineCap = 'round';
     
-    this.nodes.forEach(node => {
+    console.log('🔗 Drawing connections from center:', { centerX, centerY, nodeCount: this.nodes.length });
+    
+    this.nodes.forEach((node, index) => {
+      console.log(`🔗 Drawing line ${index}:`, {
+        from: { x: centerX, y: centerY },
+        to: { x: node.x, y: node.y }
+      });
+      
       this.ctx.beginPath();
       this.ctx.moveTo(centerX, centerY);
       this.ctx.lineTo(node.x, node.y);
