@@ -236,9 +236,10 @@ class UniversalEmmaOrbMenu {
     const centerX = containerRect.width / 2;
     const centerY = containerRect.height / 2;
     
-    // Position nodes around the orb
+    // Position nodes around the orb in a triangle
     const nodes = this.container.querySelectorAll('.menu-node');
     nodes.forEach((node, index) => {
+      // Triangle layout: start from top and go clockwise
       const angle = (index / this.menuItems.length) * Math.PI * 2 - Math.PI / 2;
       const x = centerX + Math.cos(angle) * this.options.radius - this.options.nodeSize / 2;
       const y = centerY + Math.sin(angle) * this.options.radius - this.options.nodeSize / 2;
@@ -255,15 +256,20 @@ class UniversalEmmaOrbMenu {
         centerY: centerY
       };
     });
+    
+    // Draw connecting lines immediately after positioning
+    setTimeout(() => {
+      this.drawConnections();
+    }, 100);
   }
   
   drawConnections() {
-    if (!this.ctx || !this.isOpen) return;
+    if (!this.ctx) return;
     
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // Draw lines from center to each node
+    // ALWAYS draw lines as visual enhancement (not dependent on isOpen)
     const containerRect = this.container.getBoundingClientRect();
     const centerX = containerRect.width / 2;
     const centerY = containerRect.height / 2;
