@@ -1858,6 +1858,18 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
+    
+    // 💝 CRITICAL: Track people mentioned in Emma's responses too
+    if (sender === 'emma' && content) {
+      const emmaPeople = this.extractPeople(content);
+      emmaPeople.forEach(person => this.conversationContext.recentPeople.add(person));
+      
+      console.log('💝 EMMA RESPONSE TRACKING:', {
+        content: content.substring(0, 50) + '...',
+        extractedPeople: emmaPeople,
+        recentPeople: Array.from(this.conversationContext.recentPeople)
+      });
+    }
 
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -3194,6 +3206,14 @@ RULES:
     // Update people mentioned
     const people = this.extractPeople(userMessage);
     people.forEach(person => this.conversationContext.recentPeople.add(person));
+    
+    // 🐛 DEBUG: Log context for troubleshooting
+    console.log('💝 CONTEXT UPDATE:', {
+      userMessage,
+      extractedPeople: people,
+      recentPeople: Array.from(this.conversationContext.recentPeople),
+      conversationFlow: this.conversationContext.conversationFlow.length
+    });
   }
 
   // 🧠 DEMENTIA-AWARE RESPONSES: Always validate, never contradict
@@ -3205,11 +3225,33 @@ RULES:
     const mentionedPeople = this.extractPeople(userMessage);
     const person = mentionedPeople.length > 0 ? mentionedPeople[0] : null;
     
+    console.log('🧠 DEMENTIA RESPONSE DEBUG:', {
+      userMessage,
+      lower,
+      mentionedPeople,
+      person,
+      recentPeople: Array.from(context.recentPeople),
+      showMeDetected: lower.includes('show me'),
+      isYes: lower === 'yes'
+    });
+    
     // 💝 CRITICAL: Handle memory recall requests like "show me" about a person
     if (person && (lower.includes('show me') || lower.includes('tell me about') || lower.includes('remember'))) {
       // Trigger comprehensive person memory recall
       this.handlePersonMemoryRecall(person);
       return null; // Let the recall system handle the response
+    }
+    
+    // 🧠 CONTEXTUAL RECALL: Handle "show me" when person was mentioned recently
+    if ((lower.includes('show me') || lower === 'yes') && !person) {
+      // Check if someone was mentioned in recent conversation
+      const recentPeople = Array.from(this.conversationContext.recentPeople);
+      if (recentPeople.length > 0) {
+        const lastPerson = recentPeople[recentPeople.length - 1]; // Most recent
+        console.log(`💝 CONTEXTUAL RECALL: Triggering recall for recent person: ${lastPerson}`);
+        this.handlePersonMemoryRecall(lastPerson);
+        return null;
+      }
     }
     
     // Detect if user is sharing about someone (recognize relationship context)
