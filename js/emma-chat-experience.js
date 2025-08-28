@@ -1821,11 +1821,13 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
-    // 🔍 CRITICAL: Check for memory search queries BEFORE memory capture analysis
-    // This prevents "what are my memories" from being captured as a memory
+    // 🎯 CTO OPTIMIZATION: VAULT OPERATIONS FIRST - Complete intent hierarchy
+    // This prevents ALL vault queries from being captured as memories
     const intent = this.classifyUserIntent(message);
-    if (intent.type === 'memory_search') {
-      console.log('🔍 EARLY MEMORY SEARCH DETECTION: Bypassing memory capture for:', message);
+    
+    // VAULT OPERATIONS have HIGHEST PRIORITY
+    if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
+      console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
@@ -3232,11 +3234,16 @@ RULES:
     const people = this.extractPeople(userMessage);
     people.forEach(person => this.conversationContext.recentPeople.add(person));
     
-    // 🐛 DEBUG: Log context for troubleshooting
-    console.log('💝 CONTEXT UPDATE:', {
+    // 💜 CTO ENHANCEMENT: Enhanced context tracking for memory companion
+    this.conversationContext.currentTopic = this.extractTopic(userMessage);
+    this.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
+    
+    console.log('💝 CTO CONTEXT UPDATE:', {
       userMessage,
       extractedPeople: people,
       recentPeople: Array.from(this.conversationContext.recentPeople),
+      currentTopic: this.conversationContext.currentTopic,
+      lastIntent: this.conversationContext.lastUserIntent,
       conversationFlow: this.conversationContext.conversationFlow.length
     });
   }
@@ -3508,11 +3515,11 @@ RULES:
       const allPeople = Object.values(vault.people);
       const peopleCount = allPeople.length;
 
-      // Generate warm introduction
+      // 💜 CTO ENHANCEMENT: Memory companion voice - contextual and empathetic
       const introResponses = [
-        `You have ${peopleCount} wonderful ${peopleCount === 1 ? 'person' : 'people'} in your vault! Let me show you everyone.`,
-        `Here are the ${peopleCount} special ${peopleCount === 1 ? 'person' : 'people'} you've saved with me.`,
-        `I can see ${peopleCount} ${peopleCount === 1 ? 'person' : 'people'} who ${peopleCount === 1 ? 'is' : 'are'} important to you. Here they are:`
+        `What a beautiful question! You have ${peopleCount} special ${peopleCount === 1 ? 'person' : 'people'} in your memory vault. Let me show you everyone who matters to you.`,
+        `I love that you're thinking about your people! Here ${peopleCount === 1 ? 'is the precious person' : `are the ${peopleCount} precious people`} you've shared with me.`,
+        `Your heart is full of ${peopleCount} wonderful ${peopleCount === 1 ? 'person' : 'people'}! Each one has brought such meaning to your life. Here they are:`
       ];
       
       const intro = introResponses[Math.floor(Math.random() * introResponses.length)];
@@ -3526,12 +3533,13 @@ RULES:
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Offer helpful follow-up
+      // 💜 CTO ENHANCEMENT: Memory-focused follow-up prompts
       setTimeout(() => {
         const followUpPrompts = [
-          "Would you like to know more about any of these people?",
-          "Is there someone specific you'd like to tell me about?",
-          "Who would you like to add memories about?"
+          "Would you like to explore memories with any of these precious people?",
+          "Is there someone here who brings back a special memory you'd like to share?",
+          "Which of these beautiful souls would you like to remember together?",
+          "Do any of these people spark a memory you'd like to tell me about?"
         ];
         
         const followUp = followUpPrompts[Math.floor(Math.random() * followUpPrompts.length)];
