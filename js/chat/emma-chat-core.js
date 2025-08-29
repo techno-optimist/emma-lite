@@ -47,42 +47,85 @@ class EmmaChatCore extends ExperiencePopup {
   }
 
   /**
-   * 🧠 CLEAN MESSAGE PROCESSING - No conflicts!
+   * 🧠 CLEAN MESSAGE PROCESSING - BULLETPROOF!
    */
   async processUserMessage(userMessage) {
     try {
       console.log('💜 CORE: Processing message:', userMessage);
       
-      // 1. CLASSIFY INTENT (single source of truth)
-      const intent = await this.intentClassifier.classifyIntent(userMessage);
-      console.log('💜 CORE: Intent classified:', intent);
+      // 🛡️ INPUT VALIDATION
+      if (!userMessage || typeof userMessage !== 'string' || userMessage.trim() === '') {
+        throw new Error('Invalid user message');
+      }
       
-      // 2. DELEGATE TO APPROPRIATE MODULE (no conflicts!)
+      // 1. CLASSIFY INTENT (single source of truth with error boundary)
+      let intent = null;
+      try {
+        intent = await this.intentClassifier.classifyIntent(userMessage);
+        console.log('💜 CORE: Intent classified:', intent);
+      } catch (intentError) {
+        console.error('🛡️ CORE: Intent classification failed:', intentError);
+        intent = { type: 'conversation', confidence: 0.5, originalMessage: userMessage };
+      }
+      
+      // 2. DELEGATE TO APPROPRIATE MODULE (with error boundaries!)
       let response = null;
       
-      switch (intent.type) {
-        case 'memory_operation':
-          response = await this.memoryOperations.handleMemoryRequest(userMessage, intent);
-          break;
-          
-        case 'person_operation':
-          response = await this.personHandler.handlePersonRequest(userMessage, intent);
-          break;
-          
-        case 'photo_operation':
-          response = await this.photoManager.handlePhotoRequest(userMessage, intent);
-          break;
-          
-        case 'memory_sharing':
-          response = await this.dementiaCompanion.handleMemorySharing(userMessage, intent);
-          break;
-          
-        case 'conversation':
-          response = await this.dementiaCompanion.handleConversation(userMessage, intent);
-          break;
-          
-        default:
-          response = { text: "I'm here to help with your memories. What would you like to explore?" };
+      // 🛡️ MODULE DELEGATION WITH ERROR BOUNDARIES
+      try {
+        switch (intent.type) {
+          case 'memory_operation':
+            response = await this.safeModuleCall(
+              () => this.memoryOperations.handleMemoryRequest(userMessage, intent),
+              'Memory Operations',
+              "I'd love to help with your memories. Let me try again."
+            );
+            break;
+            
+          case 'person_operation':
+            response = await this.safeModuleCall(
+              () => this.personHandler.handlePersonRequest(userMessage, intent),
+              'Person Handler',
+              "I'd love to help you explore your people. Let me try again."
+            );
+            break;
+            
+          case 'photo_operation':
+            response = await this.safeModuleCall(
+              () => this.photoManager.handlePhotoRequest(userMessage, intent),
+              'Photo Manager',
+              "I'd love to help you add photos. Let me try again."
+            );
+            break;
+            
+          case 'memory_sharing':
+            response = await this.safeModuleCall(
+              () => this.dementiaCompanion.handleMemorySharing(userMessage, intent),
+              'Memory Sharing',
+              "That sounds like a beautiful memory. Tell me more about it."
+            );
+            break;
+            
+          case 'conversation':
+            response = await this.safeModuleCall(
+              () => this.dementiaCompanion.handleConversation(userMessage, intent),
+              'Conversation',
+              "I'm here to listen. What would you like to share?"
+            );
+            break;
+            
+          default:
+            response = { 
+              text: "I'm here to help with your memories. What would you like to explore?",
+              timing: { delay: 1500, gentle: true }
+            };
+        }
+      } catch (delegationError) {
+        console.error('🛡️ CORE: Module delegation failed:', delegationError);
+        response = { 
+          text: "I'm here with you. Let me try to help in a different way.",
+          timing: { delay: 2000, gentle: true }
+        };
       }
       
       // 3. DISPLAY RESPONSE (single point with clinical timing)
@@ -131,23 +174,123 @@ class EmmaChatCore extends ExperiencePopup {
   }
 
   /**
-   * 🎯 EXECUTE ACTIONS - Clean action handling
+   * 🛡️ SAFE MODULE CALL - Bulletproof error handling
+   */
+  async safeModuleCall(moduleFunction, moduleName, fallbackMessage) {
+    try {
+      const result = await moduleFunction();
+      
+      // Validate response structure
+      if (!result || typeof result !== 'object') {
+        throw new Error(`${moduleName} returned invalid response structure`);
+      }
+      
+      return result;
+      
+    } catch (moduleError) {
+      console.error(`🛡️ CORE: ${moduleName} failed:`, moduleError);
+      
+      // Return clinical-safe fallback
+      return {
+        text: fallbackMessage,
+        timing: { delay: 2000, gentle: true },
+        error: true
+      };
+    }
+  }
+
+  /**
+   * 🛡️ OFFLINE MODE DETECTION AND HANDLING
+   */
+  isOfflineMode() {
+    return !navigator.onLine || !window.fetch;
+  }
+
+  /**
+   * 🛡️ GRACEFUL API DEGRADATION
+   */
+  async safeAPICall(apiFunction, fallbackFunction, operationName) {
+    try {
+      if (this.isOfflineMode()) {
+        console.log(`🛡️ CORE: Offline mode - using fallback for ${operationName}`);
+        return await fallbackFunction();
+      }
+      
+      const result = await Promise.race([
+        apiFunction(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout')), 5000))
+      ]);
+      
+      return result;
+      
+    } catch (apiError) {
+      console.warn(`🛡️ CORE: API call failed for ${operationName}, using fallback:`, apiError);
+      return await fallbackFunction();
+    }
+  }
+
+  /**
+   * 🎯 EXECUTE ACTIONS - Bulletproof action handling
    */
   async executeActions(actions) {
+    if (!Array.isArray(actions)) {
+      console.warn('🛡️ CORE: Invalid actions array:', actions);
+      return;
+    }
+    
     for (const action of actions) {
-      switch (action.type) {
-        case 'display_person':
-          await this.personHandler.displayPersonCard(action.person);
-          break;
-        case 'display_memories':
-          await this.memoryOperations.displayMemories(action.memories);
-          break;
-        case 'trigger_photo_upload':
-          await this.photoManager.triggerUpload(action.targetPerson);
-          break;
-        case 'create_memory':
-          await this.memoryOperations.createMemory(action.memoryData);
-          break;
+      try {
+        console.log('🎯 CORE: Executing action:', action.type);
+        
+        switch (action.type) {
+          case 'display_person':
+            if (action.person) {
+              await this.safeModuleCall(
+                () => this.personHandler.displayPersonCard(action.person),
+                'Person Display',
+                null // No fallback message for display actions
+              );
+            }
+            break;
+            
+          case 'display_memories':
+            if (action.memories && Array.isArray(action.memories)) {
+              await this.safeModuleCall(
+                () => this.memoryOperations.displayMemories(action.memories),
+                'Memory Display',
+                null
+              );
+            }
+            break;
+            
+          case 'trigger_photo_upload':
+            await this.safeModuleCall(
+              () => this.photoManager.triggerUpload(action.targetPerson || 'your memories'),
+              'Photo Upload',
+              "I'd love to help you add photos. Please try again."
+            );
+            break;
+            
+          case 'create_memory':
+            if (action.memoryData) {
+              await this.safeModuleCall(
+                () => this.memoryOperations.createMemory(action.memoryData),
+                'Memory Creation',
+                "I'd love to help you save that memory. Let me try again."
+              );
+            }
+            break;
+            
+          default:
+            console.warn('🛡️ CORE: Unknown action type:', action.type);
+        }
+        
+        // Small delay between actions for smooth UX
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (actionError) {
+        console.error('🛡️ CORE: Action execution failed:', actionError);
+        // Continue with other actions - don't let one failure break everything
       }
     }
   }

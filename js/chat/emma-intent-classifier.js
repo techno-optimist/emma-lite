@@ -16,12 +16,17 @@ class EmmaIntentClassifier {
   }
 
   /**
-   * 🎯 CLASSIFY USER INTENT - Single source of truth
+   * 🎯 CLASSIFY USER INTENT - Single source of truth with offline support
    */
   async classifyIntent(message) {
     const lower = message.toLowerCase().trim();
     
     console.log('🧠 INTENT: Classifying:', message);
+    
+    // 🛡️ INPUT VALIDATION
+    if (!message || typeof message !== 'string') {
+      throw new Error('Invalid message input for classification');
+    }
     
     // 📷 PHOTO OPERATIONS (highest priority)
     if (this.isPhotoRequest(lower)) {
