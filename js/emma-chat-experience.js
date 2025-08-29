@@ -3430,6 +3430,16 @@ RULES:
     
     // MEMORY SHARING: Recognize when user is sharing memories
     if (this.isMemorySharing(lower, context)) {
+      // 💝 CRITICAL: Check if this is a continuation/completion of memory sharing
+      const isMemoryCompletion = this.isMemoryCompletion(lower, context);
+      
+      if (isMemoryCompletion) {
+        // Offer to save the memory after validation
+        setTimeout(() => {
+          this.offerMemoryCapture(context);
+        }, 2000);
+      }
+      
       return this.generateMemorySharingResponse(userMessage, context);
     }
     
@@ -3974,6 +3984,66 @@ RULES:
       const prompt = prompts[Math.floor(Math.random() * prompts.length)];
       this.addMessage(prompt, 'emma');
     }, 3000); // Give time to look at the information first
+  }
+
+  // 💝 CTO CRITICAL: Detect when memory sharing is complete and should be saved
+  isMemoryCompletion(lower, context) {
+    // Completion indicators
+    const completionPhrases = [
+      'thats it', 'that\'s it', 'that is it', 'done', 'finished', 'complete',
+      'yes', 'yep', 'yeah', 'right', 'exactly', 'correct'
+    ];
+    
+    // Emotional completion
+    const emotionalCompletions = [
+      'great', 'good', 'wonderful', 'amazing', 'beautiful', 'perfect',
+      'funny', 'sad', 'happy', 'scary', 'exciting'
+    ];
+    
+    // Check if this seems like a memory completion
+    if (completionPhrases.some(phrase => lower === phrase)) return true;
+    if (emotionalCompletions.some(emotion => lower === emotion)) return true;
+    
+    // Check conversation flow - if we've had 2+ memory sharing exchanges
+    const recentMemorySharing = context.conversationFlow
+      .slice(-3)
+      .filter(flow => flow.message && this.isMemorySharing(flow.message.toLowerCase(), context));
+    
+    return recentMemorySharing.length >= 2;
+  }
+
+  // 💝 CTO CRITICAL: Offer to capture the shared memory
+  offerMemoryCapture(context) {
+    const person = context.lastQueriedPerson;
+    
+    // Build memory from recent conversation
+    const recentExchanges = context.conversationFlow.slice(-4);
+    const memoryContent = recentExchanges
+      .map(flow => flow.message)
+      .filter(msg => this.isMemorySharing(msg.toLowerCase(), context))
+      .join(' ');
+    
+    if (!memoryContent) return;
+    
+    // Create memory offer
+    const memoryOffers = [
+      `What a beautiful memory you've shared about ${person}! Would you like me to save "${memoryContent}" as a precious memory in your vault?`,
+      `That sounds like such a special moment with ${person}. Should I create a memory capsule for "${memoryContent}"?`,
+      `I love hearing about ${person}! Would you like me to preserve this memory about "${memoryContent}" forever?`
+    ];
+    
+    const offer = memoryOffers[Math.floor(Math.random() * memoryOffers.length)];
+    
+    // Add with memory capture buttons
+    this.addMessage(offer, 'emma', {
+      requiresConfirmation: true,
+      memoryData: {
+        content: memoryContent,
+        person: person,
+        title: `Memory with ${person}`,
+        id: `memory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
+    });
   }
 
   // 👥 CRITICAL: Handle people list requests
