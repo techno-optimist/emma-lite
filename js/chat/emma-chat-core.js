@@ -18,12 +18,19 @@ class EmmaChatCore extends ExperiencePopup {
     this.inputField = null;
     this.sendButton = null;
     
-    // 🧠 MODULAR INTELLIGENCE SYSTEM
-    this.intentClassifier = new EmmaIntentClassifier();
-    this.memoryOperations = new EmmaMemoryOperations(this);
-    this.personHandler = new EmmaPersonHandler(this);
-    this.photoManager = new EmmaPhotoManager(this);
-    this.dementiaCompanion = new EmmaDementiaCompanion(this);
+    // 🧠 MODULAR INTELLIGENCE SYSTEM - CTO: SAFE INITIALIZATION
+    try {
+      this.intentClassifier = new EmmaIntentClassifier();
+      this.memoryOperations = new EmmaMemoryOperations(this);
+      this.personHandler = new EmmaPersonHandler(this);
+      this.photoManager = new EmmaPhotoManager(this);
+      this.dementiaCompanion = new EmmaDementiaCompanion(this);
+      console.log('🎯 CTO: All modules initialized successfully');
+    } catch (moduleError) {
+      console.error('🚨 CTO: Module initialization failed:', moduleError);
+      // Fallback to basic functionality
+      this.modulesFailed = true;
+    }
     
     console.log('💜 Emma Chat Core: Initialized with modular architecture');
   }
@@ -47,7 +54,7 @@ class EmmaChatCore extends ExperiencePopup {
   }
 
   /**
-   * 🧠 CLEAN MESSAGE PROCESSING - BULLETPROOF!
+   * 🧠 CLEAN MESSAGE PROCESSING - BULLETPROOF WITH FALLBACK!
    */
   async processUserMessage(userMessage) {
     try {
@@ -56,6 +63,14 @@ class EmmaChatCore extends ExperiencePopup {
       // 🛡️ INPUT VALIDATION
       if (!userMessage || typeof userMessage !== 'string' || userMessage.trim() === '') {
         throw new Error('Invalid user message');
+      }
+      
+      // 🚨 CTO: CHECK FOR MODULE FAILURE - Use legacy system if needed
+      if (this.modulesFailed || !this.intentClassifier) {
+        console.log('🚨 CTO: Modules failed, using basic fallback response');
+        this.hideTypingIndicator();
+        this.addMessage("I'm here to help you with your memories. What would you like to explore?", 'emma');
+        return;
       }
       
       // 1. CLASSIFY INTENT (single source of truth with error boundary)
@@ -433,6 +448,7 @@ class EmmaChatCore extends ExperiencePopup {
   }
 }
 
-// Export for global use
+// Export for global use with backward compatibility
 window.EmmaChatCore = EmmaChatCore;
-console.log('💜 Emma Chat Core: Module loaded successfully');
+window.EmmaChatExperience = EmmaChatCore; // 🚨 CTO: CRITICAL backward compatibility
+console.log('💜 Emma Chat Core: Module loaded successfully with backward compatibility');
