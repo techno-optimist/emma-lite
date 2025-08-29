@@ -1089,13 +1089,29 @@ class EmmaChatExperience extends ExperiencePopup {
       // Get all media attachments for responsive grid display
       let mediaItems = [];
       try {
+        console.log('📸 CHAT DEBUG: Memory object:', {
+          id: memory.id,
+          hasAttachments: !!memory.attachments,
+          attachmentsLength: memory.attachments?.length || 0,
+          hasVaultMedia: !!window.emmaWebVault?.vaultData?.content?.media,
+          attachments: memory.attachments
+        });
+        
         if (memory.attachments && memory.attachments.length > 0 && window.emmaWebVault?.vaultData?.content?.media) {
           const vaultMedia = window.emmaWebVault.vaultData.content.media;
           
           mediaItems = memory.attachments
             .map(attachment => {
+              console.log('📸 CHAT DEBUG: Processing attachment:', attachment);
+              
               if (attachment && attachment.id && vaultMedia[attachment.id]) {
                 const mediaData = vaultMedia[attachment.id];
+                console.log('📸 CHAT DEBUG: Found media data:', {
+                  hasData: !!mediaData.data,
+                  type: mediaData.type,
+                  dataLength: mediaData.data?.length
+                });
+                
                 if (mediaData && mediaData.data) {
                   const mediaUrl = mediaData.data.startsWith('data:') 
                     ? mediaData.data 
@@ -1111,7 +1127,9 @@ class EmmaChatExperience extends ExperiencePopup {
             })
             .filter(item => item !== null);
             
-          console.log(`📸 CHAT: Found ${mediaItems.length} media items for memory`);
+          console.log(`📸 CHAT: Found ${mediaItems.length} media items for memory:`, mediaItems);
+        } else {
+          console.log('📸 CHAT DEBUG: No attachments or vault media available');
         }
       } catch (mediaError) {
         console.warn('💝 CHAT: Error loading media:', mediaError);
