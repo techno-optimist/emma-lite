@@ -2136,6 +2136,13 @@ class EmmaChatExperience extends ExperiencePopup {
     const intent = this.classifyUserIntent(userMessage);
     console.log('🧠 CHAT: Intent classified as:', intent);
 
+    // 📷 PHOTO REQUEST: Handle photo upload requests
+    if (intent.type === 'photo_request') {
+      console.log('📷 CHAT: Photo request detected');
+      await this.handlePhotoRequestFromIntent(userMessage);
+      return;
+    }
+
     // 👥 PEOPLE LIST REQUEST: Show all people in vault
     if (intent.type === 'people_list') {
       console.log('👥 CHAT: People list request detected');
@@ -2232,6 +2239,13 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   classifyUserIntent(message) {
     const lower = message.toLowerCase().trim();
+
+    // 📷 PHOTO/MEDIA REQUESTS (highest priority to prevent memory capture)
+    if (/\b(add|upload|save|attach)\b.*\b(photo|picture|image|video|media)\b/i.test(message) ||
+        /\b(photo|picture|image)\b.*\b(add|upload|save|attach)\b/i.test(message) ||
+        /^(add photo|add picture|upload photo|save photo)$/i.test(message)) {
+      return { type: 'photo_request', confidence: 0.98 };
+    }
 
     // 👥 PEOPLE LISTING QUERIES (asking about ALL people)
     if (/\b(who are|what are|show me|list|see|view)\b.*\b(my|the|all)\b.*\b(people|person|contacts|family|friends)\b/i.test(message) ||
@@ -4014,6 +4028,33 @@ RULES:
       const prompt = prompts[Math.floor(Math.random() * prompts.length)];
       this.addMessage(prompt, 'emma');
     }, 3000); // Give time to look at the information first
+  }
+
+  // 📷 CRITICAL: Handle photo upload requests from intent
+  async handlePhotoRequestFromIntent(userMessage) {
+    try {
+      console.log('📷 CHAT: Handling photo request from intent:', userMessage);
+      
+      // Determine target person from context
+      const targetPerson = this.conversationContext.lastQueriedPerson || 'your memories';
+      
+      // Generate appropriate response
+      const responses = [
+        `I'd love to help you add photos! Let me open the photo selector for you.`,
+        `Perfect! Let's add some beautiful photos to your memories.`,
+        `Wonderful! I'll help you add photos. You can select multiple photos at once.`
+      ];
+      
+      const response = responses[Math.floor(Math.random() * responses.length)];
+      this.addMessage(response, 'emma');
+      
+      // Trigger photo upload system
+      this.handlePhotoUploadRequest(targetPerson);
+      
+    } catch (error) {
+      console.error('📷 CHAT: Error handling photo request:', error);
+      this.addMessage("I'd love to help you add photos! Let me try to open the photo selector for you.", 'emma');
+    }
   }
 
   // 👥 CRITICAL: Handle people list requests
