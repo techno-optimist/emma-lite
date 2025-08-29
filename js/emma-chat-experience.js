@@ -1089,29 +1089,13 @@ class EmmaChatExperience extends ExperiencePopup {
       // Get all media attachments for responsive grid display
       let mediaItems = [];
       try {
-        console.log('📸 CHAT DEBUG: Memory object:', {
-          id: memory.id,
-          hasAttachments: !!memory.attachments,
-          attachmentsLength: memory.attachments?.length || 0,
-          hasVaultMedia: !!window.emmaWebVault?.vaultData?.content?.media,
-          attachments: memory.attachments
-        });
-        
         if (memory.attachments && memory.attachments.length > 0 && window.emmaWebVault?.vaultData?.content?.media) {
           const vaultMedia = window.emmaWebVault.vaultData.content.media;
           
           mediaItems = memory.attachments
             .map(attachment => {
-              console.log('📸 CHAT DEBUG: Processing attachment:', attachment);
-              
               if (attachment && attachment.id && vaultMedia[attachment.id]) {
                 const mediaData = vaultMedia[attachment.id];
-                console.log('📸 CHAT DEBUG: Found media data:', {
-                  hasData: !!mediaData.data,
-                  type: mediaData.type,
-                  dataLength: mediaData.data?.length
-                });
-                
                 if (mediaData && mediaData.data) {
                   const mediaUrl = mediaData.data.startsWith('data:') 
                     ? mediaData.data 
@@ -1127,9 +1111,7 @@ class EmmaChatExperience extends ExperiencePopup {
             })
             .filter(item => item !== null);
             
-          console.log(`📸 CHAT: Found ${mediaItems.length} media items for memory:`, mediaItems);
-        } else {
-          console.log('📸 CHAT DEBUG: No attachments or vault media available');
+          console.log(`📸 CHAT: Found ${mediaItems.length} media items for memory`);
         }
       } catch (mediaError) {
         console.warn('💝 CHAT: Error loading media:', mediaError);
@@ -1310,81 +1292,59 @@ class EmmaChatExperience extends ExperiencePopup {
           font-weight: 600;
         }
 
-        /* Heart icon for no images - Enhanced for dementia care */
+        /* Heart icon for no images */
         .memory-icon {
-          width: 100px;
-          height: 100px;
-          border-radius: 20px;
+          width: 80px;
+          height: 80px;
+          border-radius: 16px;
           background: linear-gradient(135deg, #8a2be2, #4b0082);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 40px;
-          margin: 20px auto;
-          box-shadow: 0 6px 16px rgba(138, 43, 226, 0.4);
-          border: 2px solid rgba(255, 255, 255, 0.1);
-          transition: all 0.3s ease;
-        }
-        
-        .memory-content:hover .memory-icon {
-          transform: scale(1.05);
-          box-shadow: 0 8px 20px rgba(138, 43, 226, 0.5);
+          font-size: 32px;
+          margin: 16px auto;
+          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
         }
 
-        /* Memory content area - Enhanced for dementia care */
+        /* Memory content area */
         .memory-content {
-          padding: 20px;
+          padding: 16px;
           cursor: pointer;
-          background: rgba(255, 255, 255, 0.02);
         }
 
         .memory-date {
-          color: rgba(138, 43, 226, 1);
-          font-size: 13px;
-          font-weight: 700;
+          color: rgba(138, 43, 226, 0.9);
+          font-size: 12px;
+          font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
-          background: rgba(138, 43, 226, 0.1);
-          padding: 4px 8px;
-          border-radius: 6px;
-          display: inline-block;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
         }
 
         .memory-text {
-          color: rgba(255, 255, 255, 1);
-          font-size: 16px;
-          line-height: 1.6;
-          margin-bottom: 16px;
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 14px;
+          line-height: 1.4;
+          margin-bottom: 12px;
           word-wrap: break-word;
           overflow: hidden;
-          font-weight: 400;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
 
         .memory-action {
-          color: rgba(255, 255, 255, 0.9);
-          background: linear-gradient(135deg, rgba(138, 43, 226, 0.8), rgba(75, 0, 130, 0.9));
-          font-size: 14px;
-          font-weight: 600;
-          display: inline-flex;
+          color: rgba(138, 43, 226, 0.7);
+          font-size: 12px;
+          font-weight: 500;
+          display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px 18px;
-          border-radius: 12px;
-          border: 1px solid rgba(138, 43, 226, 0.3);
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 8px rgba(138, 43, 226, 0.2);
-          margin-top: 4px;
+          gap: 4px;
+          transition: color 0.2s ease;
         }
 
         .memory-content:hover .memory-action {
-          background: linear-gradient(135deg, rgba(138, 43, 226, 1), rgba(75, 0, 130, 1));
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+          color: rgba(138, 43, 226, 1);
         }
 
         /* Mobile optimization */
@@ -2136,13 +2096,6 @@ class EmmaChatExperience extends ExperiencePopup {
     const intent = this.classifyUserIntent(userMessage);
     console.log('🧠 CHAT: Intent classified as:', intent);
 
-    // 📷 PHOTO REQUEST: Handle photo upload requests
-    if (intent.type === 'photo_request') {
-      console.log('📷 CHAT: Photo request detected');
-      await this.handlePhotoRequestFromIntent(userMessage);
-      return;
-    }
-
     // 👥 PEOPLE LIST REQUEST: Show all people in vault
     if (intent.type === 'people_list') {
       console.log('👥 CHAT: People list request detected');
@@ -2239,13 +2192,6 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   classifyUserIntent(message) {
     const lower = message.toLowerCase().trim();
-
-    // 📷 PHOTO/MEDIA REQUESTS (highest priority to prevent memory capture)
-    if (/\b(add|upload|save|attach)\b.*\b(photo|picture|image|video|media)\b/i.test(message) ||
-        /\b(photo|picture|image)\b.*\b(add|upload|save|attach)\b/i.test(message) ||
-        /^(add photo|add picture|upload photo|save photo)$/i.test(message)) {
-      return { type: 'photo_request', confidence: 0.98 };
-    }
 
     // 👥 PEOPLE LISTING QUERIES (asking about ALL people)
     if (/\b(who are|what are|show me|list|see|view)\b.*\b(my|the|all)\b.*\b(people|person|contacts|family|friends)\b/i.test(message) ||
@@ -4028,33 +3974,6 @@ RULES:
       const prompt = prompts[Math.floor(Math.random() * prompts.length)];
       this.addMessage(prompt, 'emma');
     }, 3000); // Give time to look at the information first
-  }
-
-  // 📷 CRITICAL: Handle photo upload requests from intent
-  async handlePhotoRequestFromIntent(userMessage) {
-    try {
-      console.log('📷 CHAT: Handling photo request from intent:', userMessage);
-      
-      // Determine target person from context
-      const targetPerson = this.conversationContext.lastQueriedPerson || 'your memories';
-      
-      // Generate appropriate response
-      const responses = [
-        `I'd love to help you add photos! Let me open the photo selector for you.`,
-        `Perfect! Let's add some beautiful photos to your memories.`,
-        `Wonderful! I'll help you add photos. You can select multiple photos at once.`
-      ];
-      
-      const response = responses[Math.floor(Math.random() * responses.length)];
-      this.addMessage(response, 'emma');
-      
-      // Trigger photo upload system
-      this.handlePhotoUploadRequest(targetPerson);
-      
-    } catch (error) {
-      console.error('📷 CHAT: Error handling photo request:', error);
-      this.addMessage("I'd love to help you add photos! Let me try to open the photo selector for you.", 'emma');
-    }
   }
 
   // 👥 CRITICAL: Handle people list requests

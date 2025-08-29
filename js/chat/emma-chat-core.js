@@ -85,17 +85,41 @@ class EmmaChatCore extends ExperiencePopup {
           response = { text: "I'm here to help with your memories. What would you like to explore?" };
       }
       
-      // 3. DISPLAY RESPONSE (single point)
+      // 3. DISPLAY RESPONSE (single point with clinical timing)
       if (response) {
-        this.hideTypingIndicator();
+        // 🩺 CLINICAL TIMING: Respect dementia-appropriate delays
+        const delay = response.timing?.delay || 1500;
+        const isGentle = response.timing?.gentle || false;
         
-        if (response.text) {
-          this.addMessage(response.text, 'emma');
-        }
-        
-        // Execute any actions
-        if (response.actions) {
-          await this.executeActions(response.actions);
+        if (isGentle) {
+          // Show typing indicator for appropriate time
+          setTimeout(() => {
+            this.hideTypingIndicator();
+            
+            if (response.text) {
+              this.addMessage(response.text, 'emma');
+            }
+            
+            // Execute actions after response is displayed
+            if (response.actions) {
+              setTimeout(() => {
+                this.executeActions(response.actions);
+              }, 500);
+            }
+          }, delay);
+        } else {
+          // Standard timing
+          setTimeout(() => {
+            this.hideTypingIndicator();
+            
+            if (response.text) {
+              this.addMessage(response.text, 'emma');
+            }
+            
+            if (response.actions) {
+              this.executeActions(response.actions);
+            }
+          }, 1000);
         }
       }
       
