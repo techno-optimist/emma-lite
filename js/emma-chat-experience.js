@@ -4052,15 +4052,34 @@ RULES:
     
     const offer = memoryOffers[Math.floor(Math.random() * memoryOffers.length)];
     
-    // Add with memory capture buttons
+    // Create memory ID and store in enrichment state
+    const memoryId = `memory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const memoryData = {
+      id: memoryId,
+      content: memoryContent,
+      title: `Memory with ${person}`,
+      created: Date.now(),
+      metadata: {
+        people: person ? [person] : [],
+        captureMethod: 'chat-conversation',
+        aiGenerated: false
+      }
+    };
+    
+    // Store in enrichment state for confirmation system
+    this.enrichmentState.set(memoryId, {
+      memory: memoryData,
+      state: 'awaiting-confirmation',
+      collectedData: {
+        people: person ? [person] : [],
+        peopleNames: person ? [person] : []
+      }
+    });
+    
+    // Add with memory capture buttons (using correct format)
     this.addMessage(offer, 'emma', {
       requiresConfirmation: true,
-      memoryData: {
-        content: memoryContent,
-        person: person,
-        title: `Memory with ${person}`,
-        id: `memory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      }
+      memoryId: memoryId // This is what the confirmation system expects!
     });
   }
 
