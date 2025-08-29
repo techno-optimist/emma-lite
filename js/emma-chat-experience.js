@@ -6205,19 +6205,21 @@ RULES:
         // Start with letter (constellation style)
         avatar.textContent = person.name.charAt(0).toUpperCase();
 
-        // 🎯 CRITICAL FIX: Apply proper styling for ALL avatars
+        // 🎯 CTO CRITICAL FIX: BIGGER AVATARS + BETTER STYLING
         avatar.style.cssText = `
-          width: 48px;
-          height: 48px;
+          width: 80px;
+          height: 80px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 600;
-          font-size: 18px;
+          font-size: 28px;
           color: white;
-          margin-right: 8px;
+          margin-right: 12px;
           flex-shrink: 0;
+          transition: transform 0.2s ease;
+          cursor: pointer;
         `;
 
         // Apply styling based on person type
@@ -6233,44 +6235,71 @@ RULES:
           avatar.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
         }
 
-        // Try to load person's avatar if they have one (existing people)
-        if (!person.isNew && person.avatarUrl) {
-          const img = document.createElement('img');
-          img.src = person.avatarUrl;
-          img.alt = `${person.name} avatar`;
-          img.onload = () => {
-            avatar.innerHTML = '';
-            avatar.appendChild(img);
-          };
-          img.onerror = () => {
-            // Keep letter fallback
-          };
-        } else if (!person.isNew && person.avatarId) {
-          try {
-            // Load from vault (exact constellation code)
-            window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
-              if (avatarData && avatarData.byteLength > 100) {
-                const blob = new Blob([avatarData], { type: 'image/jpeg' });
-                const url = URL.createObjectURL(blob);
-                
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = `${person.name} avatar`;
-                img.onload = () => {
-                  avatar.innerHTML = '';
-                  avatar.appendChild(img);
-                };
-                img.onerror = () => {
-                  // Keep beautiful letter fallback
-                };
-              } else {
-                // Data too small or corrupted - keep beautiful letter fallback
-              }
-            }).catch(error => {
-              // Vault photo corrupted - keep beautiful letter fallback
-            });
-          } catch (error) {
-            // Keep beautiful letter fallback
+        // 🎯 CTO CRITICAL: ENHANCED PHOTO LOADING WITH DEBUGGING
+        if (!person.isNew) {
+          console.log(`📸 CTO: Loading avatar for ${person.name}:`, {
+            avatarUrl: person.avatarUrl ? 'has avatarUrl' : 'no avatarUrl',
+            avatarId: person.avatarId ? 'has avatarId' : 'no avatarId',
+            profilePicture: person.profilePicture ? 'has profilePicture' : 'no profilePicture'
+          });
+
+          // Try avatarUrl first (direct URL)
+          if (person.avatarUrl || person.profilePicture) {
+            const imageUrl = person.avatarUrl || person.profilePicture;
+            console.log(`📸 CTO: Loading direct URL for ${person.name}:`, imageUrl);
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = `${person.name} avatar`;
+            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+            img.onload = () => {
+              console.log(`✅ CTO: Avatar loaded successfully for ${person.name}`);
+              avatar.innerHTML = '';
+              avatar.appendChild(img);
+            };
+            img.onerror = () => {
+              console.log(`❌ CTO: Direct URL failed for ${person.name}, trying avatarId...`);
+              // Try avatarId as fallback
+              this.loadAvatarFromVault(person, avatar);
+            };
+          }
+          // Try avatarId from vault
+          else if (person.avatarId) {
+            console.log(`📸 CTO: Loading from vault for ${person.name}, avatarId:`, person.avatarId);
+            this.loadAvatarFromVault(person, avatar);
+          }
+          // Try to resolve from vault media directly
+          else if (window.emmaWebVault?.vaultData?.content?.media) {
+            console.log(`📸 CTO: Searching vault media for ${person.name}...`);
+            const vaultMedia = window.emmaWebVault.vaultData.content.media;
+            
+            // Look for media items that might be this person's avatar
+            const possibleAvatar = Object.values(vaultMedia).find(media => 
+              media.title?.toLowerCase().includes(person.name.toLowerCase()) ||
+              media.description?.toLowerCase().includes(person.name.toLowerCase())
+            );
+            
+            if (possibleAvatar && possibleAvatar.data) {
+              console.log(`📸 CTO: Found possible avatar in vault media for ${person.name}`);
+              const imageUrl = possibleAvatar.data.startsWith('data:') 
+                ? possibleAvatar.data 
+                : `data:${possibleAvatar.type};base64,${possibleAvatar.data}`;
+              
+              const img = document.createElement('img');
+              img.src = imageUrl;
+              img.alt = `${person.name} avatar`;
+              img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+              img.onload = () => {
+                console.log(`✅ CTO: Vault media avatar loaded for ${person.name}`);
+                avatar.innerHTML = '';
+                avatar.appendChild(img);
+              };
+              img.onerror = () => {
+                console.log(`❌ CTO: Vault media avatar failed for ${person.name}`);
+              };
+            } else {
+              console.log(`📸 CTO: No avatar found in vault media for ${person.name}`);
+            }
           }
         }
 
@@ -6279,6 +6308,55 @@ RULES:
 
     } catch (error) {
       console.error('❌ Error creating capsule people avatars:', error);
+    }
+  }
+
+  /**
+   * 🎯 CTO HELPER: Load avatar from vault with enhanced error handling
+   */
+  async loadAvatarFromVault(person, avatar) {
+    try {
+      console.log(`📸 CTO: Loading vault avatar for ${person.name}, avatarId:`, person.avatarId);
+      
+      const avatarData = await window.emmaWebVault.getMedia(person.avatarId);
+      console.log(`📸 CTO: Got vault data for ${person.name}:`, typeof avatarData, avatarData?.byteLength || 'no byteLength');
+      
+      if (avatarData) {
+        let imageUrl = null;
+        
+        // Handle different data formats
+        if (typeof avatarData === 'string' && avatarData.startsWith('data:')) {
+          // Already a data URL
+          imageUrl = avatarData;
+          console.log(`📸 CTO: Using data URL for ${person.name}`);
+        } else if (avatarData.byteLength && avatarData.byteLength > 100) {
+          // Binary data - convert to blob URL
+          const blob = new Blob([avatarData], { type: 'image/jpeg' });
+          imageUrl = URL.createObjectURL(blob);
+          console.log(`📸 CTO: Created blob URL for ${person.name}:`, imageUrl);
+        } else {
+          console.log(`📸 CTO: Invalid avatar data for ${person.name}:`, avatarData);
+          return;
+        }
+        
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = `${person.name} avatar`;
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+        img.onload = () => {
+          console.log(`✅ CTO: Vault avatar loaded successfully for ${person.name}`);
+          avatar.innerHTML = '';
+          avatar.appendChild(img);
+        };
+        img.onerror = (error) => {
+          console.log(`❌ CTO: Vault avatar failed to display for ${person.name}:`, error);
+          // Keep letter fallback
+        };
+      } else {
+        console.log(`📸 CTO: No avatar data returned from vault for ${person.name}`);
+      }
+    } catch (error) {
+      console.log(`❌ CTO: Vault avatar loading error for ${person.name}:`, error);
     }
   }
 
