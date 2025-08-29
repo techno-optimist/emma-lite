@@ -4031,8 +4031,8 @@ RULES:
   }
 
   // 💝 CTO CRITICAL: Offer to capture the shared memory
-  offerMemoryCapture(context) {
-    const person = context.lastQueriedPerson;
+  async offerMemoryCapture(context) {
+    const personName = context.lastQueriedPerson;
     
     // Build memory from recent conversation
     const recentExchanges = context.conversationFlow.slice(-4);
@@ -4043,11 +4043,19 @@ RULES:
     
     if (!memoryContent) return;
     
+    // 🎯 CTO CRITICAL: Get person ID for proper avatar display
+    let personId = null;
+    if (personName) {
+      const person = await this.findPersonInVault(personName);
+      personId = person?.id || null;
+      console.log('👤 CTO: Found person for memory:', personName, '→ ID:', personId);
+    }
+    
     // Create memory offer
     const memoryOffers = [
-      `What a beautiful memory you've shared about ${person}! Would you like me to save "${memoryContent}" as a precious memory in your vault?`,
-      `That sounds like such a special moment with ${person}. Should I create a memory capsule for "${memoryContent}"?`,
-      `I love hearing about ${person}! Would you like me to preserve this memory about "${memoryContent}" forever?`
+      `What a beautiful memory you've shared about ${personName}! Would you like me to save "${memoryContent}" as a precious memory in your vault?`,
+      `That sounds like such a special moment with ${personName}. Should I create a memory capsule for "${memoryContent}"?`,
+      `I love hearing about ${personName}! Would you like me to preserve this memory about "${memoryContent}" forever?`
     ];
     
     const offer = memoryOffers[Math.floor(Math.random() * memoryOffers.length)];
@@ -4057,10 +4065,11 @@ RULES:
     const memoryData = {
       id: memoryId,
       content: memoryContent,
-      title: `Memory with ${person}`,
+      title: `Memory with ${personName}`,
       created: Date.now(),
       metadata: {
-        people: person ? [person] : [],
+        people: personId ? [personId] : [], // 🎯 CTO: Store person ID, not name!
+        peopleNames: personName ? [personName] : [], // Keep names for reference
         captureMethod: 'chat-conversation',
         aiGenerated: false
       }
@@ -4071,10 +4080,12 @@ RULES:
       memory: memoryData,
       state: 'awaiting-confirmation',
       collectedData: {
-        people: person ? [person] : [],
-        peopleNames: person ? [person] : []
+        people: personId ? [personId] : [], // Person ID for avatar system
+        peopleNames: personName ? [personName] : [] // Names for display
       }
     });
+    
+    console.log('💝 CTO: Memory stored with person ID:', personId, 'for avatar display');
     
     // Add with memory capture buttons (using correct format)
     this.addMessage(offer, 'emma', {
