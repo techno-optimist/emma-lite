@@ -178,29 +178,134 @@ class EmmaIntentClassifier {
   }
 
   /**
-   * 📝 CONTEXT MANAGEMENT
+   * 📝 CONTEXT MANAGEMENT - ENHANCED FOR EMOTIONAL INTELLIGENCE
    */
-  updateContext(userMessage, intent) {
-    // Track conversation flow
+  updateContext(userMessage, intent, emmaResponse = null) {
+    // Track conversation flow with emotional context
     this.conversationContext.conversationFlow.push({
       message: userMessage,
       intent: intent,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      emotionalTone: this.detectEmotionalTone(userMessage),
+      memorySharing: intent.type === 'memory_sharing',
+      emmaResponse: emmaResponse
     });
     
-    // Keep last 5 exchanges
+    // Keep last 5 exchanges for rich context
     if (this.conversationContext.conversationFlow.length > 5) {
       this.conversationContext.conversationFlow.shift();
     }
     
-    // Update person context
+    // Enhanced person context tracking
     if (intent.targetPerson) {
       this.conversationContext.lastQueriedPerson = intent.targetPerson;
       this.conversationContext.recentPeople.add(intent.targetPerson);
+      
+      // Track relationship context if revealed
+      this.trackRelationshipContext(userMessage, intent.targetPerson);
     }
     
-    // Update topic
+    // Track memory themes for proactive assistance
+    this.trackMemoryThemes(userMessage, intent);
+    
+    // Update emotional state for appropriate responses
+    this.conversationContext.emotionalState = this.detectEmotionalTone(userMessage);
     this.conversationContext.currentTopic = intent.targetPerson || intent.subType || null;
+    
+    console.log('🧠 CONTEXT UPDATE:', {
+      lastPerson: this.conversationContext.lastQueriedPerson,
+      emotionalState: this.conversationContext.emotionalState,
+      recentThemes: this.conversationContext.memoryThemes,
+      conversationLength: this.conversationContext.conversationFlow.length
+    });
+  }
+
+  /**
+   * 💝 DETECT EMOTIONAL TONE - For empathetic responses
+   */
+  detectEmotionalTone(message) {
+    const lower = message.toLowerCase();
+    
+    // Positive emotions
+    if (lower.includes('happy') || lower.includes('joy') || lower.includes('wonderful') || 
+        lower.includes('amazing') || lower.includes('beautiful') || lower.includes('love')) {
+      return 'joyful';
+    }
+    
+    // Nostalgic/warm emotions
+    if (lower.includes('remember') || lower.includes('miss') || lower.includes('think about')) {
+      return 'nostalgic';
+    }
+    
+    // Sad/difficult emotions
+    if (lower.includes('sad') || lower.includes('difficult') || lower.includes('hard') ||
+        lower.includes('upset') || lower.includes('worried')) {
+      return 'reflective';
+    }
+    
+    // Confused/uncertain
+    if (lower.includes('confused') || lower.includes('don\'t know') || 
+        lower.includes('can\'t remember') || lower === 'what' || lower === 'huh') {
+      return 'uncertain';
+    }
+    
+    // Excited/engaged
+    if (lower.includes('funny') || lower.includes('exciting') || lower.includes('awesome')) {
+      return 'excited';
+    }
+    
+    return 'calm';
+  }
+
+  /**
+   * 👥 TRACK RELATIONSHIP CONTEXT
+   */
+  trackRelationshipContext(message, person) {
+    const lower = message.toLowerCase();
+    
+    if (!this.conversationContext.relationships) {
+      this.conversationContext.relationships = new Map();
+    }
+    
+    // Detect relationship reveals
+    if (lower.includes('husband')) {
+      this.conversationContext.relationships.set(person, 'husband');
+    } else if (lower.includes('wife')) {
+      this.conversationContext.relationships.set(person, 'wife');
+    } else if (lower.includes('son')) {
+      this.conversationContext.relationships.set(person, 'son');
+    } else if (lower.includes('daughter')) {
+      this.conversationContext.relationships.set(person, 'daughter');
+    } else if (lower.includes('mother') || lower.includes('mom')) {
+      this.conversationContext.relationships.set(person, 'mother');
+    } else if (lower.includes('father') || lower.includes('dad')) {
+      this.conversationContext.relationships.set(person, 'father');
+    }
+  }
+
+  /**
+   * 🧠 TRACK MEMORY THEMES - For proactive assistance
+   */
+  trackMemoryThemes(message, intent) {
+    if (!this.conversationContext.memoryThemes) {
+      this.conversationContext.memoryThemes = new Set();
+    }
+    
+    const lower = message.toLowerCase();
+    
+    // Activity themes
+    if (lower.includes('school')) this.conversationContext.memoryThemes.add('education');
+    if (lower.includes('work') || lower.includes('job')) this.conversationContext.memoryThemes.add('career');
+    if (lower.includes('travel') || lower.includes('trip')) this.conversationContext.memoryThemes.add('travel');
+    if (lower.includes('wedding') || lower.includes('married')) this.conversationContext.memoryThemes.add('milestones');
+    if (lower.includes('birthday') || lower.includes('celebration')) this.conversationContext.memoryThemes.add('celebrations');
+    if (lower.includes('holiday') || lower.includes('christmas')) this.conversationContext.memoryThemes.add('holidays');
+    
+    // Keep themes manageable
+    if (this.conversationContext.memoryThemes.size > 10) {
+      const themesArray = Array.from(this.conversationContext.memoryThemes);
+      this.conversationContext.memoryThemes = new Set(themesArray.slice(-10));
+    }
   }
 
   /**

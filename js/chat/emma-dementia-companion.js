@@ -228,6 +228,75 @@ class EmmaDementiaCompanion {
     
     return false;
   }
+
+  /**
+   * 🤖 PROACTIVE MEMORY ASSISTANCE - Emotional Intelligence
+   */
+  generateProactiveAssistance(context) {
+    const person = context.lastQueriedPerson;
+    const emotionalState = context.emotionalState;
+    const themes = Array.from(context.memoryThemes || []);
+    
+    if (!person) return null;
+    
+    // Context-aware proactive suggestions
+    const suggestions = [];
+    
+    if (emotionalState === 'nostalgic') {
+      suggestions.push(`I notice you're thinking fondly about ${person}. Would you like to explore more memories with them?`);
+      suggestions.push(`There's such warmth when you talk about ${person}. Do you have a favorite memory together you'd like to revisit?`);
+    }
+    
+    if (emotionalState === 'joyful') {
+      suggestions.push(`I can feel the happiness when you talk about ${person}! What's your most joyful memory with them?`);
+      suggestions.push(`The joy in your voice about ${person} is beautiful! What moment with them always makes you smile?`);
+    }
+    
+    if (themes.includes('milestones')) {
+      suggestions.push(`You've mentioned some important milestones with ${person}. Would you like to explore more special occasions you've shared?`);
+    }
+    
+    if (themes.includes('celebrations')) {
+      suggestions.push(`I sense celebrations are meaningful to you and ${person}. What's your favorite celebration memory together?`);
+    }
+    
+    return suggestions.length > 0 ? suggestions[Math.floor(Math.random() * suggestions.length)] : null;
+  }
+
+  /**
+   * 💭 GENERATE EMPATHETIC FOLLOW-UPS
+   */
+  generateEmpathticFollowUp(userMessage, person, emotionalState) {
+    const lower = userMessage.toLowerCase();
+    
+    // Emotionally-aware follow-ups
+    if (emotionalState === 'joyful') {
+      return [
+        `What a beautiful memory! I can feel the joy radiating from your words about ${person}. What made that moment so special?`,
+        `That sounds absolutely wonderful with ${person}! I love hearing about moments that bring such happiness. Tell me more about the joy you felt.`
+      ];
+    }
+    
+    if (emotionalState === 'nostalgic') {
+      return [
+        `There's such tenderness in how you remember ${person}. What is it about that memory that touches your heart most?`,
+        `I can feel the love in your voice when you talk about ${person}. What other precious moments do you treasure with them?`
+      ];
+    }
+    
+    if (emotionalState === 'reflective') {
+      return [
+        `Thank you for sharing something so meaningful about ${person}. These deeper memories often hold the most significance. How does it feel to remember this?`,
+        `What a profound memory with ${person}. Sometimes the quieter moments carry the deepest meaning. What else comes to mind about them?`
+      ];
+    }
+    
+    // Default empathetic responses
+    return [
+      `That sounds like such a meaningful moment with ${person}. I love hearing about the connections that matter to you. What else would you like to share?`,
+      `What a special memory with ${person}! Every story you tell helps me understand how important they are to you. Tell me more about your time together.`
+    ];
+  }
 }
 
 // Export for global use

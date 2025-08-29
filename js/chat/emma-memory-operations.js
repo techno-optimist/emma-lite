@@ -27,7 +27,7 @@ class EmmaMemoryOperations {
   }
 
   /**
-   * ✨ HANDLE MEMORY CREATION
+   * ✨ HANDLE MEMORY CREATION - EMOTIONALLY INTELLIGENT
    */
   async handleMemoryCreation(userMessage, intent) {
     try {
@@ -37,8 +37,14 @@ class EmmaMemoryOperations {
       const subject = this.extractMemorySubject(userMessage);
       
       if (!subject) {
+        // 💝 EMOTIONAL INTELLIGENCE: Encouraging, not robotic
+        const encouragingResponses = [
+          "What a wonderful idea to save a memory! I'm excited to help you preserve something special. What moment is calling to your heart?",
+          "I love that you want to capture a precious memory! Tell me about the moment you'd like to treasure forever.",
+          "How beautiful that you're thinking about saving memories! What story would you like me to help you preserve?"
+        ];
         return {
-          text: "I'd love to help you save a memory! What would you like to remember?"
+          text: encouragingResponses[Math.floor(Math.random() * encouragingResponses.length)]
         };
       }
       

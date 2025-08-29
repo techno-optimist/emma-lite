@@ -42,11 +42,31 @@ class EmmaPersonHandler {
       const allPeople = Object.values(vault.people);
       const peopleCount = allPeople.length;
 
-      const introResponses = [
-        `What a beautiful question! You have ${peopleCount} special ${peopleCount === 1 ? 'person' : 'people'} in your memory vault. Let me show you everyone who matters to you.`,
-        `I love that you're thinking about your people! Here ${peopleCount === 1 ? 'is the precious person' : `are the ${peopleCount} precious people`} you've shared with me.`,
-        `Your heart is full of ${peopleCount} wonderful ${peopleCount === 1 ? 'person' : 'people'}! Each one has brought such meaning to your life. Here they are:`
-      ];
+      // 💝 EMOTIONAL INTELLIGENCE: Context-aware people responses
+      const context = this.chatCore.intentClassifier.getContext();
+      const emotionalState = context.emotionalState || 'calm';
+      
+      let introResponses;
+      
+      if (emotionalState === 'nostalgic' || emotionalState === 'reflective') {
+        introResponses = [
+          `I can feel you're thinking deeply about the people in your life. You have ${peopleCount} precious ${peopleCount === 1 ? 'soul' : 'souls'} in your heart. Let me show you these beautiful relationships.`,
+          `There's something so touching about reflecting on the people we love. Here ${peopleCount === 1 ? 'is the special person' : `are the ${peopleCount} special people`} you've entrusted me to remember.`,
+          `Your heart holds ${peopleCount} meaningful ${peopleCount === 1 ? 'relationship' : 'relationships'}. Each one has woven such beauty into your life story.`
+        ];
+      } else if (emotionalState === 'joyful' || emotionalState === 'excited') {
+        introResponses = [
+          `What joy I hear in your voice! You have ${peopleCount} wonderful ${peopleCount === 1 ? 'person' : 'people'} who bring such happiness to your life. Let me celebrate them with you!`,
+          `I love the warmth in your question! Here ${peopleCount === 1 ? 'is the amazing person' : `are the ${peopleCount} amazing people`} who fill your world with love.`,
+          `Your enthusiasm about your people fills my heart! These ${peopleCount} beautiful ${peopleCount === 1 ? 'soul brings' : 'souls bring'} such light to your life.`
+        ];
+      } else {
+        introResponses = [
+          `What a beautiful question! You have ${peopleCount} special ${peopleCount === 1 ? 'person' : 'people'} in your memory vault. Let me show you everyone who matters to you.`,
+          `I love that you're thinking about your people! Here ${peopleCount === 1 ? 'is the precious person' : `are the ${peopleCount} precious people`} you've shared with me.`,
+          `Your heart is full of ${peopleCount} wonderful ${peopleCount === 1 ? 'person' : 'people'}! Each one has brought such meaning to your life. Here they are:`
+        ];
+      }
       
       const intro = introResponses[Math.floor(Math.random() * introResponses.length)];
 
