@@ -140,17 +140,66 @@ class EmmaPersonHandler {
       const relationship = person.relationship || 'Someone special';
       const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
       
+      // 🎯 CTO: ACCESSIBILITY-ENHANCED person card
       const personCardHTML = `
-        <div class="chat-person-card">
-          <div class="person-avatar">
+        <div class="chat-person-card" 
+             role="button"
+             tabindex="0"
+             aria-label="Person: ${person.name}, ${relationship}"
+             style="
+               background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+               border: 2px solid rgba(138, 43, 226, 0.4);
+               border-radius: 18px;
+               padding: 20px;
+               margin: 16px 0;
+               display: flex;
+               align-items: center;
+               gap: 20px;
+               transition: all 0.3s ease;
+               cursor: pointer;
+               min-height: 80px;
+               backdrop-filter: blur(10px);
+             "
+             onkeydown="if(event.key==='Enter'||event.key===' ') this.click()">
+          <div class="person-avatar" style="
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #8a2be2, #4b0082);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+          ">
             ${person.profilePicture ? 
-              `<img src="${person.profilePicture}" alt="${person.name}" />` :
-              `<div class="person-initials">${initials}</div>`
+              `<img src="${person.profilePicture}" alt="${person.name}" style="width: 100%; height: 100%; object-fit: cover;" />` :
+              `<div class="person-initials" style="
+                color: white;
+                font-size: 24px;
+                font-weight: 700;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+              ">${initials}</div>`
             }
           </div>
-          <div class="person-info">
-            <div class="person-name">${person.name}</div>
-            <div class="person-relationship">${relationship}</div>
+          <div class="person-info" style="flex: 1;">
+            <div class="person-name" style="
+              color: rgba(255, 255, 255, 1);
+              font-size: 20px;
+              font-weight: 600;
+              margin-bottom: 6px;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            ">${person.name}</div>
+            <div class="person-relationship" style="
+              color: rgba(138, 43, 226, 1);
+              font-size: 16px;
+              font-weight: 500;
+              background: rgba(138, 43, 226, 0.1);
+              padding: 4px 8px;
+              border-radius: 6px;
+              display: inline-block;
+            ">${relationship}</div>
           </div>
         </div>
       `;

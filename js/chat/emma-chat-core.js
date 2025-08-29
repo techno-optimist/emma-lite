@@ -296,13 +296,17 @@ class EmmaChatCore extends ExperiencePopup {
   }
 
   /**
-   * 💜 UI MANAGEMENT - Keep it simple
+   * 💜 UI MANAGEMENT - ACCESSIBILITY-ENHANCED
    */
   addMessage(content, sender, options = {}) {
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
+
+    // 🎯 CTO: ACCESSIBILITY - Add ARIA labels for screen readers
+    messageDiv.setAttribute('role', 'article');
+    messageDiv.setAttribute('aria-label', `Message from ${sender === 'emma' ? 'Emma' : 'You'}`);
 
     const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -311,19 +315,57 @@ class EmmaChatCore extends ExperiencePopup {
       const messageContent = safeOptions.isHtml ? content : `<p>${content}</p>`;
       
       messageDiv.innerHTML = `
-        <div class="emma-avatar">
+        <div class="emma-avatar" role="img" aria-label="Emma">
           <div class="emma-orb-small"></div>
         </div>
-        <div class="message-content">
+        <div class="message-content" style="
+          font-size: 16px; 
+          line-height: 1.6; 
+          color: rgba(255, 255, 255, 0.95);
+          padding: 16px 20px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+          border-radius: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          margin: 8px 0;
+          min-height: 44px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        ">
           ${messageContent}
-          <div class="message-time">${messageTime}</div>
+          <div class="message-time" style="
+            font-size: 12px; 
+            color: rgba(255, 255, 255, 0.6); 
+            margin-top: 8px;
+            text-align: right;
+          ">${messageTime}</div>
         </div>
       `;
     } else {
       messageDiv.innerHTML = `
-        <div class="message-content">
-          <p>${content}</p>
-          <div class="message-time">${messageTime}</div>
+        <div class="message-content" style="
+          font-size: 16px;
+          line-height: 1.6;
+          color: rgba(255, 255, 255, 0.95);
+          padding: 16px 20px;
+          background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.15));
+          border-radius: 16px;
+          border: 1px solid rgba(138, 43, 226, 0.3);
+          margin: 8px 0;
+          min-height: 44px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          margin-left: auto;
+          max-width: 80%;
+        ">
+          <p style="margin: 0; font-weight: 500;">${content}</p>
+          <div class="message-time" style="
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 8px;
+            text-align: right;
+          ">${messageTime}</div>
         </div>
       `;
     }

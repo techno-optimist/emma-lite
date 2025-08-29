@@ -157,14 +157,50 @@ class EmmaMemoryOperations {
       // Generate media HTML
       const mediaHTML = this.generateMediaHTML(mediaItems, memory.id);
       
-      // Create beautiful memory card
+      // Create beautiful, accessible memory card
       const memoryCardHTML = `
-        <div class="chat-memory-card" onclick="window.chatCore.openMemory('${memory.id}')">
+        <div class="chat-memory-card" 
+             onclick="window.chatCore.openMemory('${memory.id}')"
+             role="button"
+             tabindex="0"
+             aria-label="Memory from ${formattedDate}: ${preview.substring(0, 50)}..."
+             onkeydown="if(event.key==='Enter'||event.key===' ') window.chatCore.openMemory('${memory.id}')">
           ${mediaHTML}
           <div class="memory-content">
-            <div class="memory-date">${formattedDate.toUpperCase()}</div>
-            <div class="memory-text">${preview}</div>
-            <div class="memory-action">💜 View this memory</div>
+            <div class="memory-date" style="
+              font-size: 14px;
+              font-weight: 700;
+              color: rgba(138, 43, 226, 1);
+              background: rgba(138, 43, 226, 0.15);
+              padding: 6px 12px;
+              border-radius: 8px;
+              display: inline-block;
+              margin-bottom: 12px;
+              letter-spacing: 1px;
+            ">${formattedDate.toUpperCase()}</div>
+            <div class="memory-text" style="
+              font-size: 17px;
+              line-height: 1.7;
+              color: rgba(255, 255, 255, 1);
+              margin-bottom: 16px;
+              font-weight: 400;
+            ">${preview}</div>
+            <div class="memory-action" style="
+              color: rgba(255, 255, 255, 0.95);
+              background: linear-gradient(135deg, rgba(138, 43, 226, 0.9), rgba(75, 0, 130, 1));
+              font-size: 15px;
+              font-weight: 600;
+              display: inline-flex;
+              align-items: center;
+              gap: 10px;
+              padding: 12px 20px;
+              border-radius: 14px;
+              border: 2px solid rgba(255, 255, 255, 0.1);
+              transition: all 0.3s ease;
+              box-shadow: 0 3px 10px rgba(138, 43, 226, 0.3);
+              cursor: pointer;
+              min-height: 44px;
+            ">💜 View this memory</div>
           </div>
         </div>
       `;
@@ -315,15 +351,36 @@ class EmmaMemoryOperations {
           overflow: hidden;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
           cursor: pointer;
+          /* 🎯 CTO: ACCESSIBILITY - Large touch target */
+          min-height: 120px;
+          position: relative;
         }
 
-        .chat-memory-card:hover {
+        .chat-memory-card:hover, 
+        .chat-memory-card:focus {
           background: linear-gradient(135deg, 
-            rgba(138, 43, 226, 0.20) 0%, 
-            rgba(75, 0, 130, 0.15) 100%);
-          border-color: rgba(138, 43, 226, 0.6);
-          transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 12px 32px rgba(138, 43, 226, 0.35);
+            rgba(138, 43, 226, 0.25) 0%, 
+            rgba(75, 0, 130, 0.20) 100%);
+          border-color: rgba(138, 43, 226, 0.8);
+          transform: translateY(-6px) scale(1.03);
+          box-shadow: 0 16px 40px rgba(138, 43, 226, 0.4);
+          /* 🎯 CTO: ACCESSIBILITY - Focus outline */
+          outline: 3px solid rgba(138, 43, 226, 0.6);
+          outline-offset: 2px;
+        }
+
+        /* 🎯 CTO: GENTLE ANIMATION - Fade in effect */
+        .chat-memory-card {
+          animation: memoryCardFadeIn 0.6s ease-out forwards;
+          opacity: 0;
+          transform: translateY(20px);
+        }
+
+        @keyframes memoryCardFadeIn {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .memory-content {

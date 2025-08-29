@@ -196,14 +196,30 @@ class EmmaPhotoManager {
     const styles = `
       <style id="photo-preview-styles">
         .photo-preview-card {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-          border: 2px solid rgba(138, 43, 226, 0.3);
-          border-radius: 16px;
-          padding: 16px;
-          margin: 12px 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+          border: 2px solid rgba(138, 43, 226, 0.4);
+          border-radius: 18px;
+          padding: 20px;
+          margin: 16px 0;
           display: flex;
           align-items: center;
-          gap: 16px;
+          gap: 20px;
+          /* 🎯 CTO: ACCESSIBILITY - Large touch target */
+          min-height: 80px;
+          transition: all 0.3s ease;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 16px rgba(138, 43, 226, 0.2);
+          /* 🎯 CTO: GENTLE ANIMATION */
+          animation: photoCardFadeIn 0.5s ease-out forwards;
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+
+        @keyframes photoCardFadeIn {
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
 
         .photo-preview-image {
