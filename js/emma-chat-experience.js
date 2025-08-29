@@ -1186,24 +1186,26 @@ class EmmaChatExperience extends ExperiencePopup {
       <style id="chat-memory-card-styles">
         .chat-memory-card {
           background: linear-gradient(135deg, 
-            rgba(255, 255, 255, 0.08) 0%, 
-            rgba(255, 255, 255, 0.03) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 16px;
+            rgba(255, 255, 255, 0.12) 0%, 
+            rgba(255, 255, 255, 0.06) 100%);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 20px;
           padding: 0;
-          margin: 12px 0;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          backdrop-filter: blur(10px);
+          margin: 16px 0;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(15px);
           overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          cursor: pointer;
         }
 
         .chat-memory-card:hover {
           background: linear-gradient(135deg, 
-            rgba(138, 43, 226, 0.15) 0%, 
-            rgba(75, 0, 130, 0.10) 100%);
-          border-color: rgba(138, 43, 226, 0.4);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(138, 43, 226, 0.25);
+            rgba(138, 43, 226, 0.20) 0%, 
+            rgba(75, 0, 130, 0.15) 100%);
+          border-color: rgba(138, 43, 226, 0.6);
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 32px rgba(138, 43, 226, 0.35);
         }
 
         /* Single image layout - spans full width */
@@ -1290,59 +1292,81 @@ class EmmaChatExperience extends ExperiencePopup {
           font-weight: 600;
         }
 
-        /* Heart icon for no images */
+        /* Heart icon for no images - Enhanced for dementia care */
         .memory-icon {
-          width: 80px;
-          height: 80px;
-          border-radius: 16px;
+          width: 100px;
+          height: 100px;
+          border-radius: 20px;
           background: linear-gradient(135deg, #8a2be2, #4b0082);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 32px;
-          margin: 16px auto;
-          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+          font-size: 40px;
+          margin: 20px auto;
+          box-shadow: 0 6px 16px rgba(138, 43, 226, 0.4);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          transition: all 0.3s ease;
+        }
+        
+        .memory-content:hover .memory-icon {
+          transform: scale(1.05);
+          box-shadow: 0 8px 20px rgba(138, 43, 226, 0.5);
         }
 
-        /* Memory content area */
+        /* Memory content area - Enhanced for dementia care */
         .memory-content {
-          padding: 16px;
+          padding: 20px;
           cursor: pointer;
+          background: rgba(255, 255, 255, 0.02);
         }
 
         .memory-date {
-          color: rgba(138, 43, 226, 0.9);
-          font-size: 12px;
-          font-weight: 600;
+          color: rgba(138, 43, 226, 1);
+          font-size: 13px;
+          font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 8px;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
+          background: rgba(138, 43, 226, 0.1);
+          padding: 4px 8px;
+          border-radius: 6px;
+          display: inline-block;
         }
 
         .memory-text {
-          color: rgba(255, 255, 255, 0.95);
-          font-size: 14px;
-          line-height: 1.4;
-          margin-bottom: 12px;
+          color: rgba(255, 255, 255, 1);
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 16px;
           word-wrap: break-word;
           overflow: hidden;
+          font-weight: 400;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
         }
 
         .memory-action {
-          color: rgba(138, 43, 226, 0.7);
-          font-size: 12px;
-          font-weight: 500;
-          display: flex;
+          color: rgba(255, 255, 255, 0.9);
+          background: linear-gradient(135deg, rgba(138, 43, 226, 0.8), rgba(75, 0, 130, 0.9));
+          font-size: 14px;
+          font-weight: 600;
+          display: inline-flex;
           align-items: center;
-          gap: 4px;
-          transition: color 0.2s ease;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: 12px;
+          border: 1px solid rgba(138, 43, 226, 0.3);
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 8px rgba(138, 43, 226, 0.2);
+          margin-top: 4px;
         }
 
         .memory-content:hover .memory-action {
-          color: rgba(138, 43, 226, 1);
+          background: linear-gradient(135deg, rgba(138, 43, 226, 1), rgba(75, 0, 130, 1));
+          color: white;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
         }
 
         /* Mobile optimization */
