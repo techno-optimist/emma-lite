@@ -3367,8 +3367,26 @@ RULES:
       return null; // Let the recall system handle the response
     }
     
+    // 🚨 CTO CRITICAL: Check for memory confirmation FIRST (highest priority)
+    if (lower.trim() === 'yes' || lower.trim() === 'yeah' || lower.trim() === 'save it') {
+      // Check if Emma just asked about saving a memory
+      const lastEmmaMessage = this.getLastEmmaMessage();
+      if (lastEmmaMessage && (lastEmmaMessage.includes('save') || lastEmmaMessage.includes('preserve') || lastEmmaMessage.includes('memory capsule'))) {
+        console.log('💝 CTO: Memory confirmation detected - user wants to save');
+        // Let the memory confirmation system handle this, don't trigger person recall
+        return null;
+      }
+    }
+
     // 🧠 CONTEXTUAL RECALL: Handle "show me" or "yes" when person was mentioned recently
     if ((lower.includes('show me') || lower.trim() === 'yes') && !person) {
+      // Only trigger recall if NOT a memory confirmation
+      const lastEmmaMessage = this.getLastEmmaMessage();
+      if (lastEmmaMessage && (lastEmmaMessage.includes('save') || lastEmmaMessage.includes('preserve'))) {
+        console.log('💝 CTO: Skipping contextual recall - this is memory confirmation');
+        return null;
+      }
+      
       // 🎯 CTO CRITICAL FIX: Use the person user specifically asked about, not just mentioned
       const targetPerson = this.conversationContext.lastQueriedPerson || 
                           Array.from(this.conversationContext.recentPeople)[0];
