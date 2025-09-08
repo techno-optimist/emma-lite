@@ -1,7 +1,11 @@
 services:
   - type: web
     name: emma-web-app
-    env: static
-    staticPublishPath: ./
-    buildCommand: ""
-    startCommand: ""
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false  # Set manually in Render dashboard

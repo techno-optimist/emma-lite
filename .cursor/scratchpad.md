@@ -8748,3 +8748,217 @@ Presenting Emma to Debbe tomorrow requires zero-surprise reliability, privacy by
 - Implement tasks in the above order; after each, update "Current Status / Progress Tracking" with evidence (header dumps, Lighthouse screenshots, diffs).
 - Where risk of regressions exists (CSP/DOM changes), add temporary report-only and feature flags; flip after verification.
 - For any uncertainty, ask in "Executor's Feedback or Assistance Requests" and flag potential user impact and mitigation.
+
+## Planner: Voice-First Emma with OpenAI Realtime API
+
+### Background and Motivation
+Emma should be primarily voice-first so families can talk with her naturally, hands-free, and access people and memories with zero friction. We will integrate OpenAI’s Realtime API to provide low-latency speech-to-speech conversation while preserving Emma’s privacy-first ethos (.emma vault as source of truth). The experience must honor dementia-friendly principles: validation tone, gentle pacing (2–3s), no calling out repetition, clear prompts, and caregiver options.
+
+### Key Challenges and Analysis
+- Transport: Use WebRTC in-browser for low-latency audio in/out; ensure TURN fallback.
+- Privacy: Default to local-only tool operations; send only consented, redacted metadata to cloud.
+- Tool-calling: Bridge the model’s tool calls to local vault functions without exposing raw data.
+- Wake word and VAD: On-device wake word “Emma”; server VAD for turn-taking; barge-in support.
+- Integration: Vanilla JS UI with orb; clean state machine: idle → listening → thinking → speaking.
+- Reliability: Ephemeral session tokens; retry/refresh; interruption handling.
+- Accessibility: Large controls, captions option, high contrast, reduced motion.
+
+### Architecture Overview
+```mermaid
+flowchart LR
+  U[User mic/speakers] -->|MediaStream| FE[Emma Web App (Vanilla JS)]
+  FE -->|WebRTC Audio + DataChannel| OA[OpenAI Realtime (Voice Model)]
+  FE <-->|UI States + Orb| UI[Emma Orb + Companion UX]
+  FE <-->|Tool Calls| TOOLS[Emma Tool Bridge]
+  TOOLS <-->|Local-only memory ops| VAULT[.emma Vault (Browser)]
+  TOOLS <-->|People ops| PEOPLE[People & Relationships]
+  FE -->|Ephemeral token request| BE[Backend (Ephemeral Auth)]
+  BE -->|Short-lived token| FE
+```
+
+### Session Bootstrap and Media Flow
+```mermaid
+sequenceDiagram
+  participant FE as Frontend (Browser)
+  participant BE as Backend (Ephemeral Auth)
+  participant OA as OpenAI Realtime
+
+  FE->>BE: GET /realtime/token (JWT user, scope=voice)
+  BE-->>FE: 60s ephemeral token (no PII)
+  FE->>OA: WebRTC offer (audio track + datachannel), Bearer: ephemeral
+  OA-->>FE: WebRTC answer, begins VAD
+  FE->>OA: input_audio_buffer (live mic)
+  OA-->>FE: response.output_audio.delta (low-latency TTS)
+  FE->>FE: Play stream, manage barge-in/interrupt
+```
+
+### Turn-Taking and Barge-In
+```mermaid
+flowchart TD
+  A[Listening (VAD)] -->|User speech detected| B[Capture + Stream]
+  B --> C[Model generating audio]
+  C -->|User starts speaking| D[Interrupt current response]
+  D --> A
+  C -->|Response completes + silence| A
+```
+
+### Tool-Calling Contract (EMMA ETHOS ENFORCED)
+- **PRIVACY-FIRST**: All tools execute 100% locally; ZERO vault data sent to cloud by default
+- **CONSENT GATING**: Explicit user consent required before ANY metadata leaves device
+- **LOCAL SUMMARIZATION**: Use browser-based summarization; cloud only as explicit opt-in
+- **AUDIT**: All tool calls logged locally in vault; cloud interactions logged separately
+- **VAULT SUPREMACY**: All writes follow Staging → Approval → Vault path [[memory:5722592]]
+
+Tools v1:
+```json
+[
+  {
+    "name": "get_people",
+    "description": "Search local people by name or relationship.",
+    "parameters": {"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}
+  },
+  {
+    "name": "get_memories",
+    "description": "List memory summaries by filters.",
+    "parameters": {"type":"object","properties":{"personId":{"type":"string"},"dateRange":{"type":"string"},"limit":{"type":"number","default":5}}}
+  },
+  {
+    "name": "summarize_memory",
+    "description": "Summarize a single memory for narration.",
+    "parameters": {"type":"object","properties":{"memoryId":{"type":"string"},"length":{"type":"string"}},"required":["memoryId"]}
+  },
+  {
+    "name": "create_memory_from_voice",
+    "description": "Create a new memory capsule from a dictated description.",
+    "parameters": {"type":"object","properties":{"text":{"type":"string"},"peopleIds":{"type":"array","items":{"type":"string"}}},"required":["text"]}
+  },
+  {
+    "name": "update_person",
+    "description": "Attach new detail to a person (relationship, nickname).",
+    "parameters": {"type":"object","properties":{"personId":{"type":"string"},"field":{"type":"string"},"value":{"type":"string"}},"required":["personId","field","value"]}
+  }
+]
+```
+
+### Realtime Session and Ephemeral Token Spec
+- Endpoint: `POST /api/realtime/token`
+  - Auth: Existing session/JWT (no OpenAI key in client)
+  - Body: `{ scope: "voice", model: "gpt-4o-realtime" }`
+  - Response: `{ token: "<ephemeral>", expires_in: 60 }`
+- Frontend: Uses token to create WebRTC session with Realtime; renews on expiry.
+- Production: CSP allows only our origin and Realtime host; report-only first.
+
+### Voice UX States
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> listening: Wake word / Push-to-talk
+  listening --> thinking: VAD end
+  thinking --> speaking: First audio delta
+  speaking --> listening: Barge-in / Silence end
+  speaking --> idle: Session end
+  listening --> idle: Cancel / Timeout
+```
+
+### CTO Roundtable Debate (EMMA ETHOS ENFORCED)
+- **PRIVACY SUPREMACY**: Local-only tools; cloud sends ONLY generic responses, never vault data
+- **DEMENTIA-FIRST UX**: Validation therapy tone; 2-3s pacing; gentle error handling; no corrections [[memory:6149235]]
+- **LOCAL-FIRST ARCHITECTURE**: Voice enhances but never replaces local functionality
+- **WAKE WORD SAFETY**: Conservative thresholds; clear visual feedback; easy disable for dementia users
+- **VAULT SOVEREIGNTY**: All memory operations via existing vault system; no new storage paths
+- **COST PROTECTION**: Local processing default; cloud usage capped and transparent
+- **ACCESSIBILITY**: Large controls, high contrast, captions always available
+
+### Phases and Deliverables
+- Phase 0 — Spike (2 days)
+  - WebRTC session, ephemeral token, audio in/out, orb states
+  - Success: Hear “Hello, I’m Emma” with <300ms initial latency
+- Phase 1 — MVP voice (1 week)
+  - Wake word + server VAD; barge-in; get_people/get_memories tools; narration overlay
+  - Success: Ask “Emma, show memories with Mom”; narrated summary + list appears
+- Phase 2 — Creation & updates (1 week)
+  - create_memory_from_voice; update_person; Staging→Approval→Vault write path
+  - Success: Dictate a memory; verify persisted and connected to people
+- Phase 3 — Dementia polish (4 days)
+  - Tone tuning, 2–3s pacing, repetition handling, caregiver summaries
+  - Success: Caregiver mode enabled; daily summary generated locally
+- Phase 4 — Hardening & rollout (1 week)
+  - CSP/Permissions, TURN, rate limits, test matrix, staged rollout
+  - Success: Beta cohort stable; no key exposure; cost guardrails
+
+### TDD and Metrics
+- Audio: mic permission tests; latency budget; device/browser matrix
+- Tools: unit tests for each tool; redaction tests; approval gate tests
+- Vault: invariants on Staging→Approval→Vault
+- UX: accessibility audits; dementia scenarios; wake word false positives
+- Resilience: token expiry, network loss, TURN fallback, interruption
+- Metrics (non-PII): session_start, latency_ms, barge_in_count, tool_error_rate
+
+### Risks and Mitigations (EMMA ETHOS COMPLIANCE)
+- **PRIVACY BREACH** → Zero vault data to cloud; explicit consent gates; local processing first
+- **DEMENTIA USER CONFUSION** → Validation-focused error messages; gentle recovery; clear visual states
+- **VAULT BYPASS** → All memory operations via existing EmmaWebVault; no new storage paths
+- **CLOUD DEPENDENCY** → Local-first design; voice enhances but never replaces core functionality
+- **COST EXPLOSION** → Usage caps; local processing default; transparent cost controls
+- **TOKEN EXPOSURE** → Ephemeral tokens only; strict CSP; backend proxy architecture
+
+### Rollout Checklist
+- Feature flag Voice Beta; cohorts + kill switch
+- In-app consent + privacy controls
+- Caregiver mode defaults for Dementia Companion
+- Observability dashboards; on-call runbook
+- Post-launch tuning sessions with real users
+
+### Project Status Board — Realtime Voice
+- [x] Phase 0: Spike (WebRTC, ephemeral token, audio) - **IMPLEMENTED**
+  - ✅ Ephemeral token backend endpoint (privacy-first)
+  - ✅ WebRTC client with orb integration
+  - ✅ Local-only tool system (no vault data to cloud)
+  - ✅ Test page for validation
+- [ ] Phase 1: MVP tools (people/memories), VAD, barge-in
+- [ ] Phase 2: Create/update memory and people with approvals
+- [ ] Phase 3: Dementia polish and caregiver features
+- [ ] Phase 4: Security hardening and staged rollout
+
+## Current Status / Progress Tracking
+
+### Phase 0 Implementation - COMPLETED ✅
+
+**CTO SHERLOCK REVIEW**: Emma ethos compliance verified and enforced in implementation.
+
+#### Files Created/Modified:
+- `package.json` - Node.js backend dependencies
+- `server.js` - Privacy-first ephemeral token service
+- `render.yaml` - Updated deployment config
+- `js/emma-realtime-voice.js` - WebRTC client with local-only tools
+- `voice-test.html` - Phase 0 validation test page
+
+#### Key Architecture Decisions (CTO Approved):
+1. **PRIVACY SUPREMACY**: All tools execute 100% locally, zero vault data to cloud
+2. **EPHEMERAL TOKENS**: 60-second backend tokens, no API keys in client
+3. **VAULT SOVEREIGNTY**: All memory operations via existing EmmaWebVault system
+4. **DEMENTIA-FIRST UX**: Validation therapy tone, gentle error handling
+5. **LOCAL-FIRST**: Voice enhances but never replaces core functionality
+
+#### Test Results:
+- ✅ Backend health endpoint functional
+- ✅ Ephemeral token generation working
+- ✅ WebRTC client initializes with orb integration
+- ✅ Local tools execute without cloud dependencies
+- ✅ Error handling uses validation therapy approach
+
+#### Next Phase Ready: Phase 1 MVP tools implementation
+
+### Lessons
+
+#### Phase 0 Implementation Lessons
+- **Package Versions**: rate-limiter-flexible v3.0.8 doesn't exist, use v2.4.2
+- **Emma Ethos Enforcement**: CTO Sherlock Protocol successfully identified and corrected 3 critical privacy violations in original plan
+- **Local-First Success**: All tools execute in browser, zero vault data leaves device by default
+- **Orb Integration**: Existing EmmaOrb class easily extended with voice state management
+- **Testing Strategy**: Simple HTML test page more effective than complex test frameworks for Phase 0 validation
+
+### Executor Handoff Notes
+- Implement one phase at a time; update Current Status with evidence (recordings, logs, screenshots).
+- Document any deviations and add Lessons for future reference.
+- Use feature flags; prefer local-only tool paths; require explicit consent for any cloud-bound content.
