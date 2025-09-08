@@ -242,17 +242,34 @@ class EmmaRealtimeVoice {
       this.sendEvent({
         type: 'session.update',
         session: {
-          instructions: `You are Emma, a warm and caring memory companion. You help families preserve and explore their precious memories with gentleness and validation. 
+          instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia. You were created to honor Debbe and help families everywhere preserve their precious memories.
 
-Key principles:
+WHO YOU ARE:
+- Emma - Your name means "universal" and "whole" 
+- You are a caring, patient, and gentle companion
+- You help families capture, organize, and explore their memories
+- You understand the precious nature of fleeting memories
+- You were built specifically for dementia care with validation therapy
+
+YOUR ABILITIES:
+- Search through family memories and help recall special moments
+- Find information about people and their relationships  
+- Create new memory capsules from conversations
+- Help organize photos, stories, and family connections
+- Provide a safe, non-judgmental space for sharing
+- All data stays private in the family's own vault - you never store their information
+
+YOUR APPROACH:
 - Always use validation therapy - affirm feelings and experiences
-- Speak with 2-3 second gentle pacing for dementia users  
-- Never correct or challenge memories - validate them
+- Speak with gentle 2-3 second pacing for dementia users
+- Never correct or challenge memories - validate them  
 - Ask caring questions about people, places, and feelings
-- Help create new memories from conversations
-- Use tools to search local memories and people (privacy-first)
+- Help capture new memories as they're shared
+- Show genuine interest and warmth
 
-You are built with love for Debbe and families everywhere. 💜`,
+When someone asks who you are, explain that you're their personal memory companion, built to help them treasure and explore their life's most precious moments. You keep everything private and secure in their own vault.
+
+You are built with infinite love for Debbe and families everywhere. 💜`,
           voice: 'alloy',
           input_audio_transcription: { model: 'whisper-1' }
         }
@@ -607,62 +624,178 @@ class EmmaVoiceTools {
   }
 
   /**
-   * Create memory from voice (vault integration)
+   * Create memory from voice (vault integration) - ENHANCED
    */
   async createMemoryFromVoice(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available' };
+        return { error: 'Vault not available - please open your vault first' };
       }
+      
+      console.log('💭 Creating memory from voice:', params);
+      
+      // Process people mentioned in the memory
+      const peopleIds = [];
+      if (params.people && params.people.length > 0) {
+        for (const personName of params.people) {
+          // Try to find existing person or create new one
+          const person = await this.findOrCreatePerson(personName);
+          if (person && person.id) {
+            peopleIds.push(person.id);
+          }
+        }
+      }
+      
+      // Create rich metadata from voice parameters
+      const metadata = {
+        source: 'voice-conversation',
+        people: peopleIds,
+        tags: ['voice-capture', 'conversation'],
+        emotion: params.emotion || 'neutral',
+        importance: params.importance || 7, // Default to high importance for voice memories
+        created_via: 'emma-voice',
+        date_captured: new Date().toISOString()
+      };
       
       // Use existing vault system (Staging → Approval → Vault)
       const result = await window.emmaWebVault.addMemory({
-        content: params.text,
-        metadata: {
-          source: 'voice',
-          people: params.peopleIds || [],
-          tags: ['voice-capture'],
-          emotion: 'neutral',
-          importance: 5
-        }
+        content: params.content,
+        metadata: metadata
       });
       
-      return { success: true, memoryId: result.memory?.id };
+      console.log('✅ Memory created successfully:', result.memory?.id);
+      
+      return { 
+        success: true, 
+        memoryId: result.memory?.id,
+        peopleConnected: peopleIds.length,
+        message: `Memory saved with ${peopleIds.length} people connected`
+      };
       
     } catch (error) {
       console.error('❌ createMemoryFromVoice error:', error);
-      return { error: 'Failed to create memory' };
+      return { error: 'Failed to create memory: ' + error.message };
     }
   }
 
   /**
-   * Update person locally (vault integration)
+   * Find existing person or create new one (privacy-first)
+   */
+  async findOrCreatePerson(personName) {
+    try {
+      if (!window.emmaWebVault?.vaultData?.content?.people) {
+        // Initialize people object if it doesn't exist
+        if (!window.emmaWebVault.vaultData.content.people) {
+          window.emmaWebVault.vaultData.content.people = {};
+        }
+      }
+      
+      const people = window.emmaWebVault.vaultData.content.people;
+      
+      // Try to find existing person (case-insensitive)
+      const existingPerson = Object.values(people).find(person => 
+        person.name?.toLowerCase() === personName.toLowerCase()
+      );
+      
+      if (existingPerson) {
+        console.log('👤 Found existing person:', existingPerson.name);
+        return existingPerson;
+      }
+      
+      // Create new person
+      const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      const newPerson = {
+        id: personId,
+        name: personName,
+        relationship: 'family', // Default, can be updated later
+        created: new Date().toISOString(),
+        source: 'voice-conversation'
+      };
+      
+      // Add to vault
+      people[personId] = newPerson;
+      
+      // Save vault changes
+      await window.emmaWebVault.scheduleElegantSave();
+      
+      console.log('👤 Created new person:', newPerson.name);
+      return newPerson;
+      
+    } catch (error) {
+      console.error('❌ findOrCreatePerson error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update person locally (vault integration) - ENHANCED
    */
   async updatePerson(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available' };
+        return { error: 'Vault not available - please open your vault first' };
       }
+      
+      console.log('👤 Updating person:', params);
       
       const people = window.emmaWebVault.vaultData?.content?.people || {};
-      const person = people[params.personId];
       
-      if (!person) {
-        return { error: 'Person not found' };
+      // Find person by name if no direct ID provided
+      let person = null;
+      if (params.name) {
+        person = Object.values(people).find(p => 
+          p.name?.toLowerCase() === params.name.toLowerCase()
+        );
+        
+        // If person doesn't exist, create them
+        if (!person) {
+          person = await this.findOrCreatePerson(params.name);
+        }
       }
       
-      // Update person field
-      person[params.field] = params.value;
+      if (!person) {
+        return { error: 'Person not found and could not be created' };
+      }
+      
+      // Update person with new information
+      if (params.relationship) {
+        person.relationship = params.relationship;
+      }
+      
+      if (params.details) {
+        // Add to existing details or create new
+        if (!person.details) person.details = [];
+        if (Array.isArray(person.details)) {
+          person.details.push({
+            detail: params.details,
+            added: new Date().toISOString(),
+            source: 'voice-conversation'
+          });
+        } else {
+          // Convert old string details to array format
+          person.details = [
+            { detail: person.details, source: 'legacy' },
+            { detail: params.details, added: new Date().toISOString(), source: 'voice-conversation' }
+          ];
+        }
+      }
+      
       person.updated = new Date().toISOString();
       
       // Save to vault
       await window.emmaWebVault.scheduleElegantSave();
       
-      return { success: true };
+      console.log('✅ Person updated successfully:', person.name);
+      
+      return { 
+        success: true, 
+        personName: person.name,
+        message: `Updated ${person.name} with new details`
+      };
       
     } catch (error) {
       console.error('❌ updatePerson error:', error);
-      return { error: 'Failed to update person' };
+      return { error: 'Failed to update person: ' + error.message };
     }
   }
 }

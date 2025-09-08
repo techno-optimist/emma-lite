@@ -135,6 +135,35 @@ app.post('/api/realtime/token', async (req, res) => {
                 limit: { type: "number", default: 5, description: "Max memories to return" }
               }
             }
+          },
+          {
+            type: "function",
+            name: "create_memory_from_voice",
+            description: "Create a new memory capsule from conversation - use when user shares a story, experience, or memory",
+            parameters: {
+              type: "object",
+              properties: {
+                content: { type: "string", description: "The memory content/story shared by the user" },
+                people: { type: "array", items: { type: "string" }, description: "Names of people mentioned in the memory" },
+                emotion: { type: "string", enum: ["happy", "sad", "nostalgic", "grateful", "peaceful", "excited", "loving"], description: "Primary emotion of the memory" },
+                importance: { type: "number", minimum: 1, maximum: 10, description: "How important this memory seems (1-10)" }
+              },
+              required: ["content"]
+            }
+          },
+          {
+            type: "function",
+            name: "update_person",
+            description: "Add new details about a person mentioned in memories",
+            parameters: {
+              type: "object", 
+              properties: {
+                name: { type: "string", description: "Person's name" },
+                relationship: { type: "string", description: "Their relationship to the user" },
+                details: { type: "string", description: "Additional details learned about this person" }
+              },
+              required: ["name"]
+            }
           }
         ]
       }
