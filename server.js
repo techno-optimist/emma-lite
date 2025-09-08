@@ -27,12 +27,18 @@ app.use(helmet({
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:"]
     }
+  },
+  // Disable problematic permissions policy features
+  permissionsPolicy: {
+    camera: [],
+    microphone: [],
+    geolocation: []
   }
 }));
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://emma-lite.onrender.com'] 
+    ? ['https://emma-hjc.onrender.com'] 
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true
 }));
@@ -130,8 +136,18 @@ app.get('/api/health', (req, res) => {
     service: 'emma-voice-tokens',
     version: '1.0.0',
     privacy: 'local-first',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY
   });
+});
+
+/**
+ * SIMPLE TEST ENDPOINT - Debug deployment
+ */
+app.get('/test', (req, res) => {
+  res.send('Emma Voice Backend is running! 🎙️💜');
 });
 
 /**
