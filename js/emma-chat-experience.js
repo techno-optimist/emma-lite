@@ -136,6 +136,9 @@ class EmmaChatExperience extends ExperiencePopup {
   async initialize() {
     this.initializeEmmaOrb();
     this.setupChatInterface();
+    
+    // 🎙️ PHASE 3: Initialize voice integration after chat setup
+    setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
 
     // Add initial Emma welcome message (single clean bubble)
@@ -157,6 +160,205 @@ class EmmaChatExperience extends ExperiencePopup {
     // Chat experience doesn't need its own orb - the universal orb handles interactions
     // This is just a placeholder for compatibility
     // Chat experience ready
+  }
+
+  /**
+   * 🎙️ PHASE 3: Initialize Emma's Realtime Voice Integration
+   * Transforms chat into voice-first multimodal experience
+   */
+  async initializeVoiceIntegration() {
+    try {
+      console.log('🎙️ Initializing voice-first chat experience...');
+
+      // Initialize Emma's Realtime Voice system
+      if (typeof EmmaRealtimeVoice !== 'undefined') {
+        this.emmaVoice = new EmmaRealtimeVoice({
+          wakeWord: 'Emma',
+          pacing: 2500,
+          validationMode: true
+        });
+
+        // Initialize voice system (no orb needed in chat)
+        await this.emmaVoice.initialize(null, null);
+
+        // Connect voice button to Emma's voice system
+        this.setupVoiceButton();
+
+        // Set up voice event handlers for chat integration
+        this.setupVoiceEventHandlers();
+
+        console.log('✅ Voice-first chat experience ready!');
+      } else {
+        console.warn('⚠️ EmmaRealtimeVoice not available - voice features disabled');
+        this.voiceButton.style.opacity = '0.5';
+        this.voiceButton.title = 'Voice system not available';
+      }
+    } catch (error) {
+      console.error('❌ Voice integration failed:', error);
+      this.voiceButton.style.opacity = '0.5';
+      this.voiceButton.title = 'Voice system error: ' + error.message;
+    }
+  }
+
+  /**
+   * Setup voice button to start Emma's voice conversation
+   */
+  setupVoiceButton() {
+    // Remove any existing event listeners
+    this.voiceButton.replaceWith(this.voiceButton.cloneNode(true));
+    this.voiceButton = document.getElementById('voice-input-btn');
+
+    // Add voice session toggle
+    this.voiceButton.addEventListener('click', async () => {
+      try {
+        if (!this.emmaVoice.isEnabled) {
+          // Start voice conversation
+          this.addMessage('system', '🎙️ Starting voice conversation with Emma...');
+          await this.emmaVoice.startVoiceSession();
+          
+          // Update button appearance
+          this.voiceButton.style.background = 'rgba(34, 197, 94, 0.2)';
+          this.voiceButton.style.borderColor = '#22c55e';
+          this.voiceButton.title = 'Voice conversation active - click to stop';
+          
+        } else {
+          // Stop voice conversation
+          await this.emmaVoice.stopVoiceSession();
+          this.addMessage('system', '🔇 Voice conversation ended');
+          
+          // Reset button appearance
+          this.voiceButton.style.background = '';
+          this.voiceButton.style.borderColor = '';
+          this.voiceButton.title = 'Start voice conversation';
+        }
+      } catch (error) {
+        console.error('❌ Voice button error:', error);
+        this.addMessage('system', '❌ Voice error: ' + error.message);
+      }
+    });
+  }
+
+  /**
+   * Setup voice event handlers for chat integration
+   */
+  setupVoiceEventHandlers() {
+    if (!this.emmaVoice) return;
+
+    // Override Emma's voice tools to show results in chat
+    const originalExecute = this.emmaVoice.tools.execute;
+    this.emmaVoice.tools.execute = async (toolName, params) => {
+      console.log(`🔧 Voice tool: ${toolName}`, params);
+      
+      // Execute the tool
+      const result = await originalExecute.call(this.emmaVoice.tools, toolName, params);
+      
+      // Show tool results in chat
+      this.displayToolResult(toolName, params, result);
+      
+      return result;
+    };
+
+    // Override state changes to update chat
+    const originalSetState = this.emmaVoice.setState;
+    this.emmaVoice.setState = (newState) => {
+      originalSetState.call(this.emmaVoice, newState);
+      this.updateVoiceStatus(newState);
+    };
+  }
+
+  /**
+   * Display tool results visually in chat
+   */
+  displayToolResult(toolName, params, result) {
+    switch (toolName) {
+      case 'get_people':
+        if (result.people && result.people.length > 0) {
+          this.displayPeopleResults(result.people);
+        }
+        break;
+        
+      case 'get_memories':
+        if (result.memories && result.memories.length > 0) {
+          this.displayMemoryResults(result.memories);
+        }
+        break;
+        
+      case 'create_memory_from_voice':
+        if (result.success) {
+          this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
+            type: 'memory-created',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+        
+      case 'update_person':
+        if (result.success) {
+          this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
+            type: 'person-updated'
+          });
+        }
+        break;
+    }
+  }
+
+  /**
+   * Display people results in chat
+   */
+  displayPeopleResults(people) {
+    const peopleHtml = people.map(person => `
+      <div class="people-result">
+        <div class="person-avatar">👤</div>
+        <div class="person-info">
+          <div class="person-name">${person.name}</div>
+          <div class="person-relationship">${person.relationship || 'Family'}</div>
+        </div>
+      </div>
+    `).join('');
+
+    this.addMessage('emma', `I found ${people.length} people:`, {
+      type: 'people-results',
+      html: `<div class="people-grid">${peopleHtml}</div>`
+    });
+  }
+
+  /**
+   * Display memory results in chat
+   */
+  displayMemoryResults(memories) {
+    const memoriesHtml = memories.map(memory => `
+      <div class="memory-result" onclick="window.chatExperience?.viewMemoryDetail('${memory.id}')">
+        <div class="memory-date">${new Date(memory.created).toLocaleDateString()}</div>
+        <div class="memory-title">${memory.title}</div>
+        <div class="memory-people">${memory.people.length > 0 ? '👥 ' + memory.people.length + ' people' : ''}</div>
+      </div>
+    `).join('');
+
+    this.addMessage('emma', `I found ${memories.length} memories:`, {
+      type: 'memory-results', 
+      html: `<div class="memories-grid">${memoriesHtml}</div>`
+    });
+  }
+
+  /**
+   * Update voice status in chat
+   */
+  updateVoiceStatus(state) {
+    const statusMessages = {
+      idle: '',
+      listening: '👂 Emma is listening...',
+      thinking: '🤔 Emma is thinking...',
+      speaking: '🗣️ Emma is speaking...'
+    };
+
+    const message = statusMessages[state];
+    if (message) {
+      // Update typing indicator or add temporary status
+      if (this.typingIndicator) {
+        this.typingIndicator.querySelector('span').textContent = message;
+        this.typingIndicator.style.display = state === 'idle' ? 'none' : 'block';
+      }
+    }
   }
 
   renderContent(contentElement) {
@@ -243,6 +445,9 @@ class EmmaChatExperience extends ExperiencePopup {
       console.error('💬 Critical chat interface elements not found');
       return;
     }
+
+    // 🎙️ PHASE 3: Initialize Emma's Realtime Voice Integration
+    this.initializeVoiceIntegration();
 
     // Setup input handling
     this.inputField.addEventListener('input', () => this.handleInputChange());
