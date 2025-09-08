@@ -116,7 +116,11 @@ class EmmaRealtimeVoice {
       this.updateStatus('Preparing voice session...');
 
       // Get ephemeral token (privacy-first)
-      const tokenResponse = await fetch('/api/realtime/token', {
+      const backendUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001' 
+        : 'https://emma-voice-backend.onrender.com';
+        
+      const tokenResponse = await fetch(`${backendUrl}/api/realtime/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

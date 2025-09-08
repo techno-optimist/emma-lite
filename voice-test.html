@@ -242,7 +242,11 @@
             addLog('🔑 Testing ephemeral token API...', 'info');
             
             try {
-                const response = await fetch('/api/realtime/token', {
+                const backendUrl = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3001' 
+                    : 'https://emma-voice-backend.onrender.com';
+                    
+                const response = await fetch(`${backendUrl}/api/realtime/token`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -310,7 +314,11 @@
         }
 
         // Test health endpoint
-        fetch('/api/health')
+        const backendUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : 'https://emma-voice-backend.onrender.com';
+            
+        fetch(`${backendUrl}/api/health`)
             .then(r => r.json())
             .then(data => {
                 addLog(`🏥 Backend health: ${data.status} (${data.privacy})`, 'success');

@@ -38,8 +38,8 @@ app.use(helmet({
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://emma-hjc.onrender.com'] 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com'] 
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'],
   credentials: true
 }));
 
