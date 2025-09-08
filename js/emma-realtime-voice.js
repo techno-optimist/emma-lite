@@ -59,7 +59,9 @@ class EmmaRealtimeVoice {
             thinking: 60,   // Yellow
             speaking: 120   // Green
           };
-          this.orb.setHue(stateColors[state] || 260);
+          if (this.orb.setHue) {
+            this.orb.setHue(stateColors[state] || 260);
+          }
         };
       }
 
