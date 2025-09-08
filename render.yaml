@@ -2,7 +2,7 @@ services:
   - type: web
     name: emma-web-app
     env: node
-    buildCommand: npm ci --only=production
+    buildCommand: npm install --production
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
