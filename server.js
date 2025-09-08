@@ -20,19 +20,20 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "blob:"],
+      scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers for now
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com"],
+      connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com", "https://emma-voice-backend.onrender.com"],
       mediaSrc: ["'self'", "blob:"],
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:"]
     }
   },
-  // Disable problematic permissions policy features
+  // Simplified permissions policy to avoid browser warnings
   permissionsPolicy: {
-    camera: [],
-    microphone: [],
-    geolocation: []
+    camera: ["'self'"],
+    microphone: ["'self'"],
+    geolocation: ["'none'"]
   }
 }));
 
@@ -85,6 +86,17 @@ app.post('/api/realtime/token', async (req, res) => {
       return res.status(500).json({
         error: 'Voice service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE'
+      });
+    }
+
+    // Development mode fallback (when using test_key)
+    if (process.env.OPENAI_API_KEY === 'test_key' || process.env.OPENAI_API_KEY === 'test_key_placeholder') {
+      console.log('🧪 DEV MODE: Using simulated token for development');
+      const sessionId = crypto.randomBytes(16).toString('hex');
+      return res.json({
+        client_secret: 'dev_token_' + sessionId,
+        expires_in: 300,
+        session_id: sessionId
       });
     }
 

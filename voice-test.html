@@ -137,10 +137,10 @@
     </div>
 
     <div class="controls">
-        <button class="btn btn-primary" onclick="toggleVoice()">Start Voice Session</button>
-        <button class="btn btn-secondary" onclick="testToken()">Test Token API</button>
-        <button class="btn btn-secondary" onclick="testTools()">Test Local Tools</button>
-        <button class="btn btn-secondary" onclick="clearLogs()">Clear Logs</button>
+        <button class="btn btn-primary" id="toggleVoiceBtn">Start Voice Session</button>
+        <button class="btn btn-secondary" id="testTokenBtn">Test Token API</button>
+        <button class="btn btn-secondary" id="testToolsBtn">Test Local Tools</button>
+        <button class="btn btn-secondary" id="clearLogsBtn">Clear Logs</button>
     </div>
 
     <div class="status-container" id="statusContainer">
@@ -171,6 +171,11 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
+            // Setup event listeners for buttons (CSP compliant)
+            document.getElementById('toggleVoiceBtn').addEventListener('click', toggleVoice);
+            document.getElementById('testTokenBtn').addEventListener('click', testToken);
+            document.getElementById('testToolsBtn').addEventListener('click', testTools);
+            document.getElementById('clearLogsBtn').addEventListener('click', clearLogs);
             try {
                 // Initialize Emma voice system
                 emmaVoice = new EmmaRealtimeVoice({

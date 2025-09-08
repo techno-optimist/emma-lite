@@ -205,7 +205,7 @@ class EmmaRealtimeVoice {
         method: 'POST',
         body: offer.sdp,
         headers: {
-          'Authorization': `Bearer ${tokenData.value || tokenData.client_secret}`,
+          'Authorization': `Bearer ${tokenData.client_secret || tokenData.value || tokenData.token}`,
           'Content-Type': 'application/sdp',
         },
       });
