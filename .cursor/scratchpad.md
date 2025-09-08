@@ -8910,12 +8910,18 @@ stateDiagram-v2
 - Post-launch tuning sessions with real users
 
 ### Project Status Board — Realtime Voice
-- [x] Phase 0: Spike (WebRTC, ephemeral token, audio) - **IMPLEMENTED**
+- [x] Phase 0: Spike (WebRTC, ephemeral token, audio) - **COMPLETED ✅**
   - ✅ Ephemeral token backend endpoint (privacy-first)
   - ✅ WebRTC client with orb integration
   - ✅ Local-only tool system (no vault data to cloud)
   - ✅ Test page for validation
-- [ ] Phase 1: MVP tools (people/memories), VAD, barge-in
+  - ✅ Production deployment on emma-voice-backend.onrender.com
+- [x] Phase 1: MVP tools (people/memories), VAD, barge-in - **IN PROGRESS**
+  - [ ] Connect to actual OpenAI Realtime API via WebRTC
+  - [ ] Implement server-side VAD for natural turn-taking
+  - [ ] Add wake word detection ("Emma")
+  - [ ] Enable conversation barge-in capability
+  - [ ] Test get_people and get_memories tools with real voice
 - [ ] Phase 2: Create/update memory and people with approvals
 - [ ] Phase 3: Dementia polish and caregiver features
 - [ ] Phase 4: Security hardening and staged rollout

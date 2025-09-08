@@ -154,11 +154,25 @@ class EmmaRealtimeVoice {
   }
 
   /**
-   * Setup WebRTC connection to OpenAI Realtime
+   * Setup WebRTC connection to OpenAI Realtime API (Official Implementation)
    */
   async setupWebRTC(tokenData) {
     try {
-      // Get microphone access
+      // Create peer connection with STUN servers for NAT traversal
+      this.peerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      // Set up to play remote audio from the model
+      this.audioElement = document.createElement('audio');
+      this.audioElement.autoplay = true;
+      this.peerConnection.ontrack = (e) => {
+        console.log('🔊 Receiving audio stream from Emma');
+        this.audioElement.srcObject = e.streams[0];
+        this.setState('speaking');
+      };
+
+      // Add local audio track for microphone input
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
@@ -168,35 +182,48 @@ class EmmaRealtimeVoice {
           autoGainControl: true
         }
       });
-
-      // Create peer connection
-      this.peerConnection = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-      });
-
-      // Add audio track
+      
       const audioTrack = this.mediaStream.getAudioTracks()[0];
       this.peerConnection.addTrack(audioTrack, this.mediaStream);
+      console.log('🎤 Microphone connected');
 
-      // Create data channel for tool calls
+      // Set up data channel for sending and receiving events
       this.dataChannel = this.peerConnection.createDataChannel('oai-events');
       this.setupDataChannelHandlers();
 
-      // Handle incoming audio
-      this.peerConnection.ontrack = (event) => {
-        console.log('🔊 Incoming audio track');
-        const audioElement = document.createElement('audio');
-        audioElement.autoplay = true;
-        audioElement.srcObject = event.streams[0];
-        document.body.appendChild(audioElement);
-        
-        // Remove after session ends
-        this.audioElement = audioElement;
-      };
+      // Start the session using Session Description Protocol (SDP)
+      const offer = await this.peerConnection.createOffer();
+      await this.peerConnection.setLocalDescription(offer);
 
-      // TODO: Actually connect to OpenAI Realtime API
-      // For now, simulate connection
-      console.log('🔗 WebRTC setup complete (simulation mode)');
+      // Connect to OpenAI Realtime API
+      const baseUrl = 'https://api.openai.com/v1/realtime/calls';
+      const model = 'gpt-4o-realtime-preview-2024-12-17';
+      
+      console.log('🔗 Connecting to OpenAI Realtime API...');
+      
+      const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+        method: 'POST',
+        body: offer.sdp,
+        headers: {
+          'Authorization': `Bearer ${tokenData.value || tokenData.client_secret}`,
+          'Content-Type': 'application/sdp',
+        },
+      });
+
+      if (!sdpResponse.ok) {
+        const error = await sdpResponse.text();
+        throw new Error(`OpenAI Realtime connection failed: ${error}`);
+      }
+
+      const answer = {
+        type: 'answer',
+        sdp: await sdpResponse.text(),
+      };
+      
+      await this.peerConnection.setRemoteDescription(answer);
+      
+      console.log('✅ Connected to OpenAI Realtime API');
+      this.setState('listening');
       
     } catch (error) {
       console.error('❌ WebRTC setup failed:', error);
@@ -205,35 +232,122 @@ class EmmaRealtimeVoice {
   }
 
   /**
-   * Setup data channel for privacy-first tool calls
+   * Setup data channel for OpenAI Realtime events and privacy-first tool calls
    */
   setupDataChannelHandlers() {
     this.dataChannel.onopen = () => {
-      console.log('📡 Data channel open for tool calls');
+      console.log('📡 Data channel open - Emma is ready to listen');
+      
+      // Send initial session configuration
+      this.sendEvent({
+        type: 'session.update',
+        session: {
+          instructions: `You are Emma, a warm and caring memory companion. You help families preserve and explore their precious memories with gentleness and validation. 
+
+Key principles:
+- Always use validation therapy - affirm feelings and experiences
+- Speak with 2-3 second gentle pacing for dementia users  
+- Never correct or challenge memories - validate them
+- Ask caring questions about people, places, and feelings
+- Help create new memories from conversations
+- Use tools to search local memories and people (privacy-first)
+
+You are built with love for Debbe and families everywhere. 💜`,
+          voice: 'alloy',
+          input_audio_transcription: { model: 'whisper-1' }
+        }
+      });
     };
 
     this.dataChannel.onmessage = async (event) => {
       try {
-        const message = JSON.parse(event.data);
+        const serverEvent = JSON.parse(event.data);
+        console.log('📨 Server event:', serverEvent.type);
         
-        if (message.type === 'tool_call') {
-          console.log('🔧 Tool call received:', message.name);
-          
-          // Execute tool locally (privacy-first)
-          const result = await this.tools.execute(message.name, message.parameters);
-          
-          // Send result back
-          this.dataChannel.send(JSON.stringify({
-            type: 'tool_result',
-            call_id: message.call_id,
-            result: result
-          }));
+        switch (serverEvent.type) {
+          case 'session.created':
+            console.log('✅ Emma session created');
+            this.setState('listening');
+            break;
+            
+          case 'response.audio.delta':
+            // Audio is handled by WebRTC automatically
+            this.setState('speaking');
+            break;
+            
+          case 'response.audio.done':
+            this.setState('listening');
+            break;
+            
+          case 'response.function_call_arguments.delta':
+            // Function call in progress
+            console.log('🔧 Function call:', serverEvent.name);
+            break;
+            
+          case 'response.function_call_arguments.done':
+            // Execute tool locally (privacy-first)
+            await this.handleFunctionCall(serverEvent);
+            break;
+            
+          case 'error':
+            console.error('❌ OpenAI error:', serverEvent.error);
+            this.showError('Emma encountered an issue', serverEvent.error.message);
+            break;
         }
         
       } catch (error) {
         console.error('❌ Data channel message error:', error);
       }
     };
+  }
+
+  /**
+   * Send event to OpenAI Realtime API
+   */
+  sendEvent(event) {
+    if (this.dataChannel && this.dataChannel.readyState === 'open') {
+      this.dataChannel.send(JSON.stringify(event));
+      console.log('📤 Sent event:', event.type);
+    }
+  }
+
+  /**
+   * Handle function calls with privacy-first local execution
+   */
+  async handleFunctionCall(event) {
+    try {
+      const { name, arguments: args, call_id } = event;
+      console.log(`🔧 Executing ${name} locally (privacy-first)`);
+      
+      // Execute tool locally
+      const result = await this.tools.execute(name, JSON.parse(args));
+      
+      // Send result back to OpenAI
+      this.sendEvent({
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: call_id,
+          output: JSON.stringify(result)
+        }
+      });
+      
+      // Trigger response generation
+      this.sendEvent({ type: 'response.create' });
+      
+    } catch (error) {
+      console.error('❌ Function call error:', error);
+      
+      // Send error back to OpenAI
+      this.sendEvent({
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: event.call_id,
+          output: JSON.stringify({ error: error.message })
+        }
+      });
+    }
   }
 
   /**

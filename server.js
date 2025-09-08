@@ -61,8 +61,8 @@ const tokenLimiter = new RateLimiterMemory({
 });
 
 /**
- * EPHEMERAL TOKEN ENDPOINT
- * CTO SECURITY: Generates short-lived tokens for OpenAI Realtime
+ * EPHEMERAL TOKEN ENDPOINT - OpenAI Realtime API Official Pattern
+ * CTO SECURITY: Uses official OpenAI client_secrets endpoint
  * NO USER DATA STORED - privacy-first architecture
  */
 app.post('/api/realtime/token', async (req, res) => {
@@ -88,27 +88,71 @@ app.post('/api/realtime/token', async (req, res) => {
       });
     }
 
-    // Generate ephemeral session token (60 seconds)
-    const sessionId = crypto.randomBytes(16).toString('hex');
-    const expiresAt = Math.floor(Date.now() / 1000) + 60; // 60 seconds from now
-    
-    // CTO NOTE: This is a proxy token, not direct OpenAI key exposure
-    const ephemeralToken = Buffer.from(JSON.stringify({
-      key: process.env.OPENAI_API_KEY,
-      session: sessionId,
-      expires: expiresAt,
-      scope: 'realtime-voice-only'
-    })).toString('base64');
+    // Official OpenAI Realtime API session configuration
+    const sessionConfig = {
+      session: {
+        type: "realtime",
+        model: "gpt-4o-realtime-preview-2024-12-17",
+        audio: {
+          output: {
+            voice: "alloy", // Calm, friendly voice for dementia users
+          },
+        },
+        // CTO SECURITY: Add tools configuration for local-only operations
+        tools: [
+          {
+            type: "function",
+            name: "get_people",
+            description: "Search local people by name or relationship",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Name or relationship to search for" }
+              },
+              required: ["query"]
+            }
+          },
+          {
+            type: "function", 
+            name: "get_memories",
+            description: "List memory summaries by filters",
+            parameters: {
+              type: "object",
+              properties: {
+                personId: { type: "string", description: "Filter by person ID" },
+                limit: { type: "number", default: 5, description: "Max memories to return" }
+              }
+            }
+          }
+        ]
+      }
+    };
 
-    // Log for monitoring (NO PII)
-    console.log(`🎙️ VOICE TOKEN: Generated for session ${sessionId}, expires ${new Date(expiresAt * 1000).toISOString()}`);
-
-    res.json({
-      token: ephemeralToken,
-      expires_in: 60,
-      session_id: sessionId,
-      model: model
+    // Call official OpenAI client_secrets endpoint
+    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sessionConfig)
     });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('🚨 OpenAI client_secrets error:', error);
+      return res.status(500).json({
+        error: 'Failed to generate ephemeral token',
+        code: 'OPENAI_ERROR'
+      });
+    }
+
+    const data = await response.json();
+    
+    // Log for monitoring (NO PII)
+    console.log(`🎙️ VOICE TOKEN: Generated ephemeral token, expires in ${data.expires_in || 60}s`);
+
+    res.json(data);
 
   } catch (rateLimitError) {
     if (rateLimitError.remainingPoints !== undefined) {
