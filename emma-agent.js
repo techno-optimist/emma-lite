@@ -204,14 +204,19 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       this.browserWs = browserWebSocket;
       console.log('🎙️ Starting Emma session...');
 
+      console.log('🔗 Creating RealtimeSession...');
+      
       // Create RealtimeSession with Emma agent
       this.session = new RealtimeSession(this.agent);
 
+      console.log('🔑 Connecting to OpenAI with API key...');
+      
       // Connect to OpenAI with API key
       await this.session.connect({
         apiKey: process.env.OPENAI_API_KEY
       });
 
+      console.log('✅ Connected to OpenAI Realtime API');
       this.isActive = true;
 
       // Setup session event handlers
@@ -223,10 +228,17 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         message: 'Emma is ready to talk!'
       });
 
+      console.log('📡 Sending initial greeting to Emma...');
+      
       // Send initial greeting
       setTimeout(() => {
-        this.session.sendMessage('Hello, please introduce yourself as Emma.');
-      }, 1000);
+        if (this.session && this.session.sendMessage) {
+          this.session.sendMessage('Hello, please introduce yourself as Emma.');
+          console.log('📤 Initial greeting sent to Emma');
+        } else {
+          console.error('❌ Session or sendMessage not available');
+        }
+      }, 2000);
 
       console.log('✅ Emma session started successfully');
 
