@@ -27,12 +27,34 @@ class EmmaVoiceOfficial {
   }
 
   /**
+   * Load OpenAI Agents SDK bundle
+   */
+  async loadSDKBundle() {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@openai/agents-realtime@latest/dist/bundle/openai-realtime-agents.umd.js';
+      script.onload = () => {
+        console.log('✅ OpenAI Agents SDK bundle loaded');
+        resolve();
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load OpenAI Agents SDK bundle'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
    * Create Emma RealtimeAgent (EXACT documentation pattern)
    */
   async createEmmaAgent() {
     try {
-      // Import the SDK (browser ES modules - CORRECT PATH)
-      const { RealtimeAgent, RealtimeSession } = await import('https://cdn.jsdelivr.net/npm/@openai/agents-realtime@latest/dist/index.mjs');
+      // Load the SDK bundle (includes all dependencies)
+      if (!window.OpenAIRealtimeAgents) {
+        await this.loadSDKBundle();
+      }
+      
+      const { RealtimeAgent, RealtimeSession } = window.OpenAIRealtimeAgents;
       
       console.log('📦 OpenAI Agents SDK loaded');
 
