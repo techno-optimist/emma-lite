@@ -89,17 +89,9 @@ class EmmaVoiceProduction {
         if (this.isConnected && this.websocket?.readyState === WebSocket.OPEN) {
           const audioData = event.inputBuffer.getChannelData(0);
           
-          // Convert to 16-bit PCM for OpenAI
-          const int16Array = new Int16Array(audioData.length);
-          for (let i = 0; i < audioData.length; i++) {
-            int16Array[i] = Math.max(-1, Math.min(1, audioData[i])) * 0x7FFF;
-          }
-          
-          // Send to backend
-          this.sendToBackend({
-            type: 'audio_data',
-            audio: Array.from(int16Array).join(',')
-          });
+          // EMERGENCY: Disable audio streaming to stop infinite loop
+          // TODO: Fix audio format conversion
+          return;
         }
       };
 

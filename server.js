@@ -350,12 +350,7 @@ PERSONALITY (${config?.tone || 'caring'} tone, ${config?.pacing || 2.5}s pacing)
 - Show genuine interest and warmth
 
 You are built with infinite love for Debbe and families everywhere. 💜`,
-            turn_detection: {
-              type: "server_vad",
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 1000
-            },
+            // EMERGENCY: Remove turn_detection (causing errors)
             input_audio_transcription: { model: "whisper-1" }
           }
         }));
