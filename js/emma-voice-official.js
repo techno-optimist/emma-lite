@@ -269,6 +269,12 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
       
       if (this.chatInstance) {
         this.chatInstance.addMessage('system', '✅ Emma is connected and ready to talk!');
+        
+        // TESTING: Add fake transcription to verify chat integration
+        setTimeout(() => {
+          this.chatInstance.addMessage('TEST: User speech would appear here', 'user', { isVoice: true });
+          this.chatInstance.addMessage('TEST: Emma response would appear here', 'emma', { isVoice: true });
+        }, 3000);
       }
 
       console.log('🎙️ Emma voice session started with official SDK');
@@ -352,10 +358,30 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
       this.showError('Emma error', error.message);
     });
 
-    // Listen for ANY event to debug
-    this.session.on('*', (eventName, data) => {
-      console.log(`🔍 Emma event: ${eventName}`, data);
-    });
+    // CRITICAL: Listen for ALL events to debug transcription
+    if (this.session.onAny) {
+      this.session.onAny((eventName, data) => {
+        console.log(`🔍 Emma event: ${eventName}`, data);
+        
+        // Try to capture any transcription data
+        if (eventName.includes('transcript') || eventName.includes('speech') || eventName.includes('audio')) {
+          console.log(`📝 TRANSCRIPTION EVENT: ${eventName}`, data);
+          if (this.chatInstance) {
+            this.chatInstance.addMessage('system', `📝 ${eventName}: ${JSON.stringify(data).substring(0, 100)}`);
+          }
+        }
+      });
+    }
+
+    // Also try direct session properties
+    if (this.session.transport) {
+      console.log('🔍 Session transport available:', typeof this.session.transport);
+      
+      // Try transport-level events
+      this.session.transport.on?.('*', (eventName, data) => {
+        console.log(`🔍 Transport event: ${eventName}`, data);
+      });
+    }
 
     console.log('✅ Emma session event handlers configured');
   }
