@@ -187,23 +187,20 @@ class EmmaChatExperience extends ExperiencePopup {
       }
 
       if (this.emmaVoice) {
-        // Initialize voice system (no orb needed in chat)
-        if (this.emmaVoice.initialize) {
-          await this.emmaVoice.initialize(null, null);
-        }
-
         // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
 
         // Connect voice button to Emma's voice system
         this.setupVoiceButton();
 
-        // Set up voice event handlers for chat integration
-        this.setupVoiceEventHandlers();
+        // Set up voice event handlers for chat integration (if needed)
+        if (this.setupVoiceEventHandlers) {
+          this.setupVoiceEventHandlers();
+        }
 
-        console.log('✅ Voice-first chat experience ready!');
+        console.log('✅ Emma voice client ready!');
       } else {
-        console.warn('⚠️ EmmaRealtimeVoice not available - voice features disabled');
+        console.warn('⚠️ Emma voice client not available');
         this.voiceButton.style.opacity = '0.5';
         this.voiceButton.title = 'Voice system not available';
       }
@@ -225,7 +222,7 @@ class EmmaChatExperience extends ExperiencePopup {
     // Add voice session toggle
     this.voiceButton.addEventListener('click', async () => {
       try {
-        if (!this.emmaVoice.isEnabled) {
+        if (!this.emmaVoice.isConnected) {
           // Start voice conversation
           this.addMessage('system', '🎙️ Starting voice conversation with Emma...');
           await this.emmaVoice.startVoiceSession();
