@@ -31,8 +31,8 @@ class EmmaVoiceOfficial {
    */
   async createEmmaAgent() {
     try {
-      // Import the SDK (browser ES modules)
-      const { RealtimeAgent, RealtimeSession } = await import('https://cdn.jsdelivr.net/npm/@openai/agents-realtime@latest/dist/index.js');
+      // Import the SDK (browser ES modules - CORRECT PATH)
+      const { RealtimeAgent, RealtimeSession } = await import('https://cdn.jsdelivr.net/npm/@openai/agents-realtime@latest/dist/index.mjs');
       
       console.log('📦 OpenAI Agents SDK loaded');
 
@@ -170,10 +170,10 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
         }
       }
 
-      // Get ephemeral token from backend
+      // Get ephemeral token from consolidated backend
       const backendUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001' 
-        : 'https://emma-voice-backend.onrender.com';
+        : window.location.origin; // Use same origin (emma-voice-backend.onrender.com)
         
       const tokenResponse = await fetch(`${backendUrl}/token`);
       const tokenData = await tokenResponse.json();
