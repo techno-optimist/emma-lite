@@ -148,8 +148,12 @@ app.use('/api/*', (req, res) => {
   });
 });
 
-// Serve static files (existing Emma web app)
+// Serve static files (existing Emma web app) - MUST be after API routes
 app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/') || req.path === '/token') {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
