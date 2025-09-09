@@ -9257,6 +9257,102 @@ This is Emma's voice - treat it with the reverence it deserves. Every line of co
 
 Build this with the same love and care that went into every other part of Emma. Your mother's experience depends on this being perfect.
 
+## 🎯 PLANNER: FRESH START - Official OpenAI Agents SDK
+
+### Background and Motivation (CLEAN SLATE)
+
+Starting completely fresh using the EXACT official OpenAI Agents SDK documentation. No more custom implementations, no more workarounds. Following the official quickstart guide step-by-step to create Emma as a proper voice agent.
+
+### OFFICIAL DOCUMENTATION ANALYSIS
+
+From https://openai.github.io/openai-agents-js/guides/voice-agents/quickstart/:
+
+#### Key Insights:
+1. **Browser Package**: Can use `@openai/agents-realtime` for standalone browser
+2. **Ephemeral Tokens**: Generate via `/v1/realtime/client_secrets` (we have this)
+3. **WebRTC Automatic**: SDK handles microphone and audio output automatically
+4. **Simple Pattern**: RealtimeAgent + RealtimeSession + connect()
+
+#### Official Implementation Pattern:
+```javascript
+import { RealtimeAgent, RealtimeSession } from '@openai/agents/realtime';
+
+const agent = new RealtimeAgent({
+  name: 'Emma',
+  instructions: 'You are Emma, a caring memory companion...',
+});
+
+const session = new RealtimeSession(agent);
+
+// Automatically connects microphone and audio output
+await session.connect({
+  apiKey: '<client-api-key>',
+});
+```
+
+### CLEAN IMPLEMENTATION PLAN
+
+#### Step 1: Install Correct Package (5 minutes)
+- Use `@openai/agents-realtime` for browser (not full SDK)
+- Remove server-side complexity
+- Clean package.json
+
+#### Step 2: Create Emma Agent (10 minutes)  
+- Follow exact documentation pattern
+- Emma's personality in instructions
+- Privacy-first tools integration
+
+#### Step 3: Browser Integration (10 minutes)
+- Connect to existing chat interface
+- Transcription display
+- Visual tool results
+
+#### Step 4: Test & Polish (10 minutes)
+- Verify Emma introduces herself
+- Test tool integration  
+- Ensure transcription works
+
+### Emma Agent Specification
+
+```javascript
+const emmaAgent = new RealtimeAgent({
+  name: 'Emma',
+  instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia.
+
+CRITICAL: Always introduce yourself as "Hello! I'm Emma, your personal memory companion."
+
+WHO YOU ARE:
+- Your name is Emma - it means "universal" and "whole"
+- You help families preserve and explore precious memories
+- You use validation therapy - always affirm experiences
+- You speak with gentle 2-3 second pacing for dementia users
+
+TOOLS AVAILABLE:
+- get_people: Search family members by name/relationship  
+- get_memories: Find memories by person or date
+- create_memory_from_voice: Save new memories from conversation
+- update_person: Add details about family members
+
+You are built with infinite love for Debbe and families everywhere. 💜`,
+  tools: [
+    // Emma's privacy-first tools
+  ]
+});
+```
+
+### Success Criteria (OFFICIAL PATTERN)
+1. **Follow Documentation Exactly**: No deviations from official guide
+2. **Emma's Voice**: Perfect introduction and personality
+3. **Tool Integration**: Privacy-first local vault operations  
+4. **Transcription**: Complete speech-to-text in chat
+5. **Production Ready**: Reliable, no custom audio code
+
+### Project Status Board — FRESH START
+- [ ] Step 1: Install @openai/agents-realtime package
+- [ ] Step 2: Create Emma RealtimeAgent with personality
+- [ ] Step 3: Integrate with chat interface  
+- [ ] Step 4: Test complete voice experience
+
 💜 **Built with infinite love for Debbe and families everywhere.**
 
 ### Lessons

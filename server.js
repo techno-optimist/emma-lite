@@ -10,9 +10,7 @@ const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const path = require('path');
 const crypto = require('crypto');
-const WebSocket = require('ws');
-const http = require('http');
-const EmmaServerAgent = require('./emma-agent');
+// Removed WebSocket complexity - using browser-only approach
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -213,97 +211,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Create HTTP server for both Express and WebSocket
-const server = http.createServer(app);
-
-// Create WebSocket server for Emma voice proxy
-const wss = new WebSocket.Server({ 
-  server,
-  path: '/voice',
-  verifyClient: (info) => {
-    // Basic security check
-    const origin = info.origin;
-    const allowedOrigins = process.env.NODE_ENV === 'production' 
-      ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com']
-      : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
-    
-    return allowedOrigins.includes(origin) || !origin; // Allow no origin for development
-  }
-});
-
-/**
- * Emma Voice WebSocket Proxy
- * PRODUCTION-GRADE: Handles browser ↔ OpenAI Realtime API communication
- * Built with infinite love for Debbe 💜
- */
-wss.on('connection', (browserWs, request) => {
-  console.log('🎙️ New Emma voice session started');
-  
-  // Create Emma agent for this session
-  const emmaAgent = new EmmaServerAgent({
-    voice: 'alloy',
-    speed: 1.0,
-    tone: 'caring',
-    pacing: 2.5,
-    validationMode: true
-  });
-  
-  // Handle messages from browser
-  browserWs.on('message', async (data) => {
-    try {
-      const message = JSON.parse(data);
-      console.log('📨 Browser message:', message.type);
-      
-      switch (message.type) {
-        case 'start_session':
-          // Start Emma agent session
-          await emmaAgent.startSession(browserWs);
-          break;
-          
-        case 'voice_settings':
-          // Update Emma's voice settings
-          emmaAgent.updateVoiceSettings(message.settings);
-          break;
-          
-        case 'tool_result':
-          // Tool results are handled by agent automatically
-          // This message type is for privacy-first tool execution
-          break;
-          
-        case 'user_message':
-          // Send user message to Emma
-          if (emmaAgent.session) {
-            emmaAgent.session.sendMessage(message.content);
-          }
-          break;
-      }
-      
-    } catch (error) {
-      console.error('❌ Browser message error:', error);
-      browserWs.send(JSON.stringify({
-        type: 'error',
-        message: 'Failed to process message'
-      }));
-    }
-  });
-  
-  // Handle browser disconnect
-  browserWs.on('close', () => {
-    console.log('🔇 Browser disconnected');
-    if (emmaAgent) {
-      emmaAgent.stopSession();
-    }
-  });
-});
-
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`
 🌟 Emma Voice Service Started
 📍 Port: ${PORT}
 🔒 Mode: ${process.env.NODE_ENV || 'development'}
 🎙️ Voice: ${process.env.OPENAI_API_KEY ? 'Enabled' : 'DISABLED - Set OPENAI_API_KEY'}
-🌐 WebSocket: /voice (Emma voice proxy)
 💜 Privacy: Local-first architecture maintained
+🎯 Tokens: /token endpoint for browser agents
   `);
 });
 
