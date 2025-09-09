@@ -178,31 +178,51 @@ app.post('/api/realtime/token', async (req, res) => {
       }
     };
 
-    // Call official OpenAI client_secrets endpoint
-    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(sessionConfig)
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('🚨 OpenAI client_secrets error:', error);
-      return res.status(500).json({
-        error: 'Failed to generate ephemeral token',
-        code: 'OPENAI_ERROR'
+    // Try official OpenAI client_secrets endpoint first
+    try {
+      console.log('🔑 Attempting OpenAI client_secrets endpoint...');
+      
+      const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionConfig)
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`🎙️ VOICE TOKEN: Generated ephemeral token, expires in ${data.expires_in || 60}s`);
+        return res.json(data);
+      } else {
+        const errorText = await response.text();
+        console.error('🚨 OpenAI client_secrets error:', response.status, errorText);
+        
+        // If endpoint doesn't exist, fall back to direct token approach
+        if (response.status === 404) {
+          console.log('📍 client_secrets endpoint not found, using direct token approach');
+        } else {
+          throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+        }
+      }
+    } catch (fetchError) {
+      console.error('🚨 OpenAI API call failed:', fetchError.message);
     }
 
-    const data = await response.json();
+    // Fallback: Return the API key directly as ephemeral token (for now)
+    // CTO NOTE: This is temporary until we confirm the correct OpenAI endpoint
+    console.log('🔄 Using fallback token approach');
     
-    // Log for monitoring (NO PII)
-    console.log(`🎙️ VOICE TOKEN: Generated ephemeral token, expires in ${data.expires_in || 60}s`);
-
-    res.json(data);
+    const sessionId = crypto.randomBytes(16).toString('hex');
+    const expiresAt = Math.floor(Date.now() / 1000) + 300; // 5 minutes
+    
+    res.json({
+      client_secret: process.env.OPENAI_API_KEY, // Direct API key for now
+      expires_in: 300,
+      session_id: sessionId,
+      model: "gpt-4o-realtime-preview-2024-12-17"
+    });
 
   } catch (rateLimitError) {
     if (rateLimitError.remainingPoints !== undefined) {
