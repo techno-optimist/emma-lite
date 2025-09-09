@@ -10,7 +10,9 @@ const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const path = require('path');
 const crypto = require('crypto');
-// Removed WebSocket complexity - using browser-only approach
+const WebSocket = require('ws');
+const http = require('http');
+const EmmaServerAgent = require('./emma-agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -211,14 +213,76 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+// Create HTTP server for both Express and WebSocket
+const server = http.createServer(app);
+
+// Create WebSocket server for Emma voice
+const wss = new WebSocket.Server({ 
+  server,
+  path: '/voice'
+});
+
+/**
+ * Emma Voice WebSocket Server
+ * PRODUCTION-READY: Server-side Emma agent with browser client
+ */
+wss.on('connection', (browserWs, request) => {
+  console.log('🎙️ New Emma voice session started');
+  
+  // Create Emma agent for this session
+  const emmaAgent = new EmmaServerAgent({
+    voice: 'alloy',
+    speed: 1.0,
+    tone: 'caring',
+    pacing: 2.5,
+    validationMode: true
+  });
+  
+  // Handle messages from browser
+  browserWs.on('message', async (data) => {
+    try {
+      const message = JSON.parse(data);
+      console.log('📨 Browser message:', message.type);
+      
+      switch (message.type) {
+        case 'start_session':
+          await emmaAgent.startSession(browserWs);
+          break;
+          
+        case 'tool_result':
+          // Handle tool results from browser
+          if (message.call_id && message.result) {
+            emmaAgent.handleToolResult(message.call_id, message.result);
+          }
+          break;
+      }
+      
+    } catch (error) {
+      console.error('❌ Browser message error:', error);
+      browserWs.send(JSON.stringify({
+        type: 'error',
+        message: 'Failed to process message'
+      }));
+    }
+  });
+  
+  // Handle browser disconnect
+  browserWs.on('close', () => {
+    console.log('🔇 Browser disconnected');
+    if (emmaAgent) {
+      emmaAgent.stopSession();
+    }
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`
 🌟 Emma Voice Service Started
 📍 Port: ${PORT}
 🔒 Mode: ${process.env.NODE_ENV || 'development'}
 🎙️ Voice: ${process.env.OPENAI_API_KEY ? 'Enabled' : 'DISABLED - Set OPENAI_API_KEY'}
+🌐 WebSocket: /voice (Emma agent proxy)
 💜 Privacy: Local-first architecture maintained
-🎯 Tokens: /token endpoint for browser agents
   `);
 });
 

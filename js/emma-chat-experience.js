@@ -170,9 +170,9 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
-      // Initialize Emma Voice (OFFICIAL SDK PATTERN)
-      if (typeof EmmaVoiceOfficial !== 'undefined') {
-        this.emmaVoice = new EmmaVoiceOfficial({
+      // Initialize Emma Browser Client (connects to server-side agent)
+      if (typeof EmmaBrowserClient !== 'undefined') {
+        this.emmaVoice = new EmmaBrowserClient({
           voice: 'alloy',
           speed: 1.0,
           tone: 'caring',
@@ -180,9 +180,9 @@ class EmmaChatExperience extends ExperiencePopup {
           validationMode: true
         });
       } else {
-        console.warn('⚠️ EmmaVoiceOfficial not available');
+        console.warn('⚠️ EmmaBrowserClient not available');
         this.voiceButton.style.opacity = '0.5';
-        this.voiceButton.title = 'Emma voice not available';
+        this.voiceButton.title = 'Emma client not available';
         return;
       }
 
