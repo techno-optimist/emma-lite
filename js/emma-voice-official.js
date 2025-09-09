@@ -274,6 +274,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
         setTimeout(() => {
           this.chatInstance.addMessage('TEST: User speech would appear here', 'user', { isVoice: true });
           this.chatInstance.addMessage('TEST: Emma response would appear here', 'emma', { isVoice: true });
+          this.chatInstance.addMessage('system', '🔍 DEBUG: Chat integration test complete');
         }, 3000);
       }
 
@@ -358,20 +359,30 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
       this.showError('Emma error', error.message);
     });
 
-    // CRITICAL: Listen for ALL events to debug transcription
+    // CRITICAL: Listen for ALL events to debug transcription (VISIBLE IN CHAT)
     if (this.session.onAny) {
       this.session.onAny((eventName, data) => {
-        console.log(`🔍 Emma event: ${eventName}`, data);
+        // Show events in chat since console is suppressed
+        if (this.chatInstance) {
+          this.chatInstance.addMessage('system', `🔍 Event: ${eventName}`);
+        }
         
         // Try to capture any transcription data
         if (eventName.includes('transcript') || eventName.includes('speech') || eventName.includes('audio')) {
-          console.log(`📝 TRANSCRIPTION EVENT: ${eventName}`, data);
           if (this.chatInstance) {
-            this.chatInstance.addMessage('system', `📝 ${eventName}: ${JSON.stringify(data).substring(0, 100)}`);
+            this.chatInstance.addMessage('system', `📝 TRANSCRIPTION: ${eventName} - ${JSON.stringify(data).substring(0, 100)}`);
           }
         }
       });
     }
+
+    // ALTERNATIVE: Try the session events object directly
+    setTimeout(() => {
+      if (this.chatInstance) {
+        this.chatInstance.addMessage('system', `🔍 Session methods: ${Object.keys(this.session).join(', ')}`);
+        this.chatInstance.addMessage('system', `🔍 Available events: ${this.session.eventNames ? this.session.eventNames().join(', ') : 'none'}`);
+      }
+    }, 1000);
 
     // Also try direct session properties
     if (this.session.transport) {
