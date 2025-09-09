@@ -170,16 +170,27 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
-      // Initialize Emma's Realtime Voice system
-      if (typeof EmmaRealtimeVoice !== 'undefined') {
+      // Initialize Emma's Voice system (WebSocket fallback for reliability)
+      if (typeof EmmaVoiceWebSocket !== 'undefined') {
+        this.emmaVoice = new EmmaVoiceWebSocket({
+          wakeWord: 'Emma',
+          pacing: 2500,
+          validationMode: true
+        });
+      } else if (typeof EmmaRealtimeVoice !== 'undefined') {
         this.emmaVoice = new EmmaRealtimeVoice({
           wakeWord: 'Emma',
           pacing: 2500,
           validationMode: true
         });
 
+      }
+
+      if (this.emmaVoice) {
         // Initialize voice system (no orb needed in chat)
-        await this.emmaVoice.initialize(null, null);
+        if (this.emmaVoice.initialize) {
+          await this.emmaVoice.initialize(null, null);
+        }
 
         // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
