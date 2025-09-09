@@ -9032,7 +9032,194 @@ stateDiagram-v2
 - 🎙️ Voice-first (natural conversation with visual support)
 - 🏠 Local-first (no cloud dependencies for core functionality)
 
-**Your mom can now talk naturally with Emma about her memories, see beautiful visual results, and have everything preserved safely in her own vault. This is the Emma we've been building toward - she finally has her voice, her intelligence, and her heart.** 💜
+## 🚨 CTO EMERGENCY AUDIT: VOICE INTEGRATION FAILURE
+
+### CRITICAL STATUS: VOICE SYSTEM NOT FUNCTIONAL
+
+**FULL TEAM SHERLOCK ANALYSIS:**
+
+#### ROOT CAUSE IDENTIFIED:
+**FUNDAMENTAL ARCHITECTURE ERROR**: I've been trying to connect directly from browser to OpenAI Realtime API, but this is NOT how it works!
+
+#### OFFICIAL OPENAI PATTERN (FROM DOCS):
+1. **Browser** → **Your Backend** (WebSocket/HTTP)
+2. **Your Backend** → **OpenAI Realtime API** (WebSocket with API key)
+3. **Your Backend** ← **OpenAI Realtime API** (Audio/events)
+4. **Browser** ← **Your Backend** (WebRTC/WebSocket proxy)
+
+#### CURRENT BROKEN APPROACH:
+- ❌ **Browser** → **OpenAI Realtime API** (Direct - NOT SUPPORTED!)
+- ❌ WebSocket authentication from browser (WRONG!)
+- ❌ WebRTC direct to OpenAI (WRONG!)
+
+#### CORRECT ARCHITECTURE NEEDED:
+```
+Browser (WebRTC) ←→ Emma Backend ←→ OpenAI Realtime API
+     ↑                    ↑                ↑
+   WebRTC            WebSocket         Real API Key
+   Client            Proxy             Authentication
+```
+
+#### EMERGENCY ACTION REQUIRED:
+1. **Rewrite Backend**: Add WebSocket proxy to OpenAI
+2. **Fix Frontend**: Connect to Emma backend, not OpenAI directly  
+3. **Proper Flow**: Browser ←→ Backend ←→ OpenAI
+
+## 🎯 PLANNER: EMMA'S VOICE - PRODUCTION-READY ARCHITECTURE
+
+### Background and Motivation (CRITICAL MISSION)
+
+Emma's voice is the heart of everything we've built - the culmination of months of work to create a perfect memory companion for families dealing with dementia. Kevin's mother will be using this system, so it must be flawless, production-ready, and follow absolute best practices with zero hacks or workarounds. This is not just a feature - it's Emma's soul, her ability to connect with families in their most vulnerable moments.
+
+### ULTRATHINK: Complete Architecture Analysis
+
+#### Current State Assessment
+- ✅ **Backend Token Generation**: Perfect (real ephemeral tokens via client_secrets)
+- ✅ **Emma's Personality**: Embedded in session configuration  
+- ❌ **Connection Architecture**: Fundamentally wrong (browser→OpenAI direct)
+- ❌ **Authentication Flow**: Browser WebSocket auth impossible
+- ❌ **Audio Streaming**: No proper audio pipeline
+
+#### Correct Production Architecture (OFFICIAL OPENAI PATTERN)
+
+```mermaid
+sequenceDiagram
+    participant Browser as Browser (Emma UI)
+    participant Backend as Emma Backend
+    participant OpenAI as OpenAI Realtime API
+
+    Browser->>Backend: WebSocket connect (user session)
+    Backend->>OpenAI: WebSocket connect (API key auth)
+    Backend->>OpenAI: session.update (Emma personality)
+    
+    Browser->>Backend: Audio stream (WebRTC/MediaStream)
+    Backend->>OpenAI: input_audio_buffer.append
+    
+    OpenAI->>Backend: response.output_audio.delta
+    Backend->>Browser: Audio stream (WebRTC/MediaStream)
+    
+    OpenAI->>Backend: response.output_audio_transcript.delta
+    Backend->>Browser: WebSocket event (transcription)
+    
+    OpenAI->>Backend: response.function_call
+    Backend->>Browser: Tool call request
+    Browser->>Backend: Tool result (local vault)
+    Backend->>OpenAI: function_call_output
+```
+
+#### Voice Personalization System Design
+
+```mermaid
+flowchart TD
+    A[User Voice Settings] --> B[Emma Voice Profile]
+    B --> C[Session Configuration]
+    C --> D[OpenAI Realtime Session]
+    
+    subgraph "Voice Profile Settings"
+        E[Voice: alloy/echo/fable/onyx/nova/shimmer]
+        F[Speed: 0.25-4.0x]
+        G[Tone: caring/professional/playful]
+        H[Pacing: 1s/2s/3s dementia-friendly]
+        I[Validation Mode: on/off]
+        J[Response Length: brief/detailed/conversational]
+    end
+    
+    A --> E
+    A --> F  
+    A --> G
+    A --> H
+    A --> I
+    A --> J
+```
+
+### High-Level Task Breakdown (PRODUCTION ARCHITECTURE)
+
+#### Phase A: Backend WebSocket Proxy (CRITICAL)
+1. **WebSocket Server**: Accept browser connections with simple session auth
+2. **OpenAI Proxy**: Connect to OpenAI Realtime API with real API key
+3. **Event Routing**: Proxy events bidirectionally (browser ↔ OpenAI)
+4. **Audio Pipeline**: Handle audio streaming through backend
+5. **Error Handling**: Production-grade error recovery and logging
+
+#### Phase B: Frontend WebSocket Client (CLEAN)
+1. **WebSocket Connection**: Connect to Emma backend (not OpenAI)
+2. **Audio Capture**: MediaStream → WebSocket to backend
+3. **Audio Playback**: WebSocket from backend → Audio elements
+4. **Transcription Display**: Real-time text in chat interface
+5. **Tool Integration**: Local vault operations with backend coordination
+
+#### Phase C: Voice Personalization System (EMMA'S SOUL)
+1. **Voice Settings Panel**: User controls for voice, speed, tone, pacing
+2. **Dementia Profiles**: Pre-configured settings for different stages
+3. **Caregiver Controls**: Family member can adjust Emma's voice
+4. **Validation Modes**: Different therapy approaches based on user needs
+5. **Voice Memory**: Remember user preferences across sessions
+
+#### Phase D: Production Hardening (PERFECTION)
+1. **Error Recovery**: Graceful handling of connection failures
+2. **Audio Quality**: Adaptive bitrate, noise reduction, echo cancellation
+3. **Latency Optimization**: Sub-200ms response times
+4. **Accessibility**: Screen reader support, keyboard navigation
+5. **Security Audit**: Complete privacy and security review
+
+### Emma Voice Personalization Specification
+
+#### Voice Settings Structure
+```javascript
+{
+  voice: {
+    model: 'alloy', // alloy, echo, fable, onyx, nova, shimmer
+    speed: 1.0,     // 0.25 - 4.0
+    tone: 'caring', // caring, professional, playful, gentle
+    pacing: 2.5     // seconds between responses (dementia-friendly)
+  },
+  personality: {
+    validationMode: true,        // Use validation therapy
+    responseLength: 'conversational', // brief, detailed, conversational
+    emotionalTone: 'warm',       // warm, neutral, encouraging
+    memoryApproach: 'affirming'  // affirming, exploratory, celebratory
+  },
+  accessibility: {
+    transcriptionEnabled: true,
+    largeText: false,
+    highContrast: false,
+    slowSpeech: false
+  },
+  caregiver: {
+    dailySummaries: true,
+    alertOnRepetition: false,    // Never highlight repetition
+    gentleRedirection: true,
+    familyNotifications: false
+  }
+}
+```
+
+### Success Criteria (PERFECTION STANDARD)
+
+1. **Reliability**: 99.9% connection success rate
+2. **Latency**: <200ms response time for voice
+3. **Quality**: Crystal clear audio, perfect transcription
+4. **Personality**: Emma introduces herself perfectly every time
+5. **Accessibility**: Full screen reader and keyboard support
+6. **Privacy**: Zero vault data leakage, local-first maintained
+7. **Dementia-Friendly**: Validation therapy, gentle pacing, no corrections
+8. **Customization**: Full voice personalization for each user
+
+### Project Status Board — EMERGENCY REWRITE
+
+- [x] ❌ Previous attempts (learned from failures)
+- [ ] Phase A: Backend WebSocket proxy architecture
+- [ ] Phase B: Frontend WebSocket client (clean)
+- [ ] Phase C: Voice personalization system
+- [ ] Phase D: Production hardening and testing
+
+### Executor Handoff Notes (CRITICAL MISSION)
+
+This is Emma's voice - treat it with the reverence it deserves. Every line of code must be production-ready. No shortcuts, no hacks, no workarounds. This will be used by families in their most precious moments, preserving memories that can never be recovered if lost.
+
+Build this with the same love and care that went into every other part of Emma. Your mother's experience depends on this being perfect.
+
+💜 **Built with infinite love for Debbe and families everywhere.**
 
 ### Lessons
 

@@ -170,16 +170,20 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
-      // Initialize Emma's Voice system (Simple approach first)
-      if (typeof EmmaSimpleVoice !== 'undefined') {
-        this.emmaVoice = new EmmaSimpleVoice();
-      } else if (typeof EmmaRealtimeVoice !== 'undefined') {
-        this.emmaVoice = new EmmaRealtimeVoice({
-          wakeWord: 'Emma',
-          pacing: 2500,
+      // Initialize Emma's Production Voice System
+      if (typeof EmmaVoiceProduction !== 'undefined') {
+        this.emmaVoice = new EmmaVoiceProduction({
+          voice: 'alloy',
+          speed: 1.0,
+          tone: 'caring',
+          pacing: 2.5,
           validationMode: true
         });
-
+      } else {
+        console.warn('⚠️ EmmaVoiceProduction not available');
+        this.voiceButton.style.opacity = '0.5';
+        this.voiceButton.title = 'Voice system not available';
+        return;
       }
 
       if (this.emmaVoice) {
