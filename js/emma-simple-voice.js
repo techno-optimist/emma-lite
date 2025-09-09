@@ -30,15 +30,11 @@ class EmmaSimpleVoice {
       
       console.log('🔑 Got token, connecting to Emma...');
       
-      // Connect to OpenAI Realtime API (OFFICIAL GA PATTERN)
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
+      // Connect to OpenAI Realtime API (BROWSER AUTH PATTERN)
+      // Browser WebSocket authentication via URL parameters
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17&authorization=Bearer%20${encodeURIComponent(tokenData.value)}`;
       
-      // Create WebSocket with authentication (GA - no beta header)
-      this.websocket = new WebSocket(wsUrl, [], {
-        headers: {
-          'Authorization': `Bearer ${tokenData.value}`
-        }
-      });
+      this.websocket = new WebSocket(wsUrl);
       
       // Store token for reference
       this.apiToken = tokenData.value;
