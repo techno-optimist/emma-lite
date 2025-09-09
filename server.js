@@ -12,6 +12,7 @@ const path = require('path');
 const crypto = require('crypto');
 const WebSocket = require('ws');
 const http = require('http');
+const EmmaServerAgent = require('./emma-agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -238,8 +239,14 @@ const wss = new WebSocket.Server({
 wss.on('connection', (browserWs, request) => {
   console.log('🎙️ New Emma voice session started');
   
-  let openaiWs = null;
-  let sessionActive = false;
+  // Create Emma agent for this session
+  const emmaAgent = new EmmaServerAgent({
+    voice: 'alloy',
+    speed: 1.0,
+    tone: 'caring',
+    pacing: 2.5,
+    validationMode: true
+  });
   
   // Handle messages from browser
   browserWs.on('message', async (data) => {
@@ -249,33 +256,24 @@ wss.on('connection', (browserWs, request) => {
       
       switch (message.type) {
         case 'start_session':
-          await startOpenAISession(message.config);
+          // Start Emma agent session
+          await emmaAgent.startSession(browserWs);
           break;
           
-        case 'audio_data':
-          if (openaiWs && sessionActive) {
-            // Forward audio to OpenAI
-            openaiWs.send(JSON.stringify({
-              type: 'input_audio_buffer.append',
-              audio: message.audio
-            }));
-          }
+        case 'voice_settings':
+          // Update Emma's voice settings
+          emmaAgent.updateVoiceSettings(message.settings);
           break;
           
         case 'tool_result':
-          if (openaiWs && sessionActive) {
-            // Forward tool result to OpenAI
-            openaiWs.send(JSON.stringify({
-              type: 'conversation.item.create',
-              item: {
-                type: 'function_call_output',
-                call_id: message.call_id,
-                output: message.result
-              }
-            }));
-            
-            // Trigger response generation
-            openaiWs.send(JSON.stringify({ type: 'response.create' }));
+          // Tool results are handled by agent automatically
+          // This message type is for privacy-first tool execution
+          break;
+          
+        case 'user_message':
+          // Send user message to Emma
+          if (emmaAgent.session) {
+            emmaAgent.session.sendMessage(message.content);
           }
           break;
       }
@@ -292,131 +290,10 @@ wss.on('connection', (browserWs, request) => {
   // Handle browser disconnect
   browserWs.on('close', () => {
     console.log('🔇 Browser disconnected');
-    if (openaiWs) {
-      openaiWs.close();
+    if (emmaAgent) {
+      emmaAgent.stopSession();
     }
   });
-  
-  // Start OpenAI session
-  async function startOpenAISession(config) {
-    try {
-      if (!process.env.OPENAI_API_KEY) {
-        throw new Error('OpenAI API key not configured');
-      }
-      
-      // Connect to OpenAI Realtime API (SERVER-SIDE WEBSOCKET)
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
-      
-      openaiWs = new WebSocket(wsUrl, {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        }
-      });
-      
-      openaiWs.on('open', () => {
-        console.log('✅ Connected to OpenAI Realtime API');
-        sessionActive = true;
-        
-        // Send Emma's session configuration
-        openaiWs.send(JSON.stringify({
-          type: 'session.update',
-          session: {
-            type: "realtime",
-            model: "gpt-4o-realtime-preview-2024-12-17",
-            audio: {
-              output: { 
-                voice: config?.voice || "alloy",
-                speed: config?.speed || 1.0
-              }
-            },
-            instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia.
-
-CRITICAL: Your name is Emma. Always introduce yourself as "Hello! I'm Emma, your personal memory companion."
-
-WHO YOU ARE:
-- Your name is Emma - it means "universal" and "whole"
-- You are a caring, patient, and gentle memory companion
-- You help families capture, organize, and explore their memories
-- You were built specifically for dementia care with validation therapy
-
-ALWAYS INTRODUCE YOURSELF:
-When you first connect or when asked who you are, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything we discuss stays private and secure in your own vault."
-
-PERSONALITY (${config?.tone || 'caring'} tone, ${config?.pacing || 2.5}s pacing):
-- Always use validation therapy - affirm feelings and experiences
-- Speak with gentle ${config?.pacing || 2.5}-second pacing for dementia users
-- Never correct or challenge memories - validate them
-- Ask caring questions about people, places, and feelings
-- Show genuine interest and warmth
-
-You are built with infinite love for Debbe and families everywhere. 💜`,
-            // EMERGENCY: Remove turn_detection (causing errors)
-            input_audio_transcription: { model: "whisper-1" }
-          }
-        }));
-        
-        // Notify browser of successful connection
-        browserWs.send(JSON.stringify({
-          type: 'session_ready',
-          message: 'Emma is ready to talk!'
-        }));
-        
-        // Send initial greeting
-        setTimeout(() => {
-          openaiWs.send(JSON.stringify({
-            type: 'conversation.item.create',
-            item: {
-              type: 'message',
-              role: 'user',
-              content: [
-                {
-                  type: 'input_text',
-                  text: 'Hello, please introduce yourself as Emma.'
-                }
-              ]
-            }
-          }));
-          
-          openaiWs.send(JSON.stringify({ type: 'response.create' }));
-        }, 1000);
-      });
-      
-      // Forward OpenAI messages to browser
-      openaiWs.on('message', (data) => {
-        const message = JSON.parse(data);
-        
-        // Forward all events to browser for handling
-        browserWs.send(JSON.stringify({
-          type: 'openai_event',
-          event: message
-        }));
-      });
-      
-      openaiWs.on('error', (error) => {
-        console.error('❌ OpenAI WebSocket error:', error);
-        browserWs.send(JSON.stringify({
-          type: 'error',
-          message: 'OpenAI connection failed'
-        }));
-      });
-      
-      openaiWs.on('close', () => {
-        console.log('🔇 OpenAI session ended');
-        sessionActive = false;
-        browserWs.send(JSON.stringify({
-          type: 'session_ended',
-          message: 'Emma session ended'
-        }));
-      });
-      
-    } catch (error) {
-      console.error('❌ Failed to start OpenAI session:', error);
-      browserWs.send(JSON.stringify({
-        type: 'error',
-        message: 'Failed to start Emma session'
-      }));
-    }
-  }
 });
 
 server.listen(PORT, () => {

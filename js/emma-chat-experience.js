@@ -180,29 +180,19 @@ class EmmaChatExperience extends ExperiencePopup {
         return;
       }
 
-      // Initialize Emma as RealtimeAgent
-      if (typeof EmmaRealtimeAgent !== 'undefined') {
-        this.emmaVoice = new EmmaRealtimeAgent({
+      // Initialize Emma Browser Client (connects to server-side agent)
+      if (typeof EmmaBrowserClient !== 'undefined') {
+        this.emmaVoice = new EmmaBrowserClient({
           voice: 'alloy',
           speed: 1.0,
           tone: 'caring',
           pacing: 2.5,
           validationMode: true
         });
-        
-        // Initialize Emma agent
-        const agentReady = await this.emmaVoice.initialize();
-        
-        if (!agentReady) {
-          console.warn('⚠️ Emma agent initialization failed');
-          this.voiceButton.style.opacity = '0.5';
-          this.voiceButton.title = 'Emma agent not available';
-          return;
-        }
       } else {
-        console.warn('⚠️ EmmaRealtimeAgent not available');
+        console.warn('⚠️ EmmaBrowserClient not available');
         this.voiceButton.style.opacity = '0.5';
-        this.voiceButton.title = 'Emma agent not available';
+        this.voiceButton.title = 'Emma client not available';
         return;
       }
 
