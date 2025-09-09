@@ -125,8 +125,12 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
         tools: this.buildEmmaTools()
       });
 
-      // Create session (EXACT documentation pattern)
-      this.session = new RealtimeSession(this.agent);
+      // Create session with transcription enabled
+      this.session = new RealtimeSession(this.agent, {
+        model: 'gpt-4o-realtime-preview-2024-12-17',
+        transcription: true,
+        input_audio_transcription: { model: 'whisper-1' }
+      });
 
       console.log('✅ Emma RealtimeAgent created successfully');
       return true;
