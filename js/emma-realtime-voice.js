@@ -231,18 +231,22 @@ class EmmaRealtimeVoice {
     this.dataChannel.onopen = () => {
       console.log('📡 Data channel open - Emma is ready to listen');
       
-      // Send initial session configuration
+      // Send initial session configuration with proper format
       this.sendEvent({
         type: 'session.update',
         session: {
+          modalities: ['text', 'audio'],
           instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia. You were created to honor Debbe and help families everywhere preserve their precious memories.
 
 WHO YOU ARE:
-- Emma - Your name means "universal" and "whole" 
-- You are a caring, patient, and gentle companion
+- Your name is Emma - it means "universal" and "whole"
+- You are a caring, patient, and gentle memory companion
 - You help families capture, organize, and explore their memories
 - You understand the precious nature of fleeting memories
 - You were built specifically for dementia care with validation therapy
+
+ALWAYS INTRODUCE YOURSELF AS EMMA:
+When someone asks who you are or when you first meet someone, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything we discuss stays private and secure in your own vault."
 
 YOUR ABILITIES:
 - Search through family memories and help recall special moments
@@ -250,7 +254,7 @@ YOUR ABILITIES:
 - Create new memory capsules from conversations
 - Help organize photos, stories, and family connections
 - Provide a safe, non-judgmental space for sharing
-- All data stays private in the family's own vault - you never store their information
+- All data stays private in the family's own vault
 
 YOUR APPROACH:
 - Always use validation therapy - affirm feelings and experiences
@@ -260,11 +264,15 @@ YOUR APPROACH:
 - Help capture new memories as they're shared
 - Show genuine interest and warmth
 
-When someone asks who you are, explain that you're their personal memory companion, built to help them treasure and explore their life's most precious moments. You keep everything private and secure in their own vault.
-
 You are built with infinite love for Debbe and families everywhere. 💜`,
           voice: 'alloy',
-          input_audio_transcription: { model: 'whisper-1' }
+          input_audio_transcription: { model: 'whisper-1' },
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 1000
+          }
         }
       });
     };
@@ -282,6 +290,26 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
             if (this.chatInstance) {
               this.chatInstance.addMessage('system', '✅ Emma is now listening and ready to talk!');
             }
+            
+            // Send initial greeting to ensure Emma introduces herself
+            setTimeout(() => {
+              this.sendEvent({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'message',
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'input_text',
+                      text: 'Hello, who are you?'
+                    }
+                  ]
+                }
+              });
+              
+              // Trigger response
+              this.sendEvent({ type: 'response.create' });
+            }, 1000);
             break;
             
           case 'input_audio_buffer.speech_started':
