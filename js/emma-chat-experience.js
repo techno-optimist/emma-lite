@@ -181,6 +181,9 @@ class EmmaChatExperience extends ExperiencePopup {
         // Initialize voice system (no orb needed in chat)
         await this.emmaVoice.initialize(null, null);
 
+        // 🔗 CRITICAL: Connect voice system to chat for transcription
+        this.emmaVoice.chatInstance = this;
+
         // Connect voice button to Emma's voice system
         this.setupVoiceButton();
 
@@ -2100,6 +2103,11 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
+    
+    // 🎙️ VOICE: Add voice indicators for transcribed messages
+    if (options.isVoice) {
+      messageDiv.setAttribute('data-voice', 'true');
+    }
     
     // 💝 CRITICAL: Track people mentioned in Emma's responses too
     if (sender === 'emma' && content) {

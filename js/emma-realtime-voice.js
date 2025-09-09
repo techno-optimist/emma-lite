@@ -285,6 +285,49 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
           case 'session.created':
             console.log('✅ Emma session created');
             this.setState('listening');
+            // Notify chat that Emma is ready
+            if (this.chatInstance) {
+              this.chatInstance.addMessage('system', '✅ Emma is now listening and ready to talk!');
+            }
+            break;
+            
+          case 'input_audio_buffer.speech_started':
+            console.log('🎤 User started speaking');
+            this.setState('listening');
+            break;
+            
+          case 'input_audio_buffer.speech_stopped':
+            console.log('🎤 User stopped speaking');
+            this.setState('thinking');
+            break;
+            
+          case 'conversation.item.input_audio_transcription.completed':
+            // Display user's transcribed speech in chat
+            console.log('📝 User transcription:', serverEvent.transcript);
+            if (this.chatInstance && serverEvent.transcript) {
+              this.chatInstance.addMessage(serverEvent.transcript, 'user', { 
+                type: 'voice-transcription',
+                isVoice: true 
+              });
+            }
+            break;
+            
+          case 'response.audio_transcript.delta':
+            // Accumulate Emma's speech transcript
+            if (!this.currentTranscript) this.currentTranscript = '';
+            this.currentTranscript += serverEvent.delta || '';
+            break;
+            
+          case 'response.audio_transcript.done':
+            // Display Emma's complete transcript in chat
+            console.log('📝 Emma transcript:', this.currentTranscript);
+            if (this.chatInstance && this.currentTranscript) {
+              this.chatInstance.addMessage(this.currentTranscript, 'emma', {
+                type: 'voice-response',
+                isVoice: true
+              });
+            }
+            this.currentTranscript = '';
             break;
             
           case 'response.audio.delta':
