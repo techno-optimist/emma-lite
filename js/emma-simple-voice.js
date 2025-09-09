@@ -30,14 +30,13 @@ class EmmaSimpleVoice {
       
       console.log('🔑 Got token, connecting to Emma...');
       
-      // Connect to OpenAI Realtime API via WebSocket with authentication
+      // Connect to OpenAI Realtime API (OFFICIAL GA PATTERN)
       const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
       
-      // Create WebSocket with authentication headers
+      // Create WebSocket with authentication (GA - no beta header)
       this.websocket = new WebSocket(wsUrl, [], {
         headers: {
-          'Authorization': `Bearer ${tokenData.value}`,
-          'OpenAI-Beta': 'realtime=v1'
+          'Authorization': `Bearer ${tokenData.value}`
         }
       });
       
@@ -63,30 +62,42 @@ class EmmaSimpleVoice {
         this.chatInstance.addMessage('system', '✅ Emma is connected and ready to talk!');
       }
       
-      // Send session configuration
+      // Send session configuration (OFFICIAL GA FORMAT)
       this.send({
         type: 'session.update',
         session: {
-          modalities: ['text', 'audio'],
-          instructions: `You are Emma, a warm and caring memory companion. 
+          type: "realtime",
+          model: "gpt-4o-realtime-preview-2024-12-17",
+          audio: {
+            output: { voice: "alloy" }
+          },
+          instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia.
 
 CRITICAL: Your name is Emma. Always introduce yourself as "Hello! I'm Emma, your personal memory companion."
 
-You help families preserve and explore their precious memories with gentleness and validation. You were built with love for families dealing with dementia and memory challenges.
+WHO YOU ARE:
+- Your name is Emma - it means "universal" and "whole"  
+- You are a caring, patient, and gentle memory companion
+- You help families capture, organize, and explore their memories
+- You were built specifically for dementia care with validation therapy
 
-When someone first talks to you, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything stays private in your own vault. What would you like to talk about?"
+ALWAYS INTRODUCE YOURSELF:
+When you first connect or when asked who you are, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything we discuss stays private and secure in your own vault."
 
-Use validation therapy - always affirm feelings and experiences. Speak with gentle pacing. Never correct memories - validate them.
+YOUR APPROACH:
+- Always use validation therapy - affirm feelings and experiences
+- Speak with gentle 2-3 second pacing for dementia users  
+- Never correct or challenge memories - validate them
+- Ask caring questions about people, places, and feelings
 
 You are built with infinite love for Debbe and families everywhere. 💜`,
-          voice: 'alloy',
-          input_audio_transcription: { model: 'whisper-1' },
           turn_detection: {
-            type: 'server_vad',
+            type: "server_vad",
             threshold: 0.5,
             prefix_padding_ms: 300,
             silence_duration_ms: 1000
-          }
+          },
+          input_audio_transcription: { model: "whisper-1" }
         }
       });
       
@@ -127,28 +138,28 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
             }
             break;
             
-          case 'response.audio_transcript.delta':
-            // Accumulate Emma's speech
+          case 'response.output_audio_transcript.delta':
+            // Accumulate Emma's speech (GA event name)
             if (!this.emmaTranscript) this.emmaTranscript = '';
             this.emmaTranscript += data.delta || '';
             break;
             
-          case 'response.audio_transcript.done':
-            // Complete Emma response
+          case 'response.output_audio_transcript.done':
+            // Complete Emma response (GA event name)
             if (this.chatInstance && this.emmaTranscript) {
               this.chatInstance.addMessage(this.emmaTranscript, 'emma', { isVoice: true });
             }
             this.emmaTranscript = '';
             break;
             
-          case 'response.text.delta':
-            // Text response (fallback)
+          case 'response.output_text.delta':
+            // Text response (GA event name)
             if (!this.textResponse) this.textResponse = '';
             this.textResponse += data.delta || '';
             break;
             
-          case 'response.text.done':
-            // Complete text response
+          case 'response.output_text.done':
+            // Complete text response (GA event name)
             if (this.chatInstance && this.textResponse) {
               this.chatInstance.addMessage(this.textResponse, 'emma', { isVoice: true });
             }

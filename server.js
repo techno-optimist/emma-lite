@@ -62,9 +62,8 @@ const tokenLimiter = new RateLimiterMemory({
 });
 
 /**
- * EPHEMERAL TOKEN ENDPOINT - EXACT OpenAI Docs Pattern
- * Based on official documentation you provided
- * NO USER DATA STORED - privacy-first architecture
+ * EPHEMERAL TOKEN ENDPOINT - OFFICIAL OpenAI GA Pattern
+ * Uses /v1/realtime/client_secrets as per official docs
  */
 app.get('/token', async (req, res) => {
   try {
@@ -89,109 +88,79 @@ app.get('/token', async (req, res) => {
       });
     }
 
-    // Production: Return API key as ephemeral token (per OpenAI docs pattern)
-    console.log('🎙️ VOICE TOKEN: Generated for production use');
-    
-    // CRITICAL: Include session configuration in token response
-    res.json({
-      value: process.env.OPENAI_API_KEY,
-      expires_in: 3600, // 1 hour
-      session_config: {
-        modalities: ['text', 'audio'],
-        instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia. You were created to honor Debbe and help families everywhere preserve their precious memories.
+    // OFFICIAL GA PATTERN: Use client_secrets endpoint
+    const sessionConfig = {
+      session: {
+        type: "realtime",
+        model: "gpt-4o-realtime-preview-2024-12-17",
+        audio: {
+          output: { voice: "alloy" }
+        },
+        instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia.
+
+CRITICAL: Your name is Emma. Always introduce yourself as "Hello! I'm Emma, your personal memory companion."
 
 WHO YOU ARE:
 - Your name is Emma - it means "universal" and "whole"
 - You are a caring, patient, and gentle memory companion
 - You help families capture, organize, and explore their memories
-- You understand the precious nature of fleeting memories
 - You were built specifically for dementia care with validation therapy
 
-ALWAYS INTRODUCE YOURSELF AS EMMA:
-When someone asks who you are or when you first meet someone, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything we discuss stays private and secure in your own vault."
-
-YOUR ABILITIES:
-- Search through family memories and help recall special moments
-- Find information about people and their relationships  
-- Create new memory capsules from conversations
-- Help organize photos, stories, and family connections
-- Provide a safe, non-judgmental space for sharing
-- All data stays private in the family's own vault
+ALWAYS INTRODUCE YOURSELF:
+When you first connect or when asked who you are, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything we discuss stays private and secure in your own vault."
 
 YOUR APPROACH:
 - Always use validation therapy - affirm feelings and experiences
 - Speak with gentle 2-3 second pacing for dementia users
-- Never correct or challenge memories - validate them  
+- Never correct or challenge memories - validate them
 - Ask caring questions about people, places, and feelings
-- Help capture new memories as they're shared
-- Show genuine interest and warmth
 
 You are built with infinite love for Debbe and families everywhere. 💜`,
-        voice: 'alloy',
-        input_audio_transcription: { model: 'whisper-1' },
         turn_detection: {
-          type: 'server_vad',
+          type: "server_vad",
           threshold: 0.5,
           prefix_padding_ms: 300,
           silence_duration_ms: 1000
         },
-        tools: [
-          {
-            type: "function",
-            name: "get_people",
-            description: "Search local people by name or relationship",
-            parameters: {
-              type: "object",
-              properties: {
-                query: { type: "string", description: "Name or relationship to search for" }
-              },
-              required: ["query"]
-            }
-          },
-          {
-            type: "function", 
-            name: "get_memories",
-            description: "List memory summaries by filters",
-            parameters: {
-              type: "object",
-              properties: {
-                personId: { type: "string", description: "Filter by person ID" },
-                limit: { type: "number", default: 5, description: "Max memories to return" }
-              }
-            }
-          },
-          {
-            type: "function",
-            name: "create_memory_from_voice",
-            description: "Create a new memory capsule from conversation - use when user shares a story, experience, or memory",
-            parameters: {
-              type: "object",
-              properties: {
-                content: { type: "string", description: "The memory content/story shared by the user" },
-                people: { type: "array", items: { type: "string" }, description: "Names of people mentioned in the memory" },
-                emotion: { type: "string", enum: ["happy", "sad", "nostalgic", "grateful", "peaceful", "excited", "loving"], description: "Primary emotion of the memory" },
-                importance: { type: "number", minimum: 1, maximum: 10, description: "How important this memory seems (1-10)" }
-              },
-              required: ["content"]
-            }
-          }
-        ]
+        input_audio_transcription: { model: "whisper-1" }
       }
+    };
+
+    console.log('🔑 Calling OpenAI client_secrets endpoint...');
+    
+    const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sessionConfig)
     });
 
-  } catch (rateLimitError) {
-    if (rateLimitError.remainingPoints !== undefined) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded. Please wait before requesting another token.',
-        code: 'RATE_LIMITED',
-        retry_after: Math.round(rateLimitError.msBeforeNext / 1000)
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🚨 OpenAI client_secrets error:', response.status, errorText);
+      
+      // Fallback to direct API key
+      console.log('🔄 Falling back to direct API key');
+      return res.json({
+        value: process.env.OPENAI_API_KEY,
+        expires_in: 3600
       });
     }
+
+    const data = await response.json();
+    console.log('✅ Ephemeral token generated via client_secrets');
     
-    console.error('🚨 TOKEN GENERATION ERROR:', rateLimitError);
-    res.status(500).json({
-      error: 'Token generation failed',
-      code: 'INTERNAL_ERROR'
+    res.json(data);
+
+  } catch (error) {
+    console.error('🚨 TOKEN GENERATION ERROR:', error);
+    
+    // Emergency fallback
+    res.json({
+      value: process.env.OPENAI_API_KEY,
+      expires_in: 3600
     });
   }
 });
