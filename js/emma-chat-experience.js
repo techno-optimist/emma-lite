@@ -170,8 +170,10 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
-      // Initialize Emma's Realtime Voice system
-      if (typeof EmmaRealtimeVoice !== 'undefined') {
+      // Initialize Emma's Voice system (Simple approach first)
+      if (typeof EmmaSimpleVoice !== 'undefined') {
+        this.emmaVoice = new EmmaSimpleVoice();
+      } else if (typeof EmmaRealtimeVoice !== 'undefined') {
         this.emmaVoice = new EmmaRealtimeVoice({
           wakeWord: 'Emma',
           pacing: 2500,
