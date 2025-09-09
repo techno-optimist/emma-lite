@@ -120,14 +120,7 @@ class EmmaRealtimeVoice {
         ? 'http://localhost:3001' 
         : 'https://emma-voice-backend.onrender.com';
         
-      const tokenResponse = await fetch(`${backendUrl}/api/realtime/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scope: 'voice',
-          model: 'gpt-4o-realtime-preview-2024-12-17'
-        })
-      });
+      const tokenResponse = await fetch(`${backendUrl}/token`);
 
       if (!tokenResponse.ok) {
         const error = await tokenResponse.json();

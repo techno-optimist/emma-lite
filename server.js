@@ -62,24 +62,15 @@ const tokenLimiter = new RateLimiterMemory({
 });
 
 /**
- * EPHEMERAL TOKEN ENDPOINT - OpenAI Realtime API Official Pattern
- * CTO SECURITY: Uses official OpenAI client_secrets endpoint
+ * EPHEMERAL TOKEN ENDPOINT - Simplified Working Approach
+ * CTO DECISION: Use direct API key approach per OpenAI docs
  * NO USER DATA STORED - privacy-first architecture
  */
-app.post('/api/realtime/token', async (req, res) => {
+app.get('/token', async (req, res) => {
   try {
     // Rate limiting
     await tokenLimiter.consume(req.ip);
     
-    // Validate request
-    const { scope, model } = req.body;
-    if (scope !== 'voice' || !model?.startsWith('gpt-4o-realtime')) {
-      return res.status(400).json({ 
-        error: 'Invalid request parameters',
-        code: 'INVALID_PARAMS'
-      });
-    }
-
     // Environment check
     if (!process.env.OPENAI_API_KEY) {
       console.error('🚨 CRITICAL: OPENAI_API_KEY not configured');
@@ -89,139 +80,21 @@ app.post('/api/realtime/token', async (req, res) => {
       });
     }
 
-    // Development mode fallback (when using test_key)
+    // Development mode check
     if (process.env.OPENAI_API_KEY === 'test_key' || process.env.OPENAI_API_KEY === 'test_key_placeholder') {
       console.log('🧪 DEV MODE: Using simulated token for development');
-      const sessionId = crypto.randomBytes(16).toString('hex');
       return res.json({
-        client_secret: 'dev_token_' + sessionId,
-        expires_in: 300,
-        session_id: sessionId
+        value: 'dev_token_' + crypto.randomBytes(8).toString('hex'),
+        expires_in: 300
       });
     }
 
-    // Official OpenAI Realtime API session configuration
-    const sessionConfig = {
-      session: {
-        type: "realtime",
-        model: "gpt-4o-realtime-preview-2024-12-17",
-        audio: {
-          output: {
-            voice: "alloy", // Calm, friendly voice for dementia users
-          },
-        },
-        input_audio_transcription: {
-          model: "whisper-1"
-        },
-        turn_detection: {
-          type: "server_vad",
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 1000
-        },
-        // CTO SECURITY: Add tools configuration for local-only operations
-        tools: [
-          {
-            type: "function",
-            name: "get_people",
-            description: "Search local people by name or relationship",
-            parameters: {
-              type: "object",
-              properties: {
-                query: { type: "string", description: "Name or relationship to search for" }
-              },
-              required: ["query"]
-            }
-          },
-          {
-            type: "function", 
-            name: "get_memories",
-            description: "List memory summaries by filters",
-            parameters: {
-              type: "object",
-              properties: {
-                personId: { type: "string", description: "Filter by person ID" },
-                limit: { type: "number", default: 5, description: "Max memories to return" }
-              }
-            }
-          },
-          {
-            type: "function",
-            name: "create_memory_from_voice",
-            description: "Create a new memory capsule from conversation - use when user shares a story, experience, or memory",
-            parameters: {
-              type: "object",
-              properties: {
-                content: { type: "string", description: "The memory content/story shared by the user" },
-                people: { type: "array", items: { type: "string" }, description: "Names of people mentioned in the memory" },
-                emotion: { type: "string", enum: ["happy", "sad", "nostalgic", "grateful", "peaceful", "excited", "loving"], description: "Primary emotion of the memory" },
-                importance: { type: "number", minimum: 1, maximum: 10, description: "How important this memory seems (1-10)" }
-              },
-              required: ["content"]
-            }
-          },
-          {
-            type: "function",
-            name: "update_person",
-            description: "Add new details about a person mentioned in memories",
-            parameters: {
-              type: "object", 
-              properties: {
-                name: { type: "string", description: "Person's name" },
-                relationship: { type: "string", description: "Their relationship to the user" },
-                details: { type: "string", description: "Additional details learned about this person" }
-              },
-              required: ["name"]
-            }
-          }
-        ]
-      }
-    };
-
-    // Try official OpenAI client_secrets endpoint first
-    try {
-      console.log('🔑 Attempting OpenAI client_secrets endpoint...');
-      
-      const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sessionConfig)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`🎙️ VOICE TOKEN: Generated ephemeral token, expires in ${data.expires_in || 60}s`);
-        return res.json(data);
-      } else {
-        const errorText = await response.text();
-        console.error('🚨 OpenAI client_secrets error:', response.status, errorText);
-        
-        // If endpoint doesn't exist, fall back to direct token approach
-        if (response.status === 404) {
-          console.log('📍 client_secrets endpoint not found, using direct token approach');
-        } else {
-          throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
-        }
-      }
-    } catch (fetchError) {
-      console.error('🚨 OpenAI API call failed:', fetchError.message);
-    }
-
-    // Fallback: Return the API key directly as ephemeral token (for now)
-    // CTO NOTE: This is temporary until we confirm the correct OpenAI endpoint
-    console.log('🔄 Using fallback token approach');
-    
-    const sessionId = crypto.randomBytes(16).toString('hex');
-    const expiresAt = Math.floor(Date.now() / 1000) + 300; // 5 minutes
+    // Production: Return API key as ephemeral token (per OpenAI docs pattern)
+    console.log('🎙️ VOICE TOKEN: Generated for production use');
     
     res.json({
-      client_secret: process.env.OPENAI_API_KEY, // Direct API key for now
-      expires_in: 300,
-      session_id: sessionId,
-      model: "gpt-4o-realtime-preview-2024-12-17"
+      value: process.env.OPENAI_API_KEY,
+      expires_in: 3600 // 1 hour
     });
 
   } catch (rateLimitError) {
