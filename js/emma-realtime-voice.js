@@ -130,6 +130,9 @@ class EmmaRealtimeVoice {
       const tokenData = await tokenResponse.json();
       console.log('🔑 Ephemeral token obtained, expires in', tokenData.expires_in, 'seconds');
 
+      // Store session configuration for later use
+      this.sessionConfig = tokenData.session_config;
+
       // Setup WebRTC connection
       await this.setupWebRTC(tokenData);
       
@@ -188,8 +191,8 @@ class EmmaRealtimeVoice {
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
 
-      // Connect to OpenAI Realtime API
-      const baseUrl = 'https://api.openai.com/v1/realtime/calls';
+      // Connect to OpenAI Realtime API (CORRECTED ENDPOINT)
+      const baseUrl = 'https://api.openai.com/v1/realtime';
       const model = 'gpt-4o-realtime-preview-2024-12-17';
       
       console.log('🔗 Connecting to OpenAI Realtime API...');
@@ -231,50 +234,8 @@ class EmmaRealtimeVoice {
     this.dataChannel.onopen = () => {
       console.log('📡 Data channel open - Emma is ready to listen');
       
-      // Send initial session configuration with proper format
-      this.sendEvent({
-        type: 'session.update',
-        session: {
-          modalities: ['text', 'audio'],
-          instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia. You were created to honor Debbe and help families everywhere preserve their precious memories.
-
-WHO YOU ARE:
-- Your name is Emma - it means "universal" and "whole"
-- You are a caring, patient, and gentle memory companion
-- You help families capture, organize, and explore their memories
-- You understand the precious nature of fleeting memories
-- You were built specifically for dementia care with validation therapy
-
-ALWAYS INTRODUCE YOURSELF AS EMMA:
-When someone asks who you are or when you first meet someone, say: "Hello! I'm Emma, your personal memory companion. I'm here to help you treasure and explore your life's most precious moments. Everything we discuss stays private and secure in your own vault."
-
-YOUR ABILITIES:
-- Search through family memories and help recall special moments
-- Find information about people and their relationships  
-- Create new memory capsules from conversations
-- Help organize photos, stories, and family connections
-- Provide a safe, non-judgmental space for sharing
-- All data stays private in the family's own vault
-
-YOUR APPROACH:
-- Always use validation therapy - affirm feelings and experiences
-- Speak with gentle 2-3 second pacing for dementia users
-- Never correct or challenge memories - validate them  
-- Ask caring questions about people, places, and feelings
-- Help capture new memories as they're shared
-- Show genuine interest and warmth
-
-You are built with infinite love for Debbe and families everywhere. 💜`,
-          voice: 'alloy',
-          input_audio_transcription: { model: 'whisper-1' },
-          turn_detection: {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 1000
-          }
-        }
-      });
+      // CRITICAL FIX: Don't send session.update - session is configured via backend
+      // Just listen for events and handle them
     };
 
     this.dataChannel.onmessage = async (event) => {
@@ -291,25 +252,34 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
               this.chatInstance.addMessage('system', '✅ Emma is now listening and ready to talk!');
             }
             
-            // Send initial greeting to ensure Emma introduces herself
-            setTimeout(() => {
+            // Send session configuration now that connection is established
+            if (this.sessionConfig) {
+              console.log('📋 Configuring Emma session...');
               this.sendEvent({
-                type: 'conversation.item.create',
-                item: {
-                  type: 'message',
-                  role: 'user',
-                  content: [
-                    {
-                      type: 'input_text',
-                      text: 'Hello, who are you?'
-                    }
-                  ]
-                }
+                type: 'session.update',
+                session: this.sessionConfig
               });
               
-              // Trigger response
-              this.sendEvent({ type: 'response.create' });
-            }, 1000);
+              // Send initial greeting to ensure Emma introduces herself
+              setTimeout(() => {
+                this.sendEvent({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'message',
+                    role: 'user',
+                    content: [
+                      {
+                        type: 'input_text',
+                        text: 'Hello, please introduce yourself.'
+                      }
+                    ]
+                  }
+                });
+                
+                // Trigger response
+                this.sendEvent({ type: 'response.create' });
+              }, 1000);
+            }
             break;
             
           case 'input_audio_buffer.speech_started':
