@@ -170,19 +170,39 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
-      // Initialize Emma's Production Voice System
-      if (typeof EmmaVoiceProduction !== 'undefined') {
-        this.emmaVoice = new EmmaVoiceProduction({
+      // Load OpenAI Agents SDK first
+      const sdkLoaded = await window.openaiAgentsLoader.loadSDK();
+      
+      if (!sdkLoaded) {
+        console.warn('⚠️ OpenAI Agents SDK not available');
+        this.voiceButton.style.opacity = '0.5';
+        this.voiceButton.title = 'Voice SDK not available';
+        return;
+      }
+
+      // Initialize Emma as RealtimeAgent
+      if (typeof EmmaRealtimeAgent !== 'undefined') {
+        this.emmaVoice = new EmmaRealtimeAgent({
           voice: 'alloy',
           speed: 1.0,
           tone: 'caring',
           pacing: 2.5,
           validationMode: true
         });
+        
+        // Initialize Emma agent
+        const agentReady = await this.emmaVoice.initialize();
+        
+        if (!agentReady) {
+          console.warn('⚠️ Emma agent initialization failed');
+          this.voiceButton.style.opacity = '0.5';
+          this.voiceButton.title = 'Emma agent not available';
+          return;
+        }
       } else {
-        console.warn('⚠️ EmmaVoiceProduction not available');
+        console.warn('⚠️ EmmaRealtimeAgent not available');
         this.voiceButton.style.opacity = '0.5';
-        this.voiceButton.title = 'Voice system not available';
+        this.voiceButton.title = 'Emma agent not available';
         return;
       }
 
