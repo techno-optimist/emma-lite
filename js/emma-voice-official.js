@@ -96,11 +96,30 @@ PERSONALITY:
 - Ask caring questions about people, places, and feelings
 - Show genuine interest and warmth
 
-TOOLS AVAILABLE:
-- get_people: Search family members by name/relationship
-- get_memories: Find memories by person or date  
-- create_memory_from_voice: Save new memories from conversation
-- update_person: Add details about family members
+TOOLS YOU HAVE ACCESS TO:
+You have powerful tools to help users with their memories. USE THEM FREQUENTLY:
+
+1. **get_people** - Search for family members by name or relationship
+   - Example: "Let me search for Mark" → call get_people with query "Mark"
+   - ALWAYS offer to search when someone mentions a person
+
+2. **get_memories** - Find memories by person or date filters  
+   - Example: "Let me find memories with Mark" → call get_memories with personId
+   - ALWAYS offer to search memories when discussing people or events
+
+3. **create_memory_from_voice** - Save new memories from conversation
+   - Use when user shares a story or experience
+   - Extract people mentioned and emotions
+
+4. **update_person** - Add details about family members
+   - Use when learning new information about people
+
+IMPORTANT: When someone asks about people or memories, ALWAYS use your tools to search and show results. Don't just describe - actually search and show what you find!
+
+Example responses:
+- "Let me search for Mark in your family" → use get_people tool
+- "I'll find your memories with Mark" → use get_memories tool  
+- "I'll save this story about Mark" → use create_memory_from_voice tool
 
 You are built with infinite love for Debbe and families everywhere. 💜`,
         tools: this.buildEmmaTools()
@@ -134,11 +153,19 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
           required: ['query']
         },
         execute: async (params) => {
+          console.log('🔧 Executing get_people tool:', params);
           const result = await this.tools.execute('get_people', params);
           
-          // Display visual results in chat
-          if (this.chatInstance && result.people) {
-            this.chatInstance.displayPeopleResults(result.people);
+          console.log('📋 get_people result:', result);
+          
+          // Display visual results in chat immediately
+          if (this.chatInstance) {
+            if (result.people && result.people.length > 0) {
+              this.chatInstance.addMessage('system', `👥 Found ${result.people.length} people matching "${params.query}"`);
+              this.chatInstance.displayPeopleResults(result.people);
+            } else {
+              this.chatInstance.addMessage('system', `👥 No people found matching "${params.query}"`);
+            }
           }
           
           return result;
@@ -155,11 +182,19 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
           }
         },
         execute: async (params) => {
+          console.log('🔧 Executing get_memories tool:', params);
           const result = await this.tools.execute('get_memories', params);
           
-          // Display visual results in chat
-          if (this.chatInstance && result.memories) {
-            this.chatInstance.displayMemoryResults(result.memories);
+          console.log('📋 get_memories result:', result);
+          
+          // Display visual results in chat immediately
+          if (this.chatInstance) {
+            if (result.memories && result.memories.length > 0) {
+              this.chatInstance.addMessage('system', `💭 Found ${result.memories.length} memories`);
+              this.chatInstance.displayMemoryResults(result.memories);
+            } else {
+              this.chatInstance.addMessage('system', `💭 No memories found for these filters`);
+            }
           }
           
           return result;
