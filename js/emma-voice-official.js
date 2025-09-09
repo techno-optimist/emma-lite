@@ -27,7 +27,7 @@ class EmmaVoiceOfficial {
   }
 
   /**
-   * Load OpenAI Agents SDK bundle
+   * Load OpenAI Agents SDK bundle and check what it exposes
    */
   async loadSDKBundle() {
     return new Promise((resolve, reject) => {
@@ -35,6 +35,20 @@ class EmmaVoiceOfficial {
       script.src = 'https://cdn.jsdelivr.net/npm/@openai/agents-realtime@latest/dist/bundle/openai-realtime-agents.umd.js';
       script.onload = () => {
         console.log('✅ OpenAI Agents SDK bundle loaded');
+        
+        // Debug: Check what the bundle actually exposes
+        console.log('🔍 Window objects after load:', Object.keys(window).filter(k => k.toLowerCase().includes('openai')));
+        console.log('🔍 Available globals:', Object.keys(window).filter(k => k.includes('Agent') || k.includes('Realtime')));
+        
+        // Try different possible global names
+        if (window.OpenAIAgentsRealtime) {
+          window.OpenAIRealtimeAgents = window.OpenAIAgentsRealtime;
+        } else if (window.openaiAgentsRealtime) {
+          window.OpenAIRealtimeAgents = window.openaiAgentsRealtime;
+        } else if (window.RealtimeAgent) {
+          window.OpenAIRealtimeAgents = { RealtimeAgent: window.RealtimeAgent, RealtimeSession: window.RealtimeSession };
+        }
+        
         resolve();
       };
       script.onerror = () => {
