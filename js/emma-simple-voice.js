@@ -30,10 +30,10 @@ class EmmaSimpleVoice {
       
       console.log('🔑 Got token, connecting to Emma...');
       
-      // Connect to OpenAI Realtime API (BROWSER AUTH PATTERN)
-      // Browser WebSocket authentication via URL parameters
-      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17&authorization=Bearer%20${encodeURIComponent(tokenData.value)}`;
+      // Connect to OpenAI Realtime API (SIMPLE APPROACH)
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`;
       
+      // Create WebSocket without auth - send auth as first message
       this.websocket = new WebSocket(wsUrl);
       
       // Store token for reference
@@ -57,6 +57,12 @@ class EmmaSimpleVoice {
       if (this.chatInstance) {
         this.chatInstance.addMessage('system', '✅ Emma is connected and ready to talk!');
       }
+      
+      // Send authentication as first message
+      this.websocket.send(JSON.stringify({
+        type: 'auth',
+        token: this.apiToken
+      }));
       
       // Send session configuration (OFFICIAL GA FORMAT)
       this.send({
