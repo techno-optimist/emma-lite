@@ -242,24 +242,48 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
   }
 
   /**
-   * Setup session event handlers
+   * Setup session event handlers for real-time transcription
    */
   setupSessionHandlers() {
     if (!this.session) return;
 
-    // Handle transcription (if available)
-    this.session.on('user_speech_transcription', (transcript) => {
-      console.log('📝 User said:', transcript);
-      if (this.chatInstance) {
-        this.chatInstance.addMessage(transcript, 'user', { isVoice: true });
-      }
+    console.log('🎙️ Setting up Emma session event handlers...');
+
+    // Try multiple possible transcription event names
+    const transcriptionEvents = [
+      'user_speech_transcription',
+      'user_transcription', 
+      'input_transcription',
+      'user_audio_transcription',
+      'transcription'
+    ];
+
+    const emmaResponseEvents = [
+      'agent_speech_transcription',
+      'agent_transcription',
+      'output_transcription', 
+      'agent_audio_transcription',
+      'response_transcription'
+    ];
+
+    // Set up user transcription listeners
+    transcriptionEvents.forEach(eventName => {
+      this.session.on(eventName, (transcript) => {
+        console.log(`📝 User said (${eventName}):`, transcript);
+        if (this.chatInstance && transcript) {
+          this.chatInstance.addMessage(transcript, 'user', { isVoice: true });
+        }
+      });
     });
 
-    this.session.on('agent_speech_transcription', (transcript) => {
-      console.log('📝 Emma said:', transcript);
-      if (this.chatInstance) {
-        this.chatInstance.addMessage(transcript, 'emma', { isVoice: true });
-      }
+    // Set up Emma transcription listeners  
+    emmaResponseEvents.forEach(eventName => {
+      this.session.on(eventName, (transcript) => {
+        console.log(`📝 Emma said (${eventName}):`, transcript);
+        if (this.chatInstance && transcript) {
+          this.chatInstance.addMessage(transcript, 'emma', { isVoice: true });
+        }
+      });
     });
 
     // Handle session state changes
@@ -268,11 +292,33 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
       this.setState(state);
     });
 
+    // Handle tool calls and results
+    this.session.on('tool_call', (toolCall) => {
+      console.log('🔧 Emma tool call:', toolCall);
+      if (this.chatInstance) {
+        this.chatInstance.addMessage('system', `🔧 Emma is searching: ${toolCall.name}`);
+      }
+    });
+
+    this.session.on('tool_result', (result) => {
+      console.log('📋 Tool result:', result);
+      if (this.chatInstance) {
+        this.chatInstance.addMessage('system', `📋 Found results: ${JSON.stringify(result).substring(0, 100)}...`);
+      }
+    });
+
     // Handle errors
     this.session.on('error', (error) => {
       console.error('❌ Emma session error:', error);
       this.showError('Emma error', error.message);
     });
+
+    // Listen for ANY event to debug
+    this.session.on('*', (eventName, data) => {
+      console.log(`🔍 Emma event: ${eventName}`, data);
+    });
+
+    console.log('✅ Emma session event handlers configured');
   }
 
   /**
