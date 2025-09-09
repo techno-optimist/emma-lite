@@ -255,10 +255,13 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
 
       console.log('🔑 Got ephemeral token for Emma');
 
-      // Connect to session (EXACT documentation pattern)
-      // "Automatically connects your microphone and audio output"
+      // Connect to session with transcription config
       await this.session.connect({
-        apiKey: tokenData.value
+        apiKey: tokenData.value,
+        transcription: {
+          model: 'whisper-1',
+          enabled: true
+        }
       });
 
       this.isConnected = true;
@@ -275,6 +278,17 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
           this.chatInstance.addMessage('TEST: User speech would appear here', 'user', { isVoice: true });
           this.chatInstance.addMessage('TEST: Emma response would appear here', 'emma', { isVoice: true });
           this.chatInstance.addMessage('system', '🔍 DEBUG: Chat integration test complete');
+          
+          // Add tool demonstration
+          this.chatInstance.addMessage('system', '🔧 Emma is searching for people...');
+          setTimeout(() => {
+            this.chatInstance.addMessage('system', '👥 Found 1 people matching "Mark"');
+            // Simulate displayPeopleResults
+            this.chatInstance.addMessage('emma', 'I found Mark in your family! Let me show you:', {
+              type: 'people-results',
+              html: '<div class="people-grid"><div class="people-result"><div class="person-avatar">👤</div><div class="person-info"><div class="person-name">Mark</div><div class="person-relationship">Family</div></div></div></div>'
+            });
+          }, 1000);
         }, 3000);
       }
 
