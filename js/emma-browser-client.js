@@ -73,6 +73,11 @@ class EmmaBrowserClient {
           console.log('✅ Connected to Emma agent');
           this.isConnected = true;
           
+          // Notify chat of connection
+          if (this.chatInstance) {
+            this.chatInstance.addMessage('system', '🔗 Connected to Emma backend');
+          }
+          
           // Start Emma session
           this.sendToAgent({
             type: 'start_session',
@@ -113,6 +118,7 @@ class EmmaBrowserClient {
             this.setState('listening');
             if (this.chatInstance) {
               this.chatInstance.addMessage('system', '✅ Emma is ready to talk!');
+              this.chatInstance.addMessage('system', '🎤 Say something to Emma - transcription will appear here');
             }
             break;
             
