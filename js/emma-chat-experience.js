@@ -222,6 +222,9 @@ class EmmaChatExperience extends ExperiencePopup {
     // Add voice session toggle
     this.voiceButton.addEventListener('click', async () => {
       try {
+        // Debug what voice system we're actually using
+        this.addMessage('system', `🔍 Voice system: ${this.emmaVoice.constructor.name}`);
+        
         if (!this.emmaVoice.isConnected) {
           // Start voice conversation
           this.addMessage('system', '🎙️ Starting voice conversation with Emma...');
