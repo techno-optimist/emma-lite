@@ -170,16 +170,6 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
-      // Load OpenAI Agents SDK first
-      const sdkLoaded = await window.openaiAgentsLoader.loadSDK();
-      
-      if (!sdkLoaded) {
-        console.warn('⚠️ OpenAI Agents SDK not available');
-        this.voiceButton.style.opacity = '0.5';
-        this.voiceButton.title = 'Voice SDK not available';
-        return;
-      }
-
       // Initialize Emma Browser Client (connects to server-side agent)
       if (typeof EmmaBrowserClient !== 'undefined') {
         this.emmaVoice = new EmmaBrowserClient({
