@@ -138,7 +138,7 @@ class EmmaRealtimeVoice {
       
       this.isEnabled = true;
       this.setState('listening');
-      this.updateStatus('Listening... Say "Emma" to start');
+      this.updateStatus('Connected to Emma - ready to talk!');
       
       console.log('🎙️ Voice session active');
       
