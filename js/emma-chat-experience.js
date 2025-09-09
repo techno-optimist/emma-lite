@@ -224,6 +224,7 @@ class EmmaChatExperience extends ExperiencePopup {
       try {
         // Debug what voice system we're actually using
         this.addMessage('system', `🔍 Voice system: ${this.emmaVoice.constructor.name}`);
+        this.addMessage('system', `🔍 Available methods: ${Object.getOwnPropertyNames(Object.getPrototypeOf(this.emmaVoice)).join(', ')}`);
         
         if (!this.emmaVoice.isConnected) {
           // Start voice conversation
