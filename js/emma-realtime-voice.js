@@ -191,8 +191,8 @@ class EmmaRealtimeVoice {
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
 
-      // Connect to OpenAI Realtime API (CORRECTED ENDPOINT)
-      const baseUrl = 'https://api.openai.com/v1/realtime';
+      // Connect to OpenAI Realtime API (OFFICIAL ENDPOINT FROM DOCS)
+      const baseUrl = 'https://api.openai.com/v1/realtime/calls';
       const model = 'gpt-4o-realtime-preview-2024-12-17';
       
       console.log('🔗 Connecting to OpenAI Realtime API...');
@@ -252,34 +252,26 @@ class EmmaRealtimeVoice {
               this.chatInstance.addMessage('system', '✅ Emma is now listening and ready to talk!');
             }
             
-            // Send session configuration now that connection is established
-            if (this.sessionConfig) {
-              console.log('📋 Configuring Emma session...');
+            // CRITICAL: Session is configured via backend, not data channel
+            // Just send initial greeting to trigger Emma's introduction
+            setTimeout(() => {
               this.sendEvent({
-                type: 'session.update',
-                session: this.sessionConfig
+                type: 'conversation.item.create',
+                item: {
+                  type: 'message',
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'input_text',
+                      text: 'Hello, please introduce yourself.'
+                    }
+                  ]
+                }
               });
               
-              // Send initial greeting to ensure Emma introduces herself
-              setTimeout(() => {
-                this.sendEvent({
-                  type: 'conversation.item.create',
-                  item: {
-                    type: 'message',
-                    role: 'user',
-                    content: [
-                      {
-                        type: 'input_text',
-                        text: 'Hello, please introduce yourself.'
-                      }
-                    ]
-                  }
-                });
-                
-                // Trigger response
-                this.sendEvent({ type: 'response.create' });
-              }, 1000);
-            }
+              // Trigger response
+              this.sendEvent({ type: 'response.create' });
+            }, 1000);
             break;
             
           case 'input_audio_buffer.speech_started':

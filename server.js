@@ -62,8 +62,8 @@ const tokenLimiter = new RateLimiterMemory({
 });
 
 /**
- * EPHEMERAL TOKEN ENDPOINT - Simplified Working Approach
- * CTO DECISION: Use direct API key approach per OpenAI docs
+ * EPHEMERAL TOKEN ENDPOINT - EXACT OpenAI Docs Pattern
+ * Based on official documentation you provided
  * NO USER DATA STORED - privacy-first architecture
  */
 app.get('/token', async (req, res) => {
