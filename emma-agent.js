@@ -295,6 +295,43 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       try { this.session.on('response.transcript.done', onAgentText); } catch (_) {}
     }
 
+    // Ultra-broad event binding for SDK variations
+    this._agentTextBuffer = '';
+    const deltaEvents = [
+      'response.message.delta',
+      'response.output_text.delta',
+      'response.audio_transcript.delta'
+    ];
+    const doneEvents = [
+      'response.message.done',
+      'response.output_text.done',
+      'response.audio_transcript.done',
+      'response.done'
+    ];
+
+    for (const ev of deltaEvents) {
+      try {
+        this.session.on(ev, (payload) => {
+          const text = payload?.delta || payload?.text || payload || '';
+          if (typeof text === 'string' && text) {
+            this._agentTextBuffer += text;
+          }
+          this.sendToBrowser({ type: 'openai_event', name: ev });
+        });
+      } catch (_) {}
+    }
+    for (const ev of doneEvents) {
+      try {
+        this.session.on(ev, () => {
+          if (this._agentTextBuffer) {
+            onAgentText(this._agentTextBuffer);
+            this._agentTextBuffer = '';
+          }
+          this.sendToBrowser({ type: 'openai_event', name: ev });
+        });
+      } catch (_) {}
+    }
+
     // Handle session state changes
     this.session.on('state_change', (state) => {
       console.log('🎙️ Emma state:', state);
@@ -469,22 +506,18 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   async appendAudioChunk(base64Pcm16) {
     try {
       if (!this.session || !base64Pcm16) return;
-      // New SDKs accept Uint8Array PCM16 bytes; convert from base64
-      let appended = false;
-      try {
-        const bytes = Buffer.from(base64Pcm16, 'base64');
-        // Try low-level writer
-        if (this.session && this.session.writeInputAudio) {
-          await this.session.writeInputAudio(bytes);
-          appended = true;
-        }
-      } catch (_) {}
-      if (!appended) {
+      // Try the currently published SDK method: addInputAudio(buffer)
+      const bytes = Buffer.from(base64Pcm16, 'base64');
+      if (this.session.addInputAudio) {
+        await this.session.addInputAudio(bytes);
+      } else if (this.session.writeInputAudio) {
+        await this.session.writeInputAudio(bytes);
+      } else {
         await this.safeCall([
-          'appendInputAudio',            // SDK alias
-          'inputAudioAppend',            // possible alias
-          'inputAudioBufferAppend',      // event-style alias
-          'append_input_audio'           // snake-case alias
+          'appendInputAudio',
+          'inputAudioAppend',
+          'inputAudioBufferAppend',
+          'append_input_audio'
         ], base64Pcm16);
       }
 
