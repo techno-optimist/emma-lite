@@ -244,10 +244,16 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       console.log('📡 Sending initial greeting to Emma...');
       
       // Send initial greeting
-      setTimeout(() => {
+      setTimeout(async () => {
         if (this.session && this.session.sendMessage) {
-          this.session.sendMessage('Hello, please introduce yourself as Emma.');
+          await this.session.sendMessage('Hello, please introduce yourself as Emma.');
           console.log('📤 Initial greeting sent to Emma');
+          
+          // Try to trigger response generation
+          if (this.session.approve) {
+            await this.session.approve();
+            console.log('📤 Response approved');
+          }
         } else {
           console.error('❌ Session or sendMessage not available');
         }
@@ -332,6 +338,13 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       if (!this.session || !text) return;
       if (this.session.sendMessage) {
         await this.session.sendMessage(text);
+        console.log('📤 User message sent:', text);
+        
+        // Try to trigger response generation
+        if (this.session.approve) {
+          await this.session.approve();
+          console.log('📤 Response approved for user message');
+        }
       } else if (this.session.createMessage) {
         await this.session.createMessage({ role: 'user', content: text });
       }
