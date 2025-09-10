@@ -222,13 +222,20 @@ class EmmaChatExperience extends ExperiencePopup {
     // Add voice session toggle
     this.voiceButton.addEventListener('click', async () => {
       try {
-        // Debug what voice system we're actually using
-        this.addMessage('system', `🔍 Voice system: ${this.emmaVoice.constructor.name}`);
-        this.addMessage('system', `🔍 Available methods: ${Object.getOwnPropertyNames(Object.getPrototypeOf(this.emmaVoice)).join(', ')}`);
+        // Force show debugging info in chat (bypass production logger)
+        this.addMessage('system', `🔍 Voice system: ${this.emmaVoice ? this.emmaVoice.constructor.name : 'undefined'}`);
+        this.addMessage('system', `🔍 EmmaBrowserClient available: ${typeof EmmaBrowserClient !== 'undefined'}`);
+        this.addMessage('system', `🔍 EmmaVoiceOfficial available: ${typeof EmmaVoiceOfficial !== 'undefined'}`);
+        
+        if (!this.emmaVoice) {
+          this.addMessage('system', '❌ No voice system initialized');
+          return;
+        }
         
         if (!this.emmaVoice.isConnected) {
           // Start voice conversation
           this.addMessage('system', '🎙️ Starting voice conversation with Emma...');
+          this.addMessage('system', `🔍 Using method: ${this.emmaVoice.startVoiceSession ? 'startVoiceSession' : 'unknown'}`);
           await this.emmaVoice.startVoiceSession();
           
           // Update button appearance
