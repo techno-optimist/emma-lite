@@ -23,6 +23,7 @@ class EmmaServerAgent {
     this.browserWs = null;
     this.isActive = false;
     this.lastSpokenText = '';
+    this._audioCommitTimer = null;
 
     this.initializeAgent();
     console.log('🎙️ Emma Server Agent initialized');
@@ -223,6 +224,12 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       // Setup session event handlers
       this.setupSessionHandlers();
 
+      // Debug: list session methods available to help choose correct APIs
+      try {
+        const funcs = Object.keys(this.session).filter(k => typeof this.session[k] === 'function');
+        console.log('🧰 RealtimeSession methods:', funcs.join(', '));
+      } catch (e) {}
+
       // Notify browser
       this.sendToBrowser({
         type: 'emma_ready',
@@ -267,8 +274,8 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       });
     });
 
-    // Handle Emma's speech transcription
-    this.session.on('agent_transcription', (transcript) => {
+    // Handle Emma's speech transcription (multiple event names across SDK builds)
+    const onAgentText = (transcript) => {
       console.log('📝 Emma said:', transcript);
       this.sendToBrowser({
         type: 'emma_transcription',
@@ -279,7 +286,12 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       this.synthesizeAndSendAudio(transcript).catch((e) => {
         console.warn('🔇 TTS synth warning:', e?.message || e);
       });
-    });
+    };
+    this.session.on('agent_transcription', onAgentText);
+    if (this.session.on) {
+      try { this.session.on('response.transcript.delta', onAgentText); } catch (_) {}
+      try { this.session.on('response.transcript.done', onAgentText); } catch (_) {}
+    }
 
     // Handle session state changes
     this.session.on('state_change', (state) => {
@@ -455,12 +467,54 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   async appendAudioChunk(base64Pcm16) {
     try {
       if (!this.session || !base64Pcm16) return;
-      if (this.session.appendInputAudio) {
-        await this.session.appendInputAudio(base64Pcm16);
-      }
+      await this.safeCall([
+        'appendInputAudio',            // SDK alias
+        'inputAudioAppend',            // possible alias
+        'inputAudioBufferAppend',      // event-style alias
+        'append_input_audio'           // snake-case alias
+      ], base64Pcm16);
+
+      // Debounce commit + response after brief inactivity
+      clearTimeout(this._audioCommitTimer);
+      this._audioCommitTimer = setTimeout(() => {
+        this.commitAndRespond().catch(() => {});
+      }, 600);
     } catch (error) {
       console.warn('🔇 appendAudioChunk error:', error?.message || error);
     }
+  }
+
+  async commitAndRespond() {
+    try {
+      if (!this.session) return;
+      await this.safeCall([
+        'commitInputAudio',
+        'inputAudioCommit',
+        'inputAudioBufferCommit',
+        'commit_input_audio'
+      ]);
+
+      await this.safeCall([
+        'createResponse',
+        'responseCreate',
+        'respond',
+        'create_response'
+      ]);
+    } catch (error) {
+      console.warn('🔇 commitAndRespond error:', error?.message || error);
+    }
+  }
+
+  async safeCall(names, ...args) {
+    for (const n of names) {
+      const fn = this.session && this.session[n];
+      if (typeof fn === 'function') {
+        try {
+          return await fn.apply(this.session, args);
+        } catch (e) {}
+      }
+    }
+    throw new Error(`No matching session method for: ${names.join(', ')}`);
   }
 }
 
