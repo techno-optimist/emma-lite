@@ -22,6 +22,7 @@ class EmmaServerAgent {
     this.session = null;
     this.browserWs = null;
     this.isActive = false;
+    this.lastSpokenText = '';
 
     this.initializeAgent();
     console.log('🎙️ Emma Server Agent initialized');
@@ -273,6 +274,11 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         type: 'emma_transcription',
         transcript: transcript
       });
+
+      // Synthesize OpenAI voice audio and send to browser (debounced)
+      this.synthesizeAndSendAudio(transcript).catch((e) => {
+        console.warn('🔇 TTS synth warning:', e?.message || e);
+      });
     });
 
     // Handle session state changes
@@ -312,6 +318,53 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       }
     } catch (error) {
       console.error('❌ Failed to send user text:', error);
+    }
+  }
+
+  /**
+   * Server-side: Use OpenAI audio TTS for high-quality voice
+   * Fall back silently if not available
+   */
+  async synthesizeAndSendAudio(text) {
+    try {
+      if (!text || text === this.lastSpokenText) return;
+      this.lastSpokenText = text;
+
+      // Prefer the realtime session's own audio if provided; otherwise, use TTS REST
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) return;
+
+      // Use OpenAI TTS endpoint
+      const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini-tts',
+          voice: this.options.voice || 'alloy',
+          input: text,
+          format: 'mp3'
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(err || 'TTS synthesis failed');
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+
+      this.sendToBrowser({
+        type: 'emma_audio',
+        encoding: 'base64/mp3',
+        audio: base64Audio
+      });
+
+    } catch (error) {
+      console.warn('🔇 Audio synthesis error:', error?.message || error);
     }
   }
 

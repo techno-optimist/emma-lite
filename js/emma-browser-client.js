@@ -240,6 +240,19 @@ class EmmaBrowserClient {
               this.speak(message.transcript);
             }
             break;
+
+          case 'emma_audio':
+            // High-quality server-synthesized audio (mp3 base64)
+            if (message.audio && message.encoding === 'base64/mp3') {
+              try {
+                const audioUrl = `data:audio/mp3;base64,${message.audio}`;
+                const audio = new Audio(audioUrl);
+                await audio.play();
+              } catch (e) {
+                console.warn('🔇 Failed to play Emma audio:', e?.message || e);
+              }
+            }
+            break;
             
           case 'state_change':
             this.setState(message.state);
