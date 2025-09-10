@@ -243,6 +243,8 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         if (this.session && this.session.sendMessage) {
           this.session.sendMessage('Hello, please introduce yourself as Emma.');
           console.log('📤 Initial greeting sent to Emma');
+          // Ensure a response is produced
+          this.createResponseSafe().catch(() => {});
         } else {
           console.error('❌ Session or sendMessage not available');
         }
@@ -467,12 +469,24 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   async appendAudioChunk(base64Pcm16) {
     try {
       if (!this.session || !base64Pcm16) return;
-      await this.safeCall([
-        'appendInputAudio',            // SDK alias
-        'inputAudioAppend',            // possible alias
-        'inputAudioBufferAppend',      // event-style alias
-        'append_input_audio'           // snake-case alias
-      ], base64Pcm16);
+      // New SDKs accept Uint8Array PCM16 bytes; convert from base64
+      let appended = false;
+      try {
+        const bytes = Buffer.from(base64Pcm16, 'base64');
+        // Try low-level writer
+        if (this.session && this.session.writeInputAudio) {
+          await this.session.writeInputAudio(bytes);
+          appended = true;
+        }
+      } catch (_) {}
+      if (!appended) {
+        await this.safeCall([
+          'appendInputAudio',            // SDK alias
+          'inputAudioAppend',            // possible alias
+          'inputAudioBufferAppend',      // event-style alias
+          'append_input_audio'           // snake-case alias
+        ], base64Pcm16);
+      }
 
       // Debounce commit + response after brief inactivity
       clearTimeout(this._audioCommitTimer);
@@ -487,19 +501,8 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   async commitAndRespond() {
     try {
       if (!this.session) return;
-      await this.safeCall([
-        'commitInputAudio',
-        'inputAudioCommit',
-        'inputAudioBufferCommit',
-        'commit_input_audio'
-      ]);
-
-      await this.safeCall([
-        'createResponse',
-        'responseCreate',
-        'respond',
-        'create_response'
-      ]);
+      await this.commitInputAudioSafe();
+      await this.createResponseSafe();
     } catch (error) {
       console.warn('🔇 commitAndRespond error:', error?.message || error);
     }
@@ -515,6 +518,32 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       }
     }
     throw new Error(`No matching session method for: ${names.join(', ')}`);
+  }
+
+  async commitInputAudioSafe() {
+    try {
+      return await this.safeCall([
+        'commitInputAudio',
+        'inputAudioCommit',
+        'inputAudioBufferCommit',
+        'commit_input_audio'
+      ]);
+    } catch (e) {
+      // Some SDK builds auto-commit; ignore
+    }
+  }
+
+  async createResponseSafe() {
+    try {
+      return await this.safeCall([
+        'createResponse',
+        'responseCreate',
+        'respond',
+        'create_response'
+      ]);
+    } catch (e) {
+      // Some SDK builds auto-respond; ignore
+    }
   }
 }
 
