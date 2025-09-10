@@ -2118,6 +2118,18 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   addMessage(content, sender, options = {}) {
+    // Defensive argument handling: many call sites mistakenly pass (sender, content).
+    // Auto-correct if the first arg looks like a sender label and the second does not.
+    try {
+      const validSenders = ['system', 'emma', 'user'];
+      if (typeof content === 'string' && validSenders.includes(content) && (typeof sender !== 'string' || !validSenders.includes(sender))) {
+        const originalContent = content;
+        content = sender;
+        sender = originalContent;
+      }
+    } catch (e) {
+      // If anything goes wrong, fall through without swapping
+    }
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
