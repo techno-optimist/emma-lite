@@ -23,7 +23,7 @@ class EmmaServerAgent {
     this.browserWs = null;
     this.isActive = false;
     this.lastSpokenText = '';
-    this._audioCommitTimer = null;
+    this._lastAudioError = null;
 
     this.initializeAgent();
     console.log('🎙️ Emma Server Agent initialized');
@@ -514,77 +514,19 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
    */
   async appendAudioChunk(base64Pcm16) {
     try {
-      if (!this.session || !base64Pcm16) return;
-      // Try the currently published SDK method: addInputAudio(buffer)
-      const bytes = Buffer.from(base64Pcm16, 'base64');
-      if (this.session.addInputAudio) {
-        await this.session.addInputAudio(bytes);
-      } else if (this.session.writeInputAudio) {
-        await this.session.writeInputAudio(bytes);
-      } else {
-        await this.safeCall([
-          'appendInputAudio',
-          'inputAudioAppend',
-          'inputAudioBufferAppend',
-          'append_input_audio'
-        ], base64Pcm16);
+      if (!this.session || !this.session.sendAudio || !base64Pcm16) {
+        return; // Silently fail if method doesn't exist, to avoid spam
       }
+      
+      const audioBuffer = Buffer.from(base64Pcm16, 'base64');
+      await this.session.sendAudio(audioBuffer);
 
-      // Debounce commit + response after brief inactivity
-      clearTimeout(this._audioCommitTimer);
-      this._audioCommitTimer = setTimeout(() => {
-        this.commitAndRespond().catch(() => {});
-      }, 600);
     } catch (error) {
-      console.warn('🔇 appendAudioChunk error:', error?.message || error);
-    }
-  }
-
-  async commitAndRespond() {
-    try {
-      if (!this.session) return;
-      await this.commitInputAudioSafe();
-      await this.createResponseSafe();
-    } catch (error) {
-      console.warn('🔇 commitAndRespond error:', error?.message || error);
-    }
-  }
-
-  async safeCall(names, ...args) {
-    for (const n of names) {
-      const fn = this.session && this.session[n];
-      if (typeof fn === 'function') {
-        try {
-          return await fn.apply(this.session, args);
-        } catch (e) {}
+      // Log the error but don't spam the console if it's the same method error
+      if (error.message !== this._lastAudioError) {
+        console.warn('🔇 sendAudio error:', error?.message || error);
+        this._lastAudioError = error.message;
       }
-    }
-    throw new Error(`No matching session method for: ${names.join(', ')}`);
-  }
-
-  async commitInputAudioSafe() {
-    try {
-      return await this.safeCall([
-        'commitInputAudio',
-        'inputAudioCommit',
-        'inputAudioBufferCommit',
-        'commit_input_audio'
-      ]);
-    } catch (e) {
-      // Some SDK builds auto-commit; ignore
-    }
-  }
-
-  async createResponseSafe() {
-    try {
-      return await this.safeCall([
-        'createResponse',
-        'responseCreate',
-        'respond',
-        'create_response'
-      ]);
-    } catch (e) {
-      // Some SDK builds auto-respond; ignore
     }
   }
 }
