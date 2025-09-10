@@ -226,9 +226,14 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
 
       // Debug: list session methods available to help choose correct APIs
       try {
-        const funcs = Object.keys(this.session).filter(k => typeof this.session[k] === 'function');
-        console.log('🧰 RealtimeSession methods:', funcs.join(', '));
-      } catch (e) {}
+        const proto = Object.getPrototypeOf(this.session);
+        const ownKeys = Object.getOwnPropertyNames(this.session);
+        const protoKeys = proto ? Object.getOwnPropertyNames(proto) : [];
+        console.log('🧰 RealtimeSession Own Keys:', ownKeys.join(', '));
+        console.log('🧰 RealtimeSession Proto Keys:', protoKeys.join(', '));
+      } catch (e) {
+        console.error('Error inspecting session object:', e);
+      }
 
       // Notify browser
       this.sendToBrowser({
@@ -469,7 +474,11 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       this.isActive = false;
       
       if (this.session) {
-        await this.session.disconnect();
+        if (this.session.close) {
+          await this.session.close();
+        } else if (this.session.disconnect) {
+          await this.session.disconnect(); // Fallback
+        }
         this.session = null;
       }
 
