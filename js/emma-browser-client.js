@@ -101,14 +101,27 @@ class EmmaBrowserClient {
             }
             if (this.buffer.length >= 24000) {
               const pcm16 = new Int16Array(this.buffer);
+              // Convert to base64 without btoa (not available in worklet)
               const bytes = new Uint8Array(pcm16.buffer);
-              let binary = '';
-              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-              const b64 = btoa(binary);
-              this.port.postMessage({ type: 'chunk', data: b64 });
+              const base64 = this.toBase64(bytes);
+              this.port.postMessage({ type: 'chunk', data: base64 });
               this.buffer = [];
             }
             return true;
+          }
+          toBase64(bytes) {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+            let out = '';
+            let i;
+            for (i = 0; i + 2 < bytes.length; i += 3) {
+              const n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+              out += alphabet[(n >> 18) & 63] + alphabet[(n >> 12) & 63] + alphabet[(n >> 6) & 63] + alphabet[n & 63];
+            }
+            if (i < bytes.length) {
+              let n = (bytes[i] << 16) | ((i + 1 < bytes.length ? bytes[i + 1] : 0) << 8);
+              out += alphabet[(n >> 18) & 63] + alphabet[(n >> 12) & 63] + (i + 1 < bytes.length ? alphabet[(n >> 6) & 63] : '=') + '=';
+            }
+            return out;
           }
         }
         registerProcessor('emma-pcm', EmmaPcmProcessor);
@@ -212,20 +225,25 @@ class EmmaBrowserClient {
       this.recognition.onstart = () => {
         this.isListening = true;
         this.setState('listening');
-        if (this.chatInstance) {
+        if (this.chatInstance && !this._micAnnounced) {
+          this._micAnnounced = true;
           this.chatInstance.addMessage('system', '🎤 Mic is on');
         }
       };
 
       this.recognition.onerror = (e) => {
         console.warn('🎤 Recognition error:', e.error);
+        // Do not spam restarts on network/service errors
+        if (e && (e.error === 'network' || e.error === 'service-not-allowed')) {
+          this._disableRecognition = true;
+        }
       };
 
       this.recognition.onend = () => {
         this.isListening = false;
-        // Restart automatically during active session
-        if (this.isConnected) {
-          setTimeout(() => this.recognition && this.recognition.start(), 250);
+        // Restart automatically during active session unless disabled
+        if (this.isConnected && !this._disableRecognition) {
+          setTimeout(() => this.recognition && this.recognition.start(), 600);
         }
       };
 
