@@ -248,8 +248,6 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         if (this.session && this.session.sendMessage) {
           this.session.sendMessage('Hello, please introduce yourself as Emma.');
           console.log('📤 Initial greeting sent to Emma');
-          // Ensure a response is produced
-          this.createResponseSafe().catch(() => {});
         } else {
           console.error('❌ Session or sendMessage not available');
         }
