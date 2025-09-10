@@ -270,78 +270,22 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   setupSessionHandlers() {
     if (!this.session) return;
 
-    // Handle user speech transcription
-    this.session.on('user_transcription', (transcript) => {
-      console.log('📝 User said:', transcript);
-      this.sendToBrowser({
-        type: 'user_transcription',
-        transcript: transcript
-      });
-    });
-
-    // Handle Emma's speech transcription (multiple event names across SDK builds)
-    const onAgentText = (transcript) => {
-      console.log('📝 Emma said:', transcript);
-      this.sendToBrowser({
-        type: 'emma_transcription',
-        transcript: transcript
-      });
-
-      // Synthesize OpenAI voice audio and send to browser (debounced)
-      this.synthesizeAndSendAudio(transcript).catch((e) => {
-        console.warn('🔇 TTS synth warning:', e?.message || e);
-      });
-    };
-    this.session.on('agent_transcription', onAgentText);
-    if (this.session.on) {
-      try { this.session.on('response.transcript.delta', onAgentText); } catch (_) {}
-      try { this.session.on('response.transcript.done', onAgentText); } catch (_) {}
-    }
-
-    // Ultra-broad event binding for SDK variations
-    this._agentTextBuffer = '';
-    const deltaEvents = [
-      'response.message.delta',
-      'response.output_text.delta',
-      'response.audio_transcript.delta'
-    ];
-    const doneEvents = [
-      'response.message.done',
-      'response.output_text.done',
-      'response.audio_transcript.done',
-      'response.done'
-    ];
-
-    for (const ev of deltaEvents) {
-      try {
-        this.session.on(ev, (payload) => {
-          const text = payload?.delta || payload?.text || payload || '';
-          if (typeof text === 'string' && text) {
-            this._agentTextBuffer += text;
-          }
-          this.sendToBrowser({ type: 'openai_event', name: ev });
-        });
-      } catch (_) {}
-    }
-    for (const ev of doneEvents) {
-      try {
-        this.session.on(ev, () => {
-          if (this._agentTextBuffer) {
-            onAgentText(this._agentTextBuffer);
-            this._agentTextBuffer = '';
-          }
-          this.sendToBrowser({ type: 'openai_event', name: ev });
-        });
-      } catch (_) {}
-    }
-
-    // Handle session state changes
-    this.session.on('state_change', (state) => {
-      console.log('🎙️ Emma state:', state);
-      this.sendToBrowser({
-        type: 'state_change',
-        state: state
-      });
+    // Listen for Emma's responses (text-based)
+    this.session.on('response', (response) => {
+      console.log('📝 Emma response:', response);
+      if (response && response.content) {
+        const text = typeof response.content === 'string' ? response.content : response.content[0]?.text || '';
+        if (text) {
+          this.sendToBrowser({
+            type: 'emma_transcription',
+            transcript: text
+          });
+          // Synthesize audio
+          this.synthesizeAndSendAudio(text).catch((e) => {
+            console.warn('🔇 TTS synth warning:', e?.message || e);
+          });
+        }
+      }
     });
 
     // Handle errors
@@ -353,10 +297,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       });
     });
 
-    // Handle tool calls (handled by agent tool handlers automatically)
-    this.session.on('tool_call', (toolCall) => {
-      console.log('🔧 Emma tool call:', toolCall.name);
-    });
+    console.log('✅ Event handlers set up for RealtimeAgent conversation');
   }
 
   /**
@@ -508,24 +449,12 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   }
 
   /**
-   * Append raw audio (PCM16 mono 24kHz base64) to the realtime session input buffer
+   * Handle audio chunks (now ignored - using text-based conversation)
    */
   async appendAudioChunk(base64Pcm16) {
-    try {
-      if (!this.session || !this.session.sendAudio || !base64Pcm16) {
-        return; // Silently fail if method doesn't exist, to avoid spam
-      }
-      
-      const audioBuffer = Buffer.from(base64Pcm16, 'base64');
-      await this.session.sendAudio(audioBuffer);
-
-    } catch (error) {
-      // Log the error but don't spam the console if it's the same method error
-      if (error.message !== this._lastAudioError) {
-        console.warn('🔇 sendAudio error:', error?.message || error);
-        this._lastAudioError = error.message;
-      }
-    }
+    // Audio chunks are now handled by browser Speech Recognition → text → sendUserText
+    // This method is kept for compatibility but does nothing
+    return;
   }
 }
 
