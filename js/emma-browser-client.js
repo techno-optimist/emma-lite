@@ -25,6 +25,11 @@ class EmmaBrowserClient {
     this.tools = new EmmaVoiceTools();
     
     console.log('🎙️ Emma Browser Client initialized');
+
+    // Web Speech: recognition (input) and synthesis (output)
+    this.recognition = null;
+    this.isListening = false;
+    this.synth = window.speechSynthesis || null;
   }
 
   /**
@@ -38,6 +43,20 @@ class EmmaBrowserClient {
       await this.connectToEmmaAgent();
       
       console.log('🎙️ Emma voice session started');
+
+      // Request mic permission (shows browser mic indicator)
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Immediately stop tracks; we use Web Speech for transcription
+          stream.getTracks().forEach(t => t.stop());
+        }
+      } catch (permErr) {
+        console.warn('⚠️ Mic permission not granted:', permErr?.message || permErr);
+      }
+
+      // Start speech recognition for user input
+      await this.startListening();
       
     } catch (error) {
       console.error('❌ Voice session failed:', error);
@@ -105,6 +124,88 @@ class EmmaBrowserClient {
   }
 
   /**
+   * Start browser speech recognition and forward text to Emma
+   */
+  async startListening() {
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn('⚠️ Web Speech Recognition not supported in this browser');
+        if (this.chatInstance) {
+          this.chatInstance.addMessage('system', '⚠️ Speech recognition not supported in this browser');
+        }
+        return;
+      }
+
+      this.recognition = new SpeechRecognition();
+      this.recognition.lang = (navigator.language || 'en-US');
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+
+      let partial = '';
+
+      this.recognition.onstart = () => {
+        this.isListening = true;
+        this.setState('listening');
+        if (this.chatInstance) {
+          this.chatInstance.addMessage('system', '🎤 Mic is on');
+        }
+      };
+
+      this.recognition.onerror = (e) => {
+        console.warn('🎤 Recognition error:', e.error);
+      };
+
+      this.recognition.onend = () => {
+        this.isListening = false;
+        // Restart automatically during active session
+        if (this.isConnected) {
+          setTimeout(() => this.recognition && this.recognition.start(), 250);
+        }
+      };
+
+      this.recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          const text = res[0].transcript.trim();
+          if (res.isFinal) {
+            // Show user transcript and send to Emma
+            if (this.chatInstance && text) {
+              this.chatInstance.addMessage(text, 'user', { isVoice: true });
+            }
+            this.sendToAgent({ type: 'user_text', text });
+            partial = '';
+          } else {
+            partial = text;
+          }
+        }
+      };
+
+      this.recognition.start();
+    } catch (error) {
+      console.warn('⚠️ Failed to start listening:', error?.message || error);
+    }
+  }
+
+  /**
+   * Speak text locally using Web Speech Synthesis
+   */
+  speak(text) {
+    try {
+      if (!this.synth) return;
+      // Stop any queued utterances for snappy response
+      this.synth.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = this.options.speed || 1.0;
+      utter.pitch = 1.0;
+      utter.lang = (navigator.language || 'en-US');
+      this.synth.speak(utter);
+    } catch (e) {
+      console.warn('🔇 Speech synthesis failed:', e?.message || e);
+    }
+  }
+
+  /**
    * Setup WebSocket event handlers
    */
   setupWebSocketHandlers() {
@@ -133,6 +234,10 @@ class EmmaBrowserClient {
             // Display Emma's speech in chat
             if (this.chatInstance && message.transcript) {
               this.chatInstance.addMessage(message.transcript, 'emma', { isVoice: true });
+            }
+            // Speak Emma's response locally (privacy-first)
+            if (message.transcript) {
+              this.speak(message.transcript);
             }
             break;
             

@@ -249,6 +249,13 @@ wss.on('connection', (browserWs, request) => {
           await emmaAgent.startSession(browserWs);
           break;
           
+        case 'user_text':
+          // Forward user text into the agent as a message
+          if (emmaAgent && emmaAgent.sendUserText) {
+            await emmaAgent.sendUserText(message.text || '');
+          }
+          break;
+
         case 'tool_result':
           // Handle tool results from browser
           if (message.call_id && message.result) {

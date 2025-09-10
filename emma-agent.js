@@ -300,6 +300,22 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   }
 
   /**
+   * Send user text into the agent conversation
+   */
+  async sendUserText(text) {
+    try {
+      if (!this.session || !text) return;
+      if (this.session.sendMessage) {
+        await this.session.sendMessage(text);
+      } else if (this.session.createMessage) {
+        await this.session.createMessage({ role: 'user', content: text });
+      }
+    } catch (error) {
+      console.error('❌ Failed to send user text:', error);
+    }
+  }
+
+  /**
    * Request tool execution from browser (privacy-first)
    */
   async requestBrowserTool(toolName, params) {
