@@ -270,11 +270,35 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   setupSessionHandlers() {
     if (!this.session) return;
 
-    // Listen for Emma's responses (text-based)
-    this.session.on('response', (response) => {
-      console.log('📝 Emma response:', response);
-      if (response && response.content) {
-        const text = typeof response.content === 'string' ? response.content : response.content[0]?.text || '';
+    // DEBUG: Log ALL events to find the correct one
+    const originalOn = this.session.on.bind(this.session);
+    this.session.on = (event, handler) => {
+      console.log(`🎧 Registering listener for event: ${event}`);
+      return originalOn(event, (...args) => {
+        console.log(`🔔 Event fired: ${event}`, args.length > 0 ? args[0] : '(no data)');
+        return handler(...args);
+      });
+    };
+
+    // Try multiple possible event names for agent responses
+    const responseEvents = ['response', 'message', 'agent_message', 'completion', 'output'];
+    
+    for (const eventName of responseEvents) {
+      this.session.on(eventName, (data) => {
+        console.log(`📝 Emma ${eventName}:`, data);
+        let text = '';
+        
+        // Extract text from various possible response formats
+        if (typeof data === 'string') {
+          text = data;
+        } else if (data && data.content) {
+          text = typeof data.content === 'string' ? data.content : data.content[0]?.text || '';
+        } else if (data && data.text) {
+          text = data.text;
+        } else if (data && data.message) {
+          text = data.message;
+        }
+        
         if (text) {
           this.sendToBrowser({
             type: 'emma_transcription',
@@ -285,8 +309,8 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
             console.warn('🔇 TTS synth warning:', e?.message || e);
           });
         }
-      }
-    });
+      });
+    }
 
     // Handle errors
     this.session.on('error', (error) => {
