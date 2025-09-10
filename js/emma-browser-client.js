@@ -30,6 +30,8 @@ class EmmaBrowserClient {
     this.recognition = null;
     this.isListening = false;
     this.synth = window.speechSynthesis || null;
+    this.audioWorkletNode = null;
+    this.audioContext = null;
   }
 
   /**
@@ -48,8 +50,8 @@ class EmmaBrowserClient {
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          // Immediately stop tracks; we use Web Speech for transcription
-          stream.getTracks().forEach(t => t.stop());
+          // Keep stream open for VU/meter and optional PCM streaming
+          await this.setupPcmStreaming(stream);
         }
       } catch (permErr) {
         console.warn('⚠️ Mic permission not granted:', permErr?.message || permErr);
@@ -62,6 +64,69 @@ class EmmaBrowserClient {
       console.error('❌ Voice session failed:', error);
       this.showError('Voice session failed', error.message);
       this.setState('idle');
+    }
+  }
+  /**
+   * Set up AudioWorklet to capture PCM16 mono 24kHz and send to server in chunks
+   */
+  async setupPcmStreaming(mediaStream) {
+    try {
+      if (!window.AudioWorkletNode || !window.AudioContext) return;
+      this.audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+      const source = this.audioContext.createMediaStreamSource(mediaStream);
+
+      // Inline processor via AudioWorklet
+      const processorCode = `
+        class EmmaPcmProcessor extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this.buffer = [];
+            this.downsampleFactor = sampleRate / 24000;
+            this.accumulator = 0;
+            this.sampleHold = 0;
+          }
+          process(inputs) {
+            const input = inputs[0];
+            if (!input || input.length === 0) return true;
+            const channel = input[0];
+            for (let i = 0; i < channel.length; i++) {
+              this.accumulator += 1;
+              // Simple downsample by hold (nearest) to 24kHz
+              if (this.accumulator >= this.downsampleFactor) {
+                this.accumulator -= this.downsampleFactor;
+                let s = Math.max(-1, Math.min(1, channel[i]));
+                const int16 = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                this.buffer.push(int16);
+              }
+            }
+            if (this.buffer.length >= 24000) {
+              const pcm16 = new Int16Array(this.buffer);
+              const bytes = new Uint8Array(pcm16.buffer);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+              const b64 = btoa(binary);
+              this.port.postMessage({ type: 'chunk', data: b64 });
+              this.buffer = [];
+            }
+            return true;
+          }
+        }
+        registerProcessor('emma-pcm', EmmaPcmProcessor);
+      `;
+
+      const blob = new Blob([processorCode], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+      await this.audioContext.audioWorklet.addModule(url);
+      this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'emma-pcm');
+      this.audioWorkletNode.port.onmessage = (e) => {
+        if (e.data?.type === 'chunk') {
+          this.sendToAgent({ type: 'user_audio_chunk', chunk: e.data.data });
+        }
+      };
+      source.connect(this.audioWorkletNode);
+      this.audioWorkletNode.connect(this.audioContext.destination);
+    } catch (e) {
+      console.warn('🎙️ PCM streaming not available:', e?.message || e);
     }
   }
 

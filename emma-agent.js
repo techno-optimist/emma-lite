@@ -448,6 +448,20 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       console.log('🎛️ Emma voice settings updated:', newSettings);
     }
   }
+
+  /**
+   * Append raw audio (PCM16 mono 24kHz base64) to the realtime session input buffer
+   */
+  async appendAudioChunk(base64Pcm16) {
+    try {
+      if (!this.session || !base64Pcm16) return;
+      if (this.session.appendInputAudio) {
+        await this.session.appendInputAudio(base64Pcm16);
+      }
+    } catch (error) {
+      console.warn('🔇 appendAudioChunk error:', error?.message || error);
+    }
+  }
 }
 
 module.exports = EmmaServerAgent;

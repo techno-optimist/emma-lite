@@ -256,6 +256,13 @@ wss.on('connection', (browserWs, request) => {
           }
           break;
 
+        case 'user_audio_chunk':
+          // Relay raw PCM16 chunks to the realtime session when enabled
+          if (emmaAgent && emmaAgent.appendAudioChunk) {
+            await emmaAgent.appendAudioChunk(message.chunk || '');
+          }
+          break;
+
         case 'tool_result':
           // Handle tool results from browser
           if (message.call_id && message.result) {
