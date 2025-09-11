@@ -245,11 +245,37 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       
       // Send initial greeting and trigger response
       setTimeout(async () => {
-        if (this.session && this.session.sendMessage) {
-          await this.session.sendMessage('Hello, please introduce yourself as Emma.');
-          console.log('📤 Initial greeting sent to Emma');
-        } else {
-          console.error('❌ Session or sendMessage not available');
+        try {
+          // Method 1: Try sendMessage
+          if (this.session.sendMessage) {
+            await this.session.sendMessage('Hello, please introduce yourself as Emma.');
+            console.log('📤 Method 1: sendMessage called');
+          }
+          
+          // Method 2: Try updateHistory to add user message and trigger response
+          if (this.session.updateHistory) {
+            await this.session.updateHistory([
+              { role: 'user', content: 'Hello, please introduce yourself as Emma.' }
+            ]);
+            console.log('📤 Method 2: updateHistory called');
+          }
+          
+          // Method 3: Check if there's a generate/run method
+          const possibleTriggers = ['generate', 'run', 'process', 'execute', 'respond'];
+          for (const method of possibleTriggers) {
+            if (typeof this.session[method] === 'function') {
+              try {
+                await this.session[method]();
+                console.log(`📤 Method 3: ${method}() called successfully`);
+                break;
+              } catch (e) {
+                console.log(`📤 Method 3: ${method}() failed:`, e.message);
+              }
+            }
+          }
+          
+        } catch (error) {
+          console.error('❌ Initial greeting error:', error);
         }
       }, 2000);
 
