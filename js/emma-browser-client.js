@@ -32,6 +32,7 @@ class EmmaBrowserClient {
     this.synth = window.speechSynthesis || null;
     this.audioWorkletNode = null;
     this.audioContext = null;
+    this.lastEmmaText = '';
   }
 
   /**
@@ -318,21 +319,25 @@ class EmmaBrowserClient {
             if (this.chatInstance && message.transcript) {
               this.chatInstance.addMessage(message.transcript, 'emma', { isVoice: true });
             }
-            // Speak Emma's response locally (privacy-first)
-            if (message.transcript) {
-              this.speak(message.transcript);
-            }
+            // Store text for fallback and wait for server audio
+            this.lastEmmaText = message.transcript;
+            console.log('📝 Emma transcript received, waiting for server audio...');
             break;
 
           case 'emma_audio':
-            // High-quality server-synthesized audio (mp3 base64)
+            // High-quality server-synthesized audio (mp3 base64) - PRIORITY PLAYBACK
             if (message.audio && message.encoding === 'base64/mp3') {
               try {
+                console.log('🎤 Playing OpenAI TTS audio (Alloy voice)');
                 const audioUrl = `data:audio/mp3;base64,${message.audio}`;
                 const audio = new Audio(audioUrl);
+                audio.volume = 0.9;
                 await audio.play();
+                console.log('✅ OpenAI TTS audio played successfully');
               } catch (e) {
-                console.warn('🔇 Failed to play Emma audio:', e?.message || e);
+                console.warn('🔇 Failed to play OpenAI audio, falling back to browser TTS:', e?.message || e);
+                // Fallback to local speech only if server audio fails
+                this.speak(this.lastEmmaText || 'I\'m having trouble with my voice right now.');
               }
             }
             break;
