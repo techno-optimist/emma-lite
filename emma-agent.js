@@ -374,9 +374,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       });
       
       // Synthesize audio
-      this.synthesizeAndSendAudio(emmaResponse).catch((e) => {
-        console.warn('🔇 TTS synth warning:', e?.message || e);
-      });
+      await this.synthesizeAndSendAudio(emmaResponse);
       
     } catch (error) {
       console.error('❌ Direct chat error:', error);
@@ -410,10 +408,10 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini-tts',
+          model: 'tts-1',
           voice: this.options.voice || 'alloy',
           input: text,
-          format: 'mp3'
+          response_format: 'mp3'
         })
       });
 
