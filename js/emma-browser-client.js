@@ -329,15 +329,25 @@ class EmmaBrowserClient {
             if (message.audio && message.encoding === 'base64/mp3') {
               try {
                 console.log('🎤 Playing OpenAI TTS audio (Alloy voice)');
+                
+                // Method 1: Try data URL
                 const audioUrl = `data:audio/mp3;base64,${message.audio}`;
-                const audio = new Audio(audioUrl);
+                const audio = new Audio();
                 audio.volume = 0.9;
+                
+                // Add error handling
+                audio.onerror = (e) => {
+                  console.warn('🔇 Data URL audio failed:', e);
+                  this.playAudioFallback(message.audio);
+                };
+                
+                audio.src = audioUrl;
                 await audio.play();
                 console.log('✅ OpenAI TTS audio played successfully');
+                
               } catch (e) {
-                console.warn('🔇 Failed to play OpenAI audio, falling back to browser TTS:', e?.message || e);
-                // Fallback to local speech only if server audio fails
-                this.speak(this.lastEmmaText || 'I\'m having trouble with my voice right now.');
+                console.warn('🔇 Primary audio playback failed:', e?.message || e);
+                this.playAudioFallback(message.audio);
               }
             }
             break;
@@ -552,6 +562,47 @@ class EmmaBrowserClient {
     }
     
     console.log('🎛️ Voice settings updated:', newSettings);
+  }
+
+  /**
+   * Fallback audio playback using Blob URL (CSP-friendly)
+   */
+  playAudioFallback(base64Audio) {
+    try {
+      console.log('🎤 Trying Blob URL fallback for audio playback');
+      
+      // Convert base64 to blob
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      const blob = new Blob([bytes], { type: 'audio/mp3' });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const audio = new Audio(blobUrl);
+      audio.volume = 0.9;
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(blobUrl);
+        console.log('✅ Blob audio played and cleaned up');
+      };
+      
+      audio.onerror = (e) => {
+        console.warn('🔇 Blob audio also failed:', e);
+        URL.revokeObjectURL(blobUrl);
+        // Final fallback to browser TTS
+        this.speak(this.lastEmmaText || 'I\'m having trouble with my voice right now.');
+      };
+      
+      audio.play();
+      
+    } catch (e) {
+      console.error('🔇 Blob fallback failed:', e?.message || e);
+      // Final fallback to browser TTS
+      this.speak(this.lastEmmaText || 'I\'m having trouble with my voice right now.');
+    }
   }
 }
 
