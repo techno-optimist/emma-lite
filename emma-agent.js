@@ -243,17 +243,11 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
 
       console.log('📡 Sending initial greeting to Emma...');
       
-      // Send initial greeting
+      // Send initial greeting and trigger response
       setTimeout(async () => {
         if (this.session && this.session.sendMessage) {
           await this.session.sendMessage('Hello, please introduce yourself as Emma.');
           console.log('📤 Initial greeting sent to Emma');
-          
-          // Try to trigger response generation
-          if (this.session.approve) {
-            await this.session.approve();
-            console.log('📤 Response approved');
-          }
         } else {
           console.error('❌ Session or sendMessage not available');
         }
@@ -281,10 +275,15 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
     this.session.on = (event, handler) => {
       console.log(`🎧 Registering listener for event: ${event}`);
       return originalOn(event, (...args) => {
-        console.log(`🔔 Event fired: ${event}`, args.length > 0 ? args[0] : '(no data)');
+        console.log(`🔔 Event fired: ${event}`, args.length > 0 ? JSON.stringify(args[0]).substring(0, 200) : '(no data)');
         return handler(...args);
       });
     };
+
+    // Listen for any event to understand what's available
+    this.session.on('*', (eventName, ...args) => {
+      console.log(`🌟 Wildcard event: ${eventName}`, args.length > 0 ? JSON.stringify(args[0]).substring(0, 100) : '');
+    });
 
     // Try multiple possible event names for agent responses
     const responseEvents = ['response', 'message', 'agent_message', 'completion', 'output'];
@@ -339,12 +338,6 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       if (this.session.sendMessage) {
         await this.session.sendMessage(text);
         console.log('📤 User message sent:', text);
-        
-        // Try to trigger response generation
-        if (this.session.approve) {
-          await this.session.approve();
-          console.log('📤 Response approved for user message');
-        }
       } else if (this.session.createMessage) {
         await this.session.createMessage({ role: 'user', content: text });
       }
