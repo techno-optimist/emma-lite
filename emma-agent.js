@@ -243,40 +243,10 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
 
       console.log('📡 Sending initial greeting to Emma...');
       
-      // Send initial greeting and trigger response
+      // Send initial greeting using direct approach
       setTimeout(async () => {
-        try {
-          // Method 1: Try sendMessage
-          if (this.session.sendMessage) {
-            await this.session.sendMessage('Hello, please introduce yourself as Emma.');
-            console.log('📤 Method 1: sendMessage called');
-          }
-          
-          // Method 2: Try updateHistory to add user message and trigger response
-          if (this.session.updateHistory) {
-            await this.session.updateHistory([
-              { role: 'user', content: 'Hello, please introduce yourself as Emma.' }
-            ]);
-            console.log('📤 Method 2: updateHistory called');
-          }
-          
-          // Method 3: Check if there's a generate/run method
-          const possibleTriggers = ['generate', 'run', 'process', 'execute', 'respond'];
-          for (const method of possibleTriggers) {
-            if (typeof this.session[method] === 'function') {
-              try {
-                await this.session[method]();
-                console.log(`📤 Method 3: ${method}() called successfully`);
-                break;
-              } catch (e) {
-                console.log(`📤 Method 3: ${method}() failed:`, e.message);
-              }
-            }
-          }
-          
-        } catch (error) {
-          console.error('❌ Initial greeting error:', error);
-        }
+        console.log('📡 Triggering Emma introduction...');
+        await this.sendUserText('Hello, please introduce yourself as Emma.');
       }, 2000);
 
       console.log('✅ Emma session started successfully');
@@ -356,19 +326,66 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   }
 
   /**
-   * Send user text into the agent conversation
+   * Send user text - DIRECT CHAT API APPROACH
    */
   async sendUserText(text) {
     try {
-      if (!this.session || !text) return;
-      if (this.session.sendMessage) {
-        await this.session.sendMessage(text);
-        console.log('📤 User message sent:', text);
-      } else if (this.session.createMessage) {
-        await this.session.createMessage({ role: 'user', content: text });
+      if (!text) return;
+      
+      console.log('📤 User message received:', text);
+      
+      // DIRECT APPROACH: Use OpenAI Chat API directly for reliable responses
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: this.buildEmmaInstructions()
+            },
+            {
+              role: 'user',
+              content: text
+            }
+          ],
+          max_tokens: 300,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
       }
+
+      const data = await response.json();
+      const emmaResponse = data.choices[0]?.message?.content || "I'm having trouble responding right now.";
+      
+      console.log('📝 Emma responds:', emmaResponse);
+      
+      // Send Emma's response to browser
+      this.sendToBrowser({
+        type: 'emma_transcription',
+        transcript: emmaResponse
+      });
+      
+      // Synthesize audio
+      this.synthesizeAndSendAudio(emmaResponse).catch((e) => {
+        console.warn('🔇 TTS synth warning:', e?.message || e);
+      });
+      
     } catch (error) {
-      console.error('❌ Failed to send user text:', error);
+      console.error('❌ Direct chat error:', error);
+      const fallbackResponse = "I'm here with you. Could you try saying that again?";
+      this.sendToBrowser({
+        type: 'emma_transcription',
+        transcript: fallbackResponse
+      });
+      this.synthesizeAndSendAudio(fallbackResponse).catch(() => {});
     }
   }
 
