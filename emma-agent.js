@@ -393,12 +393,19 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
    */
   async synthesizeAndSendAudio(text) {
     try {
-      if (!text || text === this.lastSpokenText) return;
+      if (!text || text === this.lastSpokenText) {
+        console.log('🔇 Skipping TTS: empty or duplicate text');
+        return;
+      }
       this.lastSpokenText = text;
 
-      // Prefer the realtime session's own audio if provided; otherwise, use TTS REST
       const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) return;
+      if (!apiKey) {
+        console.error('🔇 No OpenAI API key for TTS');
+        return;
+      }
+
+      console.log('🎤 Starting TTS synthesis for:', text.substring(0, 50) + '...');
 
       // Use OpenAI TTS endpoint
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -415,13 +422,18 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         })
       });
 
+      console.log('🎤 TTS API response status:', response.status);
+
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(err || 'TTS synthesis failed');
+        console.error('🔇 TTS API error:', response.status, err);
+        throw new Error(`TTS API error ${response.status}: ${err}`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
       const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+      
+      console.log('🎤 TTS synthesis complete, audio size:', base64Audio.length, 'chars');
 
       this.sendToBrowser({
         type: 'emma_audio',
@@ -429,8 +441,10 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         audio: base64Audio
       });
 
+      console.log('📤 Sent OpenAI TTS audio to browser');
+
     } catch (error) {
-      console.warn('🔇 Audio synthesis error:', error?.message || error);
+      console.error('🔇 TTS synthesis error:', error?.message || error);
     }
   }
 
