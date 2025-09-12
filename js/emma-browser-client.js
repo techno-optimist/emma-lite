@@ -58,9 +58,10 @@ class EmmaBrowserClient {
         console.warn('⚠️ Mic permission not granted:', permErr?.message || permErr);
       }
 
-      // Start both speech recognition AND continuous audio streaming for real-time conversation
+      // Start responsive speech recognition for real-time conversation
       await this.startListening();
-      await this.startRealtimeAudioStreaming();
+      // Note: Disabled real-time audio streaming due to Whisper API format issues
+      // Using optimized Speech Recognition for better responsiveness
       
     } catch (error) {
       console.error('❌ Voice session failed:', error);
@@ -221,6 +222,7 @@ class EmmaBrowserClient {
       this.recognition.lang = (navigator.language || 'en-US');
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 1;
 
       let partial = '';
 
@@ -267,15 +269,19 @@ class EmmaBrowserClient {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const res = event.results[i];
           const text = res[0].transcript.trim();
-          if (res.isFinal) {
-            // Show user transcript and send to Emma
-            if (this.chatInstance && text) {
+          
+          if (res.isFinal && text.length > 0) {
+            // Show user transcript and send to Emma immediately
+            if (this.chatInstance) {
               this.chatInstance.addMessage(text, 'user', { isVoice: true });
             }
             this.sendToAgent({ type: 'user_text', text });
             partial = '';
-          } else {
+            console.log('🎤 Final speech sent to Emma:', text);
+          } else if (text.length > 0) {
+            // Show interim results for real-time feel
             partial = text;
+            console.log('🎤 Interim speech:', text);
           }
         }
       };
