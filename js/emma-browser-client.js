@@ -234,8 +234,22 @@ class EmmaBrowserClient {
 
       this.recognition.onerror = (e) => {
         console.warn('🎤 Recognition error:', e.error);
-        // Do not spam restarts on network/service errors
-        if (e && (e.error === 'network' || e.error === 'service-not-allowed')) {
+        
+        // Handle different error types
+        if (e.error === 'network') {
+          console.log('🎤 Network error - will retry recognition');
+          // Don't disable, just log - network issues are temporary
+        } else if (e.error === 'no-speech') {
+          console.log('🎤 No speech detected - continuing to listen');
+          // This is normal, don't disable
+        } else if (e.error === 'audio-capture') {
+          console.error('🎤 Microphone access denied');
+          this._disableRecognition = true;
+          if (this.chatInstance) {
+            this.chatInstance.addMessage('system', '🎤 Microphone access needed for voice chat');
+          }
+        } else if (e.error === 'not-allowed') {
+          console.error('🎤 Speech recognition not allowed');
           this._disableRecognition = true;
         }
       };

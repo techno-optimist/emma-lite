@@ -243,10 +243,18 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
 
       console.log('📡 Sending initial greeting to Emma...');
       
-      // Send initial greeting using direct approach
+      // Send dynamic greeting using direct approach
       setTimeout(async () => {
-        console.log('📡 Triggering Emma introduction...');
-        await this.sendUserText('Hello, please introduce yourself as Emma.');
+        console.log('📡 Triggering Emma dynamic introduction...');
+        const greetings = [
+          'Hi Emma, someone just connected to talk with you. Please greet them warmly.',
+          'Hello Emma, a new person is here to chat. Please welcome them.',
+          'Emma, someone would like to talk with you. Please say hello.',
+          'Hi Emma, please greet this person and ask how you can help them today.',
+          'Emma, someone is here to share memories with you. Please welcome them warmly.'
+        ];
+        const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+        await this.sendUserText(randomGreeting);
       }, 2000);
 
       console.log('✅ Emma session started successfully');
