@@ -257,9 +257,13 @@ wss.on('connection', (browserWs, request) => {
           break;
 
         case 'user_audio_chunk':
-          // Relay raw PCM16 chunks to the realtime session when enabled
-          if (emmaAgent && emmaAgent.appendAudioChunk) {
-            await emmaAgent.appendAudioChunk(message.chunk || '');
+          // Legacy audio chunks (ignored in current implementation)
+          break;
+          
+        case 'realtime_audio_chunk':
+          // Real-time audio streaming - trigger immediate response when speech detected
+          if (emmaAgent && message.chunk) {
+            await emmaAgent.handleRealtimeAudio(message.chunk);
           }
           break;
 

@@ -58,8 +58,9 @@ class EmmaBrowserClient {
         console.warn('⚠️ Mic permission not granted:', permErr?.message || permErr);
       }
 
-      // Start speech recognition for user input
+      // Start both speech recognition AND continuous audio streaming for real-time conversation
       await this.startListening();
+      await this.startRealtimeAudioStreaming();
       
     } catch (error) {
       console.error('❌ Voice session failed:', error);
@@ -581,6 +582,73 @@ class EmmaBrowserClient {
   /**
    * Fallback audio playback using Blob URL (CSP-friendly)
    */
+  /**
+   * Start real-time audio streaming for true conversation
+   */
+  async startRealtimeAudioStreaming() {
+    try {
+      console.log('🎙️ Starting real-time audio streaming...');
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('⚠️ Real-time audio not supported');
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      // Create audio context for real-time processing
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      const source = this.audioContext.createMediaStreamSource(stream);
+      
+      // Create a script processor for real-time audio chunks
+      const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+      
+      processor.onaudioprocess = (event) => {
+        if (!this.isConnected) return;
+        
+        const inputBuffer = event.inputBuffer;
+        const inputData = inputBuffer.getChannelData(0);
+        
+        // Convert float32 to int16 PCM
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        
+        // Convert to base64 and send
+        const bytes = new Uint8Array(pcm16.buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+        
+        // Send real-time audio chunk
+        this.sendToAgent({
+          type: 'realtime_audio_chunk',
+          chunk: base64
+        });
+      };
+      
+      source.connect(processor);
+      processor.connect(this.audioContext.destination);
+      
+      console.log('✅ Real-time audio streaming active');
+      
+    } catch (error) {
+      console.warn('⚠️ Real-time audio streaming failed:', error?.message || error);
+    }
+  }
+
   playAudioFallback(base64Audio) {
     try {
       console.log('🎤 Trying Blob URL fallback for audio playback');

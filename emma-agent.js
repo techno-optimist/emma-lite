@@ -542,11 +542,86 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   }
 
   /**
-   * Handle audio chunks (now ignored - using text-based conversation)
+   * Handle real-time audio for immediate conversation
+   */
+  async handleRealtimeAudio(base64Pcm16) {
+    try {
+      // Accumulate audio chunks until we detect speech
+      if (!this._audioBuffer) this._audioBuffer = '';
+      this._audioBuffer += base64Pcm16;
+      
+      // Simple voice activity detection - if we have enough audio data, trigger transcription
+      if (this._audioBuffer.length > 50000) { // ~1-2 seconds of audio
+        console.log('🎤 Processing real-time audio chunk...');
+        
+        // Use OpenAI Whisper for real-time transcription
+        const transcription = await this.transcribeAudio(this._audioBuffer);
+        
+        if (transcription && transcription.length > 5) {
+          console.log('📝 Real-time transcription:', transcription);
+          
+          // Send to Emma immediately
+          await this.sendUserText(transcription);
+        }
+        
+        // Reset buffer
+        this._audioBuffer = '';
+      }
+      
+    } catch (error) {
+      console.warn('🔇 Real-time audio error:', error?.message || error);
+    }
+  }
+
+  /**
+   * Transcribe audio using OpenAI Whisper
+   */
+  async transcribeAudio(base64Audio) {
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) return null;
+
+      // Convert base64 to buffer for Whisper API
+      const audioBuffer = Buffer.from(base64Audio, 'base64');
+      
+      // Create form data for Whisper
+      const FormData = require('form-data');
+      const form = new FormData();
+      form.append('file', audioBuffer, {
+        filename: 'audio.wav',
+        contentType: 'audio/wav'
+      });
+      form.append('model', 'whisper-1');
+      form.append('language', 'en');
+
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          ...form.getHeaders()
+        },
+        body: form
+      });
+
+      if (!response.ok) {
+        console.warn('🔇 Whisper API error:', response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      return data.text || null;
+      
+    } catch (error) {
+      console.warn('🔇 Transcription error:', error?.message || error);
+      return null;
+    }
+  }
+
+  /**
+   * Handle audio chunks (legacy - kept for compatibility)
    */
   async appendAudioChunk(base64Pcm16) {
-    // Audio chunks are now handled by browser Speech Recognition → text → sendUserText
-    // This method is kept for compatibility but does nothing
+    // Legacy method - now handled by handleRealtimeAudio
     return;
   }
 }
