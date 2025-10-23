@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emma â€¢ People</title>
+  <title>Emma • People</title>
   <link rel="stylesheet" href="../css/theme-tokens.css">
   <link rel="stylesheet" href="../css/main.css">
   <style>
@@ -936,14 +936,14 @@
     <div class="people-grid" id="people-grid">
       <!-- Add Person Card -->
       <div class="add-person-card" onclick="openAddPersonModal()">
-        <div class="add-person-icon">âœ¨</div>
+        <div class="add-person-icon">✨</div>
         <div class="add-person-text">Add Someone Special</div>
         <div class="add-person-subtitle">Expand your network of memories</div>
       </div>
 
       <!-- Empty State (shown when no people) -->
       <div class="empty-state" id="empty-state" style="display: none;">
-        <div class="empty-state-icon">ðŸ‘¥</div>
+        <div class="empty-state-icon">👥</div>
         <div class="empty-state-text">No connections yet</div>
         <div class="empty-state-subtitle">Start building your network of meaningful relationships</div>
       </div>
@@ -967,7 +967,7 @@
           <div class="avatar-upload-container">
             <div class="avatar-preview" id="avatar-preview">
               <div class="avatar-placeholder">
-                <div class="avatar-icon">ðŸ“·</div>
+                <div class="avatar-icon">📷</div>
                 <div class="avatar-text">Add Photo</div>
               </div>
             </div>
@@ -1020,7 +1020,7 @@
       <div class="person-detail-header">
         <div class="person-detail-avatar" id="person-detail-avatar">
           <div class="avatar-placeholder">
-            <div class="avatar-icon">ðŸ‘¤</div>
+            <div class="avatar-icon">👤</div>
           </div>
         </div>
         <div class="person-detail-info">
@@ -1053,11 +1053,11 @@
 
       <div class="person-detail-actions">
         <button class="btn btn-secondary" onclick="editPerson()">
-          <span>âœï¸</span>
+          <span>✏️</span>
           Edit Person
         </button>
         <button class="btn btn-primary" onclick="createMemoryWithPerson()">
-          <span>âœ¨</span>
+          <span>✨</span>
           Create Memory
         </button>
       </div>
@@ -1081,7 +1081,7 @@
           <div class="avatar-upload-container">
             <div class="avatar-preview" id="edit-avatar-preview">
               <div class="avatar-placeholder">
-                <div class="avatar-icon">ðŸ“·</div>
+                <div class="avatar-icon">📷</div>
                 <div class="avatar-text">Change Photo</div>
               </div>
             </div>
@@ -1125,12 +1125,12 @@
 
         <div class="form-actions">
           <button type="button" class="btn btn-danger" onclick="deletePerson()">
-            <span>ðŸ—‘ï¸</span>
+            <span>🗑️</span>
             Delete
           </button>
           <button type="button" class="btn btn-secondary" onclick="closeEditPersonModal()">Cancel</button>
           <button type="submit" class="btn btn-primary">
-            <span>ðŸ’¾</span>
+            <span>💾</span>
             Save Changes
           </button>
         </div>
@@ -1140,7 +1140,7 @@
 
   <!-- Home Button -->
   <button class="home-button" onclick="window.location.href='../dashboard.html'" title="Back to Dashboard">
-    ðŸ 
+    🏠
   </button>
 
   <!-- Universal Vault Modal -->
@@ -1199,31 +1199,31 @@
     document.addEventListener('DOMContentLoaded', () => {
 
       // FIXED: Create the vault instance like other pages do!
-      console.log('ðŸ”§ PEOPLE: Creating vault instance...');
+      console.log('🔧 PEOPLE: Creating vault instance...');
       
       if (!window.emmaWebVault) {
         window.emmaWebVault = new EmmaWebVault();
-        console.log('âœ… PEOPLE: Vault instance created successfully');
+        console.log('✅ PEOPLE: Vault instance created successfully');
       } else {
-        console.log('âœ… PEOPLE: Vault instance already exists');
+        console.log('✅ PEOPLE: Vault instance already exists');
       }
 
       // Try to restore vault state if vault was previously active
       if (sessionStorage.getItem('emmaVaultActive') === 'true') {
-        console.log('ðŸ‘¥ PEOPLE: Attempting to restore vault state...');
+        console.log('👥 PEOPLE: Attempting to restore vault state...');
         window.emmaWebVault.restoreVaultState()
           .then(result => {
             if (result) {
-              console.log('âœ… PEOPLE: Vault state restored successfully');
+              console.log('✅ PEOPLE: Vault state restored successfully');
             } else {
-              console.log('âš ï¸ PEOPLE: Vault state restore returned false');
+              console.log('⚠️ PEOPLE: Vault state restore returned false');
             }
           })
           .catch(error => {
-            console.warn('âš ï¸ PEOPLE: Could not restore vault state:', error);
+            console.warn('⚠️ PEOPLE: Could not restore vault state:', error);
           });
       } else {
-        console.log('ðŸ‘¥ PEOPLE: No active vault session found');
+        console.log('👥 PEOPLE: No active vault session found');
       }
     });
 
@@ -1324,13 +1324,13 @@
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        showToast('âŒ Please select an image file', 'error');
+        showToast('❌ Please select an image file', 'error');
         return;
       }
 
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        showToast('âŒ Image must be smaller than 5MB', 'error');
+        showToast('❌ Image must be smaller than 5MB', 'error');
         return;
       }
 
@@ -1349,11 +1349,11 @@
         // Update preview
         updateAvatarPreview(currentAvatarDataUrl);
 
-        showToast('âœ… Avatar selected', 'success');
+        showToast('✅ Avatar selected', 'success');
 
       } catch (error) {
-        console.error('ðŸ“· AVATAR: Failed to process avatar:', error);
-        showToast('âŒ Failed to process avatar', 'error');
+        console.error('📷 AVATAR: Failed to process avatar:', error);
+        showToast('❌ Failed to process avatar', 'error');
       }
     }
 
@@ -1384,7 +1384,7 @@
 
         const icon = document.createElement('div');
         icon.className = 'avatar-icon';
-        icon.textContent = 'ðŸ“·';
+        icon.textContent = '📷';
 
         const text = document.createElement('div');
         text.className = 'avatar-text';
@@ -1407,34 +1407,34 @@
 
     async function loadPeople() {
       try {
-        console.log('ðŸ‘¥ PEOPLE: Starting loadPeople...');
-        console.log('ðŸ‘¥ PEOPLE: emmaAPI available?', !!window.emmaAPI);
-        console.log('ðŸ‘¥ PEOPLE: emmaAPI.people available?', !!window.emmaAPI?.people);
-        console.log('ðŸ‘¥ PEOPLE: emmaAPI.people.list available?', !!window.emmaAPI?.people?.list);
+        console.log('👥 PEOPLE: Starting loadPeople...');
+        console.log('👥 PEOPLE: emmaAPI available?', !!window.emmaAPI);
+        console.log('👥 PEOPLE: emmaAPI.people available?', !!window.emmaAPI?.people);
+        console.log('👥 PEOPLE: emmaAPI.people.list available?', !!window.emmaAPI?.people?.list);
 
         if (!window.emmaAPI || !window.emmaAPI.people || !window.emmaAPI.people.list) {
-          console.error('âŒ PEOPLE: emmaAPI.people.list not available');
+          console.error('❌ PEOPLE: emmaAPI.people.list not available');
           // Show empty state with instructions to unlock vault
           people = [];
           await renderPeople();
           return;
         }
 
-        console.log('ðŸ‘¥ PEOPLE: Calling emmaAPI.people.list()...');
+        console.log('👥 PEOPLE: Calling emmaAPI.people.list()...');
         const response = await window.emmaAPI.people.list();
-        console.log('ðŸ‘¥ PEOPLE: Response received:', response);
+        console.log('👥 PEOPLE: Response received:', response);
 
         if (response && response.success) {
           people = response.items || [];
-          console.log(`ðŸ‘¥ PEOPLE: Loaded ${people.length} people from vault`);
+          console.log(`👥 PEOPLE: Loaded ${people.length} people from vault`);
           await renderPeople();
         } else {
-          console.error('âŒ PEOPLE: Failed to load people:', response);
+          console.error('❌ PEOPLE: Failed to load people:', response);
           people = [];
           await renderPeople();
         }
       } catch (error) {
-        console.error('âŒ PEOPLE: Error loading people:', error);
+        console.error('❌ PEOPLE: Error loading people:', error);
         people = [];
         await renderPeople();
       }
@@ -1497,7 +1497,7 @@
 
         };
         img.onerror = () => {
-          console.error('ðŸ“· AVATAR: Failed to display avatarUrl for:', person.name);
+          console.error('📷 AVATAR: Failed to display avatarUrl for:', person.name);
           // Keep the letter fallback
         };
       // If person has an avatar ID but no avatarUrl, fetch from legacy API as fallback
@@ -1524,17 +1524,17 @@
 
               };
               img.onerror = () => {
-                console.error('ðŸ“· AVATAR: Failed to display avatar for:', person.name);
+                console.error('📷 AVATAR: Failed to display avatar for:', person.name);
                 // Keep the letter fallback
               };
             } else {
-              console.warn('ðŸ“· AVATAR: No avatar data found for:', person.name);
+              console.warn('📷 AVATAR: No avatar data found for:', person.name);
             }
           } else {
-            console.warn('ðŸ“· AVATAR: Web vault not available for avatar loading');
+            console.warn('📷 AVATAR: Web vault not available for avatar loading');
           }
         } catch (error) {
-          console.error('ðŸ“· AVATAR: Error loading avatar for:', person.name, error);
+          console.error('📷 AVATAR: Error loading avatar for:', person.name, error);
         }
       }
 
@@ -1563,7 +1563,7 @@
       });
       
       const delBtn = document.createElement('button');
-      delBtn.textContent = 'ðŸ—‘ï¸';
+      delBtn.textContent = '🗑️';
       delBtn.title = 'Delete person';
       delBtn.style.cssText = 'background:rgba(0,0,0,0.7); color:#fff; border:none; border-radius:8px; padding:8px; cursor:pointer; backdrop-filter:blur(10px); transition:all 0.3s ease;';
       delBtn.addEventListener('mouseenter', () => {
@@ -1582,15 +1582,15 @@
           if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.delete) {
             const res = await window.emmaAPI.people.delete(person.id);
             if (res && res.success) {
-              showToast('âœ… Person deleted', 'success');
+              showToast('✅ Person deleted', 'success');
               await loadPeople();
             } else {
-              showToast('âŒ Failed to delete person', 'error');
+              showToast('❌ Failed to delete person', 'error');
             }
           }
         } catch (err) {
           console.error('Delete failed:', err);
-          showToast('âŒ Error deleting person', 'error');
+          showToast('❌ Error deleting person', 'error');
         }
       });
       actions.appendChild(delBtn);
@@ -1665,11 +1665,11 @@
               });
 
             } else {
-              console.warn('ðŸ“· AVATAR: Extension not available - avatar will not be saved');
+              console.warn('📷 AVATAR: Extension not available - avatar will not be saved');
             }
           } catch (avatarError) {
-            console.error('ðŸ“· AVATAR: Failed to save avatar to vault:', avatarError);
-            showToast('âš ï¸ Person will be added but avatar upload failed', 'warning');
+            console.error('📷 AVATAR: Failed to save avatar to vault:', avatarError);
+            showToast('⚠️ Person will be added but avatar upload failed', 'warning');
           }
         } else {
 
@@ -1692,7 +1692,7 @@
             }, 500);
 
             // Show success message
-            const message = avatarAttachmentId ? 'âœ¨ Person and avatar added successfully!' : 'âœ¨ Person added successfully!';
+            const message = avatarAttachmentId ? '✨ Person and avatar added successfully!' : '✨ Person added successfully!';
             showToast(message, 'success');
 
             // Reset avatar state
@@ -1702,20 +1702,20 @@
 
           } else {
             console.error('Failed to add person:', response);
-            showToast('âŒ Failed to add person: ' + (response.message || response.error), 'error');
+            showToast('❌ Failed to add person: ' + (response.message || response.error), 'error');
           }
         } catch (directSaveError) {
-          console.error('âŒ Direct save error adding person:', directSaveError);
+          console.error('❌ Direct save error adding person:', directSaveError);
 
           if (directSaveError.message.includes('Direct save required')) {
-            showToast('âš ï¸ Please click "Enable direct save" to add people', 'warning');
+            showToast('⚠️ Please click "Enable direct save" to add people', 'warning');
           } else {
-            showToast('âŒ Failed to add person: ' + directSaveError.message, 'error');
+            showToast('❌ Failed to add person: ' + directSaveError.message, 'error');
           }
         }
       } catch (error) {
         console.error('Error adding person:', error);
-        showToast('âŒ Error adding person', 'error');
+        showToast('❌ Error adding person', 'error');
       }
     }
 
@@ -1778,7 +1778,7 @@
             <div class="vault-lock-icon" style="
               font-size: 48px;
               margin-bottom: 16px;
-            ">ðŸ”’</div>
+            ">🔒</div>
             <h3 class="vault-lock-title" style="
               color: white;
               font-size: 1.5rem;
@@ -1818,7 +1818,7 @@
                 align-items: center;
                 gap: 8px;
               ">
-                <span>ðŸ”“</span>
+                <span>🔓</span>
                 Unlock Vault
               </button>
             </div>
@@ -1836,7 +1836,7 @@
       content.style.cssText = 'text-align: center;';
 
       const title = document.createElement('h3');
-      title.textContent = 'ðŸ”’ Vault Locked';
+      title.textContent = '🔒 Vault Locked';
       title.style.cssText = 'margin-bottom: 10px; color: #f093fb;';
 
       const messageElement = document.createElement('p');
@@ -1881,7 +1881,7 @@
         onSuccess: () => {
           // Refresh the people list after successful unlock
           loadPeople();
-          showToast('âœ… Vault unlocked successfully!', 'success');
+          showToast('✅ Vault unlocked successfully!', 'success');
         },
         onCancel: () => {
           // User cancelled - nothing to do
@@ -1919,7 +1919,7 @@
       const createdDate = person.createdAt ? new Date(person.createdAt).toLocaleDateString() : 'Recently';
       document.getElementById('person-created-date').textContent = createdDate;
 
-      // ðŸŽ¯ CRITICAL FIX: Load and display connected memories count and list
+      // 🎯 CRITICAL FIX: Load and display connected memories count and list
       await updatePersonMemoryConnections(person.id);
 
       // Load avatar for detail view - SAME LOGIC AS PERSON CARDS
@@ -1963,7 +1963,7 @@
 
     function editPerson() {
       if (!currentPerson) {
-        console.error('âŒ EDIT: No current person selected');
+        console.error('❌ EDIT: No current person selected');
         return;
       }
 
@@ -1986,7 +1986,7 @@
 
     async function openEditPersonModal(person) {
       if (!person) {
-        console.error('âŒ EDIT: Cannot open edit modal - no person data provided');
+        console.error('❌ EDIT: Cannot open edit modal - no person data provided');
         return;
       }
 
@@ -1999,7 +1999,7 @@
       const relationField = document.getElementById('edit-person-relation');
 
       if (!nameField || !emailField || !phoneField || !relationField) {
-        console.error('âŒ EDIT: Form fields not found');
+        console.error('❌ EDIT: Form fields not found');
         return;
       }
 
@@ -2011,7 +2011,7 @@
       // Load current avatar
       const editPreview = document.getElementById('edit-avatar-preview');
       if (!editPreview) {
-        console.error('âŒ EDIT: Avatar preview element not found');
+        console.error('❌ EDIT: Avatar preview element not found');
         return;
       }
 
@@ -2032,18 +2032,18 @@
             // No avatar data, show placeholder
             editPreview.innerHTML = `
               <div class="avatar-placeholder">
-                <div class="avatar-icon">ðŸ“·</div>
+                <div class="avatar-icon">📷</div>
                 <div class="avatar-text">Change Photo</div>
               </div>
             `;
             editPreview.style.border = '2px dashed rgba(var(--emma-neutral-rgb), 0.3)';
           }
         } catch (error) {
-          console.error('ðŸ“· EDIT: Failed to load avatar for edit:', error);
+          console.error('📷 EDIT: Failed to load avatar for edit:', error);
           // Show placeholder on error
           editPreview.innerHTML = `
             <div class="avatar-placeholder">
-              <div class="avatar-icon">ðŸ“·</div>
+              <div class="avatar-icon">📷</div>
               <div class="avatar-text">Change Photo</div>
             </div>
           `;
@@ -2053,7 +2053,7 @@
         // No avatar, show placeholder
         editPreview.innerHTML = `
           <div class="avatar-placeholder">
-            <div class="avatar-icon">ðŸ“·</div>
+            <div class="avatar-icon">📷</div>
             <div class="avatar-text">Change Photo</div>
           </div>
         `;
@@ -2077,7 +2077,7 @@
           }
         }, 200);
       } else {
-        console.error('âŒ EDIT: Edit modal element not found');
+        console.error('❌ EDIT: Edit modal element not found');
       }
     }
 
@@ -2103,7 +2103,7 @@
       if (editPreview) {
         editPreview.innerHTML = `
           <div class="avatar-placeholder">
-            <div class="avatar-icon">ðŸ“·</div>
+            <div class="avatar-icon">📷</div>
             <div class="avatar-text">Change Photo</div>
           </div>
         `;
@@ -2142,13 +2142,13 @@
 
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        showToast('âŒ Please select an image file', 'error');
+        showToast('❌ Please select an image file', 'error');
         return;
       }
 
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        showToast('âŒ Image must be smaller than 5MB', 'error');
+        showToast('❌ Image must be smaller than 5MB', 'error');
         return;
       }
 
@@ -2175,11 +2175,11 @@
           preview.style.border = '2px solid rgba(139, 92, 246, 0.6)';
         }
 
-        showToast('âœ… New avatar selected', 'success');
+        showToast('✅ New avatar selected', 'success');
 
       } catch (error) {
-        console.error('ðŸ“· EDIT AVATAR: Failed to process avatar:', error);
-        showToast('âŒ Failed to process avatar', 'error');
+        console.error('📷 EDIT AVATAR: Failed to process avatar:', error);
+        showToast('❌ Failed to process avatar', 'error');
       }
     }
 
@@ -2195,7 +2195,7 @@
       } else {
         preview.innerHTML = `
           <div class="avatar-placeholder">
-            <div class="avatar-icon">ðŸ“·</div>
+            <div class="avatar-icon">📷</div>
             <div class="avatar-text">Change Photo</div>
           </div>
         `;
@@ -2213,7 +2213,7 @@
       if (preview) {
         preview.innerHTML = `
           <div class="avatar-placeholder">
-            <div class="avatar-icon">ðŸ“·</div>
+            <div class="avatar-icon">📷</div>
             <div class="avatar-text">Change Photo</div>
           </div>
         `;
@@ -2239,7 +2239,7 @@
       const relation = document.getElementById('edit-person-relation').value;
 
       if (!name || !relation) {
-        showToast('âŒ Please fill in the required fields', 'error');
+        showToast('❌ Please fill in the required fields', 'error');
         return;
       }
 
@@ -2255,7 +2255,7 @@
               await window.emmaAPI.vault.attachment.remove(currentPerson.avatarId);
 
             } catch (error) {
-              console.warn('ðŸ“· EDIT: Failed to remove old avatar:', error);
+              console.warn('📷 EDIT: Failed to remove old avatar:', error);
             }
           }
 
@@ -2279,12 +2279,12 @@
                 newAvatarId = avatarResult.id;
 
               } else {
-                console.error('ðŸ“· EDIT: Failed to save new avatar:', avatarResult);
-                showToast('âš ï¸ Person updated but avatar upload failed', 'warning');
+                console.error('📷 EDIT: Failed to save new avatar:', avatarResult);
+                showToast('⚠️ Person updated but avatar upload failed', 'warning');
               }
             } catch (error) {
-              console.error('ðŸ“· EDIT: Avatar upload error:', error);
-              showToast('âš ï¸ Person updated but avatar upload failed', 'warning');
+              console.error('📷 EDIT: Avatar upload error:', error);
+              showToast('⚠️ Person updated but avatar upload failed', 'warning');
             }
           } else {
             // No new avatar, remove the old one
@@ -2318,7 +2318,7 @@
           setTimeout(async () => {
             await loadPeople(); // Reload to show changes
           }, 500);
-          showToast('âœ… Person updated successfully!', 'success');
+          showToast('✅ Person updated successfully!', 'success');
         } else {
           console.error('Failed to update person:', response);
 
@@ -2326,13 +2326,13 @@
           if (response.error === 'vault_locked') {
             showVaultLockAlert(response.userMessage || 'Please unlock your vault to edit people');
           } else {
-            showToast('âŒ Failed to update person: ' + (response.message || response.error), 'error');
+            showToast('❌ Failed to update person: ' + (response.message || response.error), 'error');
           }
         }
 
       } catch (error) {
         console.error('Error updating person:', error);
-        showToast('âŒ Error updating person', 'error');
+        showToast('❌ Error updating person', 'error');
       }
     }    async function deletePerson() {
       if (!currentPerson) return;
@@ -2349,7 +2349,7 @@
             await window.emmaAPI.vault.attachment.remove(currentPerson.avatarId);
 
           } catch (error) {
-            console.warn('ðŸ“· DELETE: Failed to remove avatar:', error);
+            console.warn('📷 DELETE: Failed to remove avatar:', error);
           }
         }
 
@@ -2359,7 +2359,7 @@
         if (response.success) {
           closeEditPersonModal();
           await loadPeople(); // Reload to remove from display
-          showToast('âœ… Person deleted successfully', 'success');
+          showToast('✅ Person deleted successfully', 'success');
         } else {
           console.error('Failed to delete person:', response);
 
@@ -2367,13 +2367,13 @@
           if (response.error === 'vault_locked') {
             showVaultLockAlert(response.userMessage || 'Please unlock your vault to remove people');
           } else {
-            showToast('âŒ Failed to delete person: ' + (response.message || response.error), 'error');
+            showToast('❌ Failed to delete person: ' + (response.message || response.error), 'error');
           }
         }
 
       } catch (error) {
         console.error('Error deleting person:', error);
-        showToast('âŒ Error deleting person', 'error');
+        showToast('❌ Error deleting person', 'error');
       }
     }
 
@@ -2405,7 +2405,7 @@
         const memories = await loadMemoriesForPerson(person.id);
         
         if (!memories || memories.length === 0) {
-          console.log(`ðŸ‘¤ No memories found for ${person.name}`);
+          console.log(`👤 No memories found for ${person.name}`);
           return null;
         }
 
@@ -2426,11 +2426,11 @@
         }
 
         if (photos.length === 0) {
-          console.log(`ðŸ“· No photos found in memories for ${person.name}`);
+          console.log(`📷 No photos found in memories for ${person.name}`);
           return null;
         }
 
-        console.log(`ðŸŽ¨ Creating slideshow for ${person.name} with ${photos.length} photos`);
+        console.log(`🎨 Creating slideshow for ${person.name} with ${photos.length} photos`);
 
         // Create slideshow container
         const slideshow = document.createElement('div');
@@ -2463,7 +2463,7 @@
               }
             }
           } catch (error) {
-            console.error(`âŒ Failed to load photo ${photo.id}:`, error);
+            console.error(`❌ Failed to load photo ${photo.id}:`, error);
           }
         }
 
@@ -2496,7 +2496,7 @@
         return slideshow;
 
       } catch (error) {
-        console.error(`âŒ Error creating slideshow for ${person.name}:`, error);
+        console.error(`❌ Error creating slideshow for ${person.name}:`, error);
         return null;
       }
     }
@@ -2505,13 +2505,13 @@
     async function loadMemoriesForPerson(personId) {
       try {
         if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
-          console.warn('âš ï¸ Vault not open, cannot load memories');
+          console.warn('⚠️ Vault not open, cannot load memories');
           return [];
         }
 
         const vaultData = window.emmaWebVault.vaultData;
         if (!vaultData || !vaultData.content || !vaultData.content.memories) {
-          console.warn('âš ï¸ No memories found in vault data structure');
+          console.warn('⚠️ No memories found in vault data structure');
           return [];
         }
 
@@ -2531,11 +2531,11 @@
           // Content-based inference removed to avoid false positive connections
         }
 
-        console.log(`ðŸ“š Found ${connectedMemories.length} memories for person ${personId}`);
+        console.log(`📚 Found ${connectedMemories.length} memories for person ${personId}`);
         return connectedMemories;
 
       } catch (error) {
-        console.error('âŒ Error loading memories for person:', error);
+        console.error('❌ Error loading memories for person:', error);
         return [];
       }
     }
@@ -2546,7 +2546,7 @@
         const connectedMemories = await loadMemoriesForPerson(personId);
         const memoryCount = connectedMemories.length;
         
-        console.log(`ðŸ”— PEOPLE: Found ${memoryCount} memories for person ${personId}`);
+        console.log(`🔗 PEOPLE: Found ${memoryCount} memories for person ${personId}`);
         
         // Update the memory count display
         const memoryCountElement = document.querySelector('.detail-item:last-child .detail-value');
@@ -2560,7 +2560,7 @@
         }
         
       } catch (error) {
-        console.error('âŒ Error updating person memory connections:', error);
+        console.error('❌ Error updating person memory connections:', error);
       }
     }
     
@@ -2613,7 +2613,7 @@
               align-items: center;
               justify-content: center;
               font-size: 18px;
-            ">${hasMedia ? 'ðŸ“¸' : 'ðŸ’­'}</div>
+            ">${hasMedia ? '📸' : '💭'}</div>
             <div style="flex: 1;">
               <div style="
                 color: white;
@@ -2629,14 +2629,14 @@
                 align-items: center;
                 gap: 8px;
               ">
-                <span>ðŸ“… ${date}</span>
-                ${hasMedia ? `<span>ðŸ“Ž ${memory.attachments.length} file${memory.attachments.length > 1 ? 's' : ''}</span>` : ''}
+                <span>📅 ${date}</span>
+                ${hasMedia ? `<span>📎 ${memory.attachments.length} file${memory.attachments.length > 1 ? 's' : ''}</span>` : ''}
               </div>
             </div>
             <div style="
               color: rgba(255, 255, 255, 0.4);
               font-size: 18px;
-            ">â€º</div>
+            ">›</div>
           </div>
         `;
       }).join('');
@@ -2647,7 +2647,7 @@
     
     // Open memory from people dialog (navigate to memory view)
     function openMemoryFromPeople(memoryId) {
-      console.log('ðŸ”— PEOPLE: Opening memory:', memoryId);
+      console.log('🔗 PEOPLE: Opening memory:', memoryId);
       
       // Close the people dialog
       closePersonDetailModal();
@@ -2675,21 +2675,21 @@
     async function openPersonFromId(personId) {
       try {
         if (!window.emmaWebVault || !window.emmaWebVault.vaultData?.content?.people) {
-          console.error('âŒ PEOPLE: Vault not available or no people data');
+          console.error('❌ PEOPLE: Vault not available or no people data');
           return;
         }
         
         const person = window.emmaWebVault.vaultData.content.people[personId];
         if (!person) {
-          console.error('âŒ PEOPLE: Person not found with ID:', personId);
+          console.error('❌ PEOPLE: Person not found with ID:', personId);
           return;
         }
         
-        console.log('ðŸ”— PEOPLE: Opening person dialog for:', person.name);
+        console.log('🔗 PEOPLE: Opening person dialog for:', person.name);
         await openPersonDetailModal(person);
         
       } catch (error) {
-        console.error('âŒ PEOPLE: Error opening person by ID:', error);
+        console.error('❌ PEOPLE: Error opening person by ID:', error);
       }
     }
 
@@ -2698,21 +2698,21 @@
       initNeuralNetwork();
 
       // FIXED: Vault should be immediately available now, just load people
-      console.log('ðŸ‘¥ PEOPLE: Loading people from vault...');
+      console.log('👥 PEOPLE: Loading people from vault...');
       setTimeout(() => {
         if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
-          console.log('âœ… PEOPLE: Vault confirmed ready, loading people...');
+          console.log('✅ PEOPLE: Vault confirmed ready, loading people...');
           loadPeople();
           
-          // ðŸŽ¯ AUTO-OPEN: Check if a specific person should be opened from URL param
+          // 🎯 AUTO-OPEN: Check if a specific person should be opened from URL param
           const urlParams = new URLSearchParams(window.location.search);
           const personId = urlParams.get('person');
           if (personId) {
-            console.log('ðŸ”— PEOPLE: Auto-opening person from URL:', personId);
+            console.log('🔗 PEOPLE: Auto-opening person from URL:', personId);
             setTimeout(() => openPersonFromId(personId), 300); // Give time for people to load
           }
         } else {
-          console.error('âŒ PEOPLE: Vault still not available, showing empty state');
+          console.error('❌ PEOPLE: Vault still not available, showing empty state');
           renderPeople(); // Show empty state
         }
       }, 500); // Brief delay to ensure vault is fully initialized

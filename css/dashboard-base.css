@@ -1387,14 +1387,14 @@ body.dashboard-minimal .voice-indicator {
   }
 
   .radial-item {
-    /* ðŸŒŒ UNIFIED: Same size for all devices - no more mobile/desktop differences */
+    /* 🌌 UNIFIED: Same size for all devices - no more mobile/desktop differences */
     width: 90px !important;
     height: 90px !important;
     font-size: 12px;
-    /* ðŸŽ¯ TOUCH FRIENDLY: Large enough for all devices */
+    /* 🎯 TOUCH FRIENDLY: Large enough for all devices */
     min-width: 90px;
     min-height: 90px;
-    /* ðŸ”— BOUND TO ORB: Unified positioning */
+    /* 🔗 BOUND TO ORB: Unified positioning */
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 
@@ -1408,7 +1408,7 @@ body.dashboard-minimal .voice-indicator {
     font-weight: 500;
   }
 
-  /* ðŸ“± MOBILE OPTIMIZATION: Better visual feedback */
+  /* 📱 MOBILE OPTIMIZATION: Better visual feedback */
   .radial-item:active {
     transform: scale(0.95) !important;
     background: rgba(var(--emma-accent-primary-rgb), 0.3) !important;
@@ -1465,7 +1465,7 @@ body.dashboard-minimal .voice-indicator {
 /* Tablet optimizations */
 @media (max-width: 1024px) and (min-width: 769px) {
   .radial-item {
-    /* ðŸŒŒ UNIFIED: Same 90px size for tablets too */
+    /* 🌌 UNIFIED: Same 90px size for tablets too */
     width: 90px;
     height: 90px;
   }
@@ -1503,7 +1503,7 @@ body.dashboard-minimal .voice-indicator {
 }
 
 .person-summary-modal {
-  /* ðŸŽ¨ EMMA GLASSMORPHISM: Match chat interface aesthetic */
+  /* 🎨 EMMA GLASSMORPHISM: Match chat interface aesthetic */
   background: rgba(26, 16, 51, 0.92);
   backdrop-filter: blur(25px) saturate(150%);
   -webkit-backdrop-filter: blur(25px) saturate(150%);
