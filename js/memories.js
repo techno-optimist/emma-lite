@@ -1920,7 +1920,14 @@ async function openGuardianshipModal() {
           const input = list.querySelectorAll('input')[idx];
           const w = window.open('', '_blank');
           if (!w) return;
-          w.document.write(`<!doctype html><title>Emma Vault Share #${idx+1}</title><body style=\"font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; padding:24px\"><h2>Emma Vault Recovery Share #${idx+1}</h2><p>Keep this safe. Share only with trusted guardians.</p><pre style=\"white-space:pre-wrap;word-break:break-all;border:1px solid #ccc;padding:12px;border-radius:8px\">${input.value}</pre></body>`);
+          const escapeHtml = (s) => String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+          const safeValue = escapeHtml(input.value);
+          w.document.write(`<!doctype html><title>Emma Vault Share #${idx+1}</title><body style=\"font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; padding:24px\"><h2>Emma Vault Recovery Share #${idx+1}</h2><p>Keep this safe. Share only with trusted guardians.</p><pre style=\"white-space:pre-wrap;word-break:break-all;border:1px solid #ccc;padding:12px;border-radius:8px\">${safeValue}</pre></body>`);
           w.document.close(); w.focus(); w.print();
         }));
         list.querySelectorAll('button.qr').forEach(btn => btn.addEventListener('click', async () => {
@@ -3788,7 +3795,7 @@ async function openPersonModal(personId) {
     const viewFullBtn = modal.querySelector('.person-view-full');
     if (viewFullBtn) {
       viewFullBtn.addEventListener('click', () => {
-        window.open(`people.html#person-${person.id}`, '_blank');
+        window.open(`people-emma.html?person=${person.id}`, '_blank');
       });
     }
 

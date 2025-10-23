@@ -1,0 +1,87 @@
+async exactWorkingDecrypt(fileData, passphrase) {
+    try {
+
+      // Parse .emma file format: EMMA + version + salt + iv + encrypted data
+      const data = new Uint8Array(fileData);
+
+      // Check magic bytes
+      const magic = new TextDecoder().decode(data.slice(0, 4));
+      if (magic !== 'EMMA') {
+        throw new Error('Invalid .emma file format');
+      }
+
+      // Extract components (EXACT format from working extension)
+      const version = data.slice(4, 6);
+      const salt = data.slice(6, 38); // 32 bytes
+      const iv = data.slice(38, 50); // 12 bytes
+      const encrypted = data.slice(50);
+
+      console.log('ðŸ”“ EXACT WORKING: Extracted vault components:', {
+        magic,
+        version: Array.from(version),
+        saltLength: salt.length,
+        ivLength: iv.length,
+        encryptedLength: encrypted.length
+      });
+
+      // Derive key from passphrase using PBKDF2 (EXACT parameters)
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveBits', 'deriveKey']
+      );
+
+      const iterationCandidates = [250000, 100000];
+      let decrypted = null;
+      let lastError = null;
+
+      for (const iterations of iterationCandidates) {
+        try {
+          const key = await crypto.subtle.deriveKey(
+            {
+              name: 'PBKDF2',
+              salt: salt,
+              iterations,
+              hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+          );
+
+          decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            encrypted
+          );
+          break;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      if (!decrypted) {
+        throw lastError || new Error('Failed to derive Emma vault key.');
+      }
+      // Parse JSON
+      const jsonString = new TextDecoder().decode(decrypted);
+      const vaultData = JSON.parse(jsonString);
+
+      console.log('âœ… EXACT WORKING: Vault decrypted successfully! Memories:',
+        Object.keys(vaultData.content?.memories || {}).length);
+
+      return vaultData;
+
+    } catch (error) {
+      console.error('âŒ EXACT WORKING: Decryption failed:', error);
+      throw new Error('Failed to decrypt vault: ' + error.message);
+    }
+  }
+
+  /**
+   * PURE WEB APP: Native vault encryption (no extension needed)
+   */
+  

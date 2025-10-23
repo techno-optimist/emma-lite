@@ -1,0 +1,223 @@
+(function createEmmaThemeCatalog() {
+  if (window.EMMA_THEMES) {
+    return;
+  }
+
+  const auroraClassic = {
+    id: 'aurora-classic',
+    name: 'Aurora Classic',
+    description: 'Signature Emma gradient with deep cosmos ambiance.',
+    preview: {
+      primary: '#7c3aed',
+      secondary: '#f093fb',
+      surface: '#0a0a0f'
+    },
+    cssVars: {
+      '--emma-surface-primary': '#0a0a0f',
+      '--emma-surface-muted': 'rgba(255, 255, 255, 0.04)',
+      '--emma-surface-inverse': 'rgba(255, 255, 255, 0.92)',
+      '--emma-gradient-primary': 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+      '--emma-gradient-secondary': 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%)',
+      '--emma-gradient-aurora': 'linear-gradient(135deg, #667eea20 0%, #764ba240 25%, #f093fb20 50%, #4dabf720 75%, #667eea20 100%)',
+      '--emma-border-subtle': 'rgba(255, 255, 255, 0.1)',
+      '--emma-border-strong': 'rgba(255, 255, 255, 0.2)',
+      '--emma-text-strong': '#ffffff',
+      '--emma-text-standard': 'rgba(255, 255, 255, 0.85)',
+      '--emma-text-muted': 'rgba(255, 255, 255, 0.6)',
+      '--emma-text-on-accent': '#ffffff',
+      '--emma-neutral-rgb': '255, 255, 255',
+      '--emma-neutral-inverse-rgb': '10, 10, 15',
+      '--emma-accent-primary': '#8b5cf6',
+      '--emma-accent-secondary': '#ec4899',
+      '--emma-accent-primary-rgb': '139, 92, 246',
+      '--emma-accent-secondary-rgb': '236, 72, 153',
+      '--emma-accent-surface': 'rgba(139, 92, 246, 0.2)',
+      '--emma-accent-surface-strong': 'rgba(139, 92, 246, 0.35)',
+      '--emma-accent-border': 'rgba(139, 92, 246, 0.4)',
+      '--emma-success': '#4ade80',
+      '--emma-warning': '#fbbf24',
+      '--emma-danger': '#f87171',
+      '--emma-chat-user-bubble': 'linear-gradient(135deg, #8b5cf6, #f093fb)',
+      '--emma-chat-user-text': '#ffffff',
+      '--emma-chat-emma-bubble': 'rgba(37, 38, 65, 0.85)',
+      '--emma-chat-emma-text': 'rgba(255, 255, 255, 0.92)',
+      '--emma-chat-user-meta': 'rgba(255, 255, 255, 0.7)',
+      '--emma-chat-emma-meta': 'rgba(255, 255, 255, 0.6)',
+      '--emma-chat-surface': 'rgba(255, 255, 255, 0.05)',
+      '--emma-chat-surface-strong': 'rgba(255, 255, 255, 0.1)',
+      '--emma-chat-border': 'rgba(255, 255, 255, 0.2)',
+      '--emma-chat-muted': 'rgba(255, 255, 255, 0.7)',
+      '--emma-chat-strong': 'rgba(255, 255, 255, 0.9)',
+      '--emma-chat-error': '#f87171',
+      '--emma-chat-success': '#10b981',
+      '--emma-nav-highlight': 'rgba(139, 92, 246, 0.2)',
+      '--emma-constellation-node': 'rgba(134, 88, 255, 0.6)',
+      '--emma-constellation-glow': 'rgba(134, 88, 255, 0.85)',
+      '--emma-orb-hue': '265',
+      '--emma-orb-hover-intensity': '0.25',
+      '--emma-glass': 'rgba(255, 255, 255, 0.05)',
+      '--emma-card-bg': 'rgba(255, 255, 255, 0.04)',
+      '--emma-button-secondary-bg': 'rgba(255, 255, 255, 0.1)',
+      '--emma-button-secondary-border': 'rgba(255, 255, 255, 0.2)',
+      '--emma-button-secondary-text': 'rgba(255, 255, 255, 0.85)',
+      '--emma-button-secondary-bg-hover': 'rgba(255, 255, 255, 0.2)',
+      '--emma-bg-gradient': 'linear-gradient(135deg, #0a0a0f 0%, #1a1033 50%, #0f0c29 100%)'
+    },
+    background: {
+      id: 'aurora',
+      name: 'Aurora Field',
+      description: 'Soft cosmic gradients with Emma\'s signature glow.',
+      intensity: 0.35
+    },
+    flags: {
+      highContrast: false,
+      animatedBackground: true
+    }
+  };
+
+  const sunriseGlow = {
+    id: 'sunrise-glow',
+    name: 'Sunrise Glow',
+    description: 'Warm peach and coral palette with soft morning light.',
+    preview: {
+      primary: '#ff8c68',
+      secondary: '#ffd26f',
+      surface: '#fff6eb'
+    },
+    cssVars: {
+      '--emma-surface-primary': '#fff6eb',
+      '--emma-surface-muted': '#ffe9d6',
+      '--emma-surface-inverse': '#1f1a24',
+      '--emma-gradient-primary': 'linear-gradient(135deg, #ff9a8b 0%, #ff6a88 50%, #ff99ac 100%)',
+      '--emma-gradient-secondary': 'linear-gradient(135deg, #ffecd6 0%, #ffcba4 50%, #ff9a8b 100%)',
+      '--emma-gradient-aurora': 'linear-gradient(135deg, rgba(255, 206, 170, 0.4) 0%, rgba(255, 145, 171, 0.4) 50%, rgba(255, 233, 214, 0.4) 100%)',
+      '--emma-border-subtle': 'rgba(31, 26, 36, 0.1)',
+      '--emma-border-strong': 'rgba(31, 26, 36, 0.2)',
+      '--emma-text-strong': '#1f1a24',
+      '--emma-text-standard': 'rgba(31, 26, 36, 0.85)',
+      '--emma-text-muted': 'rgba(31, 26, 36, 0.6)',
+      '--emma-text-on-accent': '#1f1a24',
+      '--emma-neutral-rgb': '31, 26, 36',
+      '--emma-neutral-inverse-rgb': '240, 224, 205',
+      '--emma-accent-primary': '#ff8c68',
+      '--emma-accent-secondary': '#ffb347',
+      '--emma-accent-primary-rgb': '255, 140, 104',
+      '--emma-accent-secondary-rgb': '255, 179, 71',
+      '--emma-accent-surface': 'rgba(255, 176, 124, 0.18)',
+      '--emma-accent-surface-strong': 'rgba(255, 176, 124, 0.3)',
+      '--emma-accent-border': 'rgba(255, 176, 124, 0.35)',
+      '--emma-success': '#3aa76d',
+      '--emma-warning': '#f59e0b',
+      '--emma-danger': '#e4566e',
+      '--emma-chat-user-bubble': 'linear-gradient(135deg, #ffb07c, #ff8c68)',
+      '--emma-chat-user-text': '#1f1a24',
+      '--emma-chat-emma-bubble': 'rgba(255, 233, 214, 0.95)',
+      '--emma-chat-emma-text': '#1f1a24',
+      '--emma-chat-user-meta': 'rgba(31, 26, 36, 0.6)',
+      '--emma-chat-emma-meta': 'rgba(31, 26, 36, 0.5)',
+      '--emma-chat-surface': 'rgba(31, 26, 36, 0.08)',
+      '--emma-chat-surface-strong': 'rgba(31, 26, 36, 0.12)',
+      '--emma-chat-border': 'rgba(31, 26, 36, 0.18)',
+      '--emma-chat-muted': 'rgba(31, 26, 36, 0.6)',
+      '--emma-chat-strong': 'rgba(31, 26, 36, 0.9)',
+      '--emma-chat-error': '#e4566e',
+      '--emma-chat-success': '#3aa76d',
+      '--emma-nav-highlight': 'rgba(255, 176, 124, 0.25)',
+      '--emma-constellation-node': 'rgba(255, 176, 124, 0.7)',
+      '--emma-constellation-glow': 'rgba(255, 176, 124, 0.9)',
+      '--emma-orb-hue': '24',
+      '--emma-orb-hover-intensity': '0.2',
+      '--emma-glass': 'rgba(255, 255, 255, 0.7)',
+      '--emma-card-bg': 'rgba(255, 255, 255, 0.85)',
+      '--emma-button-secondary-bg': 'rgba(31, 26, 36, 0.08)',
+      '--emma-button-secondary-border': 'rgba(31, 26, 36, 0.12)',
+      '--emma-button-secondary-text': 'rgba(31, 26, 36, 0.72)',
+      '--emma-button-secondary-bg-hover': 'rgba(31, 26, 36, 0.14)',
+      '--emma-bg-gradient': 'linear-gradient(135deg, #fff6eb 0%, #ffe3cc 50%, #ffd2b0 100%)'
+    },
+    background: {
+      id: 'sunrise',
+      name: 'Sunrise Veil',
+      description: 'Warm morning light with gentle amber motion.',
+      intensity: 0.2
+    },
+    flags: {
+      highContrast: false,
+      animatedBackground: true
+    }
+  };
+
+  const midnightForest = {
+    id: 'midnight-forest',
+    name: 'Midnight Forest',
+    description: 'Deep greens and teals with luminous accents for focus.',
+    preview: {
+      primary: '#1c3d3a',
+      secondary: '#3ae8b3',
+      surface: '#061b1a'
+    },
+    cssVars: {
+      '--emma-surface-primary': '#061b1a',
+      '--emma-surface-muted': 'rgba(10, 58, 52, 0.55)',
+      '--emma-surface-inverse': '#e9fff9',
+      '--emma-gradient-primary': 'linear-gradient(135deg, #0f4251 0%, #166c54 50%, #3ae8b3 100%)',
+      '--emma-gradient-secondary': 'linear-gradient(135deg, #2d9486 0%, #1f745f 50%, #3ae8b3 100%)',
+      '--emma-gradient-aurora': 'linear-gradient(135deg, rgba(61, 214, 190, 0.2) 0%, rgba(26, 95, 91, 0.35) 50%, rgba(73, 164, 164, 0.2) 100%)',
+      '--emma-border-subtle': 'rgba(58, 149, 138, 0.32)',
+      '--emma-border-strong': 'rgba(58, 149, 138, 0.5)',
+      '--emma-text-strong': '#e9fff9',
+      '--emma-text-standard': 'rgba(233, 255, 249, 0.86)',
+      '--emma-text-muted': 'rgba(233, 255, 249, 0.65)',
+      '--emma-text-on-accent': '#032221',
+      '--emma-neutral-rgb': '233, 255, 249',
+      '--emma-neutral-inverse-rgb': '12, 64, 60',
+      '--emma-accent-primary': '#3ae8b3',
+      '--emma-accent-secondary': '#5adeff',
+      '--emma-accent-primary-rgb': '58, 232, 179',
+      '--emma-accent-secondary-rgb': '90, 222, 255',
+      '--emma-accent-surface': 'rgba(58, 149, 138, 0.18)',
+      '--emma-accent-surface-strong': 'rgba(58, 149, 138, 0.32)',
+      '--emma-accent-border': 'rgba(58, 149, 138, 0.45)',
+      '--emma-success': '#4ade80',
+      '--emma-warning': '#fbbf24',
+      '--emma-danger': '#f87171',
+      '--emma-chat-user-bubble': 'linear-gradient(135deg, #3ae8b3, #5adeff)',
+      '--emma-chat-user-text': '#0b2320',
+      '--emma-chat-emma-bubble': 'rgba(14, 52, 54, 0.88)',
+      '--emma-chat-emma-text': 'rgba(233, 255, 249, 0.92)',
+      '--emma-chat-user-meta': 'rgba(11, 35, 33, 0.6)',
+      '--emma-chat-emma-meta': 'rgba(233, 255, 249, 0.65)',
+      '--emma-chat-surface': 'rgba(12, 64, 60, 0.35)',
+      '--emma-chat-surface-strong': 'rgba(12, 64, 60, 0.5)',
+      '--emma-chat-border': 'rgba(58, 149, 138, 0.45)',
+      '--emma-chat-muted': 'rgba(233, 255, 249, 0.7)',
+      '--emma-chat-strong': 'rgba(233, 255, 249, 0.92)',
+      '--emma-chat-error': '#f87171',
+      '--emma-chat-success': '#3ae8b3',
+      '--emma-nav-highlight': 'rgba(58, 149, 138, 0.3)',
+      '--emma-constellation-node': 'rgba(58, 149, 138, 0.7)',
+      '--emma-constellation-glow': 'rgba(58, 149, 138, 0.95)',
+      '--emma-orb-hue': '160',
+      '--emma-orb-hover-intensity': '0.25',
+      '--emma-glass': 'rgba(8, 43, 43, 0.6)',
+      '--emma-card-bg': 'rgba(8, 43, 43, 0.55)',
+      '--emma-button-secondary-bg': 'rgba(12, 64, 60, 0.6)',
+      '--emma-button-secondary-border': 'rgba(58, 149, 138, 0.45)',
+      '--emma-button-secondary-text': 'rgba(233, 255, 249, 0.88)',
+      '--emma-button-secondary-bg-hover': 'rgba(12, 64, 60, 0.75)',
+      '--emma-bg-gradient': 'linear-gradient(135deg, #031010 0%, #0f2f2b 50%, #041b19 100%)'
+    },
+    background: {
+      id: 'forest',
+      name: 'Forest Night',
+      description: 'Luminous particles drifting through deep forest hues.',
+      intensity: 0.45
+    },
+    flags: {
+      highContrast: true,
+      animatedBackground: false
+    }
+  };
+
+  window.EMMA_THEMES = [auroraClassic, sunriseGlow, midnightForest];
+})();

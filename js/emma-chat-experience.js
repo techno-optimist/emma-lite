@@ -8,6 +8,46 @@
 
 // Emma Chat Experience - Production Ready
 
+window.metadataIncludesPerson = window.metadataIncludesPerson || ((peopleList, person) => {
+  if (!Array.isArray(peopleList) || !person) return false;
+
+  const targetId = person.id ? String(person.id).trim() : '';
+  if (!targetId) return false;
+
+  const resolveEntryId = (entry) => {
+    if (!entry) return null;
+    if (typeof entry === 'string' || typeof entry === 'number') {
+      const trimmed = String(entry).trim();
+      return trimmed || null;
+    }
+    if (typeof entry === 'object') {
+      const candidate = entry.id ?? entry.personId ?? entry.personID ?? entry.person_id ?? entry.uuid ?? entry.guid;
+      if (candidate === undefined || candidate === null) return null;
+      const trimmed = String(candidate).trim();
+      return trimmed || null;
+    }
+    return null;
+  };
+
+  return peopleList.some(entry => {
+    const entryId = resolveEntryId(entry);
+    return entryId && entryId === targetId;
+  });
+});
+
+window.contentMentionsPerson = window.contentMentionsPerson || ((personName, content) => {
+  if (!personName || !content) return false;
+
+  const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const words = personName.trim().split(/\s+/).filter(Boolean).map(escapeRegex);
+  if (words.length === 0) return false;
+
+  const pattern = `\\b${words.join('\\s+')}\\b(?:'s)?`;
+  const regex = new RegExp(pattern, 'i');
+
+  return regex.test(content);
+});
+
 class EmmaChatExperience extends ExperiencePopup {
   constructor(position, settings = {}) {
     super(position, settings);
@@ -20,6 +60,8 @@ class EmmaChatExperience extends ExperiencePopup {
     this.messageContainer = null;
     this.inputField = null;
     this.sendButton = null;
+    this.voiceIntegrationInitialized = false;
+    this.voiceIntegrationInitializing = false;
 
     // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
@@ -167,6 +209,12 @@ class EmmaChatExperience extends ExperiencePopup {
    * Transforms chat into voice-first multimodal experience
    */
   async initializeVoiceIntegration() {
+    if (this.voiceIntegrationInitialized || this.voiceIntegrationInitializing) {
+      return;
+    }
+
+    this.voiceIntegrationInitializing = true;
+
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
@@ -193,6 +241,8 @@ class EmmaChatExperience extends ExperiencePopup {
         // Connect voice button to Emma's voice system
         this.setupVoiceButton();
 
+        this.voiceIntegrationInitialized = true;
+
         // Set up voice event handlers for chat integration (if needed)
         if (this.setupVoiceEventHandlers) {
           this.setupVoiceEventHandlers();
@@ -205,9 +255,11 @@ class EmmaChatExperience extends ExperiencePopup {
         this.voiceButton.title = 'Voice system not available';
       }
     } catch (error) {
-      console.error('❌ Voice integration failed:', error);
+      console.error('??O Voice integration failed:', error);
       this.voiceButton.style.opacity = '0.5';
       this.voiceButton.title = 'Voice system error: ' + error.message;
+    } finally {
+      this.voiceIntegrationInitializing = false;
     }
   }
 
@@ -1228,26 +1280,17 @@ class EmmaChatExperience extends ExperiencePopup {
       
       if (window.emmaWebVault?.vaultData?.content?.memories) {
         const vaultMemories = window.emmaWebVault.vaultData.content.memories;
+        const personForMatching = { id: person.id, name: person.name };
         
         for (const [memoryId, memory] of Object.entries(vaultMemories)) {
-          // Check if person is in memory's people metadata
-          if (memory.metadata && memory.metadata.people && 
-              Array.isArray(memory.metadata.people) && 
-              memory.metadata.people.includes(person.id)) {
-            connectedMemories.push({ ...memory, id: memoryId });
+          const normalizedMemory = { ...memory, id: memory.id || memoryId };
+
+          if (window.metadataIncludesPerson(memory.metadata?.people, personForMatching)) {
+            connectedMemories.push(normalizedMemory);
+            continue;
           }
           
-          // Also check if person's name is mentioned in content
-          if (person.name && memory.content) {
-            const personName = person.name.toLowerCase();
-            const memoryContent = memory.content.toLowerCase();
-            if (memoryContent.includes(personName)) {
-              // Avoid duplicates
-              if (!connectedMemories.find(m => m.id === memoryId)) {
-                connectedMemories.push({ ...memory, id: memoryId });
-              }
-            }
-          }
+          // Content-based inference removed; rely on explicit metadata associations only
         }
       }
 
@@ -2257,8 +2300,12 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   formatMessageContent(content) {
-    // Basic formatting for Emma's responses
-    return content
+    // Escape HTML, then apply basic formatting for Emma's responses
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safe = esc(content || '');
+    return safe
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
       .replace(/\n/g, '<br>'); // Line breaks
@@ -5495,6 +5542,7 @@ RULES:
    * Show memory preview dialog
    */
   showMemoryPreviewDialog(memory) {
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(String(s)) : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
     // 🎯 CRITICAL FIX: Store memory in temporary storage for editing
     this.temporaryMemories.set(memory.id, memory);
     console.log('🎯 MOBILE PREVIEW: Stored temporary memory for editing:', memory.id);
@@ -5508,14 +5556,14 @@ RULES:
       <!-- 📱 MOBILE HEADER: Full-width with close button -->
       <div class="mobile-header">
         <div class="header-content">
-          <h2 class="memory-title">${memory.title || 'Beautiful Memory'}</h2>
+          <h2 class="memory-title">${esc(memory.title || 'Beautiful Memory')}</h2>
           <button class="close-btn" onclick="this.closest('.memory-preview-dialog').remove()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
-        <div class="memory-date">${memory.metadata?.date || 'Saturday, August 23, 2025'}</div>
+        <div class="memory-date">${esc(memory.metadata?.date || 'Saturday, August 23, 2025')}</div>
       </div>
 
       <!-- 📸 HERO IMAGE CAROUSEL: Feature photos prominently -->
@@ -5526,7 +5574,7 @@ RULES:
               .filter(att => att.type?.startsWith('image/'))
               .slice(0, 5)
               .map((image, index) => `
-                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${esc(image.data || image.dataUrl || image.url)}')">
                   <div class="image-overlay"></div>
                 </div>
               `).join('')}
@@ -5548,7 +5596,7 @@ RULES:
       ${peopleList.length > 0 ? `
         <div class="people-section">
           <h3 class="section-title">👥 People in this memory</h3>
-          <div class="people-grid" id="people-grid-${memory.id}">
+          <div class="people-grid" id="people-grid-${esc(memory.id)}">
             <!-- People avatars will be loaded here -->
           </div>
         </div>
@@ -5557,7 +5605,7 @@ RULES:
       <!-- 📝 CONTENT SECTION: Story and details -->
       <div class="content-section">
         <div class="memory-story">
-          <p>${memory.content}</p>
+          <p>${esc(memory.content || '')}</p>
         </div>
         
         ${memory.metadata?.emotions?.length > 0 ? `
@@ -5565,7 +5613,7 @@ RULES:
             <span class="tag-label">💭</span>
             <div class="emotions-list">
               ${memory.metadata.emotions.map(emotion => `
-                <span class="emotion-tag">${emotion}</span>
+                <span class="emotion-tag">${esc(emotion)}</span>
               `).join('')}
             </div>
           </div>
@@ -5574,7 +5622,7 @@ RULES:
         ${memory.metadata?.location ? `
           <div class="memory-tags">
             <span class="tag-label">📍</span>
-            <span class="location-tag">${memory.metadata.location}</span>
+            <span class="location-tag">${esc(memory.metadata.location)}</span>
           </div>
         ` : ''}
       </div>
@@ -5587,15 +5635,15 @@ RULES:
             ${memory.attachments.map((attachment, index) => `
               <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
                 ${attachment.type?.startsWith('image/') ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                  <img src="${esc(attachment.data || attachment.dataUrl || attachment.url)}" alt="${esc(attachment.name || '')}" />
                 ` : attachment.type?.startsWith('video/') ? `
-                  <video src="${attachment.dataUrl || attachment.url}" muted>
+                  <video src="${esc(attachment.dataUrl || attachment.url)}" muted>
                     <div class="video-play-overlay">▶️</div>
                   </video>
                 ` : `
                   <div class="file-item">
                     <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
-                    <div class="file-name">${attachment.name}</div>
+                    <div class="file-name">${esc(attachment.name || '')}</div>
                   </div>
                 `}
               </div>
@@ -5995,7 +6043,7 @@ RULES:
                 .filter(att => att.type?.startsWith('image/'))
                 .slice(0, 5)
                 .map((image, index) => `
-                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${esc(image.data || image.dataUrl || image.url)}')">
                     <div class="image-overlay"></div>
                   </div>
                 `).join('')}
@@ -6017,7 +6065,7 @@ RULES:
         ${peopleList.length > 0 ? `
           <div class="people-section">
             <h3 class="section-title">👥 People in this memory</h3>
-            <div class="people-grid" id="people-grid-${memory.id}">
+            <div class="people-grid" id="people-grid-${esc(memory.id)}">
               <!-- People avatars will be loaded here -->
             </div>
           </div>
@@ -6026,7 +6074,7 @@ RULES:
         <!-- CONTENT -->
         <div class="content-section">
           <div class="memory-story">
-            <p>${memory.content}</p>
+            <p>${esc(memory.content || '')}</p>
           </div>
           
           ${memory.metadata?.emotions?.length > 0 ? `
@@ -6034,7 +6082,7 @@ RULES:
               <span class="tag-label">💭</span>
               <div class="emotions-list">
                 ${memory.metadata.emotions.map(emotion => `
-                  <span class="emotion-tag">${emotion}</span>
+                  <span class="emotion-tag">${esc(emotion)}</span>
                 `).join('')}
               </div>
             </div>
@@ -6043,7 +6091,7 @@ RULES:
           ${memory.metadata?.location ? `
             <div class="memory-tags">
               <span class="tag-label">📍</span>
-              <span class="location-tag">${memory.metadata.location}</span>
+              <span class="location-tag">${esc(memory.metadata.location)}</span>
             </div>
           ` : ''}
         </div>
@@ -6851,21 +6899,29 @@ RULES:
     }, { passive: false, capture: false });
     
     // 📱 MOBILE: Handle touch events for mobile/tablet scrolling
-    let touchStartY = 0;
-    
-    editModal.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    
-    editModal.addEventListener('touchmove', (e) => {
-      // If touch is on content area, allow normal scrolling
-      if (content && (e.target === content || content.contains(e.target))) {
-        return; // Allow normal touch scrolling on content
+    const isTouchWithinContent = (node) => {
+      if (!content || !node) return false;
+      if (node === content) return true;
+      if (node.nodeType !== 1) {
+        return isTouchWithinContent(node.parentNode);
       }
-      
+      return node.closest('.edit-modal-content') === content;
+    };
+
+    editModal.addEventListener('touchmove', (e) => {
+      // Allow natural scrolling when the gesture originates inside the modal
+      if (isTouchWithinContent(e.target)) {
+        return;
+      }
+
       // Otherwise, prevent background scrolling
       e.preventDefault();
     }, { passive: false });
+
+    content.addEventListener('touchmove', (e) => {
+      // Keep scroll gestures inside the modal body
+      e.stopPropagation();
+    }, { passive: true });
     
     // Block body scroll completely while modal is open
     const originalOverflow = document.body.style.overflow;
@@ -7000,7 +7056,18 @@ RULES:
       // Update memory object
       memory.metadata = memory.metadata || {};
       memory.metadata.title = title;
-      memory.metadata.people = selectedPeople;
+      const selectedIds = Array.from(new Set(selectedPeople
+        .map(person => person.id ? person.id.trim() : '')
+        .filter(Boolean)));
+      const selectedNames = Array.from(new Set(selectedPeople
+        .map(person => person.name ? person.name.trim() : '')
+        .filter(Boolean)));
+      memory.metadata.people = selectedIds;
+      if (selectedNames.length > 0) {
+        memory.metadata.peopleNames = selectedNames;
+      } else if (memory.metadata.peopleNames) {
+        delete memory.metadata.peopleNames;
+      }
       memory.title = title;
       memory.content = content;
       
@@ -7147,7 +7214,22 @@ RULES:
       }
 
       // Get currently selected people
-      const selectedPeopleIds = (memory.metadata?.people || []).map(p => p.id);
+      const selectedPeopleIds = (memory.metadata?.people || [])
+        .map(personRef => {
+          if (!personRef) return null;
+          if (typeof personRef === 'string' || typeof personRef === 'number') {
+            const trimmed = String(personRef).trim();
+            return trimmed || null;
+          }
+          if (typeof personRef === 'object') {
+            const candidate = personRef.id ?? personRef.personId ?? personRef.personID ?? personRef.person_id;
+            if (candidate === undefined || candidate === null) return null;
+            const trimmed = String(candidate).trim();
+            return trimmed || null;
+          }
+          return null;
+        })
+        .filter(Boolean);
       
       if (people.length === 0) {
         loadingText.textContent = 'No people in vault yet. Add people first!';
@@ -7670,11 +7752,21 @@ RULES:
           
           // Auto-select the new person in the memory
           memory.metadata = memory.metadata || {};
-          memory.metadata.people = memory.metadata.people || [];
-          memory.metadata.people.push({
-            id: personId,
-            name: name
-          });
+          memory.metadata.people = Array.isArray(memory.metadata.people) ? memory.metadata.people : [];
+          const trimmedPersonId = personId ? String(personId).trim() : '';
+          if (trimmedPersonId && !memory.metadata.people.includes(trimmedPersonId)) {
+            memory.metadata.people.push(trimmedPersonId);
+          }
+
+          if (name) {
+            const trimmedName = name.trim();
+            if (trimmedName) {
+              memory.metadata.peopleNames = Array.isArray(memory.metadata.peopleNames) ? memory.metadata.peopleNames : [];
+              if (!memory.metadata.peopleNames.includes(trimmedName)) {
+                memory.metadata.peopleNames.push(trimmedName);
+              }
+            }
+          }
 
           this.showToast(`✨ ${name} added to vault and memory!`, 'success');
           closeDialog();
@@ -7958,10 +8050,21 @@ RULES:
       if (newPerson) {
         // Replace temp ID with real ID
         const tempId = `temp_${personName.toLowerCase()}`;
-        const peopleIds = state.memory.metadata.people || [];
+        const peopleIds = Array.isArray(state.memory.metadata.people) ? state.memory.metadata.people : [];
         const updatedPeopleIds = peopleIds.map(id => id === tempId ? newPerson.id : id);
         
         state.memory.metadata.people = updatedPeopleIds;
+        
+        const existingNames = Array.isArray(state.memory.metadata.peopleNames) ? state.memory.metadata.peopleNames : [];
+        const filteredNames = existingNames.filter(name => name.toLowerCase() !== personName.toLowerCase());
+        if (newPerson.name) {
+          filteredNames.push(newPerson.name);
+        }
+        if (filteredNames.length > 0) {
+          state.memory.metadata.peopleNames = Array.from(new Set(filteredNames));
+        } else if (state.memory.metadata.peopleNames) {
+          delete state.memory.metadata.peopleNames;
+        }
         
         // Remove from newPeopleDetected
         state.memory.metadata.newPeopleDetected = (state.memory.metadata.newPeopleDetected || [])
@@ -9621,7 +9724,7 @@ Just the question:`;
       if (people.length === 0) {
         peopleGrid.innerHTML = `
           <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">
-            No people in vault yet. <button onclick="window.open('/people.html', '_blank')" style="color: #8b5cf6; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
+            No people in vault yet. <button onclick="window.open('/pages/people-emma.html', '_blank')" style="color: #8b5cf6; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
           </div>
         `;
         return;
@@ -10188,3 +10291,5 @@ Analyze the user's intent and respond with JSON:
 // Export for use in other modules
 window.EmmaChatExperience = EmmaChatExperience;
 console.log('💬 Emma Chat Experience: Module loaded successfully');
+
+

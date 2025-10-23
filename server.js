@@ -17,13 +17,16 @@ const EmmaServerAgent = require('./emma-agent');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security hardening
+app.disable('x-powered-by');
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "https://cdn.jsdelivr.net"],
-      scriptSrcAttr: ["'unsafe-inline'"], // Allow inline event handlers for now
+      scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
       connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com", "https://emma-voice-backend.onrender.com", "https://cdn.jsdelivr.net"],
@@ -32,7 +35,6 @@ app.use(helmet({
       fontSrc: ["'self'", "data:"]
     }
   },
-  // Simplified permissions policy to avoid browser warnings
   permissionsPolicy: {
     camera: ["'self'"],
     microphone: ["'self'"],
@@ -41,26 +43,39 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com'] 
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com']
     : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'],
   credentials: true
 }));
 
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static('.', { 
-  index: 'index.html',
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache');
-    }
-  }
-}));
+// Serve project assets while keeping tighter cache control for HTML
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/themes', express.static(path.join(__dirname, 'themes')));
+app.use('/pages', express.static(path.join(__dirname, 'pages')));
+// Serve extension artifacts only if explicitly needed (kept read-only)
+app.use('/emma-vault-extension-fixed', express.static(path.join(__dirname, 'emma-vault-extension-fixed')));
+// Root index and favicon
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/favicon.svg', (req, res) => res.sendFile(path.join(__dirname, 'favicon.svg')));
+
+// Explicit routes for root-level dashboards to avoid SPA fallback loop.
+// NOTE: This root-level dashboard.html is the canonical dashboard entry point.
+app.get('/dashboard.html', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+[
+  'add-person.html',
+  'emma-cloud.html'
+].forEach((file) => {
+  app.get(`/${file}`, (req, res) => res.sendFile(path.join(__dirname, file)));
+});
 
 // Rate limiting for token endpoint
 const tokenLimiter = new RateLimiterMemory({
   keyGenerator: (req) => req.ip,
-  points: 10, // 10 tokens per minute per IP
+  points: 10,
   duration: 60,
 });
 
@@ -70,35 +85,28 @@ const tokenLimiter = new RateLimiterMemory({
  */
 app.get('/token', async (req, res) => {
   try {
-    // Rate limiting
     await tokenLimiter.consume(req.ip);
-    
-    // Environment check
+
     if (!process.env.OPENAI_API_KEY) {
-      console.error('🚨 CRITICAL: OPENAI_API_KEY not configured');
+      console.error('CRITICAL: OPENAI_API_KEY not configured');
       return res.status(500).json({
         error: 'Voice service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE'
       });
     }
 
-    // Development mode check
     if (process.env.OPENAI_API_KEY === 'test_key' || process.env.OPENAI_API_KEY === 'test_key_placeholder') {
-      console.log('🧪 DEV MODE: Using simulated token for development');
       return res.json({
         value: 'dev_token_' + crypto.randomBytes(8).toString('hex'),
         expires_in: 300
       });
     }
 
-    // OFFICIAL GA PATTERN: Use client_secrets endpoint
     const sessionConfig = {
       session: {
-        type: "realtime",
-        model: "gpt-4o-realtime-preview-2024-12-17",
-        audio: {
-          output: { voice: "alloy" }
-        },
+        type: 'realtime',
+        model: 'gpt-4o-realtime-preview-2024-12-17',
+        audio: { output: { voice: 'alloy' } },
         instructions: `You are Emma, an intelligent memory companion built with love for families dealing with memory challenges, especially dementia.
 
 CRITICAL: Your name is Emma. Always introduce yourself as "Hello! I'm Emma, your personal memory companion."
@@ -118,12 +126,10 @@ YOUR APPROACH:
 - Never correct or challenge memories - validate them
 - Ask caring questions about people, places, and feelings
 
-You are built with infinite love for Debbe and families everywhere. 💜`
+You are built with infinite love for Debbe and families everywhere.`
       }
     };
 
-    console.log('🔑 Calling OpenAI client_secrets endpoint...');
-    
     const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
@@ -135,28 +141,21 @@ You are built with infinite love for Debbe and families everywhere. 💜`
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🚨 OpenAI client_secrets error:', response.status, errorText);
-      
-      // Fallback to direct API key
-      console.log('🔄 Falling back to direct API key');
-      return res.json({
-        value: process.env.OPENAI_API_KEY,
-        expires_in: 3600
+      console.error('OpenAI client_secrets error:', response.status, errorText);
+      return res.status(502).json({
+        error: 'Ephemeral token generation failed',
+        code: 'TOKEN_UPSTREAM_ERROR'
       });
     }
 
     const data = await response.json();
-    console.log('✅ Ephemeral token generated via client_secrets');
-    
-    res.json(data);
+    return res.json(data);
 
   } catch (error) {
-    console.error('🚨 TOKEN GENERATION ERROR:', error);
-    
-    // Emergency fallback
-    res.json({
-      value: process.env.OPENAI_API_KEY,
-      expires_in: 3600
+    console.error('TOKEN GENERATION ERROR:', error);
+    return res.status(502).json({
+      error: 'Token service unavailable',
+      code: 'TOKEN_SERVICE_ERROR'
     });
   }
 });
@@ -181,12 +180,11 @@ app.get('/api/health', (req, res) => {
  * SIMPLE TEST ENDPOINT - Debug deployment
  */
 app.get('/test', (req, res) => {
-  res.send('Emma Voice Backend is running! 🎙️💜');
+  res.send('Emma Voice Backend is running!');
 });
 
 /**
  * CTO SECURITY: Block all other API endpoints
- * Emma is local-first - no user data APIs needed
  */
 app.use('/api/*', (req, res) => {
   res.status(404).json({
@@ -195,9 +193,8 @@ app.use('/api/*', (req, res) => {
   });
 });
 
-// Serve static files (existing Emma web app) - MUST be after API routes
+// Fallback for SPA routes (do not expose other filesystem paths)
 app.get('*', (req, res) => {
-  // Don't serve index.html for API routes
   if (req.path.startsWith('/api/') || req.path === '/token') {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
@@ -206,7 +203,7 @@ app.get('*', (req, res) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error('🚨 SERVER ERROR:', err);
+  console.error('SERVER ERROR:', err);
   res.status(500).json({
     error: 'Internal server error',
     code: 'SERVER_ERROR'
@@ -217,18 +214,40 @@ app.use((err, req, res, next) => {
 const server = http.createServer(app);
 
 // Create WebSocket server for Emma voice
-const wss = new WebSocket.Server({ 
+const wss = new WebSocket.Server({
   server,
   path: '/voice'
 });
 
+// WebSocket security controls
+const ALLOWED_WS_ORIGINS = new Set(
+  (process.env.NODE_ENV === 'production')
+    ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com']
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000']
+);
+const ipConnCount = new Map();
+const MAX_WS_PER_IP = parseInt(process.env.MAX_WS_PER_IP || '5', 10);
+
 /**
  * Emma Voice WebSocket Server
- * PRODUCTION-READY: Server-side Emma agent with browser client
  */
 wss.on('connection', (browserWs, request) => {
-  console.log('🎙️ New Emma voice session started');
-  
+  // Origin check
+  const origin = request.headers.origin;
+  if (!ALLOWED_WS_ORIGINS.has(origin)) {
+    try { browserWs.close(1008, 'Origin not allowed'); } catch (_) {}
+    return;
+  }
+
+  // IP connection limiting
+  const ip = request.socket?.remoteAddress || 'unknown';
+  const curr = ipConnCount.get(ip) || 0;
+  if (curr >= MAX_WS_PER_IP) {
+    try { browserWs.close(1013, 'Too many connections'); } catch (_) {}
+    return;
+  }
+  ipConnCount.set(ip, curr + 1);
+
   // Create Emma agent for this session
   const emmaAgent = new EmmaServerAgent({
     voice: 'alloy',
@@ -237,71 +256,53 @@ wss.on('connection', (browserWs, request) => {
     pacing: 2.5,
     validationMode: true
   });
-  
+
   // Handle messages from browser
   browserWs.on('message', async (data) => {
     try {
       const message = JSON.parse(data);
-      console.log('📨 Browser message:', message.type);
-      
       switch (message.type) {
         case 'start_session':
           await emmaAgent.startSession(browserWs);
           break;
-          
         case 'user_text':
-          // Forward user text into the agent as a message
           if (emmaAgent && emmaAgent.sendUserText) {
             await emmaAgent.sendUserText(message.text || '');
           }
           break;
-
         case 'user_audio_chunk':
-          // Legacy audio chunks (ignored in current implementation)
           break;
-          
         case 'realtime_audio_chunk':
-          // Real-time audio streaming - trigger immediate response when speech detected
           if (emmaAgent && message.chunk) {
             await emmaAgent.handleRealtimeAudio(message.chunk);
           }
           break;
-
         case 'tool_result':
-          // Handle tool results from browser
           if (message.call_id && message.result) {
             emmaAgent.handleToolResult(message.call_id, message.result);
           }
           break;
       }
-      
     } catch (error) {
-      console.error('❌ Browser message error:', error);
-      browserWs.send(JSON.stringify({
-        type: 'error',
-        message: 'Failed to process message'
-      }));
+      try {
+        browserWs.send(JSON.stringify({ type: 'error', message: 'Failed to process message' }));
+      } catch (_) {}
     }
   });
-  
+
   // Handle browser disconnect
   browserWs.on('close', () => {
-    console.log('🔇 Browser disconnected');
     if (emmaAgent) {
       emmaAgent.stopSession();
     }
+    const ip = request.socket?.remoteAddress || 'unknown';
+    const curr = ipConnCount.get(ip) || 1;
+    ipConnCount.set(ip, Math.max(0, curr - 1));
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`
-🌟 Emma Voice Service Started
-📍 Port: ${PORT}
-🔒 Mode: ${process.env.NODE_ENV || 'development'}
-🎙️ Voice: ${process.env.OPENAI_API_KEY ? 'Enabled' : 'DISABLED - Set OPENAI_API_KEY'}
-🌐 WebSocket: /voice (Emma agent proxy)
-💜 Privacy: Local-first architecture maintained
-  `);
+  console.log(`Emma Voice Service Started on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
 
 module.exports = app;

@@ -13,9 +13,16 @@ class EmmaPerformanceOptimizer {
     this.performanceBudget = {
       maxInitialJS: 500, // KB
       maxImageSize: 5,   // MB
-      maxConcurrentRequests: 6
+      maxConcurrentRequests: 6,
+      maxMemoryMB: 120
     };
-    
+    this.memoryPressureActive = false;
+    this.memoryWarningIssued = false;
+    this.lastMemoryWarning = 0;
+    this.lastMemoryUsage = 0;
+    this.memoryCheckInterval = null;
+    this.voiceShutdownRequested = false;
+
     this.init();
   }
 
@@ -450,15 +457,96 @@ class EmmaPerformanceOptimizer {
     }
 
     // Memory usage monitoring (if available)
-    if (performance.memory) {
-      setInterval(() => {
+    if (performance && performance.memory) {
+      if (this.memoryCheckInterval) {
+        clearInterval(this.memoryCheckInterval);
+      }
+
+      this.memoryCheckInterval = setInterval(() => {
         const memoryInfo = performance.memory;
         const usedMB = memoryInfo.usedJSHeapSize / (1024 * 1024);
-        
-        if (usedMB > 100) { // Alert if using more than 100MB
-          console.warn(`⚠️ High memory usage: ${usedMB.toFixed(1)}MB`);
+        this.lastMemoryUsage = usedMB;
+
+        const threshold = this.performanceBudget.maxMemoryMB || 120;
+        if (usedMB >= threshold) {
+          this.handleMemoryPressure(usedMB);
+        } else if (this.memoryPressureActive && usedMB < threshold * 0.75) {
+          this.releaseMemoryPressure();
+        } else if (usedMB < threshold * 0.8) {
+          this.memoryWarningIssued = false;
         }
       }, 30000); // Check every 30 seconds
+    }
+  }
+
+  /**
+   * Handle high memory usage by shedding optional workloads
+   */
+  handleMemoryPressure(currentMB) {
+    const threshold = this.performanceBudget.maxMemoryMB || 120;
+    const now = Date.now();
+
+    if (!this.memoryWarningIssued || (now - this.lastMemoryWarning) > 60000) {
+      console.warn(`[Emma] High memory usage: ${currentMB.toFixed(1)}MB (budget ${threshold}MB)`);
+      this.memoryWarningIssued = true;
+      this.lastMemoryWarning = now;
+    }
+
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('emma:memoryPressure', {
+        detail: {
+          usageMB: currentMB,
+          thresholdMB: threshold,
+          active: this.memoryPressureActive
+        }
+      }));
+    }
+
+    if (this.memoryPressureActive) {
+      return;
+    }
+
+    this.memoryPressureActive = true;
+    document.body.classList.add('emma-memory-pressure');
+
+    if (!this.isReducedMotion) {
+      document.body.classList.add('reduced-motion');
+    }
+
+    if (window.emmaChatExperience?.isVisible && window.emmaChatExperience.close) {
+      try {
+        window.emmaChatExperience.close();
+      } catch (error) {
+        console.warn('[Emma] Unable to close chat during memory pressure:', error);
+      }
+    }
+
+    if (!this.voiceShutdownRequested && window.emmaChatExperience?.emmaVoice?.isConnected) {
+      this.voiceShutdownRequested = true;
+      Promise.resolve(window.emmaChatExperience.emmaVoice.stopVoiceSession?.())
+        .catch((error) => console.warn('[Emma] Failed to end voice session during memory pressure:', error))
+        .finally(() => {
+          this.voiceShutdownRequested = false;
+        });
+    }
+  }
+
+  /**
+   * Clear memory pressure state once usage returns to normal levels
+   */
+  releaseMemoryPressure() {
+    if (!this.memoryPressureActive) {
+      return;
+    }
+
+    this.memoryPressureActive = false;
+    document.body.classList.remove('emma-memory-pressure');
+    this.voiceShutdownRequested = false;
+
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('emma:memoryPressureRecovered', {
+        detail: { usageMB: this.lastMemoryUsage }
+      }));
     }
   }
 

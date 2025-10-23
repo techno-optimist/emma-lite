@@ -4,30 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emma Settings - Your Intelligent Memory Companion</title>
+  <link rel="stylesheet" href="../css/theme-tokens.css">
   
   <!-- Emma Core Systems -->
-  <script src="../js/emma-input-modal.js"></script>
-  <script src="../js/clean-password-modal.js"></script>
-  <script src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-input-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/clean-password-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../themes/theme-catalog.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-settings-ui.js"></script>
   
-  <!-- Browser Compatibility Layer -->
-  <script src="../emma-browser-compatibility-fix.js"></script>
-  
-  <!-- Mobile UI Fixes -->
-  <script src="../emma-mobile-ui-fixes.js"></script>
+  <!-- Optional compatibility layers removed: files not present in web build -->
   
   <style>
     /* Emma Brand Variables */
     :root {
-      --emma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-      --emma-purple: #8B5CF6;
-      --emma-pink: #F093FB;
-      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
-      --emma-glass: rgba(255, 255, 255, 0.1);
-      --emma-border: rgba(255, 255, 255, 0.2);
-      --emma-text: #ffffff;
-      --emma-text-secondary: rgba(255, 255, 255, 0.8);
-      --emma-text-tertiary: rgba(255, 255, 255, 0.6);
+      --emma-gradient: var(--emma-bg-gradient);
+      --emma-purple: var(--emma-accent-primary);
+      --emma-pink: var(--emma-accent-secondary);
+      --emma-glow: var(--emma-glow-strong);
+      --emma-glass: rgba(var(--emma-neutral-rgb), 0.08);
+      --emma-border: rgba(var(--emma-neutral-rgb), 0.18);
+      --emma-text: var(--emma-text-strong);
+      --emma-text-secondary: var(--emma-text-standard);
+      --emma-text-tertiary: var(--emma-text-muted);
     }
 
     * {
@@ -102,6 +102,159 @@
       padding: 32px;
       margin-bottom: 32px;
       box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    }
+
+    /* Theme gallery styles */
+    .theme-gallery {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      margin-top: 20px;
+    }
+
+    .theme-card {
+      position: relative;
+      border: 1px solid rgba(var(--emma-neutral-rgb), 0.15);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(var(--emma-neutral-rgb), 0.06);
+      color: var(--emma-text-secondary);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 150px;
+      text-align: left;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.4);
+    }
+
+    .theme-card--active {
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.65);
+      box-shadow: 0 18px 50px rgba(var(--emma-accent-primary-rgb), 0.35);
+    }
+
+    .theme-card__preview {
+      height: 80px;
+      border-radius: 14px;
+      background: var(--emma-gradient-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-card__swatches {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .theme-card__swatch {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .theme-card__info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .theme-card__name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--emma-text);
+    }
+
+    .theme-card__description {
+      font-size: 13px;
+      color: var(--emma-text-secondary);
+      line-height: 1.5;
+    }
+
+    .theme-card__badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .theme-card__badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(var(--emma-accent-primary-rgb), 0.18);
+      color: var(--emma-accent-primary);
+      font-weight: 600;
+    }
+
+    .background-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .background-option {
+      flex: 1 1 160px;
+      min-width: 160px;
+      border: 1px solid rgba(var(--emma-neutral-rgb), 0.18);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(var(--emma-neutral-rgb), 0.05);
+      color: var(--emma-text-secondary);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .background-option:hover {
+      transform: translateY(-2px);
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.45);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
+    }
+
+    .background-option--active {
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.65);
+      box-shadow: 0 18px 40px rgba(var(--emma-accent-primary-rgb), 0.3);
+    }
+
+    .background-option__preview {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--emma-gradient-primary);
+      flex-shrink: 0;
+    }
+
+    .background-option__info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .background-option__name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--emma-text);
+    }
+
+    .background-option__description {
+      font-size: 12px;
+      color: var(--emma-text-secondary);
+      line-height: 1.4;
     }
 
     .section-title {
@@ -580,6 +733,18 @@
       <p class="settings-subtitle">Configure your intelligent memory companion</p>
     </div>
 
+    <!-- Visual Theme Selection -->
+    <div class="settings-section">
+      <h2 class="section-title">
+        🎨 Visual Themes
+      </h2>
+      <p class="section-description">
+        Preview different Emma looks and moods. Themes update instantly so you can find the palette that feels just right, and you can choose a signature background to match.
+      </p>
+      <div id="settings-theme-gallery" class="theme-gallery" role="list" aria-label="Available themes"></div>
+      <div id="settings-background-options" class="background-options" role="list" aria-label="Background options"></div>
+    </div>
+
     <!-- AI Configuration -->
     <div class="settings-section">
       <h2 class="section-title">
@@ -820,7 +985,7 @@
     </button>
   </div>
 
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     /**
      * Emma Settings Manager
      * Clean, modern settings interface with Emma branding
@@ -1211,6 +1376,13 @@
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
       window.emmaSettingsManager = new EmmaSettingsManager();
+
+      if (window.EmmaThemeUI) {
+        window.EmmaThemeUI.init({
+          themeContainerId: 'settings-theme-gallery',
+          backgroundContainerId: 'settings-background-options'
+        });
+      }
     });
   </script>
 

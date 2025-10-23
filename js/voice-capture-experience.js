@@ -307,11 +307,15 @@ class VoiceCaptureExperience extends ExperiencePopup {
     const container = document.getElementById('topic-nodes');
     if (!container) return;
 
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+
     container.innerHTML = suggestions.map((suggestion, index) => `
-      <div class="topic-node" data-prompt="${suggestion.prompt}" style="--node-delay: ${index * 100}ms">
+      <div class="topic-node" data-prompt="${esc(suggestion.prompt)}" style="--node-delay: ${index * 100}ms">
         <div class="node-content">
-          <div class="node-icon">${suggestion.icon}</div>
-          <div class="node-text">${suggestion.text}</div>
+          <div class="node-icon">${esc(suggestion.icon)}</div>
+          <div class="node-text">${esc(suggestion.text)}</div>
         </div>
         <div class="node-glow"></div>
       </div>
@@ -542,14 +546,19 @@ class VoiceCaptureExperience extends ExperiencePopup {
   }
 
   formatTranscriptText(text) {
-    // Add subtle formatting for better readability
-    return text
-      .split(/(\.|!|\?)\s+/)
-      .map((segment, index) => {
-        if (segment.match(/[.!?]/)) {
-          return `<span class="sentence-end">${segment}</span>`;
+    // Escape HTML, then wrap sentence-ending punctuation for readability
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safe = esc(text);
+    return safe
+      .split(/([.!?]\s+)/)
+      .map((seg) => {
+        const m = seg.match(/^([.!?])(\s+)$/);
+        if (m) {
+          return `<span class="sentence-end">${m[1]}</span>${m[2]}`;
         }
-        return segment;
+        return seg;
       })
       .join('');
   }

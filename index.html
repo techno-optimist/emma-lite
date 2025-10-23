@@ -304,6 +304,27 @@
          * Clean Emma Pure Web App
          * Perfect architecture for Debbe's demo
          */
+
+        async function ensureEmmaWebVault() {
+            if (window.emmaWebVault) return;
+
+            if (typeof EmmaWebVault === 'undefined') {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'js/emma-web-vault.js';
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Failed to load Emma Web Vault script.'));
+                    document.head.appendChild(script);
+                });
+            }
+
+            if (typeof EmmaWebVault === 'undefined') {
+                throw new Error('Emma Web Vault system unavailable.');
+            }
+
+            window.emmaWebVault = new EmmaWebVault();
+        }
+
         class CleanEmmaApp {
       constructor() {
                 this.vaultStatus = 'locked';
@@ -447,6 +468,7 @@
                     if (!passphrase) return;
 
                     // Create new vault using Emma Web Vault
+                    await ensureEmmaWebVault();
                     const result = await window.emmaWebVault.createVaultFile(vaultName, passphrase);
 
                     if (result.success) {
@@ -474,6 +496,7 @@
                     if (!passphrase) return;
 
                     // Use EXACT working crypto from extension
+                    await ensureEmmaWebVault();
                     const vaultData = await window.emmaWebVault.exactWorkingDecrypt(fileData, passphrase);
 
                     // Set vault data in Emma Web Vault

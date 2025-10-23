@@ -32,6 +32,17 @@ class EmmaBrowserClient {
     this.synth = window.speechSynthesis || null;
     this.audioWorkletNode = null;
     this.audioContext = null;
+    this.mediaStream = null;
+    this._audioSinkNode = null;
+    this._audioWorkletModuleUrl = null;
+    this._realtimeStream = null;
+    this._audioSourceNode = null;
+    this._sinkConnected = false;
+    this._realtimeProcessor = null;
+    this._realtimeSource = null;
+    this._realtimeAudioContext = null;
+    this._realtimeSinkNode = null;
+    this._disableRecognition = false;
     this.lastEmmaText = '';
   }
 
@@ -40,6 +51,7 @@ class EmmaBrowserClient {
    */
   async startVoiceSession() {
     try {
+      this._disableRecognition = false;
       this.setState('connecting');
       
       // Connect to Emma backend
@@ -74,12 +86,44 @@ class EmmaBrowserClient {
    */
   async setupPcmStreaming(mediaStream) {
     try {
-      if (!window.AudioWorkletNode || !window.AudioContext) return;
-      this.audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-      const source = this.audioContext.createMediaStreamSource(mediaStream);
+      if (!mediaStream) {
+        return;
+      }
 
-      // Inline processor via AudioWorklet
-      const processorCode = `
+      this.mediaStream = mediaStream;
+
+      if (!window.AudioWorkletNode || !window.AudioContext) {
+        return;
+      }
+
+      this.audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+      if (!this.audioContext) {
+        return;
+      }
+
+      if (this._audioSourceNode) {
+        try {
+          this._audioSourceNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._audioSourceNode = null;
+      }
+
+      if (this.audioWorkletNode) {
+        try {
+          this.audioWorkletNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this.audioWorkletNode = null;
+      }
+
+      this._audioSourceNode = this.audioContext.createMediaStreamSource(mediaStream);
+
+      if (!this._audioWorkletModuleUrl) {
+        // Inline processor via AudioWorklet (loaded once per context)
+        const processorCode = `
         class EmmaPcmProcessor extends AudioWorkletProcessor {
           constructor() {
             super();
@@ -130,17 +174,31 @@ class EmmaBrowserClient {
         registerProcessor('emma-pcm', EmmaPcmProcessor);
       `;
 
-      const blob = new Blob([processorCode], { type: 'application/javascript' });
-      const url = URL.createObjectURL(blob);
-      await this.audioContext.audioWorklet.addModule(url);
+        const blob = new Blob([processorCode], { type: 'application/javascript' });
+        this._audioWorkletModuleUrl = URL.createObjectURL(blob);
+        await this.audioContext.audioWorklet.addModule(this._audioWorkletModuleUrl);
+      }
+
       this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'emma-pcm');
       this.audioWorkletNode.port.onmessage = (e) => {
         if (e.data?.type === 'chunk') {
           this.sendToAgent({ type: 'user_audio_chunk', chunk: e.data.data });
         }
       };
-      source.connect(this.audioWorkletNode);
-      this.audioWorkletNode.connect(this.audioContext.destination);
+
+      this._audioSinkNode = this._audioSinkNode || this.audioContext.createGain();
+      if (this._audioSinkNode) {
+        this._audioSinkNode.gain.value = 0;
+      }
+
+      this._audioSourceNode.connect(this.audioWorkletNode);
+      if (this._audioSinkNode) {
+        this.audioWorkletNode.connect(this._audioSinkNode);
+        if (!this._sinkConnected) {
+          this._audioSinkNode.connect(this.audioContext.destination);
+          this._sinkConnected = true;
+        }
+      }
     } catch (e) {
       console.warn('🎙️ PCM streaming not available:', e?.message || e);
     }
@@ -545,11 +603,124 @@ class EmmaBrowserClient {
    */
   async stopVoiceSession() {
     try {
+      this._disableRecognition = true;
       this.isConnected = false;
       this.setState('idle');
       
       // Send stop message to agent
       this.sendToAgent({ type: 'stop_session' });
+
+      if (this.recognition) {
+        try {
+          this.recognition.onend = null;
+          this.recognition.onerror = null;
+          this.recognition.onresult = null;
+          this.recognition.onstart = null;
+          this.recognition.stop();
+        } catch (e) {
+          // Ignore recognition stop errors
+        }
+        this.recognition = null;
+      }
+      this.isListening = false;
+
+      if (this.mediaStream) {
+        try {
+          this.mediaStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          // Ignore track stop errors
+        }
+        this.mediaStream = null;
+      }
+
+      if (this._audioSourceNode) {
+        try {
+          this._audioSourceNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._audioSourceNode = null;
+      }
+
+      if (this.audioWorkletNode) {
+        try {
+          this.audioWorkletNode.port.onmessage = null;
+          this.audioWorkletNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this.audioWorkletNode = null;
+      }
+
+      if (this._audioSinkNode) {
+        try {
+          this._audioSinkNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._audioSinkNode = null;
+        this._sinkConnected = false;
+      }
+
+      if (this.audioContext) {
+        try {
+          this.audioContext.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+        this.audioContext = null;
+      }
+
+      if (this._audioWorkletModuleUrl) {
+        URL.revokeObjectURL(this._audioWorkletModuleUrl);
+        this._audioWorkletModuleUrl = null;
+      }
+
+      if (this._realtimeProcessor) {
+        try {
+          this._realtimeProcessor.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeProcessor.onaudioprocess = null;
+        this._realtimeProcessor = null;
+      }
+
+      if (this._realtimeSource) {
+        try {
+          this._realtimeSource.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeSource = null;
+      }
+
+      if (this._realtimeSinkNode) {
+        try {
+          this._realtimeSinkNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeSinkNode = null;
+      }
+
+      if (this._realtimeAudioContext) {
+        try {
+          this._realtimeAudioContext.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+        this._realtimeAudioContext = null;
+      }
+
+      if (this._realtimeStream) {
+        try {
+          this._realtimeStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          // Ignore track stop errors
+        }
+        this._realtimeStream = null;
+      }
       
       // Close WebSocket
       if (this.websocket) {
@@ -610,14 +781,38 @@ class EmmaBrowserClient {
         }
       });
 
+      this._realtimeStream = stream;
+
       // Create audio context for real-time processing
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-      const source = this.audioContext.createMediaStreamSource(stream);
+      this._realtimeAudioContext = this._realtimeAudioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      if (!this._realtimeAudioContext) {
+        return;
+      }
+
+      if (this._realtimeSource) {
+        try {
+          this._realtimeSource.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeSource = null;
+      }
+
+      if (this._realtimeProcessor) {
+        try {
+          this._realtimeProcessor.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeProcessor = null;
+      }
+
+      this._realtimeSource = this._realtimeAudioContext.createMediaStreamSource(stream);
       
       // Create a script processor for real-time audio chunks
-      const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+      this._realtimeProcessor = this._realtimeAudioContext.createScriptProcessor(4096, 1, 1);
       
-      processor.onaudioprocess = (event) => {
+      this._realtimeProcessor.onaudioprocess = (event) => {
         if (!this.isConnected) return;
         
         const inputBuffer = event.inputBuffer;
@@ -645,8 +840,16 @@ class EmmaBrowserClient {
         });
       };
       
-      source.connect(processor);
-      processor.connect(this.audioContext.destination);
+      this._realtimeSource.connect(this._realtimeProcessor);
+
+      this._realtimeSinkNode = this._realtimeSinkNode || this._realtimeAudioContext.createGain();
+      if (this._realtimeSinkNode) {
+        this._realtimeSinkNode.gain.value = 0;
+        this._realtimeProcessor.connect(this._realtimeSinkNode);
+        this._realtimeSinkNode.connect(this._realtimeAudioContext.destination);
+      } else {
+        this._realtimeProcessor.connect(this._realtimeAudioContext.destination);
+      }
       
       console.log('✅ Real-time audio streaming active');
       

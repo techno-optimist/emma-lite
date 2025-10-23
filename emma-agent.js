@@ -24,9 +24,15 @@ class EmmaServerAgent {
     this.isActive = false;
     this.lastSpokenText = '';
     this._lastAudioError = null;
+    this.debugMode = process.env.EMMA_AGENT_DEBUG === 'true';
+    this.logDebug = (...args) => {
+      if (this.debugMode) {
+        console.log(...args);
+      }
+    };
 
     this.initializeAgent();
-    console.log('🎙️ Emma Server Agent initialized');
+    this.logDebug('Emma Server Agent initialized');
   }
 
   /**
@@ -40,7 +46,7 @@ class EmmaServerAgent {
       tools: this.buildEmmaTools()
     });
 
-    console.log('✅ Emma RealtimeAgent created with personality');
+    this.logDebug('Emma RealtimeAgent created with personality');
   }
 
   /**
@@ -204,21 +210,21 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   async startSession(browserWebSocket) {
     try {
       this.browserWs = browserWebSocket;
-      console.log('🎙️ Starting Emma session...');
+      this.logDebug('Starting Emma session');
 
-      console.log('🔗 Creating RealtimeSession...');
+      this.logDebug('Creating RealtimeSession');
       
       // Create RealtimeSession with Emma agent
       this.session = new RealtimeSession(this.agent);
 
-      console.log('🔑 Connecting to OpenAI with API key...');
+      this.logDebug('Connecting to OpenAI with API key');
       
       // Connect to OpenAI with API key
       await this.session.connect({
         apiKey: process.env.OPENAI_API_KEY
       });
 
-      console.log('✅ Connected to OpenAI Realtime API');
+      this.logDebug('Connected to OpenAI Realtime API');
       this.isActive = true;
 
       // Setup session event handlers
@@ -229,8 +235,8 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         const proto = Object.getPrototypeOf(this.session);
         const ownKeys = Object.getOwnPropertyNames(this.session);
         const protoKeys = proto ? Object.getOwnPropertyNames(proto) : [];
-        console.log('🧰 RealtimeSession Own Keys:', ownKeys.join(', '));
-        console.log('🧰 RealtimeSession Proto Keys:', protoKeys.join(', '));
+        this.logDebug('RealtimeSession own keys count:', ownKeys.length);
+        this.logDebug('RealtimeSession proto keys count:', protoKeys.length);
       } catch (e) {
         console.error('Error inspecting session object:', e);
       }
@@ -241,11 +247,11 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         message: 'Emma is ready to talk!'
       });
 
-      console.log('📡 Sending initial greeting to Emma...');
+      this.logDebug('Sending initial greeting to Emma');
       
       // Send dynamic greeting using direct approach
       setTimeout(async () => {
-        console.log('📡 Triggering Emma dynamic introduction...');
+        this.logDebug('Triggering Emma dynamic introduction');
         const greetings = [
           'Hi Emma, someone just connected to talk with you. Please greet them warmly.',
           'Hello Emma, a new person is here to chat. Please welcome them.',
@@ -257,7 +263,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         await this.sendUserText(randomGreeting);
       }, 2000);
 
-      console.log('✅ Emma session started successfully');
+      this.logDebug('Emma session started successfully');
 
     } catch (error) {
       console.error('❌ Emma session failed:', error);
@@ -274,30 +280,19 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   setupSessionHandlers() {
     if (!this.session) return;
 
-    // DEBUG: Log ALL events to find the correct one
-    const originalOn = this.session.on.bind(this.session);
-    this.session.on = (event, handler) => {
-      console.log(`🎧 Registering listener for event: ${event}`);
-      return originalOn(event, (...args) => {
-        console.log(`🔔 Event fired: ${event}`, args.length > 0 ? JSON.stringify(args[0]).substring(0, 200) : '(no data)');
-        return handler(...args);
+    const register = this.session.on.bind(this.session);
+
+    if (this.debugMode) {
+      register('*', (eventName) => {
+        this.logDebug('[EmmaAgent] Event received:', eventName);
       });
-    };
+    }
 
-    // Listen for any event to understand what's available
-    this.session.on('*', (eventName, ...args) => {
-      console.log(`🌟 Wildcard event: ${eventName}`, args.length > 0 ? JSON.stringify(args[0]).substring(0, 100) : '');
-    });
-
-    // Try multiple possible event names for agent responses
     const responseEvents = ['response', 'message', 'agent_message', 'completion', 'output'];
-    
     for (const eventName of responseEvents) {
-      this.session.on(eventName, (data) => {
-        console.log(`📝 Emma ${eventName}:`, data);
+      register(eventName, (data) => {
         let text = '';
-        
-        // Extract text from various possible response formats
+
         if (typeof data === 'string') {
           text = data;
         } else if (data && data.content) {
@@ -307,30 +302,33 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         } else if (data && data.message) {
           text = data.message;
         }
-        
+
         if (text) {
+          if (this.debugMode) {
+            this.logDebug('[EmmaAgent] Transcript generated from event:', eventName);
+          }
           this.sendToBrowser({
             type: 'emma_transcription',
             transcript: text
           });
-          // Synthesize audio
           this.synthesizeAndSendAudio(text).catch((e) => {
-            console.warn('🔇 TTS synth warning:', e?.message || e);
+            console.warn('dY"� TTS synth warning:', e?.message || e);
           });
         }
       });
     }
 
-    // Handle errors
-    this.session.on('error', (error) => {
-      console.error('❌ Emma session error:', error);
+    register('error', (error) => {
+      console.error('?O Emma session error:', error);
       this.sendToBrowser({
         type: 'error',
         message: error.message
       });
     });
 
-    console.log('✅ Event handlers set up for RealtimeAgent conversation');
+    if (this.debugMode) {
+      this.logDebug('[EmmaAgent] Session handlers set up');
+    }
   }
 
   /**
@@ -340,7 +338,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
     try {
       if (!text) return;
       
-      console.log('📤 User message received:', text);
+      this.logDebug('User message received');
       
       // DIRECT APPROACH: Use OpenAI Chat API directly for reliable responses
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -373,7 +371,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       const data = await response.json();
       const emmaResponse = data.choices[0]?.message?.content || "I'm having trouble responding right now.";
       
-      console.log('📝 Emma responds:', emmaResponse);
+      this.logDebug('Emma response generated');
       
       // Send Emma's response to browser
       this.sendToBrowser({
@@ -402,7 +400,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   async synthesizeAndSendAudio(text) {
     try {
       if (!text || text === this.lastSpokenText) {
-        console.log('🔇 Skipping TTS: empty or duplicate text');
+        this.logDebug('Skipping TTS: empty or duplicate text');
         return;
       }
       this.lastSpokenText = text;
@@ -413,7 +411,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         return;
       }
 
-      console.log('🎤 Starting TTS synthesis for:', text.substring(0, 50) + '...');
+      this.logDebug('Starting TTS synthesis');
 
       // Use OpenAI TTS endpoint
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -430,7 +428,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         })
       });
 
-      console.log('🎤 TTS API response status:', response.status);
+      this.logDebug('TTS API response status:', response.status);
 
       if (!response.ok) {
         const err = await response.text();
@@ -441,7 +439,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       const arrayBuffer = await response.arrayBuffer();
       const base64Audio = Buffer.from(arrayBuffer).toString('base64');
       
-      console.log('🎤 TTS synthesis complete, audio size:', base64Audio.length, 'chars');
+      this.logDebug('TTS synthesis complete, audio size:', base64Audio.length, 'chars');
 
       this.sendToBrowser({
         type: 'emma_audio',
@@ -449,7 +447,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         audio: base64Audio
       });
 
-      console.log('📤 Sent OpenAI TTS audio to browser');
+      this.logDebug('Sent OpenAI TTS audio to browser');
 
     } catch (error) {
       console.error('🔇 TTS synthesis error:', error?.message || error);
@@ -494,7 +492,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
   sendToBrowser(message) {
     if (this.browserWs && this.browserWs.readyState === WebSocket.OPEN) {
       this.browserWs.send(JSON.stringify(message));
-      console.log('📤 Sent to browser:', message.type);
+      this.logDebug('Sent to browser:', message.type);
     }
   }
 
@@ -519,7 +517,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
         message: 'Emma session ended'
       });
 
-      console.log('🔇 Emma session stopped');
+      this.logDebug('Emma session stopped');
 
     } catch (error) {
       console.error('❌ Emma session cleanup error:', error);
@@ -537,7 +535,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       this.agent.voice = newSettings.voice || this.options.voice;
       this.agent.instructions = this.buildEmmaInstructions();
       
-      console.log('🎛️ Emma voice settings updated:', newSettings);
+      this.logDebug('Emma voice settings updated');
     }
   }
 
@@ -552,13 +550,13 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
       
       // Simple voice activity detection - if we have enough audio data, trigger transcription
       if (this._audioBuffer.length > 50000) { // ~1-2 seconds of audio
-        console.log('🎤 Processing real-time audio chunk...');
+        this.logDebug('Processing real-time audio chunk');
         
         // Use OpenAI Whisper for real-time transcription
         const transcription = await this.transcribeAudio(this._audioBuffer);
         
         if (transcription && transcription.length > 5) {
-          console.log('📝 Real-time transcription:', transcription);
+          this.logDebug('Real-time transcription generated');
           
           // Send to Emma immediately
           await this.sendUserText(transcription);

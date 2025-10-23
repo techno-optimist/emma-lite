@@ -26,6 +26,10 @@ class CleanSecurePasswordModal {
         confirmPassword = false
       } = options;
 
+      const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+
       this.currentResolve = resolve;
       this.currentReject = reject;
       this.isOpen = true;
@@ -35,19 +39,19 @@ class CleanSecurePasswordModal {
         <div class="clean-modal-overlay" id="cleanModalOverlay">
           <div class="clean-modal">
             <div class="clean-modal-header">
-              <h3 class="clean-modal-title">${title}</h3>
+              <h3 class="clean-modal-title">${esc(title)}</h3>
               <button class="clean-modal-close" onclick="window.cleanSecurePasswordModal.cancel()">×</button>
             </div>
             
             <div class="clean-modal-body">
-              <p class="clean-modal-message">${message}</p>
+              <p class="clean-modal-message">${esc(message)}</p>
               
               <div class="clean-input-group">
                 <input 
                   type="password" 
                   id="cleanPasswordInput" 
                   class="clean-input" 
-                  placeholder="${placeholder}"
+                  placeholder="${esc(placeholder)}"
                   autocomplete="new-password"
                 >
               </div>

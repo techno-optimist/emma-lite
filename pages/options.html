@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings - Emma</title>
+  <link rel="stylesheet" href="../css/theme-tokens.css">
   <link rel="stylesheet" href="../css/main.css">
   <style>
     .settings-container {
@@ -37,7 +38,157 @@
     .setting-item:last-child {
       border-bottom: none;
     }
-    
+
+    /* Theme gallery */
+    .theme-gallery {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      margin-top: 16px;
+    }
+
+    .theme-card {
+      position: relative;
+      border: 1px solid var(--emma-button-secondary-border);
+      border-radius: 16px;
+      padding: 16px;
+      background: var(--emma-card-bg);
+      color: var(--emma-text-standard);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 140px;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--emma-shadow-raised);
+    }
+
+    .theme-card--active {
+      border-color: var(--emma-accent-primary);
+      box-shadow: 0 12px 32px rgba(var(--emma-accent-primary-rgb), 0.35);
+    }
+
+    .theme-card__preview {
+      height: 72px;
+      border-radius: 12px;
+      background: var(--emma-gradient-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-card__swatches {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .theme-card__swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid rgba(0, 0, 0, 0.12);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .theme-card__info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .theme-card__name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--emma-text-strong);
+    }
+
+    .theme-card__description {
+      font-size: 13px;
+      color: var(--emma-text-muted);
+      line-height: 1.5;
+    }
+
+    .theme-card__badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .theme-card__badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(var(--emma-accent-primary-rgb), 0.15);
+      color: var(--emma-accent-primary);
+      font-weight: 600;
+    }
+
+    .background-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .background-option {
+      flex: 1 1 140px;
+      min-width: 140px;
+      border: 1px solid var(--emma-button-secondary-border);
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--emma-card-bg);
+      color: var(--emma-text-standard);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .background-option:hover {
+      transform: translateY(-2px);
+      border-color: var(--emma-accent-primary);
+      box-shadow: var(--emma-shadow-raised);
+    }
+
+    .background-option--active {
+      border-color: var(--emma-accent-primary);
+      box-shadow: 0 12px 28px rgba(var(--emma-accent-primary-rgb), 0.3);
+    }
+
+    .background-option__preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--emma-gradient-primary);
+      flex-shrink: 0;
+    }
+
+    .background-option__info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .background-option__name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--emma-text-strong);
+    }
+
+    .background-option__description {
+      font-size: 12px;
+      color: var(--emma-text-muted);
+      line-height: 1.4;
+    }
+
     .setting-label {
       flex: 1;
     }
@@ -1487,8 +1638,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <h2 style="margin:0;">Settings</h2>
           <div style="display:flex;gap:8px;align-items:center;">
-            <span id="save-indicator" style="display:none;padding:4px 8px;border-radius:999px;font-size:12px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);color:#22c55e;">Saved ✓</span>
-            <button type="button" id="settings-back" class="btn btn-secondary">← Back</button>
+            <span id="save-indicator" style="display:none;padding:4px 8px;border-radius:999px;font-size:12px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);color:#22c55e;">Saved âœ“</span>
+            <button type="button" id="settings-back" class="btn btn-secondary">â† Back</button>
             <button type="button" id="settings-close" class="btn">Close</button>
           </div>
         </div>
@@ -1498,7 +1649,7 @@
         
         <!-- MTAP Status -->
         <div class="mtap-status">
-          <div class="mtap-icon">🔐</div>
+          <div class="mtap-icon">ðŸ”</div>
           <div class="mtap-info">
             <h4>MTAP Protocol Active</h4>
             <p>Memory Transport & Access Protocol v1.0 - Secure, federated memory storage</p>
@@ -1509,9 +1660,16 @@
           </label>
         </div>
         
+        <!-- Theme & Background Selection -->
+        <div class="setting-section" id="theme-settings">
+          <h3>Visual Themes</h3>
+          <p class="section-description">Choose a theme and background to match your style. Themes update instantly so you can preview before you commit.</p>
+          <div id="theme-gallery" class="theme-gallery" role="list" aria-label="Available themes"></div>
+          <div class="background-options" id="background-options" role="list" aria-label="Background options"></div>
+        </div>
         <!-- Emma Orb Selector -->
         <div class="setting-section">
-          <h3>✨ Choose Your Emma</h3>
+          <h3>âœ¨ Choose Your Emma</h3>
           <p class="section-description">Select your AI companion and customize their appearance</p>
           
           <div class="orb-avatar-selector">
@@ -1522,7 +1680,7 @@
               <div class="orb-info">
                 <h4>Emma Assistant</h4>
                 <p>Your versatile AI companion for daily tasks and conversations</p>
-                <span class="orb-color-indicator">Purple • Classic</span>
+                <span class="orb-color-indicator">Purple â€¢ Classic</span>
               </div>
               <div class="orb-status-badge" id="status-default">Active</div>
             </div>
@@ -1534,7 +1692,7 @@
               <div class="orb-info">
                 <h4>Memory Companion</h4>
                 <p>Specialized support for memory care with gentle, patient interactions</p>
-                <span class="orb-color-indicator">Blue • Calming</span>
+                <span class="orb-color-indicator">Blue â€¢ Calming</span>
               </div>
               <div class="orb-status-badge" id="status-dementia">Configure</div>
             </div>
@@ -1546,7 +1704,7 @@
               <div class="orb-info">
                 <h4>Mirror Emma</h4>
                 <p>Reflective companion that adapts and mirrors your communication style</p>
-                <span class="orb-color-indicator">Silver • Adaptive</span>
+                <span class="orb-color-indicator">Silver â€¢ Adaptive</span>
               </div>
               <div class="orb-status-badge" id="status-mirror">Configure</div>
             </div>
@@ -1555,7 +1713,7 @@
 
         <!-- Dementia Companion Settings -->
         <div class="setting-section">
-          <h3>🧠 Dementia Companion</h3>
+          <h3>ðŸ§  Dementia Companion</h3>
           
           <div class="setting-item">
             <div class="setting-label">
@@ -1646,7 +1804,7 @@
         <!-- Vault Backup & Restore -->
         <div class="setting-section vault-backup-section">
           <div class="vault-section-header">
-            <h3>🔐 Memory Vault Management</h3>
+            <h3>ðŸ” Memory Vault Management</h3>
             <div class="vault-status-indicator">
               <span id="vault-status-dot" class="status-dot status-loading"></span>
               <span id="vault-status-text">Checking vault...</span>
@@ -1655,14 +1813,14 @@
 
           <!-- QR Code Management Section -->
           <div class="backup-action-card qr-management-card" style="grid-column: 1 / -1; margin-bottom: 24px;">
-            <div class="action-icon">📱</div>
+            <div class="action-icon">ðŸ“±</div>
             <div class="action-content">
               <h4>QR Code Sharing</h4>
               <p>Generate secure QR codes to share your vault with family, AI assistants, or healthcare providers</p>
               
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;">
                 <div class="qr-sharing-option">
-                  <h5 style="color: var(--emma-text); margin: 0 0 8px 0; font-size: 14px;">🔐 Vault QR</h5>
+                  <h5 style="color: var(--emma-text); margin: 0 0 8px 0; font-size: 14px;">ðŸ” Vault QR</h5>
                   <p style="color: var(--emma-text-secondary); font-size: 12px; margin: 0 0 12px 0;">Share entire vault with time-limited access</p>
                   <button type="button" id="generate-vault-qr" class="btn btn-primary" style="width: 100%; font-size: 13px;">
                     Generate Vault QR
@@ -1670,7 +1828,7 @@
                 </div>
                 
                 <div class="qr-sharing-option">
-                  <h5 style="color: var(--emma-text); margin: 0 0 8px 0; font-size: 14px;">📋 QR Scanner</h5>
+                  <h5 style="color: var(--emma-text); margin: 0 0 8px 0; font-size: 14px;">ðŸ“‹ QR Scanner</h5>
                   <p style="color: var(--emma-text-secondary); font-size: 12px; margin: 0 0 12px 0;">Scan QR codes to access shared memories</p>
                   <button type="button" id="open-qr-scanner" class="btn btn-secondary" style="width: 100%; font-size: 13px;">
                     Open Scanner
@@ -1681,7 +1839,7 @@
               <!-- QR Management Options -->
               <details style="margin-top: 16px;">
                 <summary style="color: var(--emma-text-secondary); cursor: pointer; font-size: 13px;">
-                  ⚙️ QR Management Options
+                  âš™ï¸ QR Management Options
                 </summary>
                 <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px;">
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -1738,24 +1896,24 @@
           <!-- Backup Actions -->
           <div class="backup-actions-grid">
             <div class="backup-action-card export-card">
-              <div class="action-icon">📤</div>
+              <div class="action-icon">ðŸ“¤</div>
               <div class="action-content">
                 <h4>Export Vault</h4>
                 <p>Create an encrypted backup of your entire memory vault including all memories and attachments</p>
                 <button type="button" id="export-vault" class="btn btn-primary">
-                  <span class="btn-icon">📤</span> Export Vault
+                  <span class="btn-icon">ðŸ“¤</span> Export Vault
                 </button>
               </div>
             </div>
 
             <div class="backup-action-card import-card">
-              <div class="action-icon">📥</div>
+              <div class="action-icon">ðŸ“¥</div>
               <div class="action-content">
                 <h4>Import Vault</h4>
                 <p>Restore a vault from an encrypted backup file with a new passphrase</p>
                 <input type="file" id="import-vault-file" accept=".json" style="display: none;">
                 <button type="button" id="import-vault" class="btn btn-secondary">
-                  <span class="btn-icon">📁</span> Choose Backup File
+                  <span class="btn-icon">ðŸ“</span> Choose Backup File
                 </button>
               </div>
             </div>
@@ -1767,9 +1925,9 @@
           <!-- Vault Information Panel -->
           <div class="vault-info-panel">
             <div class="info-header">
-              <h4>🔒 Vault Information</h4>
+              <h4>ðŸ”’ Vault Information</h4>
               <button type="button" id="refresh-vault-info" class="btn-link">
-                <span>🔄</span> Refresh
+                <span>ðŸ”„</span> Refresh
               </button>
             </div>
             <div class="vault-details">
@@ -1784,7 +1942,7 @@
               <div class="detail-row">
                 <span class="detail-label">Status:</span>
                 <span id="vault-lock-status" class="detail-value">
-                  <span class="status-indicator">🔓</span> Unlocked
+                  <span class="status-indicator">ðŸ”“</span> Unlocked
                 </span>
               </div>
               <div class="detail-row">
@@ -1798,7 +1956,7 @@
         <!-- Legacy Memory Migration -->
         <div class="setting-section migration-section">
           <div class="migration-header">
-            <h3>🔄 Legacy Memory Migration</h3>
+            <h3>ðŸ”„ Legacy Memory Migration</h3>
             <div id="migration-status-indicator" class="migration-status-indicator">
               <span id="migration-status-dot" class="status-dot status-unknown"></span>
               <span id="migration-status-text">Checking for legacy data...</span>
@@ -1896,19 +2054,19 @@
           <!-- Migration Actions -->
           <div class="migration-actions">
             <button type="button" id="analyze-legacy-btn" class="btn-secondary">
-              <span>📊</span> Analyze Legacy Data
+              <span>ðŸ“Š</span> Analyze Legacy Data
             </button>
             
             <button type="button" id="preview-migration-btn" class="btn-info" style="display: none;">
-              <span>🔍</span> Preview Migration
+              <span>ðŸ”</span> Preview Migration
             </button>
             
             <button type="button" id="start-migration-btn" class="btn-primary" style="display: none;">
-              <span>🚀</span> Start Migration
+              <span>ðŸš€</span> Start Migration
             </button>
             
             <button type="button" id="refresh-migration-btn" class="btn-secondary" style="display: none;">
-              <span>🔄</span> Refresh Status
+              <span>ðŸ”„</span> Refresh Status
             </button>
           </div>
 
@@ -1991,14 +2149,14 @@
     <div class="password-modal-content">
       <div class="password-modal-header">
         <h3 id="password-modal-title">Enter Vault Code</h3>
-        <button type="button" id="password-modal-close" class="password-modal-close">×</button>
+        <button type="button" id="password-modal-close" class="password-modal-close">Ã—</button>
       </div>
       <div class="password-modal-body">
         <input 
           type="password" 
           id="password-modal-input" 
           class="password-modal-input"
-          placeholder="•••••••••"
+          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
           autocomplete="current-password"
         >
         <div class="password-modal-actions">
@@ -2035,7 +2193,7 @@
         <!-- Appearance Tab -->
         <div class="tab-content active" id="tab-appearance">
           <div class="setting-group">
-            <h4>🎨 Visual Style</h4>
+            <h4>ðŸŽ¨ Visual Style</h4>
             
             <div class="setting-row">
               <label>Color Theme</label>
@@ -2092,7 +2250,7 @@
           </div>
           
           <div class="setting-group">
-            <h4>✨ Effects</h4>
+            <h4>âœ¨ Effects</h4>
             
             <div class="setting-row">
               <div class="toggle-setting">
@@ -2134,7 +2292,7 @@
         <!-- Behavior Tab -->
         <div class="tab-content" id="tab-behavior">
           <div class="setting-group">
-            <h4>🗣️ Voice & Communication</h4>
+            <h4>ðŸ—£ï¸ Voice & Communication</h4>
             
             <div class="setting-row">
               <div class="toggle-setting">
@@ -2163,7 +2321,7 @@
           </div>
           
           <div class="setting-group" id="dementia-specific" style="display: none;">
-            <h4>🧠 Memory Support</h4>
+            <h4>ðŸ§  Memory Support</h4>
             
             <div class="setting-row">
               <label>Support Level</label>
@@ -2186,7 +2344,7 @@
           </div>
           
           <div class="setting-group" id="mirror-specific" style="display: none;">
-            <h4>🪞 Adaptive Behavior</h4>
+            <h4>ðŸªž Adaptive Behavior</h4>
             
             <div class="setting-row">
               <label>Adaptation Speed</label>
@@ -2208,7 +2366,7 @@
         <!-- Advanced Tab -->
         <div class="tab-content" id="tab-advanced">
           <div class="setting-group">
-            <h4>⚙️ Technical Settings</h4>
+            <h4>âš™ï¸ Technical Settings</h4>
             
             <div class="setting-row">
               <label>Processing Mode</label>
@@ -2237,7 +2395,7 @@
           </div>
           
           <div class="setting-group">
-            <h4>🔒 Privacy & Data</h4>
+            <h4>ðŸ”’ Privacy & Data</h4>
             
             <div class="setting-row">
               <div class="toggle-setting">
@@ -2292,53 +2450,56 @@
     transition: all 0.3s ease;
     z-index: 1000;
   " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-    🏠
+    ðŸ 
   </button>
 
   <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
   <!-- Web Vault System Scripts -->
-  <script src="../js/emma-input-modal.js"></script>
-  <script src="../js/clean-password-modal.js"></script>
-  <script src="../js/emma-web-vault.js"></script>
-  <script src="../js/web-vault-status.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-input-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/clean-password-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/web-vault-status.js"></script>
   
-  <script src="../js/emma-orb.js"></script>
-  <script src="../js/settings-service.js"></script> 
-  <script src="../js/orb-experience-manager.js"></script>
-  <script src="../js/experience-popup-base.js"></script>
-  <script src="../js/assistant-experience-popup.js"></script>
-  <script src="../js/dementia-experience-popup.js"></script>
-  <script src="../js/mirror-experience-popup.js"></script>
-  <script src="../js/universal-emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../themes/theme-catalog.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-settings-ui.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script> 
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/assistant-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/dementia-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/mirror-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-emma-orb.js"></script>
   
   <!-- Initialize Universal Orb for Extension Page -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL: Initialize vault system for options page
-        console.log('⚙️ OPTIONS: Initializing vault system...');
+        console.log('âš™ï¸ OPTIONS: Initializing vault system...');
         
         // FIXED: Create vault instance like other pages do!
         if (!window.emmaWebVault) {
           window.emmaWebVault = new EmmaWebVault();
-          console.log('✅ OPTIONS: Vault instance created successfully');
+          console.log('âœ… OPTIONS: Vault instance created successfully');
         } else {
-          console.log('✅ OPTIONS: Vault instance already exists');
+          console.log('âœ… OPTIONS: Vault instance already exists');
         }
         
-        console.log('🔍 OPTIONS: emmaWebVault exists:', !!window.emmaWebVault);
-        console.log('🔍 OPTIONS: webVaultStatus exists:', !!window.webVaultStatus);
+        console.log('ðŸ” OPTIONS: emmaWebVault exists:', !!window.emmaWebVault);
+        console.log('ðŸ” OPTIONS: webVaultStatus exists:', !!window.webVaultStatus);
         
         // ELEGANT: Restore complete vault state if session is active
         if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
           (async () => {
             try {
-              console.log('🔄 OPTIONS: Restoring elegant vault state...');
+              console.log('ðŸ”„ OPTIONS: Restoring elegant vault state...');
               const result = await window.emmaWebVault.restoreVaultState();
               if (result) {
-                console.log('✅ OPTIONS: Vault state restored successfully');
-                console.log('📊 OPTIONS: Passphrase available:', result.hasPassphrase);
-                console.log('📁 OPTIONS: Filename available:', result.hasFileName);
+                console.log('âœ… OPTIONS: Vault state restored successfully');
+                console.log('ðŸ“Š OPTIONS: Passphrase available:', result.hasPassphrase);
+                console.log('ðŸ“ OPTIONS: Filename available:', result.hasFileName);
                 // If in fallback mode, show affordance to re-enable direct save
                 try {
                   if (window.emmaWebVault && window.emmaWebVault.isFallbackMode && window.emmaWebVault.isFallbackMode()) {
@@ -2346,10 +2507,10 @@
                   }
                 } catch (_) {}
               } else {
-                console.log('🔒 OPTIONS: Vault session is locked or invalid');
+                console.log('ðŸ”’ OPTIONS: Vault session is locked or invalid');
               }
             } catch (error) {
-              console.warn('⚠️ OPTIONS: Could not restore vault state:', error);
+              console.warn('âš ï¸ OPTIONS: Could not restore vault state:', error);
             }
           })();
         }
@@ -2360,6 +2521,8 @@
     }
   </script>
   
-  <script src="../js/options.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/options.js"></script>
 </body>
 </html>
+
+
