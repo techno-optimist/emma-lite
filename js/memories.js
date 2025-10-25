@@ -1123,6 +1123,14 @@ async function loadConstellationView() {
     return;
   }
 
+  const isCompactViewport = window.matchMedia('(max-width: 768px)').matches;
+  const MAX_MOBILE_ITEMS = 220;
+  if (isCompactViewport && items.length > MAX_MOBILE_ITEMS) {
+    const step = Math.ceil(items.length / MAX_MOBILE_ITEMS);
+    items = items.filter((_, idx) => idx % step === 0);
+    console.log(`Constellation: trimmed records for mobile viewport using step ${step}`);
+  }
+
   // Sort by time for subtle adjacency edges
   items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
@@ -1133,12 +1141,12 @@ async function loadConstellationView() {
   const wrap = document.createElement('div');
   wrap.style.position = 'relative';
   wrap.style.width = '100%';
-  wrap.style.height = '68vh';
-  wrap.style.minHeight = '420px';
+  wrap.style.height = isCompactViewport ? '60vh' : '68vh';
+  wrap.style.minHeight = isCompactViewport ? '320px' : '420px';
   wrap.style.border = '1px solid var(--emma-border)';
   wrap.style.borderRadius = '16px';
   wrap.style.background = 'var(--emma-card-bg)';
-  wrap.style.backdropFilter = 'blur(20px)';
+  wrap.style.backdropFilter = isCompactViewport ? 'blur(10px)' : 'blur(20px)';
 
   const canvas = document.createElement('canvas');
   canvas.style.width = '100%';
@@ -1171,7 +1179,7 @@ async function loadConstellationView() {
   controls.style.border = '1px solid var(--emma-border)';
   controls.style.borderRadius = '10px';
   controls.style.padding = '6px 8px';
-  controls.style.backdropFilter = 'blur(8px)';
+  controls.style.backdropFilter = isCompactViewport ? 'blur(4px)' : 'blur(8px)';
   controls.innerHTML = `
     <label style="font-size:12px; color:#e9d5ff; display:flex; align-items:center; gap:6px;">
       Cluster:
@@ -1211,6 +1219,7 @@ async function loadConstellationView() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(1, Math.floor(rect.width * dpr));
     canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    layoutDirty = true;
     draw();
   }
   window.addEventListener('resize', resize);
@@ -1222,6 +1231,7 @@ async function loadConstellationView() {
   };
   const nodeRadius = 6;
   const positions = new Map();
+  let layoutDirty = true;
   let clusterMode = 'none';
 
   function groupItems() {
@@ -1248,7 +1258,7 @@ async function loadConstellationView() {
     return { groups: top.map(([key, arr]) => ({ key, items: arr })) };
   }
 
-  function layout() {
+  function computeLayout() {
     positions.clear();
     const n = items.length;
     const minTs = items[0].timestamp || 0;
@@ -1288,6 +1298,12 @@ async function loadConstellationView() {
         positions.set(g.items[j].id, { x, y });
       }
     }
+  }
+
+  function ensureLayout() {
+    if (!layoutDirty) return;
+    computeLayout();
+    layoutDirty = false;
   }
 
   // Edges: connect neighbors by time
@@ -1351,7 +1367,7 @@ async function loadConstellationView() {
     ctx.translate(view.tx, view.ty);
     ctx.scale(view.scale, view.scale);
 
-    layout();
+    ensureLayout();
     const rect = canvas.getBoundingClientRect();
     const c2x = rect.width / 2, c2y = rect.height / 2;
 
@@ -1387,6 +1403,7 @@ async function loadConstellationView() {
   }
 
   function hitTest(mx, my) {
+    ensureLayout();
     const xw = (mx - view.tx);
     const yw = (my - view.ty);
     const wx = xw / view.scale;
@@ -1550,7 +1567,11 @@ async function loadConstellationView() {
   }, { passive: false });
 
   const clusterSelect = controls.querySelector('#cluster-mode');
-  clusterSelect.addEventListener('change', () => { clusterMode = clusterSelect.value; draw(); });
+  clusterSelect.addEventListener('change', () => {
+    clusterMode = clusterSelect.value;
+    layoutDirty = true;
+    draw();
+  });
   
   // 🔍 ZOOM CONTROLS: Simple buttons for dementia-friendly navigation
   const zoomInBtn = controls.querySelector('#zoom-in');
@@ -1598,6 +1619,8 @@ async function loadConstellationView() {
 
   // 🎯 AUTO-FIT: Calculate optimal zoom to show all memories elegantly
   function fitAllMemories() {
+    ensureLayout();
+
     if (items.length === 0) {
       // No memories, just center the view
       view.targetScale = 1;
