@@ -51,6 +51,19 @@ body {
   66% { transform: translate(-70%, -40%) rotate(240deg) scale(0.9); }
 }
 
+body.performance-lite .aurora-bg,
+body.performance-lite .welcome-text {
+  display: none;
+}
+
+body.performance-lite .aurora {
+  animation: none;
+}
+
+body.performance-lite .neural-network {
+  opacity: 0;
+}
+
 /* Main Container */
 .dashboard {
   position: relative;

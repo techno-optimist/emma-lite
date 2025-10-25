@@ -102,7 +102,9 @@
         this.particles = [];
         this.nodes = [];
         this.neuralCanvas = document.getElementById('neural-canvas');
-        this.neuralCtx = this.neuralCanvas.getContext('2d');
+        this.neuralCtx = this.neuralCanvas ? this.neuralCanvas.getContext('2d') : null;
+        this.lowPowerMode = this.shouldUsePerformanceLite();
+        document.body.classList.toggle('performance-lite', this.lowPowerMode);
 
         // Neural memory network properties
         this.isConstellationMode = false;
@@ -569,6 +571,18 @@
             element.classList.add('vault-locked');
           }
         });
+      }
+
+      shouldUsePerformanceLite() {
+        try {
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const compactViewport = window.matchMedia('(max-width: 900px)').matches;
+          const touchDevice = (navigator.maxTouchPoints || 0) > 1;
+          return prefersReducedMotion || compactViewport || touchDevice;
+        } catch (error) {
+          console.warn('Performance mode detection failed (non-critical):', error);
+          return false;
+        }
       }
 
       initNeuralNetwork() {
@@ -1181,36 +1195,42 @@
       }
 
       animateNeuralNetwork() {
-        // Resize canvas
+        if (!this.neuralCanvas || !this.neuralCtx) {
+          return;
+        }
+
         this.neuralCanvas.width = window.innerWidth;
         this.neuralCanvas.height = window.innerHeight;
+        const ctx = this.neuralCtx;
+        const skipCanvasRendering = this.lowPowerMode || document.body.classList.contains('performance-lite') || !ctx;
 
         const animate = () => {
-          if (!this.isMenuOpen && !this.isConstellationMode) return;
+          if (!this.isMenuOpen && !this.isConstellationMode) {
+            this.neuralAnimationId = null;
+            return;
+          }
 
-          // Clear canvas
-          this.neuralCtx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
+          if (!skipCanvasRendering) {
+            ctx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
 
-          // Draw subtle grid background when menu is open or in constellation mode
-          if (this.isMenuOpen || this.isConstellationMode) {
-            this.neuralCtx.strokeStyle = 'rgba(134, 88, 255, 0.03)';
-            this.neuralCtx.lineWidth = 1;
-            const gridSize = 50;
+            if (this.isMenuOpen || this.isConstellationMode) {
+              ctx.strokeStyle = 'rgba(134, 88, 255, 0.03)';
+              ctx.lineWidth = 1;
+              const gridSize = 50;
 
-            // Draw vertical lines
-            for (let x = 0; x < this.neuralCanvas.width; x += gridSize) {
-              this.neuralCtx.beginPath();
-              this.neuralCtx.moveTo(x, 0);
-              this.neuralCtx.lineTo(x, this.neuralCanvas.height);
-              this.neuralCtx.stroke();
-            }
+              for (let x = 0; x < this.neuralCanvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, this.neuralCanvas.height);
+                ctx.stroke();
+              }
 
-            // Draw horizontal lines
-            for (let y = 0; y < this.neuralCanvas.height; y += gridSize) {
-              this.neuralCtx.beginPath();
-              this.neuralCtx.moveTo(0, y);
-              this.neuralCtx.lineTo(this.neuralCanvas.width, y);
-              this.neuralCtx.stroke();
+              for (let y = 0; y < this.neuralCanvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(this.neuralCanvas.width, y);
+                ctx.stroke();
+              }
             }
           }
 
@@ -1338,101 +1358,90 @@
             nodeElement.style.top = `${node.y - halfHeight}px`;
           });
 
-          // Draw connections with gradients (only between visible nodes)
-          const drawnEdges = new Set();
-          this.nodes.forEach((node, nodeIndex) => {
-            if (node.isCreateNode) {
-              return;
-            }
-
-            // CRITICAL FIX: Check if source node is visible before drawing connections
-            const sourceElement = node.element || document.getElementById(node.id);
-            if (!sourceElement || sourceElement.style.display === 'none') {
-              return; // Skip connections from hidden nodes
-            }
-
-            const sourceKey = node.uid || (sourceElement.dataset && sourceElement.dataset.nodeUid) || `node-${nodeIndex}`;
-
-            node.connections.forEach(target => {
-              if (!target || target.isCreateNode) {
+          if (!skipCanvasRendering) {
+            const drawnEdges = new Set();
+            this.nodes.forEach((node, nodeIndex) => {
+              if (node.isCreateNode) {
                 return;
               }
 
-              // CRITICAL FIX: Check if target node is visible before drawing connection
-              const targetElement = target.element || document.getElementById(target.id);
-              if (!targetElement || targetElement.style.display === 'none') {
-                return; // Skip connections to hidden nodes
-              }
-
-              const targetKey = target.uid || (targetElement.dataset && targetElement.dataset.nodeUid) || 'target';
-              const edgeA = sourceKey < targetKey ? sourceKey : targetKey;
-              const edgeB = sourceKey < targetKey ? targetKey : sourceKey;
-              const edgeId = `${edgeA}::${edgeB}`;
-              if (drawnEdges.has(edgeId)) {
+              const sourceElement = node.element || document.getElementById(node.id);
+              if (!sourceElement || sourceElement.style.display === 'none') {
                 return;
               }
-              drawnEdges.add(edgeId);
 
-              // Check if line would pass through Emma orb area - if so, skip drawing
-              const centerX = window.innerWidth / 2;
-              const centerY = window.innerHeight / 2;
-              const orbRadius = 110; // Clean boundary around orb
+              const sourceKey = node.uid || (sourceElement.dataset && sourceElement.dataset.nodeUid) || `node-${nodeIndex}`;
 
-              if (this.lineIntersectsCircle(node.x, node.y, target.x, target.y, centerX, centerY, orbRadius)) {
-                return; // Skip drawing this connection - it would cross the orb
-              }
+              node.connections.forEach(target => {
+                if (!target || target.isCreateNode) {
+                  return;
+                }
 
-              // Calculate distance for opacity
-              const dist = Math.sqrt(
-                Math.pow(node.x - target.x, 2) +
-                Math.pow(node.y - target.y, 2)
-              );
+                const targetElement = target.element || document.getElementById(target.id);
+                if (!targetElement || targetElement.style.display === 'none') {
+                  return;
+                }
 
-              // Different opacity for main menu vs memory constellation
-              const isMemoryMode = this.isConstellationMode && !this.isMenuOpen;
-              const gradient = this.neuralCtx.createLinearGradient(
-                node.x, node.y, target.x, target.y
-              );
+                const targetKey = target.uid || (targetElement.dataset && targetElement.dataset.nodeUid) || 'target';
+                const edgeA = sourceKey < targetKey ? sourceKey : targetKey;
+                const edgeB = sourceKey < targetKey ? targetKey : sourceKey;
+                const edgeId = `${edgeA}::${edgeB}`;
+                if (drawnEdges.has(edgeId)) {
+                  return;
+                }
+                drawnEdges.add(edgeId);
 
-              if (isMemoryMode) {
-                // Visible connections for memory constellation
-                gradient.addColorStop(0, 'rgba(134, 88, 255, 0.2)');
-                gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.15)');
-                gradient.addColorStop(1, 'rgba(134, 88, 255, 0.2)');
-                this.neuralCtx.lineWidth = 1.2 + Math.sin(time + dist * 0.01) * 0.2;
-              } else {
-                // Subtle connections for main menu (original loved style)
-                gradient.addColorStop(0, 'rgba(134, 88, 255, 0.03)');
-                gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.02)');
-                gradient.addColorStop(1, 'rgba(134, 88, 255, 0.03)');
-                this.neuralCtx.lineWidth = 0.5 + Math.sin(time + dist * 0.01) * 0.1;
-              }
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                const orbRadius = 110;
 
-              this.neuralCtx.strokeStyle = gradient;
+                if (this.lineIntersectsCircle(node.x, node.y, target.x, target.y, centerX, centerY, orbRadius)) {
+                  return;
+                }
 
-              this.neuralCtx.beginPath();
-              this.neuralCtx.moveTo(node.x, node.y);
+                const dist = Math.sqrt(
+                  Math.pow(node.x - target.x, 2) +
+                  Math.pow(node.y - target.y, 2)
+                );
 
-              // Gentle organic curved connections
-              const midX = (node.x + target.x) / 2;
-              const midY = (node.y + target.y) / 2;
-              const curve1 = Math.sin(time * 0.4 + node.x * 0.005) * 15;
-              const curve2 = Math.cos(time * 0.3 + node.y * 0.005) * 10;
+                const isMemoryMode = this.isConstellationMode && !this.isMenuOpen;
+                const gradient = ctx.createLinearGradient(
+                  node.x, node.y, target.x, target.y
+                );
 
-              this.neuralCtx.bezierCurveTo(
-                node.x + curve1,
-                node.y + curve2,
-                target.x - curve2,
-                target.y - curve1,
-                target.x,
-                target.y
-              );
+                if (isMemoryMode) {
+                  gradient.addColorStop(0, 'rgba(134, 88, 255, 0.2)');
+                  gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.15)');
+                  gradient.addColorStop(1, 'rgba(134, 88, 255, 0.2)');
+                  ctx.lineWidth = 1.2 + Math.sin(time + dist * 0.01) * 0.2;
+                } else {
+                  gradient.addColorStop(0, 'rgba(134, 88, 255, 0.03)');
+                  gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.02)');
+                  gradient.addColorStop(1, 'rgba(134, 88, 255, 0.03)');
+                  ctx.lineWidth = 0.5 + Math.sin(time + dist * 0.01) * 0.1;
+                }
 
-              this.neuralCtx.stroke();
+                ctx.strokeStyle = gradient;
+
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+
+                const curve1 = Math.sin(time * 0.4 + node.x * 0.005) * 15;
+                const curve2 = Math.cos(time * 0.3 + node.y * 0.005) * 10;
+
+                ctx.bezierCurveTo(
+                  node.x + curve1,
+                  node.y + curve2,
+                  target.x - curve2,
+                  target.y - curve1,
+                  target.x,
+                  target.y
+                );
+
+                ctx.stroke();
+              });
             });
-          });
-
-          // Remove energy pulses - too aggressive
+          }
 
           this.neuralAnimationId = requestAnimationFrame(animate);
         };

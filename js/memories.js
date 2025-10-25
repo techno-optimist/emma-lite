@@ -1070,6 +1070,14 @@ async function loadConstellationView() {
 
   grid.innerHTML = '';
 
+  try {
+    const touchDevice = (navigator.maxTouchPoints || 0) > 1;
+    const compactViewport = window.matchMedia('(max-width: 900px)').matches;
+    if (touchDevice || compactViewport) {
+      document.body.classList.add('performance-lite');
+    }
+  } catch {}
+
   // Fetch memories using same vault → background → local order
   let items = [];
   try {
