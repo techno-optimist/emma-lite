@@ -1,0 +1,426 @@
+.emma-floating-button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.4);
+  background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.18);
+  color: var(--emma-accent-primary, #8b5cf6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border 180ms ease;
+  backdrop-filter: blur(12px);
+}
+
+.emma-floating-button:hover,
+.emma-floating-button:focus-visible {
+  transform: scale(1.08);
+  background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.28);
+  border-color: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.55);
+  box-shadow: 0 10px 32px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.35);
+  color: var(--emma-text-strong, #ffffff);
+  outline: none;
+}
+
+.emma-floating-button:focus-visible {
+  box-shadow: 0 0 0 2px rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.35),
+    0 10px 32px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.35);
+}
+
+.emma-floating-button svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+}
+
+.vault-control-shield {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+}
+
+.vault-control-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  backdrop-filter: blur(26px);
+  background: rgba(var(--emma-neutral-inverse-rgb, 10, 10, 15), 0.78);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  z-index: 10000;
+}
+
+.vault-control-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vault-control-dialog {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: clamp(24px, 3vw, 40px);
+  border-radius: 28px;
+  border: 1px solid var(--emma-border-strong, rgba(255, 255, 255, 0.22));
+  background: linear-gradient(
+    165deg,
+    rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.12) 0%,
+    rgba(var(--emma-neutral-inverse-rgb, 10, 10, 15), 0.9) 38%,
+    rgba(var(--emma-neutral-inverse-rgb, 10, 10, 15), 0.96) 100%
+  );
+  color: var(--emma-text-strong, #ffffff);
+  box-shadow: var(--emma-shadow-raised, 0 28px 80px rgba(0, 0, 0, 0.45));
+  backdrop-filter: blur(22px);
+  transform: translateY(18px) scale(0.96);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.vault-control-overlay.is-visible .vault-control-dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.vault-control {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--emma-text-standard, rgba(255, 255, 255, 0.82));
+}
+
+.vault-control__hero {
+  text-align: center;
+  display: grid;
+  gap: 12px;
+}
+
+.vault-control__icon {
+  font-size: 56px;
+}
+
+.vault-control__title {
+  font-size: 30px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--emma-text-strong, #ffffff);
+}
+
+.vault-control__subtitle {
+  margin: 0;
+  font-size: 16px;
+  color: var(--emma-text-standard, rgba(255, 255, 255, 0.75));
+}
+
+.vault-section {
+  position: relative;
+  border-radius: 22px;
+  padding: 22px 24px;
+  border: 1px solid var(--emma-border-subtle, rgba(255, 255, 255, 0.14));
+  background: var(--emma-card-bg, rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.06));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  display: grid;
+  gap: 18px;
+}
+
+.vault-section__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vault-section__icon {
+  font-size: 22px;
+}
+
+.vault-section__title {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--emma-text-strong, #ffffff);
+}
+
+.vault-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px 20px;
+}
+
+.vault-stats__item {
+  display: grid;
+  gap: 6px;
+}
+
+.vault-stats__item dt {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--emma-text-muted, rgba(255, 255, 255, 0.65));
+}
+
+.vault-stats__item dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--emma-text-strong, #ffffff);
+}
+
+.vault-sync {
+  display: grid;
+  gap: 12px;
+}
+
+.vault-sync__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.vault-sync__label {
+  color: var(--emma-text-muted, rgba(255, 255, 255, 0.65));
+}
+
+.vault-sync__value {
+  color: var(--emma-text-strong, #ffffff);
+  font-weight: 600;
+}
+
+.vault-section--sync {
+  --vault-sync-accent: var(--emma-accent-primary, #8b5cf6);
+}
+
+.vault-section--sync[data-sync-state="clean"] {
+  --vault-sync-accent: var(--emma-success, #34d399);
+}
+
+.vault-section--sync[data-sync-state="dirty"] {
+  --vault-sync-accent: var(--emma-warning, #f59e0b);
+}
+
+.vault-sync__badge {
+  position: relative;
+  padding: 14px 18px 14px 26px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.14);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.05);
+  color: var(--emma-text-standard, rgba(255, 255, 255, 0.82));
+  display: grid;
+  gap: 4px;
+  font-size: 0.95rem;
+}
+
+.vault-sync__badge strong {
+  font-weight: 700;
+  color: var(--emma-text-strong, #ffffff);
+}
+
+.vault-sync__badge::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--vault-sync-accent);
+}
+
+.vault-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.vault-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border 180ms ease;
+  text-align: center;
+}
+
+.vault-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.vault-button__icon {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.vault-button__label {
+  white-space: nowrap;
+}
+
+.vault-button--neutral {
+  background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.22);
+  border-color: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.45);
+  color: var(--emma-text-on-accent, #0f172a);
+}
+
+.vault-button--neutral:hover:not(:disabled),
+.vault-button--neutral:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.32);
+  box-shadow: 0 14px 32px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.28);
+  outline: none;
+}
+
+.vault-button--affirmative {
+  background: var(--emma-success, #34d399);
+  color: var(--emma-text-on-accent, #052e16);
+}
+
+.vault-button--affirmative:hover:not(:disabled),
+.vault-button--affirmative:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(34, 197, 94, 0.35);
+  outline: none;
+}
+
+.vault-button--danger {
+  background: var(--emma-danger, #f87171);
+  color: var(--emma-text-on-accent, #3b0a0a);
+}
+
+.vault-button--danger:hover:not(:disabled),
+.vault-button--danger:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(248, 113, 113, 0.32);
+  outline: none;
+}
+
+.vault-button--outline {
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.04);
+  border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.18);
+  color: var(--emma-text-standard, rgba(255, 255, 255, 0.82));
+}
+
+.vault-button--outline:hover:not(:disabled),
+.vault-button--outline:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.08);
+  border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.28);
+  outline: none;
+}
+
+.vault-button--ghost {
+  background: transparent;
+  border: 1px solid rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.18);
+  color: var(--emma-text-standard, rgba(255, 255, 255, 0.8));
+}
+
+.vault-button--ghost:hover:not(:disabled),
+.vault-button--ghost:focus-visible:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.06);
+  border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.26);
+  outline: none;
+}
+
+.vault-control__footer {
+  text-align: center;
+}
+
+.vault-toast {
+  position: fixed;
+  top: calc(24px + (var(--vault-toast-index, 0) * 72px));
+  right: 24px;
+  min-width: 260px;
+  max-width: 320px;
+  padding: 14px 18px 14px 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.16);
+  background: rgba(var(--emma-neutral-inverse-rgb, 10, 10, 15), 0.82);
+  color: var(--emma-text-strong, #ffffff);
+  box-shadow: var(--emma-shadow-raised, 0 18px 48px rgba(0, 0, 0, 0.35));
+  backdrop-filter: blur(14px);
+  transform: translateX(110%);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+  z-index: 11000;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vault-toast::before {
+  content: '';
+  width: 6px;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--vault-toast-accent, var(--emma-accent-primary, #8b5cf6));
+  display: inline-block;
+}
+
+.vault-toast.is-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.vault-toast--success {
+  --vault-toast-accent: var(--emma-success, #34d399);
+}
+
+.vault-toast--error {
+  --vault-toast-accent: var(--emma-danger, #f87171);
+}
+
+.vault-toast--info {
+  --vault-toast-accent: var(--emma-accent-primary, #8b5cf6);
+}
+
+@media (max-width: 720px) {
+  .vault-control-dialog {
+    max-height: 100vh;
+    border-radius: 22px;
+    padding: 24px 20px;
+  }
+
+  .vault-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .vault-control-shield {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .vault-toast {
+    left: 16px;
+    right: 16px;
+    min-width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-control-overlay,
+  .vault-control-dialog,
+  .vault-toast {
+    transition-duration: 0.01ms;
+    transition-delay: 0ms;
+    animation-duration: 0.01ms;
+  }
+
+  .vault-button:hover {
+    transform: none;
+  }
+}

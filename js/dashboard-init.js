@@ -126,6 +126,9 @@
         this.pendingNodeDrag = null;
         this.nodeDragPointerId = null;
         this.nodeDragOffset = { x: 0, y: 0 };
+        this.persistLayoutDebounce = null;
+        this.constellationLayoutKey = 'emmaConstellationLayoutV1';
+        this.constellationFiltersKey = 'emmaConstellationFiltersV1';
         this.nodeDragStart = { x: 0, y: 0 };
         this.nodeDragThreshold = 6;
         this.nodeDragTransformData = null;
@@ -2382,6 +2385,10 @@
         // Create memory and people nodes using EXACT same pattern as main menu
         this.initMemoryNeuralNetwork(allMemories, allPeople);
 
+        // Restore any saved layout preferences before animations begin
+        this.applySavedConstellationLayout();
+        this.persistConstellationLayout();
+
         // Set up for constellation mode without triggering menu
         this.isMenuOpen = false; // CRITICAL: Constellation mode starts with menu closed
         this.radialMenu.classList.remove('active'); // Ensure menu is hidden
@@ -3686,6 +3693,10 @@
           recent: true,
           special: true
         };
+        const savedFilters = this.loadSavedConstellationFilters();
+        if (savedFilters) {
+          this.constellationFilters = { ...this.constellationFilters, ...savedFilters };
+        }
 
         // Create elegant burger menu
         const burgerMenu = document.createElement('div');
@@ -4063,6 +4074,12 @@
         // Set up filter toggle event listeners
         const filterInputs = panel.querySelectorAll('input[type="checkbox"]');
         filterInputs.forEach(input => {
+          const filterType = input.id.replace('filter-', '');
+          if (this.constellationFilters && typeof this.constellationFilters[filterType] === 'boolean') {
+            input.checked = this.constellationFilters[filterType];
+          } else {
+            this.constellationFilters[filterType] = input.checked;
+          }
           input.addEventListener('change', (e) => {
             const filterType = e.target.id.replace('filter-', '');
             this.toggleConstellationFilter(filterType, e.target.checked);
@@ -4077,11 +4094,19 @@
         document.getElementById('apply-filters-btn').addEventListener('click', () => {
           this.hideConstellationMenu();
         });
+
+        // Apply saved filter state immediately so constellation reflects preferences
+        this.applyConstellationFilters();
+        this.persistConstellationFilters();
       }
 
       // Toggle constellation filter and update display
       toggleConstellationFilter(filterType, enabled) {
+        if (!this.constellationFilters) {
+          this.constellationFilters = {};
+        }
         this.constellationFilters[filterType] = enabled;
+        this.persistConstellationFilters();
 
         // Apply filters with smooth animation
         this.applyConstellationFilters();
@@ -4186,6 +4211,7 @@
 
         // Apply filters
         this.applyConstellationFilters();
+        this.persistConstellationFilters();
 
       }
 
@@ -4216,7 +4242,7 @@
           height: 100%;
           pointer-events: none;
           z-index: 1400;
-          transform-origin: center center;
+          transform-origin: 0 0;
           will-change: transform;
         `;
         
@@ -4230,6 +4256,10 @@
 
         // Add to dashboard
         document.body.appendChild(this.constellationContainer);
+
+        if (this.neuralCanvas) {
+          this.neuralCanvas.style.transformOrigin = '0 0';
+        }
 
         // Enable zoom/pan interaction on the container
         this.setupConstellationZoom();
@@ -4633,6 +4663,8 @@
 
         document.body.style.cursor = '';
         this.activeNodeDrag = null;
+
+        this.scheduleConstellationLayoutPersist();
       }
 
       computeNodeDragTransformData() {
@@ -4698,6 +4730,203 @@
           : pointInit;
 
         return { x: transformed.x, y: transformed.y };
+      }
+
+      scheduleConstellationLayoutPersist() {
+        if (!this.isConstellationMode) return;
+        if (this.persistLayoutDebounce) {
+          clearTimeout(this.persistLayoutDebounce);
+        }
+        this.persistLayoutDebounce = setTimeout(() => {
+          this.persistLayoutDebounce = null;
+          this.persistConstellationLayout();
+        }, 150);
+      }
+
+      loadSavedConstellationLayout() {
+        if (typeof window === 'undefined' || !window.localStorage) {
+          return null;
+        }
+        try {
+          const raw = window.localStorage.getItem(this.constellationLayoutKey);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object' || typeof parsed.nodes !== 'object') {
+            return null;
+          }
+          return parsed;
+        } catch (error) {
+          console.warn('🌌 CONSTELLATION: Failed to parse saved layout', error);
+          return null;
+        }
+      }
+
+      applySavedConstellationLayout() {
+        const saved = this.loadSavedConstellationLayout();
+        if (!saved || !saved.nodes || !Array.isArray(this.nodes) || this.nodes.length === 0) {
+          return;
+        }
+
+        const width = Math.max(window.innerWidth || document.documentElement?.clientWidth || 0, 1);
+        const height = Math.max(window.innerHeight || document.documentElement?.clientHeight || 0, 1);
+        const nodeMap = new Map();
+
+        this.nodes.forEach(node => {
+          if (node && node.uid) {
+            nodeMap.set(node.uid, node);
+          }
+        });
+
+        Object.entries(saved.nodes).forEach(([uid, position]) => {
+          const node = nodeMap.get(uid);
+          if (!node || !node.element) return;
+
+          const leftRatio = typeof position.leftRatio === 'number' ? position.leftRatio : null;
+          const topRatio = typeof position.topRatio === 'number' ? position.topRatio : null;
+          if (leftRatio === null || topRatio === null) return;
+
+          const left = leftRatio * width;
+          const top = topRatio * height;
+
+          node.x = left;
+          node.y = top;
+          node.baseX = left;
+          node.baseY = top;
+          node.vx = 0;
+          node.vy = 0;
+
+          node.element.style.left = `${left}px`;
+          node.element.style.top = `${top}px`;
+        });
+
+        const savedViewport = saved.viewport || {};
+        const savedWidth = Number.isFinite(savedViewport.width) && savedViewport.width > 0 ? savedViewport.width : width;
+        const savedHeight = Number.isFinite(savedViewport.height) && savedViewport.height > 0 ? savedViewport.height : height;
+        const widthRatio = savedWidth ? width / savedWidth : 1;
+        const heightRatio = savedHeight ? height / savedHeight : 1;
+
+        let appliedZoom = false;
+        if (saved.zoom) {
+          const { scale, translateX, translateY } = saved.zoom;
+          if (Number.isFinite(scale) && Number.isFinite(translateX) && Number.isFinite(translateY)) {
+            const clampedScale = Math.max(this.zoomState.minScale, Math.min(this.zoomState.maxScale, scale));
+            this.zoomState.scale = clampedScale;
+            this.zoomState.translateX = translateX * widthRatio;
+            this.zoomState.translateY = translateY * heightRatio;
+            appliedZoom = true;
+          }
+        }
+
+        if (appliedZoom) {
+          this.updateConstellationTransform();
+        }
+      }
+
+      persistConstellationLayout() {
+        if (typeof window === 'undefined' || !window.localStorage) {
+          return;
+        }
+        if (!Array.isArray(this.nodes) || this.nodes.length === 0) {
+          return;
+        }
+
+        const width = Math.max(window.innerWidth || document.documentElement?.clientWidth || 0, 1);
+        const height = Math.max(window.innerHeight || document.documentElement?.clientHeight || 0, 1);
+        const nodesPayload = {};
+
+        this.nodes.forEach(node => {
+          if (!node || node.orbBound || !node.uid || !node.element) {
+            return;
+          }
+
+          let left = typeof node.x === 'number' ? node.x : NaN;
+          let top = typeof node.y === 'number' ? node.y : NaN;
+
+          if (!Number.isFinite(left) || !Number.isFinite(top)) {
+            const styleLeft = parseFloat(node.element.style.left);
+            const styleTop = parseFloat(node.element.style.top);
+            if (!Number.isFinite(left) && Number.isFinite(styleLeft)) {
+              left = styleLeft;
+            }
+            if (!Number.isFinite(top) && Number.isFinite(styleTop)) {
+              top = styleTop;
+            }
+          }
+
+          if (!Number.isFinite(left) || !Number.isFinite(top)) {
+            const rect = node.element.getBoundingClientRect();
+            if (!Number.isFinite(left)) {
+              left = rect.left;
+            }
+            if (!Number.isFinite(top)) {
+              top = rect.top;
+            }
+          }
+
+          if (Number.isFinite(left) && Number.isFinite(top)) {
+            nodesPayload[node.uid] = {
+              leftRatio: left / width,
+              topRatio: top / height
+            };
+          }
+        });
+
+        try {
+          const zoomData = {
+            scale: Number.isFinite(this.zoomState?.scale) ? this.zoomState.scale : 1,
+            translateX: Number.isFinite(this.zoomState?.translateX) ? this.zoomState.translateX : 0,
+            translateY: Number.isFinite(this.zoomState?.translateY) ? this.zoomState.translateY : 0
+          };
+
+          window.localStorage.setItem(this.constellationLayoutKey, JSON.stringify({
+            nodes: nodesPayload,
+            viewport: { width, height },
+            zoom: zoomData,
+            savedAt: Date.now()
+          }));
+        } catch (error) {
+          console.warn('🌌 CONSTELLATION: Failed to persist layout', error);
+        }
+      }
+
+      loadSavedConstellationFilters() {
+        if (typeof window === 'undefined' || !window.localStorage) {
+          return null;
+        }
+        try {
+          const raw = window.localStorage.getItem(this.constellationFiltersKey);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object') return null;
+
+          const allowedKeys = ['memories', 'people', 'family', 'travel', 'recent', 'special'];
+          const sanitized = {};
+
+          allowedKeys.forEach(key => {
+            if (typeof parsed[key] === 'boolean') {
+              sanitized[key] = parsed[key];
+            }
+          });
+
+          return Object.keys(sanitized).length > 0 ? sanitized : null;
+        } catch (error) {
+          console.warn('🌌 CONSTELLATION: Failed to parse saved filters', error);
+          return null;
+        }
+      }
+
+      persistConstellationFilters() {
+        if (typeof window === 'undefined' || !window.localStorage) {
+          return;
+        }
+        if (!this.constellationFilters) {
+          return;
+        }
+        try {
+          window.localStorage.setItem(this.constellationFiltersKey, JSON.stringify(this.constellationFilters));
+        } catch (error) {
+          console.warn('🌌 CONSTELLATION: Failed to persist filters', error);
+        }
       }
 
       // 📱 HANDLE TOUCH GESTURES (PINCH TO ZOOM + PAN)
@@ -4808,10 +5037,14 @@
 
       // 🔍 UPDATE CONSTELLATION TRANSFORM
       updateConstellationTransform() {
-        const transform = `translate(${this.zoomState.translateX}px, ${this.zoomState.translateY}px) scale(${this.zoomState.scale})`;
+        const scale = Number.isFinite(this.zoomState.scale) ? this.zoomState.scale : 1;
+        const translateX = Number.isFinite(this.zoomState.translateX) ? this.zoomState.translateX : 0;
+        const translateY = Number.isFinite(this.zoomState.translateY) ? this.zoomState.translateY : 0;
+        const transform = `matrix(${scale}, 0, 0, ${scale}, ${translateX}, ${translateY})`;
         
         // Apply transform to constellation container (memory nodes)
         if (this.constellationContainer) {
+          this.constellationContainer.style.transformOrigin = '0 0';
           this.constellationContainer.style.transform = transform;
         }
         
@@ -4819,9 +5052,13 @@
         // This ensures connections stay anchored to nodes when zooming/panning
         if (this.neuralCanvas) {
           this.neuralCanvas.style.transform = transform;
-          this.neuralCanvas.style.transformOrigin = 'center center';
+          this.neuralCanvas.style.transformOrigin = '0 0';
         }
         
+        if (this.isConstellationMode) {
+          this.scheduleConstellationLayoutPersist();
+        }
+
         console.log('🔗 TRANSFORM: Applied zoom/pan to both nodes and connections');
       }
 

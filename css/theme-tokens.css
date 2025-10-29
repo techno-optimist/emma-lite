@@ -60,6 +60,10 @@
   --emma-background-aurora: linear-gradient(135deg, rgba(102, 126, 234, 0.35), rgba(118, 75, 162, 0.35));
   --emma-background-sunrise: linear-gradient(135deg, rgba(255, 176, 124, 0.35), rgba(255, 220, 186, 0.35));
   --emma-background-forest: linear-gradient(135deg, rgba(58, 149, 138, 0.4), rgba(14, 52, 54, 0.4));
+  --emma-background-ocean: linear-gradient(135deg, rgba(77, 196, 255, 0.2), rgba(14, 84, 120, 0.4));
+  --emma-background-ember: linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(71, 21, 27, 0.45));
+  --emma-background-blossom: linear-gradient(135deg, rgba(252, 179, 255, 0.24), rgba(241, 179, 239, 0.32));
+  --emma-background-zen: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(17, 94, 89, 0.24));
   --emma-accent-surface: rgba(139, 92, 246, 0.2);
   --emma-accent-surface-strong: rgba(139, 92, 246, 0.35);
   --emma-accent-border: rgba(139, 92, 246, 0.4);

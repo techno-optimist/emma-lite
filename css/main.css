@@ -20,10 +20,6 @@ body {
 
 /* Animated Background */
 body::before {
-:root[data-background=""aurora""] body::before {
-  background: var(--emma-background-aurora);
-}
-
   content: '';
   position: fixed;
   top: -50%;
@@ -47,6 +43,22 @@ body::before {
 
 :root[data-background="forest"] body::before {
   background: var(--emma-background-forest);
+}
+
+:root[data-background="ocean"] body::before {
+  background: var(--emma-background-ocean);
+}
+
+:root[data-background="ember"] body::before {
+  background: var(--emma-background-ember);
+}
+
+:root[data-background="blossom"] body::before {
+  background: var(--emma-background-blossom);
+}
+
+:root[data-background="zen"] body::before {
+  background: var(--emma-background-zen);
 }
 @keyframes float {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }

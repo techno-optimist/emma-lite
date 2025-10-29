@@ -45,6 +45,21 @@ body {
 :root[data-background="forest"] .aurora {
   background: var(--emma-background-forest);
 }
+:root[data-background="ocean"] .aurora {
+  background: var(--emma-background-ocean);
+}
+
+:root[data-background="ember"] .aurora {
+  background: var(--emma-background-ember);
+}
+
+:root[data-background="blossom"] .aurora {
+  background: var(--emma-background-blossom);
+}
+
+:root[data-background="zen"] .aurora {
+  background: var(--emma-background-zen);
+}
 @keyframes aurora {
   0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
   33% { transform: translate(-30%, -60%) rotate(120deg) scale(1.1); }
@@ -770,16 +785,14 @@ body.constellation-active .utility-icons {
   z-index: 1000;
 }
 
-.clean-icons > div {
-  cursor: pointer;
-  color: var(--emma-text-standard);
-  transition: all 0.3s ease;
-  padding: 8px;
+.clean-icons > .emma-floating-button {
+  color: var(--emma-accent-primary, #8b5cf6);
+  transition: color 180ms ease, transform 180ms ease;
 }
 
-.clean-icons > div:hover {
-  color: var(--emma-accent-primary);
-  transform: scale(1.1);
+.clean-icons > .emma-floating-button:hover,
+.clean-icons > .emma-floating-button:focus-visible {
+  color: var(--emma-text-strong, #ffffff);
 }
 
 /* Hide old utility icons completely */
@@ -927,7 +940,6 @@ body.constellation-active .utility-icons {
 }
 
 /* Minimal landing state - hide advanced controls until expanded */
-body.dashboard-minimal .clean-icons,
 body.dashboard-minimal .quick-stats,
 body.dashboard-minimal .info-panel,
 body.dashboard-minimal .voice-indicator {
