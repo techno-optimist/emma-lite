@@ -175,17 +175,52 @@ class EmmaVaultControlPanel {
     const syncDescription = syncStatus.hasUnsavedChanges
       ? 'Your web app has newer data than your local file.'
       : 'Web app and local file are up to date.';
+    const heroSignalText = (syncHeadline || 'Sync Status').replace(/[<>]/g, '').trim();
     
     return `
       <div class="vault-control">
-        <header class="vault-control__hero">
-          <div class="vault-control__icon" aria-hidden="true">\u{1F6E1}\uFE0F</div>
-          <h2 id="vaultControlTitle" class="vault-control__title">Vault Control Panel</h2>
-          <p class="vault-control__subtitle">Manage your precious memories vault</p>
+        <header class="vault-control__hero" aria-label="Vault overview">
+          <div class="vault-hero">
+            <span class="vault-hero__glow" aria-hidden="true"></span>
+            <div class="vault-hero__signal" role="status">
+              <span class="vault-hero__signal-dot" data-state="${syncState}" aria-hidden="true"></span>
+              <span class="vault-hero__signal-text">${heroSignalText || 'Sync Status'}</span>
+            </div>
+            <div class="vault-hero__core">
+              <div class="vault-hero__icon" aria-hidden="true">\u{1F6E1}\uFE0F</div>
+              <div class="vault-hero__copy">
+                <span class="vault-hero__eyebrow">Emma Vault System</span>
+                <h2 id="vaultControlTitle" class="vault-hero__title">Vault Control Hub</h2>
+                <p class="vault-hero__subtitle">Curate, lock, and share your memory constellation with total confidence.</p>
+              </div>
+            </div>
+            <div class="vault-hero__quickstats" aria-label="Vault at a glance">
+              <div class="vault-hero__stat">
+                <span>Memories</span>
+                <strong>${vaultInfo.memoryCount}</strong>
+              </div>
+              <div class="vault-hero__stat">
+                <span>People</span>
+                <strong>${vaultInfo.peopleCount}</strong>
+              </div>
+              <div class="vault-hero__stat">
+                <span>Media</span>
+                <strong>${vaultInfo.mediaCount}</strong>
+              </div>
+              <div class="vault-hero__stat">
+                <span>Last Sync</span>
+                <strong>${syncStatus.webAppLastSaved || 'Never'}</strong>
+              </div>
+            </div>
+            <div class="vault-hero__meta" aria-label="Active vault">
+              <span class="vault-hero__chip">Active Vault</span>
+              <span class="vault-hero__name">${vaultInfo.name}</span>
+            </div>
+          </div>
         </header>
         
         <!-- Vault Information -->
-        <section class="vault-section vault-section--info">
+        <section class="vault-section vault-section--info" data-section-label="Vault Overview">
           <div class="vault-section__header">
             <span class="vault-section__icon" aria-hidden="true">\u{1F4C1}</span>
             <h3 class="vault-section__title">${vaultInfo.name}</h3>
@@ -211,7 +246,7 @@ class EmmaVaultControlPanel {
         </section>
         
         <!-- Sync Status -->
-        <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};">
+        <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};" data-section-label="Sync Intelligence">
           <div class="vault-section__header">
             <span class="vault-section__icon" aria-hidden="true">\u{1F504}</span>
             <h3 class="vault-section__title">Sync Status</h3>
@@ -237,25 +272,25 @@ class EmmaVaultControlPanel {
         </section>
         
         <!-- Vault Controls -->
-        <section class="vault-section vault-section--controls">
+        <section class="vault-section vault-section--controls" data-section-label="Command Center">
           <div class="vault-section__header">
             <span class="vault-section__icon" aria-hidden="true">\u2699\uFE0F</span>
             <h3 class="vault-section__title">Vault Controls</h3>
           </div>
           <div class="vault-actions">
-            <button id="openVaultBtn" class="vault-button vault-button--neutral">
+            <button id="openVaultBtn" class="vault-button emma-button emma-button--neutral">
               <span class="vault-button__icon" aria-hidden="true">\u{1F4C1}</span>
               <span class="vault-button__label">Open Different Vault</span>
             </button>
-            <button id="downloadVaultBtn" class="vault-button vault-button--affirmative">
+            <button id="downloadVaultBtn" class="vault-button emma-button emma-button--affirmative">
               <span class="vault-button__icon" aria-hidden="true">\u{1F4BE}</span>
               <span class="vault-button__label">Download Updated Vault</span>
             </button>
-            <button id="lockVaultBtn" class="vault-button vault-button--danger">
+            <button id="lockVaultBtn" class="vault-button emma-button emma-button--danger">
               <span class="vault-button__icon" aria-hidden="true">\u{1F512}</span>
               <span class="vault-button__label">Lock Vault</span>
             </button>
-            <button id="vaultStatsBtn" class="vault-button vault-button--outline">
+            <button id="vaultStatsBtn" class="vault-button emma-button emma-button--outline">
               <span class="vault-button__icon" aria-hidden="true">\u{1F4CA}</span>
               <span class="vault-button__label">Vault Statistics</span>
             </button>
@@ -265,7 +300,7 @@ class EmmaVaultControlPanel {
         
         <!-- Close Button -->
         <footer class="vault-control__footer">
-          <button id="closeControlPanelBtn" class="vault-button vault-button--ghost">
+          <button id="closeControlPanelBtn" class="vault-button emma-button emma-button--ghost">
             <span class="vault-button__icon" aria-hidden="true">\u2715</span>
             <span class="vault-button__label">Close</span>
           </button>
