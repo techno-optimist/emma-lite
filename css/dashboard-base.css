@@ -9,8 +9,14 @@ body {
   background: var(--emma-bg-gradient);
   color: var(--emma-text);
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   position: relative;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 /* Aurora Background Effect */
@@ -83,11 +89,13 @@ body.performance-lite .neural-network {
 .dashboard {
   position: relative;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
+  padding: 0 env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
 }
 
 /* Central Command Orb Container */

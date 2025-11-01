@@ -179,6 +179,11 @@ class EmmaVaultControlPanel {
     
     return `
       <div class="vault-control">
+        <button type="button" class="vault-control__dismiss" id="closeControlPanelIcon" aria-label="Close vault control panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
         <header class="vault-control__hero" aria-label="Vault overview">
           <div class="vault-hero">
             <span class="vault-hero__glow" aria-hidden="true"></span>
@@ -220,10 +225,13 @@ class EmmaVaultControlPanel {
         </header>
         
         <!-- Vault Information -->
-        <section class="vault-section vault-section--info" data-section-label="Vault Overview">
+        <section class="vault-section vault-section--info">
           <div class="vault-section__header">
-            <span class="vault-section__icon" aria-hidden="true">\u{1F4C1}</span>
-            <h3 class="vault-section__title">${vaultInfo.name}</h3>
+            <span class="vault-section__eyebrow">Vault Overview</span>
+            <div class="vault-section__headline">
+              <span class="vault-section__icon" aria-hidden="true">\u{1F4C1}</span>
+              <h3 class="vault-section__title">${vaultInfo.name}</h3>
+            </div>
           </div>
           <dl class="vault-stats">
             <div class="vault-stats__item">
@@ -246,10 +254,13 @@ class EmmaVaultControlPanel {
         </section>
         
         <!-- Sync Status -->
-        <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};" data-section-label="Sync Intelligence">
+        <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};">
           <div class="vault-section__header">
-            <span class="vault-section__icon" aria-hidden="true">\u{1F504}</span>
-            <h3 class="vault-section__title">Sync Status</h3>
+            <span class="vault-section__eyebrow">Sync Intelligence</span>
+            <div class="vault-section__headline">
+              <span class="vault-section__icon" aria-hidden="true">\u{1F504}</span>
+              <h3 class="vault-section__title">Sync Status</h3>
+            </div>
           </div>
           <div class="vault-sync">
             <div class="vault-sync__row">
@@ -272,10 +283,13 @@ class EmmaVaultControlPanel {
         </section>
         
         <!-- Vault Controls -->
-        <section class="vault-section vault-section--controls" data-section-label="Command Center">
+        <section class="vault-section vault-section--controls">
           <div class="vault-section__header">
-            <span class="vault-section__icon" aria-hidden="true">\u2699\uFE0F</span>
-            <h3 class="vault-section__title">Vault Controls</h3>
+            <span class="vault-section__eyebrow">Command Center</span>
+            <div class="vault-section__headline">
+              <span class="vault-section__icon" aria-hidden="true">\u2699\uFE0F</span>
+              <h3 class="vault-section__title">Vault Controls</h3>
+            </div>
           </div>
           <div class="vault-actions">
             <button id="openVaultBtn" class="vault-button emma-button emma-button--neutral">
@@ -338,6 +352,11 @@ class EmmaVaultControlPanel {
     const closeBtn = get('#closeControlPanelBtn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => this.closeControlPanel());
+    }
+
+    const closeIcon = get('#closeControlPanelIcon');
+    if (closeIcon) {
+      closeIcon.addEventListener('click', () => this.closeControlPanel());
     }
 
     modalOverlay.addEventListener('click', (event) => {

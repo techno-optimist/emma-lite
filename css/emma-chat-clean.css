@@ -164,7 +164,8 @@
 
 .input-wrapper {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 12px;
   background: var(--emma-chat-surface);
   border: 2px solid rgba(var(--emma-accent-primary-rgb), 0.3);
@@ -189,6 +190,16 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  appearance: none;
+}
+
+.voice-btn svg,
+.settings-btn svg,
+.send-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  stroke: currentColor;
 }
 
 .voice-btn {
@@ -232,6 +243,7 @@
 
 .chat-textarea {
   flex: 1;
+  min-width: 0;
   min-height: 40px;
   max-height: 120px;
   border: none;

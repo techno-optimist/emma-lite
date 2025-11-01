@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -48,6 +48,42 @@
     .settings-container {
       max-width: 1180px;
       margin: 0 auto;
+    }
+
+    .settings-exit-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(236, 72, 153, 0.85));
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 18px 36px rgba(139, 92, 246, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(18px);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      z-index: 140;
+      cursor: pointer;
+    }
+
+    .settings-exit-fab:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 24px 44px rgba(139, 92, 246, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    }
+
+    .settings-exit-fab svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      stroke-width: 1.8;
     }
 
     .settings-shell {
@@ -157,7 +193,7 @@
     }
 
     .settings-nav__item::after {
-      content: '↗';
+      content: "\2192";
       font-size: 0.8rem;
       opacity: 0.6;
     }
@@ -1027,25 +1063,30 @@
       }
     }
 
-    @media (max-width: 1100px) {
-      .settings-shell {
-        grid-template-columns: 1fr;
-      }
+      @media (max-width: 1100px) {
+        body {
+          padding-bottom: 120px;
+        }
 
-      .settings-sidebar {
+        .settings-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .settings-sidebar {
         position: static;
         order: -1;
       }
     }
 
-    @media (max-width: 768px) {
-      body {
-        padding: 20px;
-      }
+      @media (max-width: 768px) {
+        body {
+          padding: 20px;
+          padding-bottom: calc(20px + 108px);
+        }
 
-      .settings-sidebar {
-        padding: 18px;
-      }
+        .settings-sidebar {
+          padding: 18px;
+        }
 
       .settings-nav__item {
         font-size: 0.78rem;
@@ -1141,7 +1182,7 @@
         <!-- Visual Theme Selection -->
         <section id="section-visual" class="settings-section" data-section-title="Visual Themes">
           <div class="settings-section__header">
-            <h2 class="section-title">🎨 Visual Themes</h2>
+            <h2 class="section-title">ðŸŽ¨ Visual Themes</h2>
             <p class="section-description">
               Preview different Emma looks and moods. Themes update instantly so you can find the palette that feels just right, and you can choose a signature background to match.
             </p>
@@ -1156,7 +1197,7 @@
         <section id="section-ai" class="settings-section settings-section--ai" data-section-title="Intelligence">
           <div class="settings-section__halo" aria-hidden="true"></div>
           <div class="settings-section__header">
-            <span class="settings-section__glyph" aria-hidden="true">🧠</span>
+            <span class="settings-section__glyph" aria-hidden="true">ðŸ§ </span>
             <div class="settings-section__headline">
               <h2 class="section-title">Artificial Intelligence</h2>
               <p class="section-description">
@@ -1177,8 +1218,8 @@
                 class="api-key-button emma-button emma-button--outline"
               >
                 <span class="emma-button__pulse" aria-hidden="true"></span>
-                <span class="api-key-button__icon" aria-hidden="true">🔐</span>
-                <span id="api-key-status" class="api-key-button__label">🔑 Setup API Key</span>
+                <span class="api-key-button__icon" aria-hidden="true">ðŸ”</span>
+                <span id="api-key-status" class="api-key-button__label">ðŸ”‘ Setup API Key</span>
               </button>
             </div>
 
@@ -1220,7 +1261,7 @@
         <!-- Memory & Care -->
         <section id="section-care" class="settings-section" data-section-title="Memory & Care">
           <div class="settings-section__header">
-            <h2 class="section-title">💜 Memory &amp; Care</h2>
+            <h2 class="section-title">ðŸ’œ Memory &amp; Care</h2>
             <p class="section-description">
               Specialized features for memory preservation and dementia care support.
             </p>
@@ -1253,7 +1294,7 @@
         <!-- Privacy & Security -->
         <section id="section-privacy" class="settings-section" data-section-title="Privacy & Security">
           <div class="settings-section__header">
-            <h2 class="section-title">🔒 Privacy &amp; Security</h2>
+            <h2 class="section-title">ðŸ”’ Privacy &amp; Security</h2>
             <p class="section-description">
               Emma prioritizes your privacy with local-only processing and secure vault encryption.
             </p>
@@ -1286,7 +1327,7 @@
         <!-- Dementia Care & Accessibility -->
         <section id="section-accessibility" class="settings-section" data-section-title="Care & Accessibility">
           <div class="settings-section__header">
-            <h2 class="section-title">❤️ Dementia Care &amp; Accessibility</h2>
+            <h2 class="section-title">â¤ï¸ Dementia Care &amp; Accessibility</h2>
             <p class="section-description">
               Specialized features designed for users with memory impairment and their caregivers. Emma adapts to provide gentle, supportive interactions.
             </p>
@@ -1298,10 +1339,10 @@
                 <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
               </div>
               <div class="font-size-controls">
-                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">A⁻</button>
+                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">Aâ»</button>
                 <span id="font-size-display" class="font-size-value">100%</span>
-                <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">A⁺</button>
-                <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">↺</button>
+                <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">Aâº</button>
+                <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">â†º</button>
               </div>
             </div>
             
@@ -1365,7 +1406,7 @@
         <!-- System Information -->
         <section id="section-system" class="settings-section" data-section-title="System Information">
           <div class="settings-section__header">
-            <h2 class="section-title">ℹ️ System Information</h2>
+            <h2 class="section-title">â„¹ï¸ System Information</h2>
             <p class="section-description">
               Basic system information and compatibility status.
             </p>
@@ -1386,7 +1427,7 @@
 
         <div class="settings-actions">
           <button class="save-button emma-button emma-button--primary" type="button" id="save-all-settings">
-            ✨ Save All Settings
+            âœ¨ Save All Settings
           </button>
         </div>
       </main>
@@ -1405,7 +1446,7 @@
         this.setupEventListeners();
         this.updateUI();
         
-        console.log('⚙️ Emma Settings Manager initialized');
+        console.log('âš™ï¸ Emma Settings Manager initialized');
       }
       
       loadSettings() {
@@ -1421,9 +1462,9 @@
             highContrast: false
           };
           
-          console.log('⚙️ Settings loaded:', this.settings);
+          console.log('âš™ï¸ Settings loaded:', this.settings);
         } catch (error) {
-          console.error('⚙️ Failed to load settings:', error);
+          console.error('âš™ï¸ Failed to load settings:', error);
           this.settings = {
             apiKey: '',
             memoryDetection: true,
@@ -1434,15 +1475,33 @@
           };
         }
       }
+
+      @media (max-width: 720px) {
+        .settings-exit-fab {
+          width: 52px;
+          height: 52px;
+          bottom: 18px;
+          right: 18px;
+        }
+      }
+
+      @media (max-width: 540px) {
+        .settings-exit-fab {
+          width: 48px;
+          height: 48px;
+          bottom: calc(env(safe-area-inset-bottom, 0) + 14px);
+          right: 16px;
+        }
+      }
       
       saveSettings() {
         try {
           localStorage.setItem('emmaSettings', JSON.stringify(this.settings));
-          console.log('⚙️ Settings saved:', this.settings);
-          this.showToast('✅ Settings saved successfully!', 'success');
+          console.log('âš™ï¸ Settings saved:', this.settings);
+          this.showToast('âœ… Settings saved successfully!', 'success');
         } catch (error) {
-          console.error('⚙️ Failed to save settings:', error);
-          this.showToast('❌ Failed to save settings', 'error');
+          console.error('âš™ï¸ Failed to save settings:', error);
+          this.showToast('âŒ Failed to save settings', 'error');
         }
       }
       
@@ -1665,20 +1724,20 @@
         const iconSpan = apiKeyButton ? apiKeyButton.querySelector('.api-key-button__icon') : null;
         if (statusSpan) {
           if (this.settings.apiKey && this.settings.apiKey.startsWith('sk-')) {
-            statusSpan.textContent = '✅ API Key Connected';
+            statusSpan.textContent = 'âœ… API Key Connected';
             if (apiKeyButton) {
               apiKeyButton.dataset.state = 'connected';
             }
             if (iconSpan) {
-              iconSpan.textContent = '⚡';
+              iconSpan.textContent = 'âš¡';
             }
           } else {
-            statusSpan.textContent = '🔑 Setup API Key';
+            statusSpan.textContent = 'ðŸ”‘ Setup API Key';
             if (apiKeyButton) {
               delete apiKeyButton.dataset.state;
             }
             if (iconSpan) {
-              iconSpan.textContent = '🔐';
+              iconSpan.textContent = 'ðŸ”';
             }
           }
         }
@@ -1768,7 +1827,7 @@
           
           // Basic validation
           if (apiKey && !apiKey.startsWith('sk-')) {
-            this.showToast('⚠️ API key should start with "sk-"', 'warning');
+            this.showToast('âš ï¸ API key should start with "sk-"', 'warning');
             return;
           }
 
@@ -1779,7 +1838,7 @@
           this.closeAPIKeyModal();
           
           if (apiKey) {
-            this.showToast('🔑 API key saved successfully!', 'success');
+            this.showToast('ðŸ”‘ API key saved successfully!', 'success');
           } else {
             this.showToast('API key removed', 'info');
           }
@@ -1859,7 +1918,7 @@
     <div class="api-modal-overlay"></div>
     <div class="api-modal-content">
       <div class="api-modal-header">
-        <h3>🔑 OpenAI API Key Setup</h3>
+        <h3>ðŸ”‘ OpenAI API Key Setup</h3>
         <button class="api-modal-close">&times;</button>
       </div>
       
@@ -1878,7 +1937,7 @@
             rows="3"
           ></textarea>
           <div class="api-key-hint">
-            💡 Your API key should start with "sk-proj-" or "sk-"
+            ðŸ’¡ Your API key should start with "sk-proj-" or "sk-"
           </div>
         </div>
         
@@ -1891,5 +1950,10 @@
     </div>
   </div>
 
+  <button class="settings-exit-fab" type="button" onclick="window.location.href='../dashboard.html'" aria-label="Back to dashboard">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
 </body>
 </html>
+

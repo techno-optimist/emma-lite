@@ -225,7 +225,7 @@
         window.addEventListener('resize', resize);
 
         // Create memory particles
-        const particleCount = 50;
+        const particleCount = this.shouldReduceConstellationPhysics() ? 24 : 50;
         for (let i = 0; i < particleCount; i++) {
           this.particles.push({
             x: Math.random() * canvas.width,
@@ -239,6 +239,7 @@
 
         // Animation loop
         const animate = () => {
+          const reducePhysics = this.shouldReduceConstellationPhysics();
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
           // Update and draw particles
@@ -586,6 +587,21 @@
           console.warn('Performance mode detection failed (non-critical):', error);
           return false;
         }
+      }
+
+      isCompactViewport() {
+        return window.innerWidth <= 768;
+      }
+
+      getConstellationNodeSize() {
+        const width = window.innerWidth;
+        if (width <= 480) return 56;
+        if (width <= 900) return 68;
+        return 80;
+      }
+
+      shouldReduceConstellationPhysics() {
+        return this.lowPowerMode || this.isCompactViewport();
       }
 
       initNeuralNetwork() {
@@ -1208,6 +1224,7 @@
         const skipCanvasRendering = this.lowPowerMode || document.body.classList.contains('performance-lite') || !ctx;
 
         const animate = () => {
+          const reducePhysics = this.shouldReduceConstellationPhysics();
           if (!this.isMenuOpen && !this.isConstellationMode) {
             this.neuralAnimationId = null;
             return;
@@ -1216,7 +1233,7 @@
           if (!skipCanvasRendering) {
             ctx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
 
-            if (this.isMenuOpen || this.isConstellationMode) {
+            if (!reducePhysics && (this.isMenuOpen || this.isConstellationMode)) {
               ctx.strokeStyle = 'rgba(134, 88, 255, 0.03)';
               ctx.lineWidth = 1;
               const gridSize = 50;
@@ -1266,20 +1283,20 @@
               floatY = Math.cos(time * 0.2 + i * 0.5) * 2; // Reduced from 8px to 2px
             } else {
               // 🌌 CONSTELLATION NODES: Normal floating movement
-              floatX = Math.sin(time * 0.3 + i) * 12;
-              floatY = Math.cos(time * 0.2 + i * 0.5) * 8;
+              floatX = Math.sin(time * 0.3 + i) * 12 * (reducePhysics ? 0.6 : 1);
+              floatY = Math.cos(time * 0.2 + i * 0.5) * 8 * (reducePhysics ? 0.6 : 1);
             }
 
             // Gentle elastic force back to base position (petri dish feel)
             const dx = (node.baseX + floatX) - node.x;
             const dy = (node.baseY + floatY) - node.y;
 
-            node.vx += dx * 0.005; // Much gentler elastic force
-            node.vy += dy * 0.005;
+            node.vx += dx * (reducePhysics ? 0.003 : 0.005); // Adaptive elastic force
+            node.vy += dy * (reducePhysics ? 0.003 : 0.005);
 
             // Apply more damping for organic feel
-            node.vx *= 0.98;
-            node.vy *= 0.98;
+            node.vx *= reducePhysics ? 0.985 : 0.98;
+            node.vy *= reducePhysics ? 0.985 : 0.98;
 
             // Add repulsion from Emma orb (prevent overlap)
             if (this.centralNode && this.isConstellationMode) {
@@ -1288,10 +1305,10 @@
               const orbDist = Math.sqrt(orbDx * orbDx + orbDy * orbDy);
 
               // Repulsion zone around Emma orb
-              const repulsionRadius = 150;
+              const repulsionRadius = reducePhysics ? 130 : 150;
               if (orbDist < repulsionRadius && orbDist > 0) {
                 const repulsionForce = (repulsionRadius - orbDist) / repulsionRadius;
-                const forceStrength = repulsionForce * 0.3; // Gentle but firm repulsion
+                const forceStrength = repulsionForce * (reducePhysics ? 0.2 : 0.3); // Gentle but firm repulsion
 
                 const normalizedDx = orbDx / orbDist;
                 const normalizedDy = orbDy / orbDist;
@@ -1302,7 +1319,7 @@
             }
 
             // Add gentle repulsion between memory nodes (prevent overlap)
-            if (this.isConstellationMode) {
+            if (this.isConstellationMode && !reducePhysics) {
               this.nodes.forEach((otherNode, j) => {
                 if (i !== j) {
                   // CRITICAL FIX: Only calculate repulsion with visible nodes
@@ -1341,7 +1358,7 @@
               const orbDistance = Math.sqrt(orbDx * orbDx + orbDy * orbDy);
               
               // 🌌 SIMPLIFIED: One max distance for all devices - orbiting constraint
-              const MAX_RADIAL_DISTANCE = 150; // Orbiting distance + small buffer for physics
+              const MAX_RADIAL_DISTANCE = reducePhysics ? 120 : 150; // Orbiting distance + small buffer for physics
               
               if (orbDistance > MAX_RADIAL_DISTANCE) {
                 // Constrain to max distance from orb center
@@ -1891,6 +1908,7 @@
             const startTime = Date.now();
 
             const animate = () => {
+          const reducePhysics = this.shouldReduceConstellationPhysics();
               const elapsed = Date.now() - startTime;
               const progress = Math.min(elapsed / duration, 1);
               const current = Math.floor(start + (end - start) * progress);
@@ -2423,16 +2441,18 @@
       // Initialize memory neural network using EXACT same pattern as working main menu
       initMemoryNeuralNetwork(memories, people = []) {
 
+        const compactMode = this.shouldReduceConstellationPhysics();
+        const nodeSize = this.getConstellationNodeSize();
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
         // Neural network layout parameters
-        const networkWidth = Math.min(window.innerWidth * 0.7, 800);
-        const networkHeight = Math.min(window.innerHeight * 0.7, 600);
-        const minDistance = 120; // Minimum distance between nodes
+        const networkWidth = Math.max(nodeSize * 4, Math.min(window.innerWidth * (compactMode ? 0.9 : 0.7), compactMode ? 640 : 800));
+        const networkHeight = Math.max(nodeSize * 4, Math.min(window.innerHeight * (compactMode ? 0.9 : 0.7), compactMode ? 540 : 600));
+        const minDistance = Math.max(nodeSize + 40, compactMode ? 100 : 120); // Minimum distance between nodes
 
-        // Take up to 12 memories and up to 8 people for balanced constellation
-        const selectedMemories = memories.slice(0, 12);
-        const selectedPeople = people.slice(0, 8);
+        // Take fewer nodes on compact/low power view for performance
+        const selectedMemories = memories.slice(0, compactMode ? 8 : 12);
+        const selectedPeople = people.slice(0, compactMode ? 6 : 8);
         const totalNodes = selectedMemories.length + selectedPeople.length + 1; // +1 for create node
 
         // Generate organic neural network positions
@@ -2581,20 +2601,25 @@
         // Add theme data attribute for styling
         memoryElement.setAttribute('data-theme', memory.theme);
 
+        const nodeSize = this.getConstellationNodeSize();
+        const borderWidth = Math.max(2, Math.round(nodeSize * 0.04));
+        const baseShadow = `0 ${Math.round(nodeSize * 0.1)}px ${Math.round(nodeSize * 0.4)}px rgba(139, 92, 246, 0.4)`;
+        const hoverShadow = `0 0 ${Math.round(nodeSize * 0.5)}px rgba(139, 92, 246, 0.6), 0 0 ${Math.round(nodeSize * 0.9)}px rgba(139, 92, 246, 0.4)`;
+
         // CLEAN CIRCULAR NODE - No text labels, pure image capsule
         memoryElement.style.cssText = `
           position: fixed;
           left: ${x}px;
           top: ${y}px;
-          width: 80px;
-          height: 80px;
+          width: ${nodeSize}px;
+          height: ${nodeSize}px;
           border-radius: 50%;
-          border: 3px solid rgba(139, 92, 246, 0.6);
+          border: ${borderWidth}px solid rgba(139, 92, 246, 0.6);
           cursor: pointer;
           transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           opacity: 0;
           transform: scale(0);
-          box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+          box-shadow: ${baseShadow};
           z-index: 1500; /* CRITICAL FIX: Higher z-index to appear above all connections */
           overflow: hidden;
           display: flex;
@@ -2614,7 +2639,7 @@
           // Fallback to gradient with emoji
           memoryElement.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
           const emojiDiv = document.createElement('div');
-          emojiDiv.style.cssText = 'font-size: 24px; color: white;';
+          emojiDiv.style.cssText = `font-size: ${Math.round(nodeSize * 0.3)}px; color: white;`;
           emojiDiv.textContent = '💝';
           memoryElement.appendChild(emojiDiv);
 
@@ -2636,12 +2661,12 @@
         // Add hover effects
         memoryElement.addEventListener('mouseenter', () => {
           memoryElement.style.transform = 'scale(1.1)';
-          memoryElement.style.boxShadow = '0 0 40px rgba(139, 92, 246, 0.6), 0 0 80px rgba(139, 92, 246, 0.4)';
+          memoryElement.style.boxShadow = hoverShadow;
         });
 
         memoryElement.addEventListener('mouseleave', () => {
           memoryElement.style.transform = 'scale(1)';
-          memoryElement.style.boxShadow = '0 8px 32px rgba(139, 92, 246, 0.4)';
+          memoryElement.style.boxShadow = baseShadow;
         });
 
         // 🔍 ZOOM FIX: Add to constellation container instead of body
@@ -2663,6 +2688,19 @@
       createCreateMemoryNodeElement(x, y) {
         const createElement = document.createElement('div');
         createElement.className = 'create-memory-node';
+        const nodeSize = this.getConstellationNodeSize();
+        const createSize = Math.max(44, Math.round(nodeSize * 0.75));
+        const createBorder = Math.max(2, Math.round(createSize * 0.05));
+        const baseCreateShadow = `
+            0 0 ${Math.round(createSize * 0.35)}px rgba(16, 185, 129, 0.4),
+            0 0 ${Math.round(createSize * 0.7)}px rgba(16, 185, 129, 0.2),
+            inset 0 0 ${Math.round(createSize * 0.35)}px rgba(16, 185, 129, 0.1)
+          `;
+        const hoverCreateShadow = `
+            0 0 ${Math.round(createSize * 0.5)}px rgba(16, 185, 129, 0.6),
+            0 0 ${Math.round(createSize * 0.9)}px rgba(16, 185, 129, 0.4),
+            inset 0 0 ${Math.round(createSize * 0.5)}px rgba(16, 185, 129, 0.2)
+          `;
         
         // Create elegant SVG + icon
         const svgPlus = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -2700,13 +2738,13 @@
         // Smaller, more elegant styling with compelling glow
         createElement.style.cssText = `
           position: fixed;
-          left: ${x - 30}px;
-          top: ${y - 30}px;
-          width: 60px;
-          height: 60px;
+          left: ${x - createSize / 2}px;
+          top: ${y - createSize / 2}px;
+          width: ${createSize}px;
+          height: ${createSize}px;
           background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(34, 197, 94, 0.15));
           backdrop-filter: blur(20px);
-          border: 2px solid rgba(16, 185, 129, 0.5);
+          border: ${createBorder}px solid rgba(16, 185, 129, 0.5);
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -2715,10 +2753,7 @@
           transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           opacity: 0;
           transform: scale(0);
-          box-shadow: 
-            0 0 20px rgba(16, 185, 129, 0.4),
-            0 0 40px rgba(16, 185, 129, 0.2),
-            inset 0 0 20px rgba(16, 185, 129, 0.1);
+          box-shadow: ${baseCreateShadow};
           animation: addNodeGlow 3s ease-in-out infinite;
           z-index: 1500; /* CRITICAL FIX: Higher z-index to appear above all connections */
           pointer-events: auto; /* CRITICAL: Ensure create node is clickable even with container pointer-events: none */
@@ -2727,21 +2762,13 @@
         // Add hover effect with enhanced SVG glow
         createElement.addEventListener('mouseenter', () => {
           createElement.style.transform = 'scale(1.15)';
-          createElement.style.boxShadow = `
-            0 0 30px rgba(16, 185, 129, 0.6),
-            0 0 60px rgba(16, 185, 129, 0.4),
-            inset 0 0 30px rgba(16, 185, 129, 0.2)
-          `;
+          createElement.style.boxShadow = hoverCreateShadow;
           svgPlus.style.filter = 'drop-shadow(0 0 12px rgba(16, 185, 129, 1))';
         });
 
         createElement.addEventListener('mouseleave', () => {
           createElement.style.transform = 'scale(1)';
-          createElement.style.boxShadow = `
-            0 0 20px rgba(16, 185, 129, 0.4),
-            0 0 40px rgba(16, 185, 129, 0.2),
-            inset 0 0 20px rgba(16, 185, 129, 0.1)
-          `;
+          createElement.style.boxShadow = baseCreateShadow;
           svgPlus.style.filter = 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.8))';
         });
 
@@ -3207,14 +3234,26 @@
         // Create person avatar with first letter of name
         const avatar = person.name.charAt(0).toUpperCase();
         const relationColor = this.getRelationColor(person.relation);
+        const nodeSize = this.getConstellationNodeSize();
+        const personSize = Math.max(56, Math.round(nodeSize * 1.05));
+        const borderWidth = Math.max(2, Math.round(personSize * 0.045));
+        const basePersonShadow = `
+            0 ${Math.round(personSize * 0.1)}px ${Math.round(personSize * 0.4)}px ${relationColor.glow},
+            0 0 ${Math.round(personSize * 0.25)}px rgba(239, 68, 68, 0.3),
+            0 0 ${Math.round(personSize * 0.45)}px rgba(239, 68, 68, 0.1)
+          `;
+        const hoverPersonShadow = `
+            0 0 ${Math.round(personSize * 0.6)}px ${relationColor.glow},
+            0 0 ${Math.round(personSize)}px rgba(239, 68, 68, 0.35)
+          `;
 
         // Create BIGGER avatar circle with subtle heartbeat glow - NO TEXT LABELS
         personElement.style.cssText = `
           position: absolute;
           left: ${x}px;
           top: ${y}px;
-          width: 85px;
-          height: 85px;
+          width: ${personSize}px;
+          height: ${personSize}px;
           border-radius: 50%;
           background: ${relationColor.gradient};
           display: flex;
@@ -3222,12 +3261,9 @@
           justify-content: center;
           color: white;
           font-weight: 700;
-          font-size: 28px;
-          border: 3px solid ${relationColor.border};
-          box-shadow: 
-            0 8px 32px ${relationColor.glow},
-            0 0 20px rgba(239, 68, 68, 0.3),
-            0 0 40px rgba(239, 68, 68, 0.1);
+          font-size: ${Math.round(personSize * 0.33)}px;
+          border: ${borderWidth}px solid ${relationColor.border};
+          box-shadow: ${basePersonShadow};
           overflow: hidden;
           cursor: pointer;
           transform: scale(0);
@@ -3261,14 +3297,14 @@
 
         // Add hover effects with relation-based glow
         personElement.addEventListener('mouseenter', () => {
-          personElement.style.transform = 'scale(1.2)';
-          personElement.style.boxShadow = `0 0 40px ${relationColor.glow}, 0 0 80px ${relationColor.glow}`;
+          personElement.style.transform = 'scale(1.15)';
+          personElement.style.boxShadow = hoverPersonShadow;
           personElement.style.zIndex = '1600'; /* CRITICAL FIX: Even higher on hover to stay above everything */
         });
 
         personElement.addEventListener('mouseleave', () => {
           personElement.style.transform = 'scale(1)';
-          personElement.style.boxShadow = '';
+          personElement.style.boxShadow = basePersonShadow;
           personElement.style.zIndex = '1500'; /* CRITICAL FIX: Maintain high z-index even when not hovering */
         });
 
@@ -3551,6 +3587,7 @@
 
         const memoryNodes = this.nodes.filter(node => node.type === 'memory');
         const peopleNodes = this.nodes.filter(node => node.type === 'person');
+        const reducePhysics = this.shouldReduceConstellationPhysics();
 
         // For each memory, connect to people who were involved
         memoryNodes.forEach(memoryNode => {
@@ -3582,30 +3619,30 @@
           });
         });
 
-        // Create some random connections for people who aren't connected to anything
-        peopleNodes.forEach(personNode => {
-          if (personNode.connections.length === 0) {
-            // Connect to the closest memory node
-            let closestMemory = null;
-            let closestDistance = Infinity;
+                if (!reducePhysics) {
+          // Create some random connections for people who aren't connected to anything
+          peopleNodes.forEach(personNode => {
+            if (personNode.connections.length === 0) {
+              let closestMemory = null;
+              let closestDistance = Infinity;
 
-            memoryNodes.forEach(memoryNode => {
-              const dx = personNode.x - memoryNode.x;
-              const dy = personNode.y - memoryNode.y;
-              const distance = Math.sqrt(dx * dx + dy * dy);
+              memoryNodes.forEach(memoryNode => {
+                const dx = personNode.x - memoryNode.x;
+                const dy = personNode.y - memoryNode.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
 
-              if (distance < closestDistance && memoryNode.connections.length < 3) {
-                closestDistance = distance;
-                closestMemory = memoryNode;
+                if (distance < closestDistance && memoryNode.connections.length < 3) {
+                  closestDistance = distance;
+                  closestMemory = memoryNode;
+                }
+              });
+
+              if (closestMemory) {
+                this.linkNodes(personNode, closestMemory);
               }
-            });
-
-            if (closestMemory) {
-              this.linkNodes(personNode, closestMemory);
             }
-          }
-        });
-
+          });
+        }
       }      // Update neural network node positions with overlap prevention
       updateConstellationNodes() {
         const time = Date.now() * 0.001;
@@ -6729,3 +6766,23 @@
                   });
               }
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
