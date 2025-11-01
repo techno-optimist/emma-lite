@@ -323,11 +323,14 @@ class EmmaBrowserClient {
           case 'emma_ready':
             this.setState('listening');
             if (this.chatInstance) {
+              if (typeof this.chatInstance.markAgentReady === 'function') {
+                this.chatInstance.markAgentReady();
+              }
               this.chatInstance.addMessage('system', '✅ Emma is ready to talk!');
               this.chatInstance.addMessage('system', '🎤 Say something to Emma - transcription will appear here');
             }
             break;
-            
+
           case 'user_transcription':
             // Display user's speech in chat
             if (this.chatInstance && message.transcript) {
@@ -338,7 +341,11 @@ class EmmaBrowserClient {
           case 'emma_transcription':
             // Display Emma's speech in chat
             if (this.chatInstance && message.transcript) {
-              this.chatInstance.addMessage(message.transcript, 'emma', { isVoice: true });
+              const isVoice = message.source === 'voice';
+              this.chatInstance.addMessage(message.transcript, 'emma', { isVoice });
+              if (typeof this.chatInstance.hideTypingIndicator === 'function') {
+                this.chatInstance.hideTypingIndicator();
+              }
             }
             // Store text for fallback and wait for server audio
             this.lastEmmaText = message.transcript;
@@ -375,6 +382,15 @@ class EmmaBrowserClient {
             
           case 'state_change':
             this.setState(message.state);
+            if (this.chatInstance) {
+              if (message.state === 'thinking' && typeof this.chatInstance.showTypingIndicator === 'function') {
+                this.chatInstance.showTypingIndicator();
+              }
+              if ((message.state === 'speaking' || message.state === 'listening') &&
+                  typeof this.chatInstance.hideTypingIndicator === 'function') {
+                this.chatInstance.hideTypingIndicator();
+              }
+            }
             break;
             
           case 'tool_request':
@@ -409,6 +425,9 @@ class EmmaBrowserClient {
       console.log('🔇 Emma agent connection closed');
       this.isConnected = false;
       this.setState('idle');
+      if (this.chatInstance && typeof this.chatInstance.markAgentDisconnected === 'function') {
+        this.chatInstance.markAgentDisconnected();
+      }
     };
   }
 
@@ -450,20 +469,31 @@ class EmmaBrowserClient {
    */
   displayToolResult(toolName, params, result) {
     if (!this.chatInstance) return;
-    
+
+    if (result && result.error) {
+      this.chatInstance.addMessage(`⚠️ ${result.error}`, 'system');
+      return;
+    }
+
     switch (toolName) {
       case 'get_people':
         if (result.people && result.people.length > 0) {
           this.chatInstance.displayPeopleResults(result.people);
         }
         break;
-        
+
       case 'get_memories':
         if (result.memories && result.memories.length > 0) {
           this.chatInstance.displayMemoryResults(result.memories);
         }
         break;
-        
+
+      case 'summarize_memory':
+        if (result.summary) {
+          this.chatInstance.addMessage(`📝 Here's a gentle summary: ${result.summary}`, 'emma');
+        }
+        break;
+
       case 'create_memory_from_voice':
         if (result.success) {
           this.chatInstance.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
@@ -472,11 +502,52 @@ class EmmaBrowserClient {
           });
         }
         break;
-        
+
+      case 'create_memory_capsule':
+        if (result.success) {
+          const label = result.title || params.title || params.content?.substring(0, 50) || 'New memory';
+          this.chatInstance.addMessage('system', `💾 Saved memory: "${label}"`, {
+            type: 'memory-created',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
       case 'update_person':
         if (result.success) {
           this.chatInstance.addMessage('system', `👤 Updated ${result.personName} with new details`, {
             type: 'person-updated'
+          });
+        }
+        break;
+
+      case 'create_person_profile':
+        if (result.success) {
+          this.chatInstance.addMessage('system', `👤 Added ${result.personName} to your people`, {
+            type: 'person-created',
+            personId: result.personId
+          });
+        }
+        break;
+
+      case 'update_memory_capsule':
+        if (result.success) {
+          const fields = result.updatedFields?.length
+            ? result.updatedFields.join(', ')
+            : 'memory details';
+          this.chatInstance.addMessage('system', `📝 Updated ${fields} for your memory`, {
+            type: 'memory-updated',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'attach_memory_media':
+        if (result.success) {
+          const count = result.attachmentCount ?? (params.media?.length || 0);
+          this.chatInstance.addMessage('system', `📎 Added ${count} new ${count === 1 ? 'attachment' : 'attachments'} to your memory`, {
+            type: 'memory-media-added',
+            memoryId: result.memoryId
           });
         }
         break;
@@ -515,12 +586,12 @@ class EmmaBrowserClient {
       };
       
       const message = statusMessages[newState];
-      if (message && this.chatInstance.typingIndicator) {
+      if (this.chatInstance.typingIndicator) {
         const span = this.chatInstance.typingIndicator.querySelector('span');
-        if (span) {
+        if (span && message) {
           span.textContent = message;
-          this.chatInstance.typingIndicator.style.display = message ? 'block' : 'none';
         }
+        this.chatInstance.typingIndicator.style.display = message ? 'flex' : 'none';
       }
     }
   }
