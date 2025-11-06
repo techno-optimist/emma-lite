@@ -717,22 +717,25 @@
 
 .toggle-switch {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   width: 64px;
   height: 32px;
   cursor: pointer;
 }
 
 .toggle-switch input {
-  display: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .toggle-slider {
-  position: relative;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  display: block;
   background: linear-gradient(125deg, rgba(24, 24, 52, 0.9), rgba(18, 20, 46, 0.78));
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);

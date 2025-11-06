@@ -4325,7 +4325,12 @@
                                 e.target.closest('.emma-chat') ||
                                 e.target.closest('[class*="chat"]') ||
                                 e.target.closest('[class*="message"]') ||
-                                e.target.closest('[class*="popup"]');
+                                e.target.closest('[class*="popup"]') ||
+
+                                // Vault control panel: allow native scroll inside overlay
+                                e.target.closest('.vault-control-overlay') ||
+                                e.target.closest('.vault-control-dialog') ||
+                                e.target.closest('.vault-control');
             
             if (!isOverDialog) {
               // Only zoom constellation when NOT scrolling in a dialog
@@ -4435,7 +4440,7 @@
           }
         });
 
-        // ⌨️ KEYBOARD NAVIGATION for accessibility
+        // Keyboard navigation for accessibility
         document.addEventListener('keydown', (e) => {
           if (this.isConstellationMode) {
             this.handleConstellationKeyboard(e);
@@ -4443,7 +4448,7 @@
         });
       }
 
-      // dY"� ENABLE NODE-LEVEL DRAGGING
+      // Enable node-level dragging
       isInteractiveConstellationTarget(target) {
         if (!target) return false;
         const interactiveSelectors = [
@@ -4466,7 +4471,7 @@
         return interactiveSelectors.some(selector => target.closest(selector));
       }
 
-      // dY"? ENABLE NODE-LEVEL DRAGGING
+      // Enable node-level dragging for pointer events
       enableNodeDragging(node) {
         if (!node || !node.element) return;
         if (node.orbBound) return; // Skip radial menu nodes
@@ -4517,7 +4522,7 @@
           try {
             node.element.setPointerCapture(event.pointerId);
           } catch (error) {
-            console.warn('dY"? CONSTELLATION: Unable to capture pointer for node drag', error);
+            console.warn('[Constellation] Unable to capture pointer for node drag', error);
           }
         }
 
@@ -4595,7 +4600,7 @@
           try {
             node.element.releasePointerCapture(this.nodeDragPointerId);
           } catch (error) {
-            console.warn('dY"? CONSTELLATION: Unable to release pointer capture', error);
+            console.warn('[Constellation] Unable to release pointer capture', error);
           }
         }
 
@@ -4736,7 +4741,7 @@
             inverseMatrix
           };
         } catch (error) {
-          console.warn('dY"? CONSTELLATION: Failed to compute transform matrix, using identity', error);
+          console.warn('[Constellation] Failed to compute transform matrix; using identity', error);
           return {
             rect,
             inverseMatrix: new MatrixClass()
@@ -6766,6 +6771,7 @@
                   });
               }
     });
+
 
 
 

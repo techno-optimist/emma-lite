@@ -15,6 +15,26 @@ class EmmaWebVault {
     this.fileHandle = null; // For File System Access API
     this.pendingChanges = false;
     this.saveDebounceTimer = null;
+    this.isFileSelectionInProgress = false;
+    this.needsFileReauth = false;
+    const storedAutoSave = (() => {
+      try {
+        return localStorage.getItem('emmaVaultAutoSaveEnabled');
+      } catch (error) {
+        console.warn('[EmmaWebVault] Failed to read auto-save preference:', error);
+        return null;
+      }
+    })();
+    if (storedAutoSave === null) {
+      try {
+        localStorage.setItem('emmaVaultAutoSaveEnabled', 'true');
+      } catch (error) {
+        console.warn('[EmmaWebVault] Failed to prime auto-save preference:', error);
+      }
+      this.autoSaveEnabled = true;
+    } else {
+      this.autoSaveEnabled = storedAutoSave !== 'false';
+    }
 
     // WEBAPP-FIRST ARCHITECTURE: Webapp is single source of truth
     this.extensionAvailable = false; // Extension defers to webapp
@@ -154,6 +174,12 @@ class EmmaWebVault {
    */
   async openVaultFile(file) {
     try {
+      if (this.isFileSelectionInProgress) {
+        console.warn(' VAULT: File selection already in progress - ignoring duplicate request');
+        return { success: false, reason: 'file_selection_in_progress' };
+      }
+
+      this.isFileSelectionInProgress = true;
 
       let fileToProcess = file;
 
@@ -161,7 +187,7 @@ class EmmaWebVault {
       if (file) {
         this.originalFileName = file.name;
         // Persist for restoration across pages
-        try { sessionStorage.setItem('emmaVaultOriginalFileName', file.name); } catch (_) {}
+        try { sessionStorage.setItem('emmaVaultOriginalFileName', file.name); localStorage.setItem('emmaVaultOriginalFileName', file.name); } catch (_) {}
 
         // CRITICAL: If file is provided but no fileHandle, we need write access
         if (!this.fileHandle && 'showOpenFilePicker' in window) {
@@ -207,12 +233,29 @@ class EmmaWebVault {
         throw new Error('No file selected');
       }
 
-      // Get passphrase securely with CLEAN modal
-      const passphrase = await window.cleanSecurePasswordModal.show({
-        title: 'Unlock Vault',
-        message: `Enter the passphrase for your vault: ${fileToProcess.name}`,
-        placeholder: 'Enter vault passphrase...'
-      });
+      // Get passphrase securely with CLEAN modal or fallback
+      let passphrase = null;
+      try {
+        if (window.cleanSecurePasswordModal && typeof window.cleanSecurePasswordModal.show === 'function') {
+          passphrase = await window.cleanSecurePasswordModal.show({
+            title: 'Unlock Vault',
+            message: `Enter the passphrase for your vault: ${fileToProcess.name}`,
+            placeholder: 'Enter vault passphrase...'
+          });
+        } else if (typeof window.showPasswordModal === 'function') {
+          passphrase = await window.showPasswordModal(`Enter the passphrase for ${fileToProcess.name}`, 'Passphrase:');
+        } else {
+          passphrase = window.prompt(`Enter the passphrase for ${fileToProcess.name}`);
+        }
+      } catch (modalError) {
+        console.error(' PASSCODE MODAL: Failed to collect passphrase:', modalError);
+        passphrase = null;
+      }
+
+      if (!passphrase) {
+        console.warn(' VAULT: Passphrase entry cancelled - aborting open flow');
+        return { success: false, reason: 'passphrase_cancelled' };
+      }
 
       this.passphrase = passphrase;
 
@@ -240,6 +283,8 @@ class EmmaWebVault {
     } catch (error) {
       console.error(' Failed to open vault:', error);
       throw error;
+    } finally {
+      this.isFileSelectionInProgress = false;
     }
   }
 
@@ -711,7 +756,7 @@ class EmmaWebVault {
   /**
    * Update an existing person
    */
-  async updatePerson({ id, name, relation, contact, avatar }) {
+  async updatePerson({ id, name, relation, contact, avatar, avatarId, avatarUrl }) {
     if (!this.isOpen) throw new Error('No vault is open');
     if (!id) throw new Error('Missing person id');
 
@@ -724,19 +769,53 @@ class EmmaWebVault {
     if (typeof contact === 'string') existing.contact = contact;
     existing.updated = new Date().toISOString();
 
-    if (avatar) {
-      try {
-        if (typeof avatar === 'string' && this.vaultData?.content?.media && this.vaultData.content.media[avatar]) {
-          existing.avatarId = avatar;
-        } else if (typeof avatar === 'string' && avatar.startsWith('data:')) {
-          existing.avatarId = await this.addMedia({
-            type: 'image/jpeg',
-            data: avatar,
-            name: `${existing.name || 'person'}-avatar`
-          });
+    const avatarParamProvided = typeof avatar !== 'undefined';
+    const avatarIdProvided = typeof avatarId !== 'undefined';
+    const avatarUrlProvided = typeof avatarUrl !== 'undefined';
+
+    try {
+      if (avatarParamProvided) {
+        if (avatar === null) {
+          existing.avatarId = null;
+          delete existing.avatarUrl;
+        } else if (typeof avatar === 'string') {
+          const mediaStore = this.vaultData?.content?.media || {};
+          if (mediaStore[avatar]) {
+            existing.avatarId = avatar;
+          } else if (avatar.startsWith('data:')) {
+            const newAvatarId = await this.addMedia({
+              type: 'image/jpeg',
+              data: avatar,
+              name: `${existing.name || 'person'}-avatar`
+            });
+            existing.avatarId = newAvatarId;
+          } else {
+            // Fallback: attempt to store raw string data
+            const newAvatarId = await this.addMedia({
+              type: 'image/jpeg',
+              data: avatar,
+              name: `${existing.name || 'person'}-avatar`
+            });
+            existing.avatarId = newAvatarId;
+          }
         }
-      } catch (avatarErr) {
-        console.warn(' Failed to update avatar:', avatarErr);
+      } else if (avatarIdProvided) {
+        if (avatarId === null) {
+          existing.avatarId = null;
+          delete existing.avatarUrl;
+        } else if (typeof avatarId === 'string') {
+          existing.avatarId = avatarId;
+        }
+      }
+    } catch (avatarErr) {
+      console.warn(' Failed to update avatar:', avatarErr);
+    }
+
+    if (avatarUrlProvided) {
+      if (avatarUrl) {
+        existing.avatarUrl = avatarUrl;
+      } else {
+        delete existing.avatarUrl;
       }
     }
 
@@ -1105,6 +1184,12 @@ class EmmaWebVault {
    */
   async autoSave() {
 
+    if (!this.autoSaveEnabled) {
+      this.pendingChanges = true;
+      console.debug('[EmmaWebVault] Auto-save disabled by settings; skipping autoSave run');
+      return;
+    }
+
     //  CRITICAL: .emma file MUST be updated or operation fails
     const hasFileSystemAccess = 'showOpenFilePicker' in window;
 
@@ -1119,6 +1204,9 @@ class EmmaWebVault {
       
       this.pendingChanges = true;
       this.scheduleElegantSave();
+      this.needsFileReauth = false;
+      const syncModal = document.querySelector('.emma-sync-error-modal');
+      if (syncModal) syncModal.remove();
       
       // CRITICAL: Also sync to extension if available (merged from removed duplicate)
       if (this.extensionAvailable && this.extensionSyncEnabled) {
@@ -1145,9 +1233,20 @@ class EmmaWebVault {
       try {
         await this.saveToIndexedDB();
         console.log(' GRACEFUL: Saved to IndexedDB backup');
+
+        if (this.isWebappPrimary) {
+          // Pure webapp mode treats IndexedDB as primary storage so autosave can proceed
+          this.needsFileReauth = false;
+          this.pendingChanges = false;
+          if (window.emmaSyncStatus) {
+            window.emmaSyncStatus.show('success', 'Changes saved to Emma Web Vault');
+          }
+          return;
+        }
         
         // Mark that we need file re-authentication 
         this.needsFileReauth = true;
+        this.promptForFileReauth();
         
         // Show gentle notification (not blocking error)
         if (window.emmaSyncStatus) {
@@ -1232,7 +1331,8 @@ class EmmaWebVault {
       // Direct-save-only: Must have file handle
       if (!this.fileHandle || !('createWritable' in this.fileHandle)) {
         console.error(' DIRECT-SAVE: No file handle available');
-        this.showDirectSaveAffordance && this.showDirectSaveAffordance();
+        this.needsFileReauth = true;
+        this.promptForFileReauth();
         throw new Error('Direct save required: no file access available');
       }
 
@@ -1276,6 +1376,8 @@ class EmmaWebVault {
       if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
         console.warn(' ATOMIC: Permission denied - file handle may be invalid');
         this.fileHandle = null; // Clear invalid handle
+        this.needsFileReauth = true;
+        this.promptForFileReauth();
       }
       
       throw error;
@@ -1295,14 +1397,25 @@ class EmmaWebVault {
       });
 
       const file = await fileHandle.getFile();
-      if (file.name === this.originalFileName) {
-        this.fileHandle = fileHandle;
 
-        return true;
-      } else {
-
-        return false;
+      if (this.originalFileName && file.name !== this.originalFileName) {
+        console.warn(' REAUTH: Selected file name differs from stored reference. Accepting new file handle.', {
+          stored: this.originalFileName,
+          selected: file.name
+        });
       }
+
+      this.fileHandle = fileHandle;
+      this.originalFileName = file.name;
+      try {
+        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
+        localStorage.setItem('emmaVaultOriginalFileName', file.name);
+      } catch (_) {}
+      this.needsFileReauth = false;
+      const syncModal = document.querySelector('.emma-sync-error-modal');
+      if (syncModal) syncModal.remove();
+
+      return true;
     } catch (error) {
 
       return false;
@@ -1320,7 +1433,8 @@ class EmmaWebVault {
       // Direct-save-only: Must have file handle for final save
       if (!this.fileHandle || !('createWritable' in this.fileHandle)) {
         console.error(' DIRECT-SAVE: Cannot lock - no file access');
-        this.showDirectSaveAffordance && this.showDirectSaveAffordance();
+        this.needsFileReauth = true;
+        this.promptForFileReauth();
         throw new Error('Direct save required to lock vault');
       }
 
@@ -1459,21 +1573,10 @@ class EmmaWebVault {
         this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName') || 
                                localStorage.getItem('emmaVaultOriginalFileName');
         
-        //  CRITICAL: Try to restore file access for .emma file sync
-        if (this.originalFileName && 'showOpenFilePicker' in window) {
-          console.log(' RESTORE: Attempting to restore file access for:', this.originalFileName);
-          try {
-            // Try silent restoration first (may work if browser remembers permission)
-            const restored = await this.reEstablishFileAccess();
-            if (restored) {
-              console.log(' RESTORE: File access restored automatically');
-            } else {
-              console.warn(' RESTORE: File access not restored - will prompt on first save');
-            }
-          } catch (error) {
-            console.warn(' RESTORE: File access restoration failed:', error);
-            // Not critical - user will be prompted on first save
-          }
+        //  CRITICAL: Defer re-auth until user action to avoid unsolicited file pickers
+        if (!this.fileHandle && this.originalFileName) {
+          this.needsFileReauth = true;
+          this.promptForFileReauth();
         }
 
         return { vaultData: this.vaultData, hasPassphrase: true, hasFileName: !!this.originalFileName };
@@ -1724,73 +1827,16 @@ class EmmaWebVault {
   }
 
   /**
-   * Show a small, reusable affordance to re-establish direct file save
+   * Prompt user to re-establish direct file save when auto-save requires a handle
    */
-  showDirectSaveAffordance() {
-    try {
+  promptForFileReauth() {
+    if (!this.needsFileReauth) return;
+    if (typeof document === 'undefined') return;
+    if (document.querySelector('.emma-sync-error-modal')) return;
 
-      console.log(' AFFORDANCE: isFallbackMode?', this.isFallbackMode());      if (!this.isFallbackMode()) {
-
-        return;
-      }
-
-      if (document.getElementById('emma-direct-save-btn')) {
-
-        return; // Already shown
-      }
-
-      const btn = document.createElement('button');
-      btn.id = 'emma-direct-save-btn';
-      btn.innerHTML = ' Enable Direct Save';
-      btn.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 2147483647;
-        padding: 12px 18px;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: #fff;
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(239, 68, 68, 0.4);
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 14px;
-        animation: pulse 2s infinite;
-      `;
-
-      // Add pulsing animation
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-      `;
-      document.head.appendChild(style);
-      document.body.appendChild(btn);
-
-      const enable = async () => {
-        try {
-          btn.disabled = true;
-          btn.innerHTML = ' Requesting access...';
-          const ok = await this.reEstablishFileAccess();
-          if (ok && this.fileHandle) {
-            btn.innerHTML = ' Direct save enabled!';
-            btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            setTimeout(() => btn.remove(), 2000);
-            if (typeof showToast === 'function') showToast(' Direct save enabled - all changes now save automatically!', 'success');
-          } else {
-            btn.innerHTML = ' Enable Direct Save';
-            btn.disabled = false;
-          }
-        } catch (e) {
-          btn.textContent = 'Enable direct save';
-          btn.disabled = false;
-        }
-      };
-      btn.addEventListener('click', enable);
-    } catch (_) {}
+    if (typeof this.showFileSyncError === 'function') {
+      this.showFileSyncError();
+    }
   }
 
   /**
@@ -2658,6 +2704,18 @@ window.emmaAPI = {
       return await window.emmaWebVault.getMedia(mediaId);
     }
   }
+};
+
+EmmaWebVault.prototype.setAutoSaveEnabled = function(enabled) {
+  this.autoSaveEnabled = !!enabled;
+  if (!this.autoSaveEnabled) {
+    this.pendingChanges = true;
+  }
+};
+
+EmmaWebVault.prototype.showDirectSaveAffordance = function() {
+  this.needsFileReauth = true;
+  this.promptForFileReauth();
 };
 
 /**

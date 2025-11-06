@@ -1,4 +1,4 @@
-// js/memories.js - External JavaScript for memory gallery
+﻿// js/memories.js - External JavaScript for memory gallery
 // Desktop shim: prefer Electron bridge if available
 // eslint-disable-next-line no-unused-vars
 const chrome = (typeof window !== 'undefined' && (window.chromeShim || window.chrome)) || undefined;
@@ -8,11 +8,68 @@ console.log('🔥🔥🔥 CACHE BUST DEBUG: memories.js RELOADED at', new Date()
 // Timer manager will be loaded dynamically to avoid module errors
 let timerManager = null;
 
+let emmaChatLoaderPromise = null;
+
+function resolveEmmaChatScriptUrl() {
+  const existing = document.querySelector('script[src*="emma-chat-experience.js"]');
+  if (existing && existing.src) {
+    return existing.src;
+  }
+
+  try {
+    return new URL('../js/emma-chat-experience.js', window.location.href).href;
+  } catch (_) {
+    return new URL('js/emma-chat-experience.js', window.location.href).href;
+  }
+}
+
+function ensureEmmaChatExperienceLoaded() {
+  if (typeof EmmaChatExperience !== 'undefined') {
+    return Promise.resolve();
+  }
+
+  if (emmaChatLoaderPromise) {
+    return emmaChatLoaderPromise;
+  }
+
+  emmaChatLoaderPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[src*="emma-chat-experience.js"]');
+    if (existing) {
+      const isLoaded = existing.dataset.loaded === 'true' || existing.readyState === 'complete' || existing.readyState === 'loaded';
+      if (isLoaded) {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener('load', () => {
+        existing.dataset.loaded = 'true';
+        resolve();
+      }, { once: true });
+      existing.addEventListener('error', () => reject(new Error('Failed to load EmmaChatExperience script')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = resolveEmmaChatScriptUrl();
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    script.onerror = () => reject(new Error('Failed to load EmmaChatExperience script'));
+    document.head.appendChild(script);
+  }).finally(() => {
+    emmaChatLoaderPromise = null;
+  });
+
+  return emmaChatLoaderPromise;
+}
+
 // Create a simple timer manager for this context
 const simpleTimerManager = {
   timers: new Set(),
   setTimeout(callback, delay, context = 'unknown') {
-    const id = setTimeout(() => {
+    const id = setTimeout(async () => {
       try {
         callback();
       } catch (error) {
@@ -865,7 +922,7 @@ function showNotification(message, type = 'success') {
   notification.textContent = message;
   document.body.appendChild(notification);
 
-  simpleTimerManager.setTimeout(() => {
+  simpleTimerManager.setTimeout(async () => {
     notification.style.animation = 'slideOut 0.3s ease';
     simpleTimerManager.setTimeout(() => notification.remove(), 300, 'notification_remove');
   }, 3000, 'notification_hide');
@@ -895,7 +952,7 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
         showNotification('HML identity created! You can now sync with people.', 'success');
 
         // Now retry the sync offer
-        setTimeout(() => {
+        setTimeout(async () => {
           offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId);
         }, 1000);
 
@@ -972,7 +1029,7 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
       showNotification(successMsg, 'success');
 
       // Show helpful next steps
-      setTimeout(() => {
+      setTimeout(async () => {
         alert(`Vault sharing complete! 🎉\n\nNext steps:\n1. The tagged people will receive vault invitations\n2. Once they accept, this memory will sync to their devices\n3. You can collaborate on memories together\n\nNote: Make sure they have added your fingerprint in their HML Sync settings too!`);
       }, 2000);
     }
@@ -2282,9 +2339,9 @@ function showNotification(message, type = 'info', duration = 3000) {
   setTimeout(() => notification.style.opacity = '1', 10);
 
   // Remove after duration
-  setTimeout(() => {
+  setTimeout(async () => {
     notification.style.opacity = '0';
-    setTimeout(() => {
+    setTimeout(async () => {
       if (notification.parentNode) {
         notification.parentNode.removeChild(notification);
       }
@@ -2861,7 +2918,7 @@ function showResponsiveMemoryDialog(memory) {
   document.body.appendChild(dialog);
   
   // Animate in
-  setTimeout(() => {
+  setTimeout(async () => {
     dialog.style.opacity = '1';
     // Load people avatars if needed
     loadConstellationPeopleAvatars(memory);
@@ -3004,28 +3061,30 @@ function editConstellationMemory(memoryId) {
     backgroundDialog.style.transition = 'opacity 0.2s ease';
     
     // Wait for fade-out, then remove and open edit modal
-    setTimeout(() => {
+    setTimeout(async () => {
       backgroundDialog.remove();
       
       // Ensure constellation interactions are properly disabled
       document.body.classList.add('modal-open');
       
-      // Now open edit modal after background is completely gone
-      if (typeof EmmaChatExperience !== 'undefined') {
+      try {
+        await ensureEmmaChatExperienceLoaded();
         const tempChatExperience = new EmmaChatExperience();
         tempChatExperience.editMemoryDetails(memoryId);
-      } else {
-        console.error('❌ EmmaChatExperience not available');
+      } catch (error) {
+        console.error('❌ EmmaChatExperience not available', error);
       }
     }, 200);
   } else {
     // No background dialog - proceed directly
-    if (typeof EmmaChatExperience !== 'undefined') {
-      const tempChatExperience = new EmmaChatExperience();
-      tempChatExperience.editMemoryDetails(memoryId);
-    } else {
-      console.error('❌ EmmaChatExperience not available');
-    }
+    ensureEmmaChatExperienceLoaded()
+      .then(() => {
+        const tempChatExperience = new EmmaChatExperience();
+        tempChatExperience.editMemoryDetails(memoryId);
+      })
+      .catch((error) => {
+        console.error('❌ EmmaChatExperience not available', error);
+      });
   }
 }
 
@@ -3074,7 +3133,7 @@ function closeMemoryDetail() {
       document.removeEventListener('keydown', modal._escapeHandler);
     }
 
-      setTimeout(() => {
+      setTimeout(async () => {
       modal.remove();
     }, 300);
   }
@@ -3724,7 +3783,7 @@ async function openAddPeopleModal() {
 
           // Offer HML sync if people have fingerprints
           if (peopleWithFingerprints.length > 0) {
-            setTimeout(() => {
+            setTimeout(async () => {
               offerHMLSyncForTaggedPeople(peopleWithFingerprints, window._currentMemoryId);
             }, 1000);
           }
@@ -4205,7 +4264,7 @@ function closeMemoryDetail() {
       document.removeEventListener('keydown', modal._escapeHandler);
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
       modal.remove();
     }, 300);
   }
@@ -4816,3 +4875,4 @@ function openCreateWizardModal() {
     }
   }
 }
+

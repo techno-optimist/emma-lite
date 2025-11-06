@@ -1036,7 +1036,7 @@
         <div class="form-group">
           <label class="form-label">Profile Picture</label>
           <div class="avatar-upload-container">
-            <div class="avatar-preview" id="avatar-preview">
+            <div class="avatar-preview" id="avatar-preview" role="button" tabindex="0" aria-label="Choose profile photo">
               <div class="avatar-placeholder">
                 <div class="avatar-icon">&#x1F464;</div>
                 <div class="avatar-text">Add Photo</div>
@@ -1150,7 +1150,7 @@
         <div class="form-group">
           <label class="form-label">Profile Picture</label>
           <div class="avatar-upload-container">
-            <div class="avatar-preview" id="edit-avatar-preview">
+            <div class="avatar-preview" id="edit-avatar-preview" role="button" tabindex="0" aria-label="Change profile photo">
               <div class="avatar-placeholder">
                 <div class="avatar-icon">&#x1F464;</div>
                 <div class="avatar-text">Change Photo</div>
@@ -1421,13 +1421,23 @@
       const avatarUpload = document.getElementById('avatar-upload');
       const avatarPreview = document.getElementById('avatar-preview');
 
-      // Handle file selection
-      avatarUpload.addEventListener('change', handleAvatarUpload);
+      if (avatarUpload) {
+        avatarUpload.addEventListener('change', handleAvatarUpload);
+      }
 
-      // Handle click on preview to select file
-      avatarPreview.addEventListener('click', () => {
-        avatarUpload.click();
-      });
+      if (avatarUpload && avatarPreview) {
+        const openPicker = () => {
+          avatarUpload.click();
+        };
+
+        avatarPreview.addEventListener('click', openPicker);
+        avatarPreview.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openPicker();
+          }
+        });
+      }
     });
 
     async function handleAvatarUpload(event) {
@@ -1675,9 +1685,11 @@
       });
       
       const delBtn = document.createElement('button');
+      delBtn.type = 'button';
       delBtn.textContent = '\u{1F5D1}';
       delBtn.title = 'Delete person';
-      delBtn.style.cssText = 'background:rgba(0,0,0,0.7); color:#fff; border:none; border-radius:8px; padding:8px; cursor:pointer; backdrop-filter:blur(10px); transition:all 0.3s ease;';
+      delBtn.setAttribute('aria-label', `Delete ${person.name}`);
+      delBtn.style.cssText = 'background:rgba(0,0,0,0.7); color:#fff; border:none; border-radius:8px; width:36px; height:36px; padding:0; display:flex; align-items:center; justify-content:center; font-size:18px; line-height:1; cursor:pointer; backdrop-filter:blur(10px); transition:all 0.3s ease;';
       delBtn.addEventListener('mouseenter', () => {
         delBtn.style.background = 'rgba(239,68,68,0.8)';
         delBtn.style.transform = 'scale(1.1)';
@@ -2243,8 +2255,24 @@
     // Edit avatar upload functionality
     document.addEventListener('DOMContentLoaded', () => {
       const editAvatarUpload = document.getElementById('edit-avatar-upload');
+      const editAvatarPreview = document.getElementById('edit-avatar-preview');
+
       if (editAvatarUpload) {
         editAvatarUpload.addEventListener('change', handleEditAvatarUpload);
+      }
+
+      if (editAvatarUpload && editAvatarPreview) {
+        const openEditPicker = () => {
+          editAvatarUpload.click();
+        };
+
+        editAvatarPreview.addEventListener('click', openEditPicker);
+        editAvatarPreview.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openEditPicker();
+          }
+        });
       }
     });
 
@@ -2361,15 +2389,7 @@
         let newAvatarId = currentPerson.avatarId; // Keep current by default
 
         if (editAvatarChanged) {
-          // Remove old avatar if it exists
-          if (currentPerson.avatarId) {
-            try {
-              await window.emmaAPI.vault.attachment.remove(currentPerson.avatarId);
-
-            } catch (error) {
-              console.warn('[EDIT] Failed to remove old avatar:', error);
-            }
-          }
+          const previousAvatarId = currentPerson.avatarId;
 
           // Upload new avatar if we have one
           if (editAvatarDataUrl && editAvatarFile) {
@@ -2390,6 +2410,15 @@
               if (avatarResult && avatarResult.success && avatarResult.id) {
                 newAvatarId = avatarResult.id;
 
+                if (previousAvatarId) {
+                  try {
+                    await window.emmaAPI.vault.attachment.remove(previousAvatarId);
+
+                  } catch (removeError) {
+                    console.warn('[EDIT] Failed to remove previous avatar:', removeError);
+                  }
+                }
+
               } else {
                 console.error('[EDIT] Failed to save new avatar:', avatarResult);
                 showToast('⚠️ Person updated but avatar upload failed', 'warning');
@@ -2401,6 +2430,14 @@
           } else {
             // No new avatar, remove the old one
             newAvatarId = null;
+            if (previousAvatarId) {
+              try {
+                await window.emmaAPI.vault.attachment.remove(previousAvatarId);
+
+              } catch (error) {
+                console.warn('[EDIT] Failed to remove old avatar:', error);
+              }
+            }
           }
         }
 
@@ -2409,20 +2446,29 @@
           ...currentPerson,
           name,
           contact: email || phone || null,
-          relation,
-          avatarId: newAvatarId,
-          avatarUrl: editAvatarDataUrl // For immediate display
+          relation
         };
 
+        if (editAvatarChanged) {
+          updatedPerson.avatarId = newAvatarId || null;
+          updatedPerson.avatarUrl = editAvatarDataUrl || null;
+        }
+
         // Update in vault using the proper update API
-        const response = await window.emmaAPI.people.update({
+        const updatePayload = {
           id: currentPerson.id,
           name,
           contact: email || phone || null,
-          relation,
-          avatarId: newAvatarId,
-          avatarUrl: editAvatarDataUrl
-        });
+          relation
+        };
+
+        if (editAvatarChanged) {
+          updatePayload.avatarId = newAvatarId || null;
+          updatePayload.avatar = newAvatarId || null;
+          updatePayload.avatarUrl = editAvatarDataUrl || null;
+        }
+
+        const response = await window.emmaAPI.people.update(updatePayload);
 
         if (response.success) {
           closeEditPersonModal();

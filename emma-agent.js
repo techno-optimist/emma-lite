@@ -312,7 +312,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`;
             transcript: text
           });
           this.synthesizeAndSendAudio(text).catch((e) => {
-            console.warn('dY"� TTS synth warning:', e?.message || e);
+            console.warn('[EmmaAgent] TTS synth warning:', e?.message || e);
           });
         }
       });

@@ -2,7 +2,7 @@
  * Emma Chat Experience - Intelligent Memory Companion Chat Interface
  * CTO-approved implementation following Emma's premium design principles
  *
- * ðŸš€ VECTORLESS AI INTEGRATION: Revolutionary memory intelligence without vector embeddings
+ * 🚀 VECTORLESS AI INTEGRATION: Revolutionary memory intelligence without vector embeddings
  * Privacy-first, local processing with optional cloud LLM enhancement
  */
 
@@ -63,12 +63,12 @@ class EmmaChatExperience extends ExperiencePopup {
     this.voiceIntegrationInitialized = false;
     this.voiceIntegrationInitializing = false;
 
-    // ðŸ§  Vectorless AI Engine Integration
+    // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
     
-    // ðŸ§  CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
+    // 🧠 CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
     this.unifiedIntelligence = new EmmaUnifiedIntelligence({
       dementiaMode: true,
       validationTherapy: true,
@@ -91,17 +91,17 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     };
 
-    // ðŸ’ Intelligent Memory Capture Integration
+    // 💝 Intelligent Memory Capture Integration
     this.intelligentCapture = null;
     this.detectedMemories = new Map();
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
     
-    // ðŸŽ¯ CRITICAL FIX: Add temporary memory storage for preview editing
+    // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
     this.temporaryMemories = new Map(); // Store preview memories before vault save
 
-    // ðŸ¤” PERSON ENRICHMENT FLOW STATE
+    // 🤔 PERSON ENRICHMENT FLOW STATE
     this.currentPersonEnrichment = null; // Track active person enrichment conversations
 
     // Emma personality settings
@@ -112,7 +112,7 @@ class EmmaChatExperience extends ExperiencePopup {
       capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
 
-    // ðŸš€ CRITICAL: Initialize AI systems on startup
+    // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
   }
@@ -122,11 +122,11 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸš€ INITIALIZE EMMA INTELLIGENCE SYSTEMS
+   * 🚀 INITIALIZE EMMA INTELLIGENCE SYSTEMS
    * Sets up API keys, vectorless engine, and intelligence capabilities
    */
   async initializeEmmaIntelligence() {
-    console.log('ðŸ§  Initializing Emma Intelligence Systems...');
+    console.log('🧠 Initializing Emma Intelligence Systems...');
     
     try {
       // Load vectorless settings (includes API key detection)
@@ -139,38 +139,38 @@ class EmmaChatExperience extends ExperiencePopup {
       this.logIntelligenceStatus();
       
     } catch (error) {
-      console.warn('ðŸ§  Emma intelligence initialization error:', error);
+      console.warn('🧠 Emma intelligence initialization error:', error);
     }
   }
 
   /**
-   * ðŸ“Š LOG INTELLIGENCE STATUS for debugging
+   * 📊 LOG INTELLIGENCE STATUS for debugging
    */
   logIntelligenceStatus() {
-    console.log('ðŸ§  EMMA INTELLIGENCE STATUS:');
-    console.log(`  ðŸ›ï¸ Core Vault Operations: âœ… ALWAYS ENABLED`);
-    console.log(`  ðŸš€ Advanced AI (Conversation): ${this.apiKey ? 'âœ… ENABLED' : 'âŒ DISABLED'}`);
-    console.log(`  ðŸ” Vectorless Engine (Memory Search): ${this.isVectorlessEnabled ? 'âœ… ENABLED' : 'âŒ DISABLED'}`);
-    console.log(`  ðŸŽ¯ API Key: ${this.apiKey ? 'âœ… CONFIGURED' : 'âŒ NOT CONFIGURED'}`);
-    console.log(`  ðŸ› Debug Mode: ${this.debugMode ? 'âœ… ON' : 'âŒ OFF'}`);
+    console.log('🧠 EMMA INTELLIGENCE STATUS:');
+    console.log(`  🏛️ Core Vault Operations: ✅ ALWAYS ENABLED`);
+    console.log(`  🚀 Advanced AI (Conversation): ${this.apiKey ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`  🔍 Vectorless Engine (Memory Search): ${this.isVectorlessEnabled ? '✅ ENABLED' : '❌ DISABLED'}`);
+    console.log(`  🎯 API Key: ${this.apiKey ? '✅ CONFIGURED' : '❌ NOT CONFIGURED'}`);
+    console.log(`  🐛 Debug Mode: ${this.debugMode ? '✅ ON' : '❌ OFF'}`);
     
     console.log('');
-    console.log('ðŸ’œ EMMA CAPABILITIES:');
-    console.log('  ðŸ›ï¸ Add people, create memories, manage vault (always works!)');
-    console.log('  ðŸ” Search existing memories (vectorless engine)');
-    console.log('  ðŸ’¬ Intelligent conversation (requires OpenAI key)');
+    console.log('💜 EMMA CAPABILITIES:');
+    console.log('  🏛️ Add people, create memories, manage vault (always works!)');
+    console.log('  🔍 Search existing memories (vectorless engine)');
+    console.log('  💬 Intelligent conversation (requires OpenAI key)');
     
     console.log('');
-    console.log('ðŸ§  DEMENTIA-FRIENDLY FEATURES:');
-    console.log('  ðŸ”¤ Case-insensitive name recognition');
-    console.log('  ðŸ—£ï¸ Natural language processing');
-    console.log('  ðŸŽ¯ Ultra-robust name extraction');
-    console.log('  ðŸ¤” Gentle person enrichment conversations');
-    console.log('  ðŸ’ Always works without technical setup');
+    console.log('🧠 DEMENTIA-FRIENDLY FEATURES:');
+    console.log('  🔤 Case-insensitive name recognition');
+    console.log('  🗣️ Natural language processing');
+    console.log('  🎯 Ultra-robust name extraction');
+    console.log('  🤔 Gentle person enrichment conversations');
+    console.log('  💝 Always works without technical setup');
     
     if (!this.apiKey) {
       console.log('');
-      console.log('ðŸ’¡ Note: Core vault operations work without API key!');
+      console.log('💡 Note: Core vault operations work without API key!');
       console.log('   To enable enhanced conversation: Set OpenAI API key in Emma settings');
     }
   }
@@ -179,7 +179,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.initializeEmmaOrb();
     this.setupChatInterface();
     
-    // ðŸŽ™ï¸ PHASE 3: Initialize voice integration after chat setup
+    // 🎙️ PHASE 3: Initialize voice integration after chat setup
     setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
 
@@ -187,10 +187,10 @@ class EmmaChatExperience extends ExperiencePopup {
     await this.addInitialWelcomeMessage();
     this.loadChatHistory();
 
-    // ðŸ§  Initialize Vectorless AI Engine
+    // 🧠 Initialize Vectorless AI Engine
     await this.initializeVectorlessEngine();
 
-    // ðŸ’ Initialize Intelligent Memory Capture
+    // 💝 Initialize Intelligent Memory Capture
     await this.initializeIntelligentCapture();
 
     // Set global reference for onclick handlers (production-safe)
@@ -205,7 +205,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸŽ™ï¸ PHASE 3: Initialize Emma's Realtime Voice Integration
+   * 🎙️ PHASE 3: Initialize Emma's Realtime Voice Integration
    * Transforms chat into voice-first multimodal experience
    */
   async initializeVoiceIntegration() {
@@ -216,7 +216,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.voiceIntegrationInitializing = true;
 
     try {
-      console.log('ðŸŽ™ï¸ Initializing voice-first chat experience...');
+      console.log('🎙️ Initializing voice-first chat experience...');
 
       // Initialize Emma Browser Client (connects to server-side agent)
       if (typeof EmmaBrowserClient !== 'undefined') {
@@ -228,14 +228,14 @@ class EmmaChatExperience extends ExperiencePopup {
           validationMode: true
         });
       } else {
-        console.warn('âš ï¸ EmmaBrowserClient not available');
+        console.warn('⚠️ EmmaBrowserClient not available');
         this.voiceButton.style.opacity = '0.5';
         this.voiceButton.title = 'Emma client not available';
         return;
       }
 
       if (this.emmaVoice) {
-        // ðŸ”— CRITICAL: Connect voice system to chat for transcription
+        // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
 
         // Connect voice button to Emma's voice system
@@ -248,9 +248,9 @@ class EmmaChatExperience extends ExperiencePopup {
           this.setupVoiceEventHandlers();
         }
 
-        console.log('âœ… Emma voice client ready!');
+        console.log('✅ Emma voice client ready!');
       } else {
-        console.warn('âš ï¸ Emma voice client not available');
+        console.warn('⚠️ Emma voice client not available');
         this.voiceButton.style.opacity = '0.5';
         this.voiceButton.title = 'Voice system not available';
       }
@@ -275,19 +275,19 @@ class EmmaChatExperience extends ExperiencePopup {
     this.voiceButton.addEventListener('click', async () => {
       try {
         // Force show debugging info in chat (bypass production logger)
-        this.addMessage('system', `ðŸ” Voice system: ${this.emmaVoice ? this.emmaVoice.constructor.name : 'undefined'}`);
-        this.addMessage('system', `ðŸ” EmmaBrowserClient available: ${typeof EmmaBrowserClient !== 'undefined'}`);
-        this.addMessage('system', `ðŸ” EmmaVoiceOfficial available: ${typeof EmmaVoiceOfficial !== 'undefined'}`);
+        this.addMessage('system', `🔍 Voice system: ${this.emmaVoice ? this.emmaVoice.constructor.name : 'undefined'}`);
+        this.addMessage('system', `🔍 EmmaBrowserClient available: ${typeof EmmaBrowserClient !== 'undefined'}`);
+        this.addMessage('system', `🔍 EmmaVoiceOfficial available: ${typeof EmmaVoiceOfficial !== 'undefined'}`);
         
         if (!this.emmaVoice) {
-          this.addMessage('system', 'âŒ No voice system initialized');
+          this.addMessage('system', '❌ No voice system initialized');
           return;
         }
         
         if (!this.emmaVoice.isConnected) {
           // Start voice conversation
-          this.addMessage('system', 'ðŸŽ™ï¸ Starting voice conversation with Emma...');
-          this.addMessage('system', `ðŸ” Using method: ${this.emmaVoice.startVoiceSession ? 'startVoiceSession' : 'unknown'}`);
+          this.addMessage('system', '🎙️ Starting voice conversation with Emma...');
+          this.addMessage('system', `🔍 Using method: ${this.emmaVoice.startVoiceSession ? 'startVoiceSession' : 'unknown'}`);
           await this.emmaVoice.startVoiceSession();
           
           // Update button appearance
@@ -298,7 +298,7 @@ class EmmaChatExperience extends ExperiencePopup {
         } else {
           // Stop voice conversation
           await this.emmaVoice.stopVoiceSession();
-          this.addMessage('system', 'ðŸ”‡ Voice conversation ended');
+          this.addMessage('system', '🔇 Voice conversation ended');
           
           // Reset button appearance
           this.voiceButton.style.background = '';
@@ -306,8 +306,8 @@ class EmmaChatExperience extends ExperiencePopup {
           this.voiceButton.title = 'Start voice conversation';
         }
       } catch (error) {
-        console.error('âŒ Voice button error:', error);
-        this.addMessage('system', 'âŒ Voice error: ' + error.message);
+        console.error('❌ Voice button error:', error);
+        this.addMessage('system', '❌ Voice error: ' + error.message);
       }
     });
   }
@@ -321,7 +321,7 @@ class EmmaChatExperience extends ExperiencePopup {
     // Override Emma's voice tools to show results in chat
     const originalExecute = this.emmaVoice.tools.execute;
     this.emmaVoice.tools.execute = async (toolName, params) => {
-      console.log(`ðŸ”§ Voice tool: ${toolName}`, params);
+      console.log(`🔧 Voice tool: ${toolName}`, params);
       
       // Execute the tool
       const result = await originalExecute.call(this.emmaVoice.tools, toolName, params);
@@ -359,7 +359,7 @@ class EmmaChatExperience extends ExperiencePopup {
         
       case 'create_memory_from_voice':
         if (result.success) {
-          this.addMessage('system', `ðŸ’­ New memory created: "${params.content.substring(0, 50)}..."`, {
+          this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
             type: 'memory-created',
             memoryId: result.memoryId
           });
@@ -368,7 +368,7 @@ class EmmaChatExperience extends ExperiencePopup {
         
       case 'update_person':
         if (result.success) {
-          this.addMessage('system', `ðŸ‘¤ Updated ${result.personName} with new details`, {
+          this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
             type: 'person-updated'
           });
         }
@@ -382,7 +382,7 @@ class EmmaChatExperience extends ExperiencePopup {
   displayPeopleResults(people) {
     const peopleHtml = people.map(person => `
       <div class="people-result">
-        <div class="person-avatar">ðŸ‘¤</div>
+        <div class="person-avatar">👤</div>
         <div class="person-info">
           <div class="person-name">${person.name}</div>
           <div class="person-relationship">${person.relationship || 'Family'}</div>
@@ -404,7 +404,7 @@ class EmmaChatExperience extends ExperiencePopup {
       <div class="memory-result" onclick="window.chatExperience?.viewMemoryDetail('${memory.id}')">
         <div class="memory-date">${new Date(memory.created).toLocaleDateString()}</div>
         <div class="memory-title">${memory.title}</div>
-        <div class="memory-people">${memory.people.length > 0 ? 'ðŸ‘¥ ' + memory.people.length + ' people' : ''}</div>
+        <div class="memory-people">${memory.people.length > 0 ? '👥 ' + memory.people.length + ' people' : ''}</div>
       </div>
     `).join('');
 
@@ -420,9 +420,9 @@ class EmmaChatExperience extends ExperiencePopup {
   updateVoiceStatus(state) {
     const statusMessages = {
       idle: '',
-      listening: 'ðŸ‘‚ Emma is listening...',
-      thinking: 'ðŸ¤” Emma is thinking...',
-      speaking: 'ðŸ—£ï¸ Emma is speaking...'
+      listening: '👂 Emma is listening...',
+      thinking: '🤔 Emma is thinking...',
+      speaking: '🗣️ Emma is speaking...'
     };
 
     const message = statusMessages[state];
@@ -516,11 +516,11 @@ class EmmaChatExperience extends ExperiencePopup {
     // Settings button removed - clean chat interface
 
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
-      console.error('ðŸ’¬ Critical chat interface elements not found');
+      console.error('💬 Critical chat interface elements not found');
       return;
     }
 
-    // ðŸŽ™ï¸ PHASE 3: Initialize Emma's Realtime Voice Integration
+    // 🎙️ PHASE 3: Initialize Emma's Realtime Voice Integration
     this.initializeVoiceIntegration();
 
     // Setup input handling
@@ -541,18 +541,18 @@ class EmmaChatExperience extends ExperiencePopup {
     // Setup settings modal
     this.setupSettingsModal();
     
-    // ðŸŽ¯ Setup dynamic quick start prompts
+    // 🎯 Setup dynamic quick start prompts
     this.setupQuickStartPrompts();
   }
 
   /**
-   * ðŸŽ¯ Setup elegant quick start prompts for user engagement
+   * 🎯 Setup elegant quick start prompts for user engagement
    * Dynamic, on-brand suggestions to guide conversation - appear in chat, disappear when conversation starts
    */
   setupQuickStartPrompts() {
     // Add prompts to the chat messages area, not the input area
     if (!this.messageContainer) {
-      console.warn('ðŸ’¬ Message container not found for quick prompts');
+      console.warn('💬 Message container not found for quick prompts');
       return;
     }
 
@@ -615,7 +615,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸŽ¨ Add elegant Emma-branded styling for quick prompts
+   * 🎨 Add elegant Emma-branded styling for quick prompts
    */
   addQuickPromptStyles() {
     // Check if styles already exist to avoid duplicates
@@ -766,7 +766,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ”— Setup event listeners for prompt functionality
+   * 🔗 Setup event listeners for prompt functionality
    */
   setupPromptEventListeners() {
     const promptButtons = document.querySelectorAll('.emma-quick-prompt');
@@ -789,10 +789,10 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸŽ¬ Handle quick prompt actions with intelligent routing
+   * 🎬 Handle quick prompt actions with intelligent routing
    */
   async handlePromptAction(action, promptText) {
-    console.log(`ðŸŽ¯ PROMPT: Executing action "${action}" with text "${promptText}"`);
+    console.log(`🎯 PROMPT: Executing action "${action}" with text "${promptText}"`);
     
     // Hide the quick prompts since conversation is starting
     this.hideQuickStartPrompts();
@@ -819,13 +819,13 @@ class EmmaChatExperience extends ExperiencePopup {
           this.addMessage("I'm not sure how to help with that. Try asking me about your memories!", 'emma');
       }
     } catch (error) {
-      console.error('ðŸš¨ PROMPT: Action failed:', error);
+      console.error('🚨 PROMPT: Action failed:', error);
       this.addMessage("Something went wrong. Let's try that again!", 'emma');
     }
   }
 
   /**
-   * ðŸ«¥ Hide quick start prompts when conversation begins  
+   * 🫥 Hide quick start prompts when conversation begins  
    */
   hideQuickStartPrompts() {
     const promptsMessage = document.getElementById('quick-start-prompts-message');
@@ -839,10 +839,10 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ“¸ Handle photos prompt - trigger intelligent photo capture
+   * 📸 Handle photos prompt - trigger intelligent photo capture
    */
   async handlePhotosPrompt() {
-    this.addMessage("Perfect! Let's capture some photos to save as memories. I can help you organize them beautifully! ðŸ“¸", 'emma');
+    this.addMessage("Perfect! Let's capture some photos to save as memories. I can help you organize them beautifully! 📸", 'emma');
     
     // Trigger the media upload flow with proper parameters
     const mediaMessage = "I'd like to save some photos as memories";
@@ -851,7 +851,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ’ Handle new memory prompt - start memory creation conversation  
+   * 💝 Handle new memory prompt - start memory creation conversation  
    */
   async handleNewMemoryPrompt() {
     const responses = [
@@ -871,7 +871,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ§  Handle explore memories prompt - intelligent memory discovery
+   * 🧠 Handle explore memories prompt - intelligent memory discovery
    */
   async handleExploreMemoriesPrompt() {
     const responses = [
@@ -892,13 +892,13 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ‘¤ Detect if user is SPECIFICALLY asking about an existing person (much more restrictive)
+   * 👤 Detect if user is SPECIFICALLY asking about an existing person (much more restrictive)
    * Returns { personName, requestType } if detected, null otherwise
    */
   detectPersonRequest(message) {
     const lowerMessage = message.toLowerCase().trim();
     
-    // ðŸŽ¯ CTO ENHANCEMENT: Handle pronouns with contextual resolution FIRST
+    // 🎯 CTO ENHANCEMENT: Handle pronouns with contextual resolution FIRST
     const pronounPatterns = [
       /(?:show me|tell me about|who is)\s+(he|she|they|him|her|them)$/i,
       /(?:what about|how about)\s+(he|she|they|him|her|them)$/i
@@ -911,7 +911,7 @@ class EmmaChatExperience extends ExperiencePopup {
         const recentPeople = Array.from(this.conversationContext.recentPeople);
         if (recentPeople.length > 0) {
           const resolvedPerson = recentPeople[recentPeople.length - 1]; // Most recent
-          console.log(`ðŸŽ¯ CTO: Resolved pronoun "${pronounMatch[1]}" to "${resolvedPerson}" from context`);
+          console.log(`🎯 CTO: Resolved pronoun "${pronounMatch[1]}" to "${resolvedPerson}" from context`);
           
           return {
             personName: resolvedPerson,
@@ -923,14 +923,14 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     }
 
-    // ðŸŽ¯ DETECT person inquiries (case-insensitive names!)
+    // 🎯 DETECT person inquiries (case-insensitive names!)
     const personPatterns = [
       /(?:show me|tell me about|who is)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
       /(?:what about|how about)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)/i,
       /^([a-zA-Z]+(?:\s+[a-zA-Z]+)?)\s*\?+\s*$/i, // Just a name with question mark
     ];
 
-    // ðŸš« EXCLUDE common non-person requests
+    // 🚫 EXCLUDE common non-person requests
     const excludePatterns = [
       /\b(add|create|new|save|let|want|need|help|can|could|should)\b/i,
       /\b(person|people|memory|memories|vault|file)\b/i
@@ -948,7 +948,7 @@ class EmmaChatExperience extends ExperiencePopup {
       if (match && match[1]) {
         const rawName = match[1].trim();
         
-        // ðŸŽ¯ VALIDATION: Reasonable name length and not common words
+        // 🎯 VALIDATION: Reasonable name length and not common words
         if (rawName.length < 2 || rawName.length > 15) {
           continue;
         }
@@ -975,7 +975,7 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ·ï¸ Categorize the type of person request
+   * 🏷️ Categorize the type of person request
    */
   categorizePersonRequest(lowerMessage) {
     if (lowerMessage.includes('show me')) return 'show';
@@ -987,11 +987,11 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ‘¤ Handle person request by showing person card and memories
+   * 👤 Handle person request by showing person card and memories
    */
   async handlePersonRequest(personRequest) {
     try {
-      console.log('ðŸ‘¤ CHAT: Handling person request:', personRequest);
+      console.log('👤 CHAT: Handling person request:', personRequest);
       
       // Find the person in vault
       const person = await this.findPersonInVault(personRequest.personName);
@@ -1019,18 +1019,18 @@ class EmmaChatExperience extends ExperiencePopup {
       await this.displayPersonMemories(person);
 
     } catch (error) {
-      console.error('ðŸ‘¤ CHAT: Error handling person request:', error);
+      console.error('👤 CHAT: Error handling person request:', error);
       this.addMessage("I had trouble finding that person. Let me try again in a moment.", 'emma');
     }
   }
 
   /**
-   * ðŸ” Find person in vault by name (fuzzy matching)
+   * 🔍 Find person in vault by name (fuzzy matching)
    */
   async findPersonInVault(searchName) {
     try {
       if (!window.emmaWebVault?.vaultData?.content?.people) {
-        console.warn('ðŸ‘¤ CHAT: No people data in vault');
+        console.warn('👤 CHAT: No people data in vault');
         return null;
       }
 
@@ -1063,13 +1063,13 @@ class EmmaChatExperience extends ExperiencePopup {
 
       return null;
     } catch (error) {
-      console.error('ðŸ‘¤ CHAT: Error finding person:', error);
+      console.error('👤 CHAT: Error finding person:', error);
       return null;
     }
   }
 
   /**
-   * ðŸ’¬ Generate contextual intro response for person
+   * 💬 Generate contextual intro response for person
    */
   generatePersonIntroResponse(person, requestType) {
     const relationship = person.relation || person.relationship || 'person';
@@ -1102,14 +1102,14 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸŽ¨ Display beautiful person card in chat (like people picker)
+   * 🎨 Display beautiful person card in chat (like people picker)
    */
   async displayPersonCard(person) {
     try {
       const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
       const relationship = person.relation || person.relationship || 'person';
       
-      // ðŸŽ¯ FIXED: Resolve avatar properly like other parts of the system
+      // 🎯 FIXED: Resolve avatar properly like other parts of the system
       let resolvedAvatarUrl = person.avatarUrl || person.profilePicture;
       
       // If no direct avatar URL, try to resolve from avatarId in media vault
@@ -1119,11 +1119,11 @@ class EmmaChatExperience extends ExperiencePopup {
           resolvedAvatarUrl = mediaItem.data.startsWith('data:')
             ? mediaItem.data
             : `data:${mediaItem.type};base64,${mediaItem.data}`;
-          console.log(`ðŸ“¸ CHAT: Resolved avatar for ${person.name} from avatarId`);
+          console.log(`📸 CHAT: Resolved avatar for ${person.name} from avatarId`);
         }
       }
       
-      console.log(`ðŸ‘¤ CHAT: Person card for ${person.name}:`, {
+      console.log(`👤 CHAT: Person card for ${person.name}:`, {
         avatarUrl: person.avatarUrl ? 'has avatarUrl' : 'no avatarUrl',
         avatarId: person.avatarId || 'no avatarId', 
         resolved: resolvedAvatarUrl ? 'resolved!' : 'using initials'
@@ -1154,12 +1154,12 @@ class EmmaChatExperience extends ExperiencePopup {
       this.addPersonCardStyles();
 
     } catch (error) {
-      console.error('ðŸ‘¤ CHAT: Error displaying person card:', error);
+      console.error('👤 CHAT: Error displaying person card:', error);
     }
   }
 
   /**
-   * ðŸŽ¨ Add elegant person card styling
+   * 🎨 Add elegant person card styling
    */
   addPersonCardStyles() {
     // Check if styles already exist to avoid duplicates
@@ -1269,11 +1269,11 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ“š Display connected memories for person
+   * 📚 Display connected memories for person
    */
   async displayPersonMemories(person) {
     try {
-      console.log('ðŸ“š CHAT: Finding memories for person:', person.name);
+      console.log('📚 CHAT: Finding memories for person:', person.name);
       
       // Find connected memories using same logic as people page
       let connectedMemories = [];
@@ -1294,7 +1294,7 @@ class EmmaChatExperience extends ExperiencePopup {
         }
       }
 
-      console.log(`ðŸ“š CHAT: Found ${connectedMemories.length} memories for ${person.name}`);
+      console.log(`📚 CHAT: Found ${connectedMemories.length} memories for ${person.name}`);
 
       if (connectedMemories.length === 0) {
         this.addMessage(`I don't see any memories with ${person.name} yet. Would you like to create some together?`, 'emma');
@@ -1327,13 +1327,13 @@ class EmmaChatExperience extends ExperiencePopup {
       }
 
     } catch (error) {
-      console.error('ðŸ“š CHAT: Error displaying person memories:', error);
+      console.error('📚 CHAT: Error displaying person memories:', error);
       this.addMessage(`I had trouble loading memories for ${person.name}. Let me try again.`, 'emma');
     }
   }
 
   /**
-   * ðŸ’ Display individual memory card for person
+   * 💝 Display individual memory card for person
    */
   async displayMemoryCard(memory, person) {
     try {
@@ -1381,21 +1381,21 @@ class EmmaChatExperience extends ExperiencePopup {
             })
             .filter(item => item !== null);
             
-          console.log(`ðŸ“¸ CHAT: Found ${mediaItems.length} media items for memory`);
+          console.log(`📸 CHAT: Found ${mediaItems.length} media items for memory`);
         }
       } catch (mediaError) {
-        console.warn('ðŸ’ CHAT: Error loading media:', mediaError);
+        console.warn('💝 CHAT: Error loading media:', mediaError);
         mediaItems = [];
       }
 
-      // ðŸŽ¯ RESPONSIVE MEDIA LAYOUT: Different layouts based on media count
+      // 🎯 RESPONSIVE MEDIA LAYOUT: Different layouts based on media count
       let mediaHTML = '';
       
       if (mediaItems.length === 0) {
         // No images - show heart icon
         mediaHTML = `
           <div class="memory-icon">
-            ðŸ’
+            💝
           </div>
         `;
       } else if (mediaItems.length === 1) {
@@ -1429,7 +1429,7 @@ class EmmaChatExperience extends ExperiencePopup {
           <div class="memory-content" onclick="window.chatExperience.openMemoryFromChat('${memory.id}')">
             <div class="memory-date">${formattedDate}</div>
             <div class="memory-text">${preview}</div>
-            <div class="memory-action">ðŸ’œ View this memory</div>
+            <div class="memory-action">💜 View this memory</div>
           </div>
         </div>
       `;
@@ -1441,12 +1441,12 @@ class EmmaChatExperience extends ExperiencePopup {
       this.addMemoryCardStyles();
 
     } catch (error) {
-      console.error('ðŸ’ CHAT: Error displaying memory card:', error);
+      console.error('💝 CHAT: Error displaying memory card:', error);
     }
   }
 
   /**
-   * ðŸŽ¨ Add memory card styling for chat
+   * 🎨 Add memory card styling for chat
    */
   addMemoryCardStyles() {
     // Check if styles already exist to avoid duplicates
@@ -1647,20 +1647,20 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
-   * ðŸ”— Open memory from chat (navigation helper)
+   * 🔗 Open memory from chat (navigation helper)
    */
   openMemoryFromChat(memoryId) {
-    console.log('ðŸ”— CHAT: Opening memory from chat:', memoryId);
+    console.log('🔗 CHAT: Opening memory from chat:', memoryId);
     
     // Use the existing edit memory functionality
     this.editMemoryDetails(memoryId);
   }
 
   /**
-   * ðŸ–¼ï¸ Open image modal for easy viewing (dementia-friendly)
+   * 🖼️ Open image modal for easy viewing (dementia-friendly)
    */
   openImageModal(imageUrl, memoryId, imageIndex = 0) {
-    console.log('ðŸ–¼ï¸ CHAT: Opening image modal:', { memoryId, imageIndex });
+    console.log('🖼️ CHAT: Opening image modal:', { memoryId, imageIndex });
     
     try {
       // Create beautiful image modal
@@ -1675,9 +1675,9 @@ class EmmaChatExperience extends ExperiencePopup {
             </div>
             <div class="image-modal-footer">
               <div class="image-info">
-                <span class="image-label">ðŸ“¸ Memory Photo</span>
+                <span class="image-label">📸 Memory Photo</span>
                 <span class="memory-link" onclick="document.getElementById('emma-image-modal').remove(); window.chatExperience.openMemoryFromChat('${memoryId}')">
-                  ðŸ’œ View Full Memory
+                  💜 View Full Memory
                 </span>
               </div>
             </div>
@@ -1702,12 +1702,12 @@ class EmmaChatExperience extends ExperiencePopup {
       document.addEventListener('keydown', handleKeydown);
 
     } catch (error) {
-      console.error('ðŸ–¼ï¸ CHAT: Error opening image modal:', error);
+      console.error('🖼️ CHAT: Error opening image modal:', error);
     }
   }
 
   /**
-   * ðŸŽ¨ Add image modal styling
+   * 🎨 Add image modal styling
    */
   addImageModalStyles() {
     // Check if styles already exist to avoid duplicates
@@ -1917,7 +1917,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!this.SpeechRecognition) {
-      console.warn('ðŸ’¬ Speech recognition not supported');
+      console.warn('💬 Speech recognition not supported');
       this.voiceButton.disabled = true;
       this.voiceButton.title = 'Voice input not supported in this browser';
       return;
@@ -1965,7 +1965,7 @@ class EmmaChatExperience extends ExperiencePopup {
     };
 
     this.voiceRecognition.onerror = (event) => {
-      console.error('ðŸ’¬ Voice recognition error:', event.error);
+      console.error('💬 Voice recognition error:', event.error);
       this.stopVoiceInput();
 
       if (event.error === 'not-allowed') {
@@ -1996,12 +1996,12 @@ class EmmaChatExperience extends ExperiencePopup {
       onTranscriptionComplete: (text) => {
 
         if (!text || !text.trim()) {
-          console.warn('ðŸŽ¤ CALLBACK: No text to inject');
+          console.warn('🎤 CALLBACK: No text to inject');
           return;
         }
 
         if (!this.inputField) {
-          console.error('ðŸŽ¤ CALLBACK: Input field not found!');
+          console.error('🎤 CALLBACK: Input field not found!');
           return;
         }
 
@@ -2049,7 +2049,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       this.voiceRecognition.start();
     } catch (error) {
-      console.error('ðŸ’¬ Error starting voice recognition:', error);
+      console.error('💬 Error starting voice recognition:', error);
       this.showToast('Failed to start voice input. Please try again.', 'error');
     }
   }
@@ -2060,7 +2060,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       this.voiceRecognition.stop();
     } catch (error) {
-      console.warn('ðŸ’¬ Error stopping voice recognition:', error);
+      console.warn('💬 Error stopping voice recognition:', error);
     }
 
     this.isListening = false;
@@ -2119,20 +2119,20 @@ class EmmaChatExperience extends ExperiencePopup {
     this.autoResizeTextarea();
     this.handleInputChange();
 
-    // ðŸŽ¯ ENRICHMENT FSM: Check if this is a response to an enrichment question
+    // 🎯 ENRICHMENT FSM: Check if this is a response to an enrichment question
     const activeEnrichment = this.findActiveEnrichmentForResponse();
     if (activeEnrichment) {
       await this.processEnrichmentResponse(activeEnrichment, message);
       return;
     }
 
-    // ðŸŽ¯ CTO OPTIMIZATION: VAULT OPERATIONS FIRST - Complete intent hierarchy
+    // 🎯 CTO OPTIMIZATION: VAULT OPERATIONS FIRST - Complete intent hierarchy
     // This prevents ALL vault queries from being captured as memories
     const intent = this.classifyUserIntent(message);
     
     // VAULT OPERATIONS have HIGHEST PRIORITY
     if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
-      console.log('ðŸŽ¯ CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
+      console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
@@ -2140,7 +2140,7 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
-    // ðŸ’ Check for memory detection (new messages only)
+    // 💝 Check for memory detection (new messages only)
     if (this.intelligentCapture) {
       const analysisResult = await this.analyzeForMemory(message, messageId);
       // If intelligent capture already produced a response (unified prompt), stop here
@@ -2178,17 +2178,17 @@ class EmmaChatExperience extends ExperiencePopup {
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
     
-    // ðŸŽ™ï¸ VOICE: Add voice indicators for transcribed messages
+    // 🎙️ VOICE: Add voice indicators for transcribed messages
     if (options.isVoice) {
       messageDiv.setAttribute('data-voice', 'true');
     }
     
-    // ðŸ’ CRITICAL: Track people mentioned in Emma's responses too
+    // 💝 CRITICAL: Track people mentioned in Emma's responses too
     if (sender === 'emma' && content) {
       const emmaPeople = this.extractPeople(content);
       emmaPeople.forEach(person => this.conversationContext.recentPeople.add(person));
       
-      console.log('ðŸ’ EMMA RESPONSE TRACKING:', {
+      console.log('💝 EMMA RESPONSE TRACKING:', {
         content: content.substring(0, 50) + '...',
         extractedPeople: emmaPeople,
         recentPeople: Array.from(this.conversationContext.recentPeople)
@@ -2209,7 +2209,7 @@ class EmmaChatExperience extends ExperiencePopup {
       if (safeOptions.requiresConfirmation && safeOptions.memoryId) {
         confirmationHtml = `
           <div class="memory-confirmation-buttons">
-            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${safeOptions.memoryId}')">âœ¨ Yes, save this memory</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.confirmSaveMemory('${safeOptions.memoryId}')">✨ Yes, save this memory</button>
             <button class="capsule-btn secondary" onclick="window.chatExperience.declineSaveMemory('${safeOptions.memoryId}')">Maybe later</button>
           </div>
         `;
@@ -2219,10 +2219,10 @@ class EmmaChatExperience extends ExperiencePopup {
       if (safeOptions.requiresRelationshipSelection && safeOptions.memoryId && safeOptions.personName) {
         confirmationHtml = `
           <div class="relationship-selection-buttons">
-            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'family')">ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦ Family</button>
-            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'friend')">ðŸ‘¥ Friend</button>
-            <button class="capsule-btn secondary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'acquaintance')">ðŸ¤ Acquaintance</button>
-            <button class="capsule-btn secondary" onclick="window.chatExperience.skipPersonAddition('${safeOptions.memoryId}')">â­ï¸ Skip for now</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'family')">👨‍👩‍👧‍👦 Family</button>
+            <button class="capsule-btn primary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'friend')">👥 Friend</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.addPersonToVault('${safeOptions.memoryId}', '${safeOptions.personName}', 'acquaintance')">🤝 Acquaintance</button>
+            <button class="capsule-btn secondary" onclick="window.chatExperience.skipPersonAddition('${safeOptions.memoryId}')">⏭️ Skip for now</button>
           </div>
         `;
       }
@@ -2264,7 +2264,7 @@ class EmmaChatExperience extends ExperiencePopup {
             resolution: 2 // High DPI rendering for crisp quality
           });
         } catch (error) {
-          console.warn('âš ï¸ Emma orb fallback for message avatar');
+          console.warn('⚠️ Emma orb fallback for message avatar');
           // High-quality fallback gradient
           orbContainer.style.cssText = `
             background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
@@ -2328,7 +2328,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
       }
     } else {
-      console.warn('ðŸ“œ SCROLL: Messages container not found');
+      console.warn('📜 SCROLL: Messages container not found');
     }
   }
 
@@ -2363,15 +2363,15 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
 
-    // ðŸš¨ CTO EMERGENCY ROLLBACK: Unified system broken, using working legacy system
-    console.log('ðŸš¨ CTO: Using proven legacy system (unified intelligence disabled for emergency)');
+    // 🚨 CTO EMERGENCY ROLLBACK: Unified system broken, using working legacy system
+    console.log('🚨 CTO: Using proven legacy system (unified intelligence disabled for emergency)');
 
-    // ðŸ¤” CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
+    // 🤔 CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
     if (this.currentPersonEnrichment && 
         this.currentPersonEnrichment.stage !== 'complete' &&
         Date.now() - this.currentPersonEnrichment.startedAt < 300000) { // 5 minute timeout
       
-      console.log('ðŸ¤” Active person enrichment detected, handling response');
+      console.log('🤔 Active person enrichment detected, handling response');
       const handled = await this.handlePersonEnrichmentResponse(userMessage, this.currentPersonEnrichment.personName);
       
       if (handled) {
@@ -2383,33 +2383,33 @@ class EmmaChatExperience extends ExperiencePopup {
       }
     }
 
-    // ðŸŽ¯ INTELLIGENT INTENT CLASSIFICATION
+    // 🎯 INTELLIGENT INTENT CLASSIFICATION
     const intent = this.classifyUserIntent(userMessage);
-    console.log('ðŸ§  CHAT: Intent classified as:', intent);
+    console.log('🧠 CHAT: Intent classified as:', intent);
 
-    // ðŸ‘¥ PEOPLE LIST REQUEST: Show all people in vault
+    // 👥 PEOPLE LIST REQUEST: Show all people in vault
     if (intent.type === 'people_list') {
-      console.log('ðŸ‘¥ CHAT: People list request detected');
+      console.log('👥 CHAT: People list request detected');
       await this.handlePeopleListRequest(userMessage);
       return;
     }
 
-    // ðŸ‘¤ PERSON REQUEST DETECTION: Only for specific person inquiries
+    // 👤 PERSON REQUEST DETECTION: Only for specific person inquiries
     if (intent.type === 'person_inquiry') {
       const personRequest = this.detectPersonRequest(userMessage);
       if (personRequest) {
-        console.log('ðŸ‘¤ CHAT: Person request detected:', personRequest);
+        console.log('👤 CHAT: Person request detected:', personRequest);
         
-        // ðŸŽ¯ CTO CRITICAL: Track the person being queried for context continuity
+        // 🎯 CTO CRITICAL: Track the person being queried for context continuity
         this.conversationContext.lastQueriedPerson = personRequest.personName;
-        console.log(`ðŸŽ¯ CTO: Set lastQueriedPerson to: ${personRequest.personName}`);
+        console.log(`🎯 CTO: Set lastQueriedPerson to: ${personRequest.personName}`);
         
         await this.handlePersonRequest(personRequest);
         return;
       }
     }
 
-    // ðŸ’ Memory capture detection for ongoing conversations
+    // 💝 Memory capture detection for ongoing conversations
     const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
       analysis.memory && analysis.memory.originalContent &&
       analysis.memory.originalContent.includes(userMessage.substring(0, 50))
@@ -2421,18 +2421,18 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
-    // ðŸ›ï¸ CORE VAULT OPERATIONS: Emma's primary job (always works!)
+    // 🏛️ CORE VAULT OPERATIONS: Emma's primary job (always works!)
     if (intent.type === 'vault_operation') {
-      console.log('ðŸ›ï¸ CORE VAULT OPERATION: Handling directly');
+      console.log('🏛️ CORE VAULT OPERATION: Handling directly');
       await this.handleVaultOperation(userMessage, intent);
       return;
     }
 
-    // ðŸ” MEMORY SEARCH: Handle memory queries intelligently
+    // 🔍 MEMORY SEARCH: Handle memory queries intelligently
     if (intent.type === 'memory_search') {
       // Check if this is a simple "what are my memories" type query
       if (/\b(what are|show me|list|tell me)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(userMessage)) {
-        console.log('ðŸ” MEMORY SEARCH: Handling simple memory list request');
+        console.log('🔍 MEMORY SEARCH: Handling simple memory list request');
         await this.handleMemoryListRequest(userMessage);
         return;
       }
@@ -2445,10 +2445,10 @@ class EmmaChatExperience extends ExperiencePopup {
             this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
             return;
           } else {
-            console.warn('ðŸ’¬ Vectorless processing failed, using fallback:', result.error);
+            console.warn('💬 Vectorless processing failed, using fallback:', result.error);
           }
         } catch (error) {
-          console.error('ðŸ’¬ Vectorless AI error:', error);
+          console.error('💬 Vectorless AI error:', error);
         }
       }
       
@@ -2457,47 +2457,47 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
-    // ðŸš€ ADVANCED AI MODE: Use OpenAI for conversation and questions
+    // 🚀 ADVANCED AI MODE: Use OpenAI for conversation and questions
     if (this.apiKey && intent.type === 'conversation') {
-      console.log('ðŸš€ ADVANCED AI MODE: Using OpenAI for intelligent conversation');
-      console.log('ðŸŽ¯ Intent:', intent);
+      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent conversation');
+      console.log('🎯 Intent:', intent);
       try {
         const response = await this.generateIntelligentEmmaResponse(userMessage, intent);
         this.addMessage(response, 'emma');
         this.addAIModeIndicator(); // Show that AI was used
         return;
       } catch (error) {
-        console.warn('ðŸ¤– AI response failed, using fallback:', error);
+        console.warn('🤖 AI response failed, using fallback:', error);
         // Don't show error for conversation - just fall through to dynamic response
       }
     }
 
-    // ðŸ’œ FALLBACK: Dynamic responses for basic interactions
+    // 💜 FALLBACK: Dynamic responses for basic interactions
     const response = await this.generateDynamicEmmaResponse(userMessage);
     this.addMessage(response, 'emma');
   }
 
   /**
-   * ðŸŽ¯ INTELLIGENT INTENT CLASSIFICATION
+   * 🎯 INTELLIGENT INTENT CLASSIFICATION
    * Determines what the user is trying to do
    */
   classifyUserIntent(message) {
     const lower = message.toLowerCase().trim();
 
-    // ðŸ‘¥ PEOPLE LISTING QUERIES (asking about ALL people)
+    // 👥 PEOPLE LISTING QUERIES (asking about ALL people)
     if (/\b(who are|what are|show me|list|see|view)\b.*\b(my|the|all)\b.*\b(people|person|contacts|family|friends)\b/i.test(message) ||
         /\b(my|all)\b.*\b(people|contacts|family|friends)\b/i.test(message) ||
         /\bpeople\b.*\b(list|vault|have|know)\b/i.test(message)) {
       return { type: 'people_list', confidence: 0.95 };
     }
 
-    // ðŸ‘¤ Person inquiries (asking ABOUT someone specific)
+    // 👤 Person inquiries (asking ABOUT someone specific)
     if (/^(who is|tell me about|show me|what about|how about)\s+[A-Z]/i.test(message) ||
         /^[A-Z][a-z]+\s*\?+\s*$/.test(message)) {
       return { type: 'person_inquiry', confidence: 0.9 };
     }
 
-    // ðŸ” Memory search queries - ENHANCED to catch edge cases
+    // 🔍 Memory search queries - ENHANCED to catch edge cases
     if (/\b(find|search|show|what|who|when|where|list|see|view|tell me)\b.*\b(memory|memories|remember)\b/i.test(message) ||
         /\b(what are|show me|tell me|list)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(message) ||
         /\bmemory\b.*\b(list|search|find|show)\b/i.test(message) ||
@@ -2505,7 +2505,7 @@ class EmmaChatExperience extends ExperiencePopup {
       return { type: 'memory_search', confidence: 0.9 };
     }
 
-    // ðŸ›ï¸ CORE VAULT OPERATIONS (Emma's primary job - always works!)
+    // 🏛️ CORE VAULT OPERATIONS (Emma's primary job - always works!)
     // ULTRA-ROBUST for dementia users - catch every possible way they might ask
     if (
       // Direct vault operations
@@ -2527,24 +2527,24 @@ class EmmaChatExperience extends ExperiencePopup {
       return { type: 'vault_operation', confidence: 0.95 };
     }
 
-    // ðŸ’¬ General conversation & questions (use AI if available)
+    // 💬 General conversation & questions (use AI if available)
     if (/^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/i.test(message) ||
         message.includes('?') ||
         /\b(hello|hi|hey|thank|thanks|help|tell me|explain)\b/i.test(message)) {
       return { type: 'conversation', confidence: 0.6 };
     }
 
-    // ðŸŽ¯ Other commands/actions
+    // 🎯 Other commands/actions
     if (/\b(add|create|new|save|let|want|need|help)\b/i.test(message)) {
       return { type: 'general_command', confidence: 0.5 };
     }
 
-    // ðŸ’¬ Default: General conversation
+    // 💬 Default: General conversation
     return { type: 'conversation', confidence: 0.4 };
   }
 
   /**
-   * ðŸš€ GENERATE INTELLIGENT EMMA RESPONSE using OpenAI
+   * 🚀 GENERATE INTELLIGENT EMMA RESPONSE using OpenAI
    * This is where the real AI magic happens!
    */
   async generateIntelligentEmmaResponse(userMessage, intent) {
@@ -2566,7 +2566,7 @@ class EmmaChatExperience extends ExperiencePopup {
         ];
         const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
         return (
-          `Iâ€™m here with you. Letâ€™s explore this together.${topicStr} ` +
+          `I’m here with you. Let’s explore this together.${topicStr} ` +
           `${suggestion}`
         );
       }
@@ -2599,16 +2599,16 @@ class EmmaChatExperience extends ExperiencePopup {
 
     } catch (error) {
       // Final safe fallback to ensure no broken UX
-      const calm = 'Iâ€™m here with you. Letâ€™s take this step by step.';
+      const calm = 'I’m here with you. Let’s take this step by step.';
       return `${calm} Would you like me to save this as a memory?`;
     }
   }
 
   /**
-   * ðŸ§  BUILD EMMA-SPECIFIC PROMPT for OpenAI
+   * 🧠 BUILD EMMA-SPECIFIC PROMPT for OpenAI
    */
   buildEmmaPrompt(userMessage, intent, vaultContext) {
-    // ðŸ’ CRITICAL: Include conversation context for continuity
+    // 💝 CRITICAL: Include conversation context for continuity
     const conversationHistory = this.conversationContext.conversationFlow
       .slice(-3)
       .map(flow => `User: ${flow.message}`)
@@ -2671,7 +2671,7 @@ RULES:
   }
 
   /**
-   * ðŸ“Š GET VAULT CONTEXT for AI responses
+   * 📊 GET VAULT CONTEXT for AI responses
    */
   async getVaultContextForAI() {
     try {
@@ -2709,7 +2709,7 @@ RULES:
       };
 
     } catch (error) {
-      console.error('ðŸ“Š Error getting vault context:', error);
+      console.error('📊 Error getting vault context:', error);
       return {
         memoryCount: 0,
         recentTopics: ['Context unavailable'],
@@ -2719,11 +2719,11 @@ RULES:
   }
 
   /**
-   * ðŸ” HANDLE MEMORY LIST REQUEST
+   * 🔍 HANDLE MEMORY LIST REQUEST
    * Shows user their existing memories when they ask "what are my memories"
    */
   async handleMemoryListRequest(userMessage) {
-    console.log('ðŸ” MEMORY LIST: Processing request:', userMessage);
+    console.log('🔍 MEMORY LIST: Processing request:', userMessage);
     
     try {
       // Get memories from vault
@@ -2771,75 +2771,75 @@ RULES:
       }
       
       this.addMessage(response, 'emma');
-      console.log('âœ… MEMORY LIST: Successfully displayed memories');
+      console.log('✅ MEMORY LIST: Successfully displayed memories');
       
     } catch (error) {
-      console.error('âŒ MEMORY LIST ERROR:', error);
+      console.error('❌ MEMORY LIST ERROR:', error);
       this.addMessage("I had trouble accessing your memories right now. Please try again in a moment.", 'emma');
     }
   }
 
   /**
-   * ðŸ›ï¸ HANDLE CORE VAULT OPERATIONS
+   * 🏛️ HANDLE CORE VAULT OPERATIONS
    * Emma's primary job - managing memories and people
    */
   async handleVaultOperation(userMessage, intent) {
-    console.log('ðŸ›ï¸ Processing vault operation:', userMessage);
+    console.log('🏛️ Processing vault operation:', userMessage);
     
     const lower = userMessage.toLowerCase().trim();
     
-    // ðŸ‘¤ Adding a person to the vault
+    // 👤 Adding a person to the vault
     if (/\b(add|create|new|save)\b.*\b(person|people)\b/i.test(userMessage) ||
         /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(userMessage) ||
         /\blet'?s?\s+add\b/i.test(userMessage) ||
         /\badd\s+[a-zA-Z]+/i.test(userMessage)) {
       
-      console.log('ðŸ›ï¸ PERSON ADDITION DETECTED');
+      console.log('🏛️ PERSON ADDITION DETECTED');
       
       // Extract person name from message
       const personName = this.extractPersonNameFromMessage(userMessage);
       
       if (personName) {
-        console.log('ðŸ›ï¸ PROCEEDING WITH PERSON ADDITION:', personName);
+        console.log('🏛️ PROCEEDING WITH PERSON ADDITION:', personName);
         await this.addPersonToVault(personName, userMessage);
       } else {
-        console.log('ðŸ›ï¸ NO NAME FOUND - ASKING FOR CLARIFICATION');
+        console.log('🏛️ NO NAME FOUND - ASKING FOR CLARIFICATION');
         this.addMessage("I'd love to help you add someone to your vault! What's their name?", 'emma');
       }
       return;
     }
     
-    // ðŸ’ Creating a new memory
+    // 💝 Creating a new memory
     if (/\b(add|create|new|save)\b.*\b(memory|memories)\b/i.test(userMessage)) {
       this.addMessage("I'll help you create a new memory! What would you like to remember?", 'emma');
       // TODO: Trigger memory creation wizard
       return;
     }
     
-    // ðŸ”§ General vault operations
+    // 🔧 General vault operations
     if (/\blet'?s?\s+(add|create|save)\b/i.test(userMessage)) {
       this.addMessage("I'm ready to help! What would you like to add to your vault - a person, a memory, or something else?", 'emma');
       return;
     }
     
-    // ðŸ’œ Fallback for unrecognized vault operations
+    // 💜 Fallback for unrecognized vault operations
     this.addMessage("I'm here to help with your vault! I can add people, create memories, or help you organize your thoughts. What would you like to do?", 'emma');
   }
 
   /**
-   * ðŸŽ¯ EXTRACT PERSON NAME from user message
+   * 🎯 EXTRACT PERSON NAME from user message
    * ULTRA-ROBUST for dementia users - must be PERFECT
    */
   extractPersonNameFromMessage(message) {
-    console.log('ðŸŽ¯ EXTRACTING PERSON NAME FROM:', message);
+    console.log('🎯 EXTRACTING PERSON NAME FROM:', message);
     
-    // ðŸ§  DEMENTIA-FRIENDLY: Handle the most natural phrases
+    // 🧠 DEMENTIA-FRIENDLY: Handle the most natural phrases
     // Split on connecting words to isolate the name
     const connectingWords = /\b(to|in|into|from|for|with|at|on|by|the|vault|emma)\b/gi;
     
     // Split message on connecting words and take the part with the name
     const parts = message.split(connectingWords);
-    console.log('ðŸ§  MESSAGE PARTS:', parts);
+    console.log('🧠 MESSAGE PARTS:', parts);
     
     // Look for name patterns in each clean part
     const namePatterns = [
@@ -2868,17 +2868,17 @@ RULES:
       const cleanPart = part.trim();
       if (!cleanPart || cleanPart.length < 3) continue;
       
-      console.log('ðŸ” CHECKING PART:', cleanPart);
+      console.log('🔍 CHECKING PART:', cleanPart);
       
       for (const pattern of namePatterns) {
         const match = cleanPart.match(pattern);
         if (match && match[1]) {
           const rawName = match[1].trim();
-          console.log('ðŸŽ¯ FOUND POTENTIAL NAME:', rawName);
+          console.log('🎯 FOUND POTENTIAL NAME:', rawName);
           
           // Clean the name - remove any remaining connecting words
           const cleanName = rawName.replace(/\b(to|in|into|from|for|with|at|on|by|the|vault|emma)\b/gi, '').trim();
-          console.log('ðŸ§¹ CLEANED NAME:', cleanName);
+          console.log('🧹 CLEANED NAME:', cleanName);
           
           // Validate it's actually a name
           if (this.isValidPersonName(cleanName)) {
@@ -2887,37 +2887,37 @@ RULES:
               .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
               .join(' ');
             
-            console.log('âœ… FINAL NAME EXTRACTED:', properName);
+            console.log('✅ FINAL NAME EXTRACTED:', properName);
             return properName;
           } else {
-            console.log('âŒ NAME VALIDATION FAILED:', cleanName);
+            console.log('❌ NAME VALIDATION FAILED:', cleanName);
           }
         }
       }
     }
     
-    console.log('âŒ NO VALID NAME FOUND IN MESSAGE');
+    console.log('❌ NO VALID NAME FOUND IN MESSAGE');
     return null;
   }
 
   /**
-   * ðŸ” VALIDATE if extracted text is actually a person name
+   * 🔍 VALIDATE if extracted text is actually a person name
    */
   isValidPersonName(name) {
     if (!name || typeof name !== 'string') {
-      console.log('âŒ VALIDATION: Not a string');
+      console.log('❌ VALIDATION: Not a string');
       return false;
     }
     
     const trimmed = name.trim();
     if (trimmed.length < 2 || trimmed.length > 50) {
-      console.log('âŒ VALIDATION: Length invalid:', trimmed.length);
+      console.log('❌ VALIDATION: Length invalid:', trimmed.length);
       return false;
     }
     
     // Check if it's all letters and spaces (names should only be letters)
     if (!/^[a-zA-Z\s]+$/.test(trimmed)) {
-      console.log('âŒ VALIDATION: Contains non-letters:', trimmed);
+      console.log('❌ VALIDATION: Contains non-letters:', trimmed);
       return false;
     }
     
@@ -2932,26 +2932,26 @@ RULES:
     const words = trimmed.toLowerCase().split(/\s+/);
     for (const word of words) {
       if (excludedWords.includes(word)) {
-        console.log('âŒ VALIDATION: Contains excluded word:', word);
+        console.log('❌ VALIDATION: Contains excluded word:', word);
         return false;
       }
     }
     
-    console.log('âœ… VALIDATION: Name is valid:', trimmed);
+    console.log('✅ VALIDATION: Name is valid:', trimmed);
     return true;
   }
 
   /**
-   * ðŸ‘¤ ADD PERSON TO VAULT
+   * 👤 ADD PERSON TO VAULT
    */
   async addPersonToVault(personName, originalMessage) {
     try {
-      console.log('ðŸ‘¤ ADDING PERSON: Starting process for:', personName);
+      console.log('👤 ADDING PERSON: Starting process for:', personName);
       
       // Check if person already exists
       const existingPerson = await this.findPersonInVault(personName);
       if (existingPerson) {
-        console.log('ðŸ‘¤ Person already exists:', existingPerson.name);
+        console.log('👤 Person already exists:', existingPerson.name);
         this.addMessage(`${personName} is already in your vault! Would you like me to show you their information?`, 'emma');
         return;
       }
@@ -2972,7 +2972,7 @@ RULES:
         }
       };
       
-      console.log('ðŸ‘¤ Created person object:', newPerson);
+      console.log('👤 Created person object:', newPerson);
       
       // Add to vault
       if (window.emmaWebVault && window.emmaWebVault.vaultData) {
@@ -2981,29 +2981,29 @@ RULES:
         }
         
         window.emmaWebVault.vaultData.content.people[newPerson.id] = newPerson;
-        console.log('ðŸ‘¤ Added to vault data structure');
+        console.log('👤 Added to vault data structure');
         
         // Trigger save
         await window.emmaWebVault.scheduleElegantSave();
-        console.log('ðŸ‘¤ Vault save scheduled');
+        console.log('👤 Vault save scheduled');
         
-        // ðŸ’œ DEMENTIA-FRIENDLY SUCCESS MESSAGE
-        this.addMessage(`âœ… Perfect! I've added ${personName} to your vault.`, 'emma');
+        // 💜 DEMENTIA-FRIENDLY SUCCESS MESSAGE
+        this.addMessage(`✅ Perfect! I've added ${personName} to your vault.`, 'emma');
         this.addVaultOperationIndicator(); // Show that this was a core vault operation
-        console.log('âœ… PERSON ADDED SUCCESSFULLY:', personName);
+        console.log('✅ PERSON ADDED SUCCESSFULLY:', personName);
         
-        // ðŸŒŸ CRITICAL: Refresh constellation after adding new person
+        // 🌟 CRITICAL: Refresh constellation after adding new person
         setTimeout(() => {
           this.refreshConstellationAfterPersonAdd();
         }, 500);
         
-        // ðŸ¤” GENTLE FOLLOW-UP CONVERSATION
+        // 🤔 GENTLE FOLLOW-UP CONVERSATION
         setTimeout(() => {
           this.startPersonEnrichmentFlow(personName);
         }, 1500);
         
       } else {
-        console.error('âŒ Vault not available:', { 
+        console.error('❌ Vault not available:', { 
           hasWebVault: !!window.emmaWebVault, 
           hasVaultData: !!window.emmaWebVault?.vaultData 
         });
@@ -3011,31 +3011,31 @@ RULES:
       }
       
     } catch (error) {
-      console.error('âŒ PERSON ADD ERROR:', error);
+      console.error('❌ PERSON ADD ERROR:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
     }
   }
 
   /**
-   * ðŸŒŸ REFRESH CONSTELLATION AFTER PERSON ADD
+   * 🌟 REFRESH CONSTELLATION AFTER PERSON ADD
    * Ensure new person appears immediately in constellation
    */
   refreshConstellationAfterPersonAdd() {
-    console.log('ðŸŒŸ EMMA CHAT: Refreshing constellation after person add');
+    console.log('🌟 EMMA CHAT: Refreshing constellation after person add');
     
     // Method 1: If we're on memories page with constellation, directly refresh
     if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
-      console.log('ðŸŒŸ EMMA CHAT: Calling loadConstellationView() after person add');
+      console.log('🌟 EMMA CHAT: Calling loadConstellationView() after person add');
       window.loadConstellationView();
     }
     // Method 2: If we're on people page, refresh people view
     else if (window.location.pathname.includes('people-emma.html') && window.loadPeople) {
-      console.log('ðŸŒŸ EMMA CHAT: Refreshing people page after person add');
+      console.log('🌟 EMMA CHAT: Refreshing people page after person add');
       window.loadPeople();
     }
     // Method 3: Dispatch event for any listening components
     else {
-      console.log('ðŸŒŸ EMMA CHAT: Dispatching person added event');
+      console.log('🌟 EMMA CHAT: Dispatching person added event');
       window.dispatchEvent(new CustomEvent('emmaPersonAdded', {
         detail: { 
           action: 'refresh_constellation',
@@ -3047,13 +3047,13 @@ RULES:
   }
 
   /**
-   * ðŸ¤” START PERSON ENRICHMENT FLOW
+   * 🤔 START PERSON ENRICHMENT FLOW
    * Gentle follow-up conversation for dementia users
    */
   async startPersonEnrichmentFlow(personName) {
-    console.log('ðŸ¤” Starting person enrichment flow for:', personName);
+    console.log('🤔 Starting person enrichment flow for:', personName);
     
-    // ðŸ’œ GENTLE, NON-OVERWHELMING QUESTIONS
+    // 💜 GENTLE, NON-OVERWHELMING QUESTIONS
     const followUpQuestions = [
       `Tell me a little about ${personName}. How do you know them?`,
       `What's something special you'd like to remember about ${personName}?`,
@@ -3064,11 +3064,11 @@ RULES:
     // Pick a random gentle question
     const question = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
     
-    // ðŸ•°ï¸ Give them time to process the success first
+    // 🕰️ Give them time to process the success first
     setTimeout(() => {
       this.addMessage(question, 'emma');
       
-      // ðŸŽ¯ SET CONTEXT for next response
+      // 🎯 SET CONTEXT for next response
       this.currentPersonEnrichment = {
         personName: personName,
         stage: 'relationship', // relationship, details, memories, complete
@@ -3079,13 +3079,13 @@ RULES:
   }
 
   /**
-   * ðŸ¤” HANDLE PERSON ENRICHMENT RESPONSES
+   * 🤔 HANDLE PERSON ENRICHMENT RESPONSES
    * Process follow-up information about newly added person
    */
   async handlePersonEnrichmentResponse(userMessage, personName) {
-    console.log('ðŸ¤” Handling enrichment response for:', personName, userMessage);
+    console.log('🤔 Handling enrichment response for:', personName, userMessage);
     
-    // ðŸš« CHECK FOR SKIP/DECLINE SIGNALS
+    // 🚫 CHECK FOR SKIP/DECLINE SIGNALS
     const skipPatterns = [
       /\b(no|nah|skip|pass|not now|maybe later|that'?s enough|i'?m good|all set)\b/i,
       /\b(move on|next|done|finished|enough|nothing else)\b/i,
@@ -3095,7 +3095,7 @@ RULES:
     const isSkipping = skipPatterns.some(pattern => pattern.test(userMessage.toLowerCase()));
     
     if (isSkipping) {
-      console.log('ðŸ¤” User is skipping enrichment');
+      console.log('🤔 User is skipping enrichment');
       this.addMessage(`That's perfectly fine! ${personName} is safely in your vault. We can always add more details later.`, 'emma');
       this.currentPersonEnrichment = null; // Clear the enrichment flow
       return true;
@@ -3105,7 +3105,7 @@ RULES:
       // Find the person in vault
       const vault = window.emmaWebVault?.vaultData?.content;
       if (!vault?.people) {
-        console.error('âŒ No people section in vault');
+        console.error('❌ No people section in vault');
         return false;
       }
       
@@ -3119,11 +3119,11 @@ RULES:
       }
       
       if (!targetPerson) {
-        console.error('âŒ Person not found in vault:', personName);
+        console.error('❌ Person not found in vault:', personName);
         return false;
       }
       
-      // ðŸ’ ADD ENRICHMENT INFO
+      // 💝 ADD ENRICHMENT INFO
       if (!targetPerson.enrichment) {
         targetPerson.enrichment = {
           relationship: '',
@@ -3139,7 +3139,7 @@ RULES:
         targetPerson.enrichment.relationship = userMessage;
         targetPerson.notes = `${targetPerson.notes}\nRelationship: ${userMessage}`;
         
-        // ðŸ’¬ ACKNOWLEDGING RESPONSE
+        // 💬 ACKNOWLEDGING RESPONSE
         const acknowledgments = [
           `That's wonderful! ${userMessage.includes('friend') ? 'Friends are so precious.' : 'Thank you for sharing that.'}`,
           `How lovely! I can tell ${personName} means a lot to you.`,
@@ -3150,7 +3150,7 @@ RULES:
         const ack = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
         this.addMessage(ack, 'emma');
         
-        // ðŸŽ¯ OPTIONAL FOLLOW-UP
+        // 🎯 OPTIONAL FOLLOW-UP
         setTimeout(() => {
           this.addMessage(`Is there anything else you'd like me to remember about ${personName}? Or we can move on to something else - whatever feels right for you.`, 'emma');
           
@@ -3171,20 +3171,20 @@ RULES:
         this.currentPersonEnrichment.stage = 'complete';
       }
       
-      // ðŸ’¾ SAVE ENRICHMENT
+      // 💾 SAVE ENRICHMENT
       await window.emmaWebVault.scheduleElegantSave();
-      console.log('âœ… Person enrichment saved:', targetPerson.enrichment);
+      console.log('✅ Person enrichment saved:', targetPerson.enrichment);
       
       return true;
       
     } catch (error) {
-      console.error('âŒ Error handling person enrichment:', error);
+      console.error('❌ Error handling person enrichment:', error);
       return false;
     }
   }
 
   /**
-   * ðŸ›ï¸ ADD VAULT OPERATION INDICATOR to show when Emma handled core operations
+   * 🏛️ ADD VAULT OPERATION INDICATOR to show when Emma handled core operations
    */
   addVaultOperationIndicator() {
     // Add a subtle indicator that this was a core vault operation (for debugging/transparency)
@@ -3200,14 +3200,14 @@ RULES:
           margin-top: 2px;
           opacity: 0.7;
         `;
-        indicator.textContent = 'ðŸ›ï¸ Core Vault Operation';
+        indicator.textContent = '🏛️ Core Vault Operation';
         lastMessage.appendChild(indicator);
       }
     }
   }
 
   /**
-   * ðŸ¤– ADD AI MODE INDICATOR to show when advanced AI was used
+   * 🤖 ADD AI MODE INDICATOR to show when advanced AI was used
    */
   addAIModeIndicator() {
     // Add a subtle indicator that AI was used (for debugging/transparency)
@@ -3223,7 +3223,7 @@ RULES:
           margin-top: 2px;
           opacity: 0.7;
         `;
-        indicator.textContent = 'ðŸš€ Advanced AI';
+        indicator.textContent = '🚀 Advanced AI';
         lastMessage.appendChild(indicator);
       }
     }
@@ -3239,10 +3239,10 @@ RULES:
         return "I'm here to help! What would you like to do?";
       }
 
-      // ðŸ’ CRITICAL: Update conversation context
+      // 💝 CRITICAL: Update conversation context
       this.updateConversationContext(userMessage);
       
-      // ðŸ§  DEMENTIA MODE: Always use validation and warmth
+      // 🧠 DEMENTIA MODE: Always use validation and warmth
       const dementiaResponse = this.generateDementiaAwareResponse(userMessage);
       if (dementiaResponse) {
         return dementiaResponse;
@@ -3359,7 +3359,7 @@ RULES:
             const recentMemory = personMemories[personMemories.length - 1];
             const memorySnippet = recentMemory.content.substring(0, 100);
             
-            // ðŸ› FIX: Safe date calculation with fallback
+            // 🐛 FIX: Safe date calculation with fallback
             let timeContext = 'recently';
             try {
               const memoryDate = new Date(recentMemory.created || recentMemory.timestamp || Date.now());
@@ -3368,7 +3368,7 @@ RULES:
                 timeContext = timeAgo === 0 ? 'today' : timeAgo === 1 ? 'yesterday' : `${timeAgo} days ago`;
               }
             } catch (error) {
-              console.warn('ðŸ› Date calculation error:', error);
+              console.warn('🐛 Date calculation error:', error);
               timeContext = 'recently';
             }
 
@@ -3439,7 +3439,7 @@ RULES:
    * Generate intelligent memory response directly from analysis - FULLY DYNAMIC
    */
   async generateIntelligentMemoryResponse(memory, userMessage) {
-    console.log('ðŸ’¬ INTELLIGENT RESPONSE: Generating DYNAMIC response for memory:', memory.title);
+    console.log('💬 INTELLIGENT RESPONSE: Generating DYNAMIC response for memory:', memory.title);
     
     try {
       // Extract people context for dynamic generation
@@ -3464,7 +3464,7 @@ RULES:
         }
       });
       
-      console.log('ðŸ’¬ DYNAMIC: People context for generation:', peopleContext);
+      console.log('💬 DYNAMIC: People context for generation:', peopleContext);
       
       // Generate completely personalized response using AI
       const response = await this.generateDynamicMemoryCapturePrompt(userMessage, memory, peopleContext);
@@ -3472,14 +3472,14 @@ RULES:
       return response;
       
     } catch (error) {
-      console.error('âŒ Failed to generate intelligent response:', error);
+      console.error('❌ Failed to generate intelligent response:', error);
       // Ultra-minimal fallback that's still not canned
       return "That sounds meaningful! Tell me more about this moment.";
     }
   }
 
   async generateMemoryCaptureResponse(userMessage) {
-    console.log('ðŸ’¬ MEMORY CAPTURE: Generating DYNAMIC response for message:', userMessage.substring(0, 50));
+    console.log('💬 MEMORY CAPTURE: Generating DYNAMIC response for message:', userMessage.substring(0, 50));
     
     // Find the detected memory for this message
     let detectedMemory = null;
@@ -3492,24 +3492,24 @@ RULES:
     }
 
     if (!detectedMemory) {
-      console.log('ðŸ’¬ MEMORY CAPTURE: No detected memory, using generic dynamic prompt');
+      console.log('💬 MEMORY CAPTURE: No detected memory, using generic dynamic prompt');
       return await this.generateDynamicMemoryCapturePrompt(userMessage);
     }
 
-    console.log('ðŸ’¬ MEMORY CAPTURE: Using detected memory for dynamic response');
+    console.log('💬 MEMORY CAPTURE: Using detected memory for dynamic response');
     // Delegate to the intelligent response generator (now fully dynamic)
     return await this.generateIntelligentMemoryResponse(detectedMemory.memory, userMessage);
   }
 
   async generateEmmaResponse(userMessage) {
-    console.log('ðŸ’¬ EMMA RESPONSE: Generating DYNAMIC response for general query');
+    console.log('💬 EMMA RESPONSE: Generating DYNAMIC response for general query');
     
     try {
       // Generate completely personalized response based on user message and context
       return await this.generateDynamicEmmaResponse(userMessage);
       
     } catch (error) {
-      console.error('âŒ Failed to generate Emma response:', error);
+      console.error('❌ Failed to generate Emma response:', error);
       // Ultra-minimal fallback
       return "I'm here to listen. What would you like to share?";
     }
@@ -3524,7 +3524,7 @@ RULES:
         this.renderStoredMessages();
       }
     } catch (error) {
-      console.warn('ðŸ’¬ Could not load chat history:', error);
+      console.warn('💬 Could not load chat history:', error);
     }
   }
 
@@ -3538,7 +3538,7 @@ RULES:
     try {
       sessionStorage.setItem(`emma-chat-${this.sessionId}`, JSON.stringify(this.messages));
     } catch (error) {
-      console.warn('ðŸ’¬ Could not save chat history:', error);
+      console.warn('💬 Could not save chat history:', error);
     }
   }
 
@@ -3546,9 +3546,9 @@ RULES:
     return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // ðŸ§  CTO UNIFIED: Execute actions from intelligent analysis
+  // 🧠 CTO UNIFIED: Execute actions from intelligent analysis
   async executeIntelligentActions(actions, analysis) {
-    console.log('ðŸ§  CTO: Executing intelligent actions:', actions);
+    console.log('🧠 CTO: Executing intelligent actions:', actions);
     
     for (const action of actions) {
       switch (action) {
@@ -3591,7 +3591,7 @@ RULES:
     }
   }
 
-  // ðŸ’ CRITICAL: Update conversation context for continuity
+  // 💝 CRITICAL: Update conversation context for continuity
   updateConversationContext(userMessage) {
     // Track conversation flow
     this.conversationContext.conversationFlow.push({
@@ -3613,16 +3613,16 @@ RULES:
     const people = this.extractPeople(userMessage);
     people.forEach(person => this.conversationContext.recentPeople.add(person));
     
-    // ðŸ’œ CTO ENHANCEMENT: Enhanced context tracking for memory companion
+    // 💜 CTO ENHANCEMENT: Enhanced context tracking for memory companion
     this.conversationContext.currentTopic = this.extractTopic(userMessage);
     this.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
     
-    // ðŸŽ¯ CTO CRITICAL: Track the MAIN SUBJECT of user queries (not just mentioned people)
+    // 🎯 CTO CRITICAL: Track the MAIN SUBJECT of user queries (not just mentioned people)
     if (people.length > 0) {
       this.conversationContext.lastQueriedPerson = people[0]; // The person user specifically asked about
     }
     
-    console.log('ðŸ’ CTO CONTEXT UPDATE:', {
+    console.log('💝 CTO CONTEXT UPDATE:', {
       userMessage,
       extractedPeople: people,
       recentPeople: Array.from(this.conversationContext.recentPeople),
@@ -3632,7 +3632,7 @@ RULES:
     });
   }
 
-  // ðŸ§  DEMENTIA-AWARE RESPONSES: Always validate, never contradict
+  // 🧠 DEMENTIA-AWARE RESPONSES: Always validate, never contradict
   generateDementiaAwareResponse(userMessage) {
     const lower = userMessage.toLowerCase();
     const context = this.conversationContext;
@@ -3641,7 +3641,7 @@ RULES:
     const mentionedPeople = this.extractPeople(userMessage);
     const person = mentionedPeople.length > 0 ? mentionedPeople[0] : null;
     
-    console.log('ðŸ§  DEMENTIA RESPONSE DEBUG:', {
+    console.log('🧠 DEMENTIA RESPONSE DEBUG:', {
       userMessage,
       lower,
       mentionedPeople,
@@ -3651,43 +3651,43 @@ RULES:
       isYes: lower === 'yes'
     });
     
-    // ðŸ’ CRITICAL: Handle memory recall requests like "show me" about a person
+    // 💝 CRITICAL: Handle memory recall requests like "show me" about a person
     if (person && (lower.includes('show me') || lower.includes('tell me about') || lower.includes('remember'))) {
       // Trigger comprehensive person memory recall
       this.handlePersonMemoryRecall(person);
       return null; // Let the recall system handle the response
     }
     
-    // ðŸš¨ CTO CRITICAL: Check for memory confirmation FIRST (highest priority)
+    // 🚨 CTO CRITICAL: Check for memory confirmation FIRST (highest priority)
     if (lower.trim() === 'yes' || lower.trim() === 'yeah' || lower.trim() === 'save it') {
       // Check if Emma just asked about saving a memory
       const lastEmmaMessage = this.getLastEmmaMessage();
       if (lastEmmaMessage && (lastEmmaMessage.includes('save') || lastEmmaMessage.includes('preserve') || lastEmmaMessage.includes('memory capsule'))) {
-        console.log('ðŸ’ CTO: Memory confirmation detected - user wants to save');
+        console.log('💝 CTO: Memory confirmation detected - user wants to save');
         // Let the memory confirmation system handle this, don't trigger person recall
         return null;
       }
     }
 
-    // ðŸ§  CONTEXTUAL RECALL: Handle "show me" or "yes" when person was mentioned recently
+    // 🧠 CONTEXTUAL RECALL: Handle "show me" or "yes" when person was mentioned recently
     if ((lower.includes('show me') || lower.trim() === 'yes') && !person) {
       // Only trigger recall if NOT a memory confirmation
       const lastEmmaMessage = this.getLastEmmaMessage();
       if (lastEmmaMessage && (lastEmmaMessage.includes('save') || lastEmmaMessage.includes('preserve'))) {
-        console.log('ðŸ’ CTO: Skipping contextual recall - this is memory confirmation');
+        console.log('💝 CTO: Skipping contextual recall - this is memory confirmation');
         return null;
       }
       
-      // ðŸŽ¯ CTO CRITICAL FIX: Use the person user specifically asked about, not just mentioned
+      // 🎯 CTO CRITICAL FIX: Use the person user specifically asked about, not just mentioned
       const targetPerson = this.conversationContext.lastQueriedPerson || 
                           Array.from(this.conversationContext.recentPeople)[0];
       
       if (targetPerson) {
-        console.log(`ðŸ’ CTO CONTEXT RECALL: Triggering recall for queried person: ${targetPerson}`);
-        console.log(`ðŸ’ CTO CONTEXT: lastQueriedPerson: ${this.conversationContext.lastQueriedPerson}`);
-        console.log(`ðŸ’ CTO CONTEXT: All recent people: ${Array.from(this.conversationContext.recentPeople).join(', ')}`);
+        console.log(`💝 CTO CONTEXT RECALL: Triggering recall for queried person: ${targetPerson}`);
+        console.log(`💝 CTO CONTEXT: lastQueriedPerson: ${this.conversationContext.lastQueriedPerson}`);
+        console.log(`💝 CTO CONTEXT: All recent people: ${Array.from(this.conversationContext.recentPeople).join(', ')}`);
         
-        // ðŸš¨ CTO CRITICAL: Return a placeholder response to prevent other systems from responding
+        // 🚨 CTO CRITICAL: Return a placeholder response to prevent other systems from responding
         // Then trigger the full recall asynchronously
         setTimeout(() => {
           this.handlePersonMemoryRecall(targetPerson);
@@ -3696,7 +3696,7 @@ RULES:
         // Return a brief acknowledgment to prevent other systems from responding
         return `Let me share what I know about ${targetPerson}...`;
       } else {
-        console.log(`ðŸ’ CONTEXT: No queried person found for 'yes' response`);
+        console.log(`💝 CONTEXT: No queried person found for 'yes' response`);
       }
     }
     
@@ -3716,11 +3716,11 @@ RULES:
       return `What a beautiful memory! Thank you for sharing that with me. Those moments of joy and connection are so precious. What made it feel especially wonderful to you?`;
     }
 
-    // ðŸ’œ CTO ENHANCEMENT: Emotional validation and topic continuity
+    // 💜 CTO ENHANCEMENT: Emotional validation and topic continuity
     if ((lower.includes('yes') || lower === 'everything' || lower.includes('everything')) && context.conversationFlow.length > 0) {
       const currentPerson = context.lastQueriedPerson || context.currentTopic || 'that';
       
-      // ðŸŽ¯ CTO CRITICAL: Check if Emma just asked about photos
+      // 🎯 CTO CRITICAL: Check if Emma just asked about photos
       const lastEmmaMessage = this.getLastEmmaMessage();
       if (lastEmmaMessage && (lastEmmaMessage.includes('photos') || lastEmmaMessage.includes('pictures'))) {
         // Trigger photo upload interface for the person
@@ -3735,11 +3735,11 @@ RULES:
       }
     }
 
-    // ðŸš¨ CTO EMERGENCY FIX: Handle memory sharing and simple responses
+    // 🚨 CTO EMERGENCY FIX: Handle memory sharing and simple responses
     
     // MEMORY SHARING: Recognize when user is sharing memories
     if (this.isMemorySharing(lower, context)) {
-      // ðŸ’ CRITICAL: Check if this is a continuation/completion of memory sharing
+      // 💝 CRITICAL: Check if this is a continuation/completion of memory sharing
       const isMemoryCompletion = this.isMemoryCompletion(lower, context);
       
       if (isMemoryCompletion) {
@@ -3773,12 +3773,12 @@ RULES:
     return null; // Let normal processing continue
   }
 
-  // ðŸ§  CTO DEEP FIX: Intelligent context-aware person extraction
+  // 🧠 CTO DEEP FIX: Intelligent context-aware person extraction
   extractPeople(message) {
     const people = [];
     const lower = message.toLowerCase();
     
-    console.log('ðŸ§  CTO: Deep person extraction for:', message);
+    console.log('🧠 CTO: Deep person extraction for:', message);
     
     // PRIORITY 1: Vault people (known entities) - most reliable
     const vault = window.emmaWebVault?.vaultData?.content;
@@ -3786,7 +3786,7 @@ RULES:
       Object.values(vault.people).forEach(person => {
         if (person.name && lower.includes(person.name.toLowerCase())) {
           people.push(person.name);
-          console.log(`ðŸ§  CTO: Found vault person: ${person.name}`);
+          console.log(`🧠 CTO: Found vault person: ${person.name}`);
         }
       });
     }
@@ -3796,15 +3796,15 @@ RULES:
     potentialPeople.forEach(person => {
       if (!people.includes(person)) {
         people.push(person);
-        console.log(`ðŸ§  CTO: Found contextual person: ${person}`);
+        console.log(`🧠 CTO: Found contextual person: ${person}`);
       }
     });
     
-    console.log('ðŸ§  CTO: Final extracted people:', people);
+    console.log('🧠 CTO: Final extracted people:', people);
     return [...new Set(people)];
   }
 
-  // ðŸ§  DEEP LINGUISTIC ANALYSIS: Extract people based on sentence structure
+  // 🧠 DEEP LINGUISTIC ANALYSIS: Extract people based on sentence structure
   extractPeopleFromSentenceStructure(message) {
     const people = [];
     
@@ -3839,7 +3839,7 @@ RULES:
     return people;
   }
 
-  // ðŸ§  INTELLIGENT VALIDATION: Is this word actually a person name?
+  // 🧠 INTELLIGENT VALIDATION: Is this word actually a person name?
   isLikelyPersonName(candidate, fullMessage) {
     // EXCLUDE: Common verbs that get capitalized
     const commonVerbs = [
@@ -3865,23 +3865,23 @@ RULES:
     const allExclusions = [...commonVerbs, ...sentenceStarters, ...functionWords];
     
     if (allExclusions.includes(candidate)) {
-      console.log(`ðŸ§  CTO: Excluded '${candidate}' - recognized as non-person word`);
+      console.log(`🧠 CTO: Excluded '${candidate}' - recognized as non-person word`);
       return false;
     }
 
     // INCLUDE: Names in person-indicating contexts (high confidence)
     if (/\b(?:with|and|by|from|to)\s+/.test(fullMessage.substring(0, fullMessage.indexOf(candidate)))) {
-      console.log(`ðŸ§  CTO: Included '${candidate}' - strong contextual indicators`);
+      console.log(`🧠 CTO: Included '${candidate}' - strong contextual indicators`);
       return true;
     }
 
     // VALIDATE: Basic name characteristics
     if (candidate.length >= 2 && candidate.length <= 20 && /^[A-Z][a-z]+$/.test(candidate)) {
-      console.log(`ðŸ§  CTO: Included '${candidate}' - passes name validation`);
+      console.log(`🧠 CTO: Included '${candidate}' - passes name validation`);
       return true;
     }
 
-    console.log(`ðŸ§  CTO: Excluded '${candidate}' - failed validation`);
+    console.log(`🧠 CTO: Excluded '${candidate}' - failed validation`);
     return false;
   }
 
@@ -3917,7 +3917,7 @@ RULES:
       .map(person => person.name);
   }
 
-  // ðŸŽ¯ CTO CRITICAL: Get Emma's last message to check context
+  // 🎯 CTO CRITICAL: Get Emma's last message to check context
   getLastEmmaMessage() {
     // Look through recent messages for Emma's last response
     const emmaMessages = document.querySelectorAll('.emma-message');
@@ -3927,9 +3927,9 @@ RULES:
     return lastEmmaMessage.textContent || lastEmmaMessage.innerText || '';
   }
 
-  // ðŸŽ¯ CTO CRITICAL: Handle photo upload request for person
+  // 🎯 CTO CRITICAL: Handle photo upload request for person
   handlePhotoUploadRequest(personName) {
-    console.log(`ðŸ“· CTO: Triggering photo upload for ${personName}`);
+    console.log(`📷 CTO: Triggering photo upload for ${personName}`);
     
     // Create a file input for photo upload
     const fileInput = document.createElement('input');
@@ -3956,9 +3956,9 @@ RULES:
     }, 500);
   }
 
-  // ðŸŽ¯ CTO CRITICAL: Handle photo files for person
+  // 🎯 CTO CRITICAL: Handle photo files for person
   handlePhotoFiles(files, personName) {
-    console.log(`ðŸ“· CTO: Processing ${files.length} photos for ${personName}`);
+    console.log(`📷 CTO: Processing ${files.length} photos for ${personName}`);
     
     files.forEach((file, index) => {
       const reader = new FileReader();
@@ -3970,7 +3970,7 @@ RULES:
           <div style="margin: 10px 0; padding: 15px; background: rgba(134, 88, 255, 0.1); border-radius: 12px; border: 2px dashed rgba(134, 88, 255, 0.3);">
             <img src="${imageData}" style="max-width: 200px; max-height: 200px; border-radius: 8px; object-fit: cover;">
             <div style="margin-top: 8px; font-size: 14px; color: #8658ff;">
-              ðŸ“· Photo with ${personName} - Ready to save!
+              📷 Photo with ${personName} - Ready to save!
             </div>
           </div>
         `;
@@ -3988,7 +3988,7 @@ RULES:
     });
   }
 
-  // ðŸŽ¯ CTO CRITICAL: Setup drag and drop for photos
+  // 🎯 CTO CRITICAL: Setup drag and drop for photos
   setupPhotoDragAndDrop(personName) {
     const chatContainer = this.messageContainer || document.querySelector('.chat-messages');
     if (!chatContainer) return;
@@ -4027,10 +4027,10 @@ RULES:
     chatContainer.addEventListener('dragover', handleDragOver);
     chatContainer.addEventListener('dragleave', handleDragLeave);
     
-    console.log(`ðŸ“· CTO: Drag and drop setup for ${personName} photos`);
+    console.log(`📷 CTO: Drag and drop setup for ${personName} photos`);
   }
 
-  // ðŸš¨ CTO EMERGENCY: Detect when user is sharing memories
+  // 🚨 CTO EMERGENCY: Detect when user is sharing memories
   isMemorySharing(lowerMessage, context) {
     // RELATIONSHIP INDICATORS: Critical for dementia care!
     const relationshipWords = [
@@ -4088,7 +4088,7 @@ RULES:
       return true;
     }
     
-    // ðŸš¨ CTO CRITICAL: Context-aware memory sharing detection
+    // 🚨 CTO CRITICAL: Context-aware memory sharing detection
     if (hasPersonContext) {
       // Single word activities (like "mowing" when discussing Mark)
       if (lowerMessage.length <= 15 && activityWords.some(word => lowerMessage.includes(word))) {
@@ -4127,7 +4127,7 @@ RULES:
     return false;
   }
 
-  // ðŸš¨ CTO EMERGENCY: Generate appropriate memory sharing responses
+  // 🚨 CTO EMERGENCY: Generate appropriate memory sharing responses
   generateMemorySharingResponse(userMessage, context) {
     const person = context.lastQueriedPerson || 'someone special';
     const lower = userMessage.toLowerCase();
@@ -4184,10 +4184,10 @@ RULES:
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
-  // ðŸ’ CRITICAL: Handle person memory recall for dementia care
+  // 💝 CRITICAL: Handle person memory recall for dementia care
   async handlePersonMemoryRecall(personName) {
     try {
-      console.log('ðŸ’ DEMENTIA RECALL: Helping remember', personName);
+      console.log('💝 DEMENTIA RECALL: Helping remember', personName);
       
       // Find the person in vault
       const person = await this.findPersonInVault(personName);
@@ -4198,14 +4198,14 @@ RULES:
         return;
       }
 
-      // ðŸ§  Generate warm, personal introduction
+      // 🧠 Generate warm, personal introduction
       const personalIntro = this.generatePersonalRecallIntro(person);
       this.addMessage(personalIntro, 'emma');
 
-      // ðŸ’ Show person details immediately for recognition
+      // 💝 Show person details immediately for recognition
       await this.displayPersonCard(person);
 
-      // ðŸ“š Find and share connected memories
+      // 📚 Find and share connected memories
       const memories = await this.getPersonMemories(person);
       
       if (memories.length > 0) {
@@ -4220,11 +4220,11 @@ RULES:
         this.addMessage(`I can see ${person.name} is important to you. Would you like to share some memories about them so I can help you remember more about your time together?`, 'emma');
       }
 
-      // ðŸ’­ Offer gentle prompts to help remember more
+      // 💭 Offer gentle prompts to help remember more
       this.offerMemoryPrompts(person);
 
     } catch (error) {
-      console.error('ðŸ’ DEMENTIA RECALL ERROR:', error);
+      console.error('💝 DEMENTIA RECALL ERROR:', error);
       this.addMessage(`I'm here to help you remember. Let's talk about ${personName} - what comes to mind when you think of them?`, 'emma');
     }
   }
@@ -4295,7 +4295,7 @@ RULES:
     }, 3000); // Give time to look at the information first
   }
 
-  // ðŸ’ CTO CRITICAL: Detect when memory sharing is complete and should be saved
+  // 💝 CTO CRITICAL: Detect when memory sharing is complete and should be saved
   isMemoryCompletion(lower, context) {
     // Completion indicators
     const completionPhrases = [
@@ -4321,7 +4321,7 @@ RULES:
     return recentMemorySharing.length >= 2;
   }
 
-  // ðŸ’ CTO CRITICAL: Offer to capture the shared memory
+  // 💝 CTO CRITICAL: Offer to capture the shared memory
   async offerMemoryCapture(context) {
     const personName = context.lastQueriedPerson;
     
@@ -4334,12 +4334,12 @@ RULES:
     
     if (!memoryContent) return;
     
-    // ðŸŽ¯ CTO CRITICAL: Get person ID for proper avatar display
+    // 🎯 CTO CRITICAL: Get person ID for proper avatar display
     let personId = null;
     if (personName) {
       const person = await this.findPersonInVault(personName);
       personId = person?.id || null;
-      console.log('ðŸ‘¤ CTO: Found person for memory:', personName, 'â†’ ID:', personId);
+      console.log('👤 CTO: Found person for memory:', personName, '→ ID:', personId);
     }
     
     // Create memory offer
@@ -4359,7 +4359,7 @@ RULES:
       title: `Memory with ${personName}`,
       created: Date.now(),
       metadata: {
-        people: personId ? [personId] : [], // ðŸŽ¯ CTO: Store person ID, not name!
+        people: personId ? [personId] : [], // 🎯 CTO: Store person ID, not name!
         peopleNames: personName ? [personName] : [], // Keep names for reference
         captureMethod: 'chat-conversation',
         aiGenerated: false
@@ -4376,7 +4376,7 @@ RULES:
       }
     });
     
-    console.log('ðŸ’ CTO: Memory stored with person ID:', personId, 'for avatar display');
+    console.log('💝 CTO: Memory stored with person ID:', personId, 'for avatar display');
     
     // Add with memory capture buttons (using correct format)
     this.addMessage(offer, 'emma', {
@@ -4385,10 +4385,10 @@ RULES:
     });
   }
 
-  // ðŸ‘¥ CRITICAL: Handle people list requests
+  // 👥 CRITICAL: Handle people list requests
   async handlePeopleListRequest(userMessage) {
     try {
-      console.log('ðŸ‘¥ CHAT: Handling people list request:', userMessage);
+      console.log('👥 CHAT: Handling people list request:', userMessage);
       
       // Get all people from vault
       const vault = window.emmaWebVault?.vaultData?.content;
@@ -4401,7 +4401,7 @@ RULES:
       const allPeople = Object.values(vault.people);
       const peopleCount = allPeople.length;
 
-      // ðŸ’œ CTO ENHANCEMENT: Memory companion voice - contextual and empathetic
+      // 💜 CTO ENHANCEMENT: Memory companion voice - contextual and empathetic
       const introResponses = [
         `What a beautiful question! You have ${peopleCount} special ${peopleCount === 1 ? 'person' : 'people'} in your memory vault. Let me show you everyone who matters to you.`,
         `I love that you're thinking about your people! Here ${peopleCount === 1 ? 'is the precious person' : `are the ${peopleCount} precious people`} you've shared with me.`,
@@ -4419,7 +4419,7 @@ RULES:
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // ðŸ’œ CTO ENHANCEMENT: Memory-focused follow-up prompts
+      // 💜 CTO ENHANCEMENT: Memory-focused follow-up prompts
       setTimeout(() => {
         const followUpPrompts = [
           "Would you like to explore memories with any of these precious people?",
@@ -4433,7 +4433,7 @@ RULES:
       }, 2000);
 
     } catch (error) {
-      console.error('ðŸ‘¥ CHAT: Error handling people list request:', error);
+      console.error('👥 CHAT: Error handling people list request:', error);
       this.addMessage("I'd love to show you your people, but I'm having trouble accessing them right now. Let me try again in a moment.", 'emma');
     }
   }
@@ -4446,7 +4446,7 @@ RULES:
     document.body.classList.remove('chat-focus');
   }
 
-  // ðŸ§  VECTORLESS AI INTEGRATION METHODS
+  // 🧠 VECTORLESS AI INTEGRATION METHODS
 
   /**
    * Initialize the Vectorless AI Engine with vault data
@@ -4458,14 +4458,14 @@ RULES:
 
       // Check if EmmaVectorlessEngine is available
       if (typeof EmmaVectorlessEngine === 'undefined') {
-        console.warn('ðŸ’¬ EmmaVectorlessEngine not available, attempting to load...');
+        console.warn('💬 EmmaVectorlessEngine not available, attempting to load...');
         
         try {
           await this.loadVectorlessEngine();
-          console.log('âœ… EmmaVectorlessEngine loaded successfully!');
+          console.log('✅ EmmaVectorlessEngine loaded successfully!');
         } catch (loadError) {
-          console.warn('âš ï¸ Could not load EmmaVectorlessEngine:', loadError.message);
-          console.log('ðŸ’¬ Continuing with intelligent fallbacks - Emma will still work beautifully!');
+          console.warn('⚠️ Could not load EmmaVectorlessEngine:', loadError.message);
+          console.log('💬 Continuing with intelligent fallbacks - Emma will still work beautifully!');
           this.isVectorlessEnabled = false;
           this.updateVectorlessStatus('Intelligent Fallbacks - Emma responds dynamically');
           return; // Exit gracefully, fallbacks will handle everything
@@ -4485,14 +4485,14 @@ RULES:
       // Enable vectorless even without API keys (offline mode)
       if (this.vectorlessEngine && !this.isVectorlessEnabled) {
         this.isVectorlessEnabled = true;
-        console.log('ðŸ’œ Emma: Vectorless engine enabled in offline mode for demo');
+        console.log('💜 Emma: Vectorless engine enabled in offline mode for demo');
       }
 
       this.updateVectorlessStatus();
-      console.log('âœ… Emma Vectorless AI system initialized (offline mode ready)!');
+      console.log('✅ Emma Vectorless AI system initialized (offline mode ready)!');
 
     } catch (error) {
-      console.warn('âš ï¸ Vectorless AI initialization failed, using intelligent fallbacks:', error.message);
+      console.warn('⚠️ Vectorless AI initialization failed, using intelligent fallbacks:', error.message);
       this.isVectorlessEnabled = false;
       this.updateVectorlessStatus('Intelligent Fallbacks - Emma responds dynamically');
       // Don't throw - let the fallbacks handle everything
@@ -4506,7 +4506,7 @@ RULES:
     return new Promise((resolve, reject) => {
       // CRITICAL FIX: Check both global scope and window object
       if (typeof EmmaVectorlessEngine !== 'undefined' || window.EmmaVectorlessEngine) {
-        console.log('ðŸ’¬ EmmaVectorlessEngine already available - using existing instance');
+        console.log('💬 EmmaVectorlessEngine already available - using existing instance');
         resolve();
         return;
       }
@@ -4514,20 +4514,20 @@ RULES:
       // CRITICAL FIX: Check if script is already loaded to prevent duplicates
       const existingScript = document.querySelector('script[src*="emma-vectorless-engine.js"]');
       if (existingScript) {
-        console.log('ðŸ’¬ EmmaVectorlessEngine script already loaded, waiting for class to be available...');
+        console.log('💬 EmmaVectorlessEngine script already loaded, waiting for class to be available...');
         // Wait a bit for the script to execute
         setTimeout(() => {
           if (typeof EmmaVectorlessEngine !== 'undefined' || window.EmmaVectorlessEngine) {
             resolve();
           } else {
-            console.warn('ðŸ’¬ Script loaded but class not available - proceeding without vectorless engine');
+            console.warn('💬 Script loaded but class not available - proceeding without vectorless engine');
             resolve(); // Don't reject, just proceed without it
           }
         }, 100);
         return;
       }
 
-      console.log('ðŸ’¬ Loading EmmaVectorlessEngine script from:', './js/emma-vectorless-engine.js');
+      console.log('💬 Loading EmmaVectorlessEngine script from:', './js/emma-vectorless-engine.js');
       
       // Try to detect what context we're running in
       const currentPath = window.location.pathname;
@@ -4543,22 +4543,22 @@ RULES:
         scriptPath = 'js/emma-vectorless-engine.js';
       }
       
-      console.log('ðŸ’¬ Adjusted script path for context:', scriptPath, 'Current path:', currentPath);
+      console.log('💬 Adjusted script path for context:', scriptPath, 'Current path:', currentPath);
       
       const script = document.createElement('script');
       script.src = scriptPath;
       script.onload = () => {
-        console.log('ðŸ’¬ Script loaded successfully');
+        console.log('💬 Script loaded successfully');
         if (typeof EmmaVectorlessEngine !== 'undefined') {
-          console.log('âœ… EmmaVectorlessEngine now available!');
+          console.log('✅ EmmaVectorlessEngine now available!');
           resolve();
         } else {
-          console.error('âŒ Script loaded but EmmaVectorlessEngine still not defined');
+          console.error('❌ Script loaded but EmmaVectorlessEngine still not defined');
           reject(new Error('EmmaVectorlessEngine not defined after script load'));
         }
       };
       script.onerror = (error) => {
-        console.error('âŒ Failed to load vectorless engine script:', error);
+        console.error('❌ Failed to load vectorless engine script:', error);
         reject(new Error('Failed to load vectorless engine script'));
       };
       document.head.appendChild(script);
@@ -4591,13 +4591,13 @@ RULES:
         }
       } else {
         if (this.debugMode) {
-          console.warn('ðŸ§  No vault data available for vectorless processing - will use heuristics only');
+          console.warn('🧠 No vault data available for vectorless processing - will use heuristics only');
         }
         this.isVectorlessEnabled = false;
       }
     } catch (error) {
       if (this.debugMode) {
-        console.error('ðŸ§  Failed to load vault for vectorless:', error);
+        console.error('🧠 Failed to load vault for vectorless:', error);
       }
       this.isVectorlessEnabled = false;
       // Don't throw error - just disable vectorless features
@@ -4643,7 +4643,7 @@ RULES:
       memoriesHtml = `
         <div class="emma-memory-results">
           <div class="memory-results-header">
-            <span class="results-icon">ðŸ’</span>
+            <span class="results-icon">💝</span>
             <span class="results-title">I found ${memories.length} relevant ${memories.length === 1 ? 'memory' : 'memories'}</span>
           </div>
           <div class="memory-grid">
@@ -4656,14 +4656,14 @@ RULES:
                   </div>
                 ` : `
                   <div class="memory-thumbnail no-media">
-                    <div class="memory-icon">ðŸ’­</div>
+                    <div class="memory-icon">💭</div>
                   </div>
                 `}
                 <div class="memory-info">
                   <div class="memory-title">${memory.title || 'Untitled Memory'}</div>
                   <div class="memory-snippet">${(memory.content || '').substring(0, 80)}${memory.content?.length > 80 ? '...' : ''}</div>
                   ${memory.people && memory.people.length > 0 ? `
-                    <div class="memory-people">ðŸ‘¥ ${memory.people.slice(0, 2).join(', ')}${memory.people.length > 2 ? ` +${memory.people.length - 2}` : ''}</div>
+                    <div class="memory-people">👥 ${memory.people.slice(0, 2).join(', ')}${memory.people.length > 2 ? ` +${memory.people.length - 2}` : ''}</div>
                   ` : ''}
                 </div>
               </div>
@@ -4686,7 +4686,7 @@ RULES:
       suggestionsHtml = `
         <div class="emma-suggestions">
           <div class="suggestions-header">
-            <span class="suggestions-icon">ðŸ’¡</span>
+            <span class="suggestions-icon">💡</span>
             <span class="suggestions-title">You might also ask:</span>
           </div>
           <div class="suggestion-grid">
@@ -4734,7 +4734,7 @@ RULES:
    */
   openMemoryDetail(memoryId) {
 
-    this.showToast('ðŸ“– Memory details coming soon!', 'info');
+    this.showToast('📖 Memory details coming soon!', 'info');
   }
 
   /**
@@ -4829,13 +4829,13 @@ RULES:
     try {
       welcomeMessage = await this.generateDynamicWelcomeResponse(vaultContext, { hour, dayOfWeek, isWeekend });
     } catch (error) {
-      console.error('âŒ Failed to generate dynamic welcome:', error);
+      console.error('❌ Failed to generate dynamic welcome:', error);
       // Ultra-simple fallback that's still not canned
       welcomeMessage = "Hello! I'm Emma. What story is stirring in your heart today?";
     }
 
     this.addMessage(welcomeMessage, 'emma');
-    console.log('ðŸ’¬ UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
+    console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
   }
 
   // Chat settings modal removed - access via main settings panel
@@ -4924,7 +4924,7 @@ RULES:
     if (apiKeyInput) {
       // DEMO SECURITY: API key input disabled for family demo
       apiKeyInput.value = '';
-      apiKeyInput.placeholder = 'ðŸ”’ API features disabled for demo security';
+      apiKeyInput.placeholder = '🔒 API features disabled for demo security';
       apiKeyInput.disabled = true;
     }
 
@@ -4956,7 +4956,7 @@ RULES:
     // TODO: Move to secure vault storage for production
     // DEMO SECURITY: API key storage completely disabled
     if (apiKey) {
-      console.warn('ðŸ”’ DEMO MODE: API key storage disabled for security');
+      console.warn('🔒 DEMO MODE: API key storage disabled for security');
       // Do not store API keys in any form during demo
     }
     // Always remove any existing API keys for demo safety
@@ -4974,7 +4974,7 @@ RULES:
       this.initializeVectorlessEngine();
     }
 
-    this.showToast('âœ… Settings saved successfully!', 'success');
+    this.showToast('✅ Settings saved successfully!', 'success');
     this.closeChatSettings();
   }
 
@@ -4999,7 +4999,7 @@ RULES:
       this.dementiaMode = false;
 
       this.loadSettingsIntoModal();
-      this.showToast('ðŸ”„ Settings reset to defaults', 'info');
+      this.showToast('🔄 Settings reset to defaults', 'info');
     }
   }
 
@@ -5012,13 +5012,13 @@ RULES:
 
     if (indicator && statusText) {
       if (this.isVectorlessEnabled && this.vectorlessEngine) {
-        indicator.textContent = 'ðŸŸ¢';
+        indicator.textContent = '🟢';
         statusText.textContent = 'Vectorless AI Active';
       } else if (this.apiKey) {
-        indicator.textContent = 'ðŸŸ¡';
+        indicator.textContent = '🟡';
         statusText.textContent = 'API Key Set - Initializing...';
       } else {
-        indicator.textContent = 'ðŸ”´';
+        indicator.textContent = '🔴';
         statusText.textContent = 'Heuristics Only (No API Key)';
       }
     }
@@ -5095,11 +5095,11 @@ RULES:
       this.closeVectorlessSettings();
 
       // Show success message
-      this.addMessage('âš™ï¸ Settings saved successfully! Vectorless AI updated with new configuration.', 'emma');
+      this.addMessage('⚙️ Settings saved successfully! Vectorless AI updated with new configuration.', 'emma');
 
     } catch (error) {
-      console.error('ðŸ’¬ Failed to save settings:', error);
-      this.addMessage('âŒ Failed to save settings. Please try again.', 'emma');
+      console.error('💬 Failed to save settings:', error);
+      this.addMessage('❌ Failed to save settings. Please try again.', 'emma');
     }
   }
 
@@ -5123,7 +5123,7 @@ RULES:
     }
 
     this.updateVectorlessStatus();
-    this.addMessage('ðŸ”„ Settings reset to defaults. Vectorless AI will use intelligent heuristics.', 'emma');
+    this.addMessage('🔄 Settings reset to defaults. Vectorless AI will use intelligent heuristics.', 'emma');
   }
 
   /**
@@ -5131,7 +5131,7 @@ RULES:
    */
   loadVectorlessSettings() {
     try {
-          // ðŸš€ DEMO SECURITY: API keys disabled for family demo
+          // 🚀 DEMO SECURITY: API keys disabled for family demo
     
     // 1. SECURITY LOCKDOWN: No API key access for demo safety
     this.apiKey = null; // DEMO MODE: API keys disabled for security
@@ -5148,22 +5148,22 @@ RULES:
       // 3. Check global API key (backup)
       if (!this.apiKey && window.API_KEY) {
         this.apiKey = window.API_KEY;
-        console.log('ðŸ’¬ Using global API key for Emma responses');
+        console.log('💬 Using global API key for Emma responses');
       }
       
-      // ðŸ”§ Load other settings
+      // 🔧 Load other settings
       this.dementiaMode = localStorage.getItem('emma-dementia-mode') === 'true';
       this.debugMode = localStorage.getItem('emma-debug-mode') === 'true';
       
-      // ðŸŽ¯ LOG RESULTS
+      // 🎯 LOG RESULTS
       if (this.apiKey) {
-        console.log('âœ… OpenAI API key found and loaded successfully!');
+        console.log('✅ OpenAI API key found and loaded successfully!');
       } else {
-        console.warn('ðŸ’¬ No API key found - Emma will use intelligent fallbacks');
+        console.warn('💬 No API key found - Emma will use intelligent fallbacks');
       }
       
     } catch (error) {
-      console.warn('ðŸ’¬ Could not load vectorless settings:', error);
+      console.warn('💬 Could not load vectorless settings:', error);
     }
   }
 
@@ -5177,26 +5177,26 @@ RULES:
     if (!statusIndicator || !statusText) return;
 
     if (customMessage) {
-      statusIndicator.textContent = 'ðŸ”´';
+      statusIndicator.textContent = '🔴';
       statusText.textContent = customMessage;
       return;
     }
 
     if (this.isVectorlessEnabled) {
-      statusIndicator.textContent = 'ðŸŸ¢';
+      statusIndicator.textContent = '🟢';
       const mode = this.apiKey ? 'OpenAI API' : 'Heuristics';
       const extras = [];
       if (this.dementiaMode) extras.push('Dementia Mode');
       if (this.debugMode) extras.push('Debug Mode');
 
-      statusText.textContent = `Active (${mode})${extras.length ? ' â€¢ ' + extras.join(', ') : ''}`;
+      statusText.textContent = `Active (${mode})${extras.length ? ' • ' + extras.join(', ') : ''}`;
     } else {
-      statusIndicator.textContent = 'ðŸŸ¡';
+      statusIndicator.textContent = '🟡';
       statusText.textContent = 'No vault loaded - basic responses only';
     }
   }
 
-  // ðŸ’ INTELLIGENT MEMORY CAPTURE METHODS
+  // 💝 INTELLIGENT MEMORY CAPTURE METHODS
 
   /**
    * Initialize intelligent memory capture
@@ -5210,7 +5210,7 @@ RULES:
       }
 
       if (typeof EmmaIntelligentCapture === 'undefined') {
-        console.error('ðŸ’¬ Failed to load intelligent capture module');
+        console.error('💬 Failed to load intelligent capture module');
         this.intelligentCapture = null;
         return;
       }
@@ -5229,7 +5229,7 @@ RULES:
       }
 
     } catch (error) {
-      console.error('ðŸ’¬ Failed to initialize intelligent capture:', error);
+      console.error('💬 Failed to initialize intelligent capture:', error);
       this.intelligentCapture = null;
     }
   }
@@ -5277,7 +5277,7 @@ RULES:
     ];
     
     const isMatch = mediaRequestPatterns.some(pattern => pattern.test(text));
-    console.log('ðŸ” MEDIA DETECTION:', { text, isMatch, patterns: mediaRequestPatterns.length });
+    console.log('🔍 MEDIA DETECTION:', { text, isMatch, patterns: mediaRequestPatterns.length });
     return isMatch;
   }
 
@@ -5305,17 +5305,17 @@ RULES:
         attachments: []
       };
 
-      // ðŸŽ¯ CRITICAL UPGRADE: Use the superior edit dialog instead of basic enhanced preview
+      // 🎯 CRITICAL UPGRADE: Use the superior edit dialog instead of basic enhanced preview
       // Store memory in temporary storage for editing
       this.temporaryMemories.set(memory.id, memory);
-      console.log('ðŸŽ¯ MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
-      console.log('ðŸŽ¯ MEDIA REQUEST: Memory metadata:', memory.metadata);
+      console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
+      console.log('🎯 MEDIA REQUEST: Memory metadata:', memory.metadata);
       
       // Show the much better edit dialog we just perfected!
       this.editMemoryDetails(memory.id);
 
     } catch (error) {
-      console.error('âŒ Error handling media request:', error);
+      console.error('❌ Error handling media request:', error);
       await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
     }
   }
@@ -5324,16 +5324,16 @@ RULES:
    * Analyze message for memory potential
    */
   async analyzeForMemory(message, messageId) {
-    // ðŸ” CRITICAL: Check for memory search queries FIRST - prevent wrong capture
+    // 🔍 CRITICAL: Check for memory search queries FIRST - prevent wrong capture
     const intent = this.classifyUserIntent(message);
     if (intent.type === 'memory_search') {
-      console.log('ðŸ” ANALYZE FOR MEMORY: Detected memory search query, skipping memory capture analysis:', message);
+      console.log('🔍 ANALYZE FOR MEMORY: Detected memory search query, skipping memory capture analysis:', message);
       return { handled: false }; // Let it go to normal Emma response
     }
 
-    // ðŸŽ¯ HANDLE CONVERSATIONAL MEDIA REQUESTS FIRST
+    // 🎯 HANDLE CONVERSATIONAL MEDIA REQUESTS FIRST
     if (this.detectMediaRequest(message)) {
-      console.log('ðŸ“· Detected conversational media request:', message);
+      console.log('📷 Detected conversational media request:', message);
       await this.handleMediaRequest(message, messageId);
       return { handled: true };
     }
@@ -5362,8 +5362,8 @@ RULES:
 
       if (analysis.isMemoryWorthy) {
         if (this.debugMode) {
-          console.log(`ðŸ’ Memory detected! FinalScore: ${analysis.finalScore?.toFixed(3)}, AutoCapture: ${analysis.autoCapture}, Confidence: ${analysis.confidence}%`);
-          console.log(`ðŸ’ Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
+          console.log(`💝 Memory detected! FinalScore: ${analysis.finalScore?.toFixed(3)}, AutoCapture: ${analysis.autoCapture}, Confidence: ${analysis.confidence}%`);
+          console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
 
         // "DEBE STANDARD" UX REVOLUTION: One single, intelligent prompt.
@@ -5397,15 +5397,15 @@ RULES:
 
       } else {
         if (this.debugMode) {
-          console.log(`ðŸ’ Not memory-worthy. FinalScore: ${analysis.finalScore?.toFixed(3)}, Reason: ${analysis.reason}`);
-          console.log(`ðŸ’ Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
+          console.log(`💝 Not memory-worthy. FinalScore: ${analysis.finalScore?.toFixed(3)}, Reason: ${analysis.reason}`);
+          console.log(`💝 Components: H=${analysis.components?.heuristicsScore?.toFixed(3)}, L=${analysis.components?.llmScore?.toFixed(3)}, N=${analysis.components?.noveltyPenalty?.toFixed(3)}`);
         }
         return { handled: false };
       }
 
     } catch (error) {
       if (this.debugMode) {
-        console.error('ðŸ’ Memory analysis failed:', error);
+        console.error('💝 Memory analysis failed:', error);
       }
       return { handled: false };
     }
@@ -5426,7 +5426,7 @@ RULES:
         <span class="detection-text">Emma detected a memory</span>
         <span class="confidence">${analysis.confidence}%</span>
         <button class="save-memory-btn" onclick="window.chatExperience.saveMemoryFromChat('${messageId}')">
-          ðŸ’¾ Save as Memory
+          💾 Save as Memory
         </button>
       </div>
     `;
@@ -5440,7 +5440,7 @@ RULES:
     if (contentContainer) {
       contentContainer.appendChild(indicator);
     } else {
-      console.error('ðŸ’ Could not find content container for memory indicator');
+      console.error('💝 Could not find content container for memory indicator');
       messageEl.appendChild(indicator); // Fallback
     }
 
@@ -5465,7 +5465,7 @@ RULES:
       
       const suggestionId = this.addMessage(suggestion, 'emma', { type: 'memory-suggestion' });
     } catch (error) {
-      console.error('âŒ Failed to generate memory suggestion:', error);
+      console.error('❌ Failed to generate memory suggestion:', error);
       const fallback = "This seems like a meaningful moment. Would you like to preserve it?";
       const suggestionId = this.addMessage(fallback, 'emma', { type: 'memory-suggestion' });
     }
@@ -5477,7 +5477,7 @@ RULES:
       actions.className = 'memory-suggestion-actions';
       actions.innerHTML = `
         <button class="suggestion-action primary" onclick="window.chatExperience.startMemoryCapture('${analysis.memory.id}')">
-          ðŸ’ Yes, let's save this memory
+          💝 Yes, let's save this memory
         </button>
         <button class="suggestion-action secondary" onclick="window.chatExperience.dismissMemorySuggestion('${suggestionId}')">
           Maybe later
@@ -5489,7 +5489,7 @@ RULES:
       if (contentContainer) {
         contentContainer.appendChild(actions);
       } else {
-        console.error('ðŸ’ Could not find content container for memory actions');
+        console.error('💝 Could not find content container for memory actions');
         messageEl.appendChild(actions); // Fallback
       }
     }
@@ -5543,17 +5543,17 @@ RULES:
    */
   showMemoryPreviewDialog(memory) {
     const esc = (s) => (window.escapeHtml ? window.escapeHtml(String(s)) : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
-    // ðŸŽ¯ CRITICAL FIX: Store memory in temporary storage for editing
+    // 🎯 CRITICAL FIX: Store memory in temporary storage for editing
     this.temporaryMemories.set(memory.id, memory);
-    console.log('ðŸŽ¯ MOBILE PREVIEW: Stored temporary memory for editing:', memory.id);
+    console.log('🎯 MOBILE PREVIEW: Stored temporary memory for editing:', memory.id);
 
-    // ðŸ“± MOBILE-FIRST REDESIGN: Full-screen modal optimized for touch
+    // 📱 MOBILE-FIRST REDESIGN: Full-screen modal optimized for touch
     const hasImages = memory.attachments?.some(att => att.type?.startsWith('image/'));
     const hasVideo = memory.attachments?.some(att => att.type?.startsWith('video/'));
     const peopleList = memory.metadata?.people || [];
     
     const previewHTML = `
-      <!-- ðŸ“± MOBILE HEADER: Full-width with close button -->
+      <!-- 📱 MOBILE HEADER: Full-width with close button -->
       <div class="mobile-header">
         <div class="header-content">
           <h2 class="memory-title">${esc(memory.title || 'Beautiful Memory')}</h2>
@@ -5566,7 +5566,7 @@ RULES:
         <div class="memory-date">${esc(memory.metadata?.date || 'Saturday, August 23, 2025')}</div>
       </div>
 
-      <!-- ðŸ“¸ HERO IMAGE CAROUSEL: Feature photos prominently -->
+      <!-- 📸 HERO IMAGE CAROUSEL: Feature photos prominently -->
       ${hasImages ? `
         <div class="hero-carousel">
           <div class="carousel-container">
@@ -5592,17 +5592,17 @@ RULES:
         </div>
       ` : ''}
 
-      <!-- ðŸ‘¥ PEOPLE SECTION: Large touch-friendly avatars -->
+      <!-- 👥 PEOPLE SECTION: Large touch-friendly avatars -->
       ${peopleList.length > 0 ? `
         <div class="people-section">
-          <h3 class="section-title">ðŸ‘¥ People in this memory</h3>
+          <h3 class="section-title">People in this memory</h3>
           <div class="people-grid" id="people-grid-${esc(memory.id)}">
             <!-- People avatars will be loaded here -->
           </div>
         </div>
       ` : ''}
 
-      <!-- ðŸ“ CONTENT SECTION: Story and details -->
+      <!-- 📝 CONTENT SECTION: Story and details -->
       <div class="content-section">
         <div class="memory-story">
           <p>${esc(memory.content || '')}</p>
@@ -5610,7 +5610,7 @@ RULES:
         
         ${memory.metadata?.emotions?.length > 0 ? `
           <div class="memory-tags">
-            <span class="tag-label">ðŸ’­</span>
+            <span class="tag-label">Emotions</span>
             <div class="emotions-list">
               ${memory.metadata.emotions.map(emotion => `
                 <span class="emotion-tag">${esc(emotion)}</span>
@@ -5621,16 +5621,16 @@ RULES:
 
         ${memory.metadata?.location ? `
           <div class="memory-tags">
-            <span class="tag-label">ðŸ“</span>
+            <span class="tag-label">Location</span>
             <span class="location-tag">${esc(memory.metadata.location)}</span>
           </div>
         ` : ''}
       </div>
 
-      <!-- ðŸŽ¬ MEDIA GRID: Additional media -->
+      <!-- 🎬 MEDIA GRID: Additional media -->
       ${memory.attachments?.length > 1 || hasVideo ? `
         <div class="media-section">
-          <h3 class="section-title">ðŸ“· All Media (${memory.attachments.length})</h3>
+          <h3 class="section-title">All Media (${memory.attachments.length})</h3>
           <div class="media-grid">
             ${memory.attachments.map((attachment, index) => `
               <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
@@ -5638,11 +5638,11 @@ RULES:
                   <img src="${esc(attachment.data || attachment.dataUrl || attachment.url)}" alt="${esc(attachment.name || '')}" />
                 ` : attachment.type?.startsWith('video/') ? `
                   <video src="${esc(attachment.dataUrl || attachment.url)}" muted>
-                    <div class="video-play-overlay">â–¶ï¸</div>
+                    <div class="video-play-overlay">Play</div>
                   </video>
                 ` : `
                   <div class="file-item">
-                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'ðŸŽµ' : 'ðŸ“„'}</div>
+                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'Audio' : 'File'}</div>
                     <div class="file-name">${esc(attachment.name || '')}</div>
                   </div>
                 `}
@@ -5674,7 +5674,7 @@ RULES:
     `;
     dialog.innerHTML = `
       <style>
-        /* ðŸŽ¯ RESPONSIVE DIALOG STYLES FOR ALL SCREEN SIZES */
+        /* 🎯 RESPONSIVE DIALOG STYLES FOR ALL SCREEN SIZES */
         @keyframes dialogFadeIn {
           from { opacity: 0; transform: scale(0.95); }
           to { opacity: 1; transform: scale(1); }
@@ -5693,13 +5693,13 @@ RULES:
           box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
         }
         
-        /* ðŸ“± MOBILE FIRST (320px+) */
+        /* 📱 MOBILE FIRST (320px+) */
         .responsive-memory-container {
           margin: 10px;
           padding: 20px;
         }
         
-        /* ðŸ“± TABLET (768px+) */
+        /* 📱 TABLET (768px+) */
         @media (min-width: 768px) {
           .responsive-memory-container {
             margin: 20px;
@@ -5708,7 +5708,7 @@ RULES:
           }
         }
         
-        /* ðŸ’» LAPTOP (1024px+) */
+        /* 💻 LAPTOP (1024px+) */
         @media (min-width: 1024px) {
           .responsive-memory-container {
             margin: 40px;
@@ -5717,7 +5717,7 @@ RULES:
           }
         }
         
-        /* ðŸ–¥ï¸ DESKTOP (1440px+) */
+        /* 🖥️ DESKTOP (1440px+) */
         @media (min-width: 1440px) {
           .responsive-memory-container {
             max-width: 1100px;
@@ -6064,7 +6064,7 @@ RULES:
         <!-- PEOPLE SECTION -->
         ${peopleList.length > 0 ? `
           <div class="people-section">
-            <h3 class="section-title">ðŸ‘¥ People in this memory</h3>
+            <h3 class="section-title">People in this memory</h3>
             <div class="people-grid" id="people-grid-${esc(memory.id)}">
               <!-- People avatars will be loaded here -->
             </div>
@@ -6079,7 +6079,7 @@ RULES:
           
           ${memory.metadata?.emotions?.length > 0 ? `
             <div class="memory-tags">
-              <span class="tag-label">ðŸ’­</span>
+              <span class="tag-label">Emotions</span>
               <div class="emotions-list">
                 ${memory.metadata.emotions.map(emotion => `
                   <span class="emotion-tag">${esc(emotion)}</span>
@@ -6090,7 +6090,7 @@ RULES:
 
           ${memory.metadata?.location ? `
             <div class="memory-tags">
-              <span class="tag-label">ðŸ“</span>
+              <span class="tag-label">Location</span>
               <span class="location-tag">${esc(memory.metadata.location)}</span>
             </div>
           ` : ''}
@@ -6099,7 +6099,7 @@ RULES:
         <!-- MEDIA GRID -->
         ${memory.attachments?.length > 1 || hasVideo ? `
           <div class="media-section">
-            <h3 class="section-title">ðŸ“· All Media (${memory.attachments.length})</h3>
+            <h3 class="section-title">All Media (${memory.attachments.length})</h3>
             <div class="media-grid">
               ${memory.attachments.map((attachment, index) => `
                 <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
@@ -6107,11 +6107,11 @@ RULES:
                     <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
                   ` : attachment.type?.startsWith('video/') ? `
                     <video src="${attachment.dataUrl || attachment.url}" muted>
-                    <div class="video-play-overlay">â–¶ï¸</div>
+                    <div class="video-play-overlay">Play</div>
                     </video>
                   ` : `
                     <div class="file-item">
-                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'ðŸŽµ' : 'ðŸ“„'}</div>
+                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'Audio' : 'File'}</div>
                       <div class="file-name">${attachment.name}</div>
                     </div>
                   `}
@@ -6124,10 +6124,10 @@ RULES:
         <!-- ACTION BUTTONS -->
         <div class="action-buttons">
           <button class="action-btn primary" onclick="window.chatExperience.saveMemoryToVault('${memory.id}')">
-            âœ¨ Save to Vault
+            Save to Vault
           </button>
           <button class="action-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
-            âœï¸ Edit Memory
+            Edit Memory
           </button>
         </div>
       </div>
@@ -6188,7 +6188,7 @@ RULES:
             people = result.items;
           }
         } catch (apiError) {
-          console.log('ðŸ“ EmmaAPI people.list failed:', apiError);
+          console.log('📝 EmmaAPI people.list failed:', apiError);
         }
       }
       
@@ -6224,7 +6224,7 @@ RULES:
         memoryPeopleIds.some(p => (typeof p === 'string' ? p : p.id) === person.id)
       );
 
-      console.log('ðŸ‘¥ RESPONSIVE: Loading', memoryPeople.length, 'people for memory');
+      console.log('👥 RESPONSIVE: Loading', memoryPeople.length, 'people for memory');
 
       // Create responsive people avatars
       memoryPeople.forEach(person => {
@@ -6271,7 +6271,7 @@ RULES:
       });
 
     } catch (error) {
-      console.error('âŒ Error loading responsive people avatars:', error);
+      console.error('❌ Error loading responsive people avatars:', error);
       grid.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center;">Error loading people.</p>';
     }
   }
@@ -6282,7 +6282,7 @@ RULES:
   showEnhancedMemoryPreview(memory) {
     try {
       if (!memory || !memory.id) {
-        console.error('âŒ Invalid memory object for enhanced preview');
+        console.error('❌ Invalid memory object for enhanced preview');
         return;
       }
 
@@ -6342,7 +6342,7 @@ RULES:
       
       <div class="dialog-content" style="position: relative; z-index: 10001 !important; max-width: 600px; max-height: 80vh; overflow-y: auto;">
         <div class="dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-          <h3 style="margin: 0; color: white;">ðŸ“· Create Photo Memory</h3>
+          <h3 style="margin: 0; color: white;">📷 Create Photo Memory</h3>
           <button class="dialog-close" onclick="this.closest('.memory-preview-dialog').remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
         
@@ -6355,10 +6355,10 @@ RULES:
 
           <!-- Media Upload Section -->
           <div style="margin-bottom: 24px;">
-            <h4 style="color: white; margin-bottom: 12px;">ðŸ“· Add Photos & Videos</h4>
+            <h4 style="color: white; margin-bottom: 12px;">📷 Add Photos & Videos</h4>
             <div class="emma-drop-zone" id="drop-zone-${memory.id}" onclick="document.getElementById('file-input-${memory.id}').click()">
               <div style="color: white;">
-                <div style="font-size: 48px; margin-bottom: 12px;">ðŸ“·</div>
+                <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
                 <div style="font-size: 18px; margin-bottom: 8px;">Drop photos here or click to browse</div>
                 <div style="font-size: 14px; opacity: 0.8;">JPG, PNG, MP4, MOV - Max 50MB per file</div>
               </div>
@@ -6369,7 +6369,7 @@ RULES:
 
           <!-- People Selection Section -->
           <div style="margin-bottom: 24px;">
-            <h4 style="color: white; margin-bottom: 12px;">ðŸ‘¥ Tag People in This Memory</h4>
+            <h4 style="color: white; margin-bottom: 12px;">👥 Tag People in This Memory</h4>
             <div class="people-selection-grid" id="people-grid-${memory.id}">
               <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">Loading people...</div>
             </div>
@@ -6378,7 +6378,7 @@ RULES:
           <!-- Action Buttons -->
           <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <button onclick="this.closest('.memory-preview-dialog').remove()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
-            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">ðŸ’ Save Memory</button>
+            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
           </div>
         </div>
       </div>
@@ -6393,7 +6393,7 @@ RULES:
     this.setupEnhancedDragDrop(memory.id);
 
     } catch (error) {
-      console.error('âŒ Error showing enhanced memory preview:', error);
+      console.error('❌ Error showing enhanced memory preview:', error);
       // Fallback to simple alert
       window.emmaInfo("I'd love to help you save photos! Please try the regular memory capture for now.", {
         title: "Photo Saving",
@@ -6407,30 +6407,30 @@ RULES:
    */
   async createCapsulePeopleAvatars(memory) {
     try {
-      console.log('ðŸ‘¥ Looking for avatars container:', `people-grid-${memory.id}`);
+      console.log('👥 Looking for avatars container:', `people-grid-${memory.id}`);
       const avatarsContainer = document.getElementById(`people-grid-${memory.id}`);
       if (!avatarsContainer) {
-        console.warn('ðŸ‘¥ Avatars container not found for memory:', memory.id);
-        console.log('ðŸ‘¥ Available elements:', document.querySelectorAll('[id*="capsule"]'));
+        console.warn('👥 Avatars container not found for memory:', memory.id);
+        console.log('👥 Available elements:', document.querySelectorAll('[id*="capsule"]'));
         return;
       }
-      console.log('ðŸ‘¥ Found avatars container:', avatarsContainer);
+      console.log('👥 Found avatars container:', avatarsContainer);
 
       // Get people connected to this memory
-      console.log('ðŸ‘¥ AVATAR DEBUG: Memory metadata:', memory.metadata);
-      console.log('ðŸ‘¥ AVATAR DEBUG: People in memory:', memory.metadata?.people);
+      console.log('👥 AVATAR DEBUG: Memory metadata:', memory.metadata);
+      console.log('👥 AVATAR DEBUG: People in memory:', memory.metadata?.people);
       
       if (!memory.metadata?.people?.length) {
-        console.warn('ðŸ‘¥ AVATAR DEBUG: No people found in memory metadata');
+        console.warn('👥 AVATAR DEBUG: No people found in memory metadata');
         avatarsContainer.innerHTML = '<span style="color: #888;">No people connected</span>';
         return;
       }
       
-      console.log('ðŸ‘¥ AVATAR DEBUG: Will create avatars for', memory.metadata.people.length, 'people');
+      console.log('👥 AVATAR DEBUG: Will create avatars for', memory.metadata.people.length, 'people');
 
       // Load people data from vault
       if (!window.emmaWebVault?.isOpen || !window.emmaWebVault.vaultData) {
-        console.warn('ðŸ‘¥ Vault not available for people lookup');
+        console.warn('👥 Vault not available for people lookup');
         avatarsContainer.innerHTML = '<span style="color: #888;">Vault not available</span>';
         return;
       }
@@ -6482,12 +6482,12 @@ RULES:
         } else {
           person = peopleData[personId];
           if (!person) {
-            console.warn('ðŸ‘¥ Person not found in vault:', personId);
+            console.warn('👥 Person not found in vault:', personId);
             continue;
           }
         }
 
-        console.log('ðŸ‘¥ Creating constellation-style avatar for:', person.name);
+        console.log('👥 Creating constellation-style avatar for:', person.name);
 
         // Create avatar with EXACT constellation styling
         const avatar = document.createElement('div');
@@ -6497,7 +6497,7 @@ RULES:
         // Start with letter (constellation style)
         avatar.textContent = person.name.charAt(0).toUpperCase();
 
-        // ðŸŽ¯ CTO CRITICAL FIX: BIGGER AVATARS + BETTER STYLING
+        // 🎯 CTO CRITICAL FIX: BIGGER AVATARS + BETTER STYLING
         avatar.style.cssText = `
           width: 80px;
           height: 80px;
@@ -6527,9 +6527,9 @@ RULES:
           avatar.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
         }
 
-        // ðŸŽ¯ CTO CRITICAL: ENHANCED PHOTO LOADING WITH DEBUGGING
+        // 🎯 CTO CRITICAL: ENHANCED PHOTO LOADING WITH DEBUGGING
         if (!person.isNew) {
-          console.log(`ðŸ“¸ CTO: Loading avatar for ${person.name}:`, {
+          console.log(`📸 CTO: Loading avatar for ${person.name}:`, {
             avatarUrl: person.avatarUrl ? 'has avatarUrl' : 'no avatarUrl',
             avatarId: person.avatarId ? 'has avatarId' : 'no avatarId',
             profilePicture: person.profilePicture ? 'has profilePicture' : 'no profilePicture'
@@ -6538,31 +6538,31 @@ RULES:
           // Try avatarUrl first (direct URL)
           if (person.avatarUrl || person.profilePicture) {
             const imageUrl = person.avatarUrl || person.profilePicture;
-            console.log(`ðŸ“¸ CTO: Loading direct URL for ${person.name}:`, imageUrl);
+            console.log(`📸 CTO: Loading direct URL for ${person.name}:`, imageUrl);
             
             const img = document.createElement('img');
             img.src = imageUrl;
             img.alt = `${person.name} avatar`;
             img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
             img.onload = () => {
-              console.log(`âœ… CTO: Avatar loaded successfully for ${person.name}`);
+              console.log(`✅ CTO: Avatar loaded successfully for ${person.name}`);
               avatar.innerHTML = '';
               avatar.appendChild(img);
             };
             img.onerror = () => {
-              console.log(`âŒ CTO: Direct URL failed for ${person.name}, trying avatarId...`);
+              console.log(`❌ CTO: Direct URL failed for ${person.name}, trying avatarId...`);
               // Try avatarId as fallback
               this.loadAvatarFromVault(person, avatar);
             };
           }
           // Try avatarId from vault
           else if (person.avatarId) {
-            console.log(`ðŸ“¸ CTO: Loading from vault for ${person.name}, avatarId:`, person.avatarId);
+            console.log(`📸 CTO: Loading from vault for ${person.name}, avatarId:`, person.avatarId);
             this.loadAvatarFromVault(person, avatar);
           }
           // Try to resolve from vault media directly
           else if (window.emmaWebVault?.vaultData?.content?.media) {
-            console.log(`ðŸ“¸ CTO: Searching vault media for ${person.name}...`);
+            console.log(`📸 CTO: Searching vault media for ${person.name}...`);
             const vaultMedia = window.emmaWebVault.vaultData.content.media;
             
             // Look for media items that might be this person's avatar
@@ -6572,7 +6572,7 @@ RULES:
             );
             
             if (possibleAvatar && possibleAvatar.data) {
-              console.log(`ðŸ“¸ CTO: Found possible avatar in vault media for ${person.name}`);
+              console.log(`📸 CTO: Found possible avatar in vault media for ${person.name}`);
               const imageUrl = possibleAvatar.data.startsWith('data:') 
                 ? possibleAvatar.data 
                 : `data:${possibleAvatar.type};base64,${possibleAvatar.data}`;
@@ -6582,15 +6582,15 @@ RULES:
               img.alt = `${person.name} avatar`;
               img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
               img.onload = () => {
-                console.log(`âœ… CTO: Vault media avatar loaded for ${person.name}`);
+                console.log(`✅ CTO: Vault media avatar loaded for ${person.name}`);
                 avatar.innerHTML = '';
                 avatar.appendChild(img);
               };
               img.onerror = () => {
-                console.log(`âŒ CTO: Vault media avatar failed for ${person.name}`);
+                console.log(`❌ CTO: Vault media avatar failed for ${person.name}`);
               };
             } else {
-              console.log(`ðŸ“¸ CTO: No avatar found in vault media for ${person.name}`);
+              console.log(`📸 CTO: No avatar found in vault media for ${person.name}`);
             }
           }
         }
@@ -6599,19 +6599,19 @@ RULES:
       }
 
     } catch (error) {
-      console.error('âŒ Error creating capsule people avatars:', error);
+      console.error('❌ Error creating capsule people avatars:', error);
     }
   }
 
   /**
-   * ðŸŽ¯ CTO HELPER: Load avatar from vault with enhanced error handling
+   * 🎯 CTO HELPER: Load avatar from vault with enhanced error handling
    */
   async loadAvatarFromVault(person, avatar) {
     try {
-      console.log(`ðŸ“¸ CTO: Loading vault avatar for ${person.name}, avatarId:`, person.avatarId);
+      console.log(`📸 CTO: Loading vault avatar for ${person.name}, avatarId:`, person.avatarId);
       
       const avatarData = await window.emmaWebVault.getMedia(person.avatarId);
-      console.log(`ðŸ“¸ CTO: Got vault data for ${person.name}:`, typeof avatarData, avatarData?.byteLength || 'no byteLength');
+      console.log(`📸 CTO: Got vault data for ${person.name}:`, typeof avatarData, avatarData?.byteLength || 'no byteLength');
       
       if (avatarData) {
         let imageUrl = null;
@@ -6620,14 +6620,14 @@ RULES:
         if (typeof avatarData === 'string' && avatarData.startsWith('data:')) {
           // Already a data URL
           imageUrl = avatarData;
-          console.log(`ðŸ“¸ CTO: Using data URL for ${person.name}`);
+          console.log(`📸 CTO: Using data URL for ${person.name}`);
         } else if (avatarData.byteLength && avatarData.byteLength > 100) {
           // Binary data - convert to blob URL
           const blob = new Blob([avatarData], { type: 'image/jpeg' });
           imageUrl = URL.createObjectURL(blob);
-          console.log(`ðŸ“¸ CTO: Created blob URL for ${person.name}:`, imageUrl);
+          console.log(`📸 CTO: Created blob URL for ${person.name}:`, imageUrl);
         } else {
-          console.log(`ðŸ“¸ CTO: Invalid avatar data for ${person.name}:`, avatarData);
+          console.log(`📸 CTO: Invalid avatar data for ${person.name}:`, avatarData);
           return;
         }
         
@@ -6636,19 +6636,19 @@ RULES:
         img.alt = `${person.name} avatar`;
         img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
         img.onload = () => {
-          console.log(`âœ… CTO: Vault avatar loaded successfully for ${person.name}`);
+          console.log(`✅ CTO: Vault avatar loaded successfully for ${person.name}`);
           avatar.innerHTML = '';
           avatar.appendChild(img);
         };
         img.onerror = (error) => {
-          console.log(`âŒ CTO: Vault avatar failed to display for ${person.name}:`, error);
+          console.log(`❌ CTO: Vault avatar failed to display for ${person.name}:`, error);
           // Keep letter fallback
         };
       } else {
-        console.log(`ðŸ“¸ CTO: No avatar data returned from vault for ${person.name}`);
+        console.log(`📸 CTO: No avatar data returned from vault for ${person.name}`);
       }
     } catch (error) {
-      console.log(`âŒ CTO: Vault avatar loading error for ${person.name}:`, error);
+      console.log(`❌ CTO: Vault avatar loading error for ${person.name}:`, error);
     }
   }
 
@@ -6658,7 +6658,7 @@ RULES:
    * Edit memory details with proper modal
    */
   editMemoryDetails(memoryId) {
-    // ðŸŽ¯ CRITICAL FIX: Check temporary memories first (for preview editing)
+    // 🎯 CRITICAL FIX: Check temporary memories first (for preview editing)
     let memory = this.temporaryMemories.get(memoryId);
     
     // If not in temporary storage, try vault
@@ -6668,21 +6668,21 @@ RULES:
     }
     
     if (!memory) {
-      console.error('âŒ Memory not found with ID:', memoryId, 'Available temporary memories:', Array.from(this.temporaryMemories.keys()));
-      this.showToast('âŒ Memory not found!', 'error');
+      console.error('❌ Memory not found with ID:', memoryId, 'Available temporary memories:', Array.from(this.temporaryMemories.keys()));
+      this.showToast('❌ Memory not found!', 'error');
       return;
     }
     
-    console.log('âœ… EDIT: Found memory for editing:', memory.id, memory.title || memory.content?.substring(0, 50));
-    console.log('ðŸ” EDIT: Memory attachments structure:', memory.attachments?.length, memory.attachments?.slice(0, 2));
+    console.log('✅ EDIT: Found memory for editing:', memory.id, memory.title || memory.content?.substring(0, 50));
+    console.log('🔍 EDIT: Memory attachments structure:', memory.attachments?.length, memory.attachments?.slice(0, 2));
 
-    // ðŸŽ¯ CRITICAL FIX: Process vault attachments to resolve media data (same as dashboard)
+    // 🎯 CRITICAL FIX: Process vault attachments to resolve media data (same as dashboard)
     if (memory.attachments && window.emmaWebVault?.vaultData?.content?.media) {
       const vaultMedia = window.emmaWebVault.vaultData.content.media;
       memory.attachments = memory.attachments.map(attachment => {
         if (attachment.id && vaultMedia[attachment.id]) {
           const mediaItem = vaultMedia[attachment.id];
-          console.log('ðŸ” EDIT: Resolving attachment:', attachment.id, 'to media data');
+          console.log('🔍 EDIT: Resolving attachment:', attachment.id, 'to media data');
           return {
             ...attachment,
             data: mediaItem.data.startsWith('data:') 
@@ -6698,7 +6698,7 @@ RULES:
         }
         return attachment;
       });
-      console.log('âœ… EDIT: Processed attachments with media data:', memory.attachments?.length);
+      console.log('✅ EDIT: Processed attachments with media data:', memory.attachments?.length);
     }
 
     // Close the preview dialog first
@@ -6748,7 +6748,7 @@ RULES:
         scroll-behavior: smooth !important;
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">âœï¸ Edit Memory</h2>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">Edit Memory</h2>
           <button class="close-edit-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
         </div>
 
@@ -6784,7 +6784,7 @@ RULES:
         </div>
 
         <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">ðŸ‘¥ Who is in this memory?</label>
+          <label style="display: block; margin-bottom: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">👥 Who is in this memory?</label>
           <div class="people-picker-container" style="
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -6806,14 +6806,14 @@ RULES:
         </div>
 
         <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">ðŸ“Ž Attachments (${memory.attachments?.length || 0}):</label>
+          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">📎 Attachments (${memory.attachments?.length || 0}):</label>
           <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
             ${(memory.attachments || []).map((attachment, index) => `
               <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
                 ${(attachment.data || attachment.dataUrl || attachment.url) ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;\\'>ðŸ“·</div>'">
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;\\'>📷</div>'">
                 ` : `
-                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;">ðŸ“·</div>
+                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;">📷</div>
                 `}
                 <button class="remove-attachment-btn" data-index="${index}" style="
                   position: absolute;
@@ -6868,14 +6868,14 @@ RULES:
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-          ">ðŸ’¾ Save Changes</button>
+          ">💾 Save Changes</button>
         </div>
       </div>
     `;
 
     document.body.appendChild(editModal);
     
-    // ðŸ“± MOBILE-SPECIFIC: Apply responsive styles for smaller screens
+    // 📱 MOBILE-SPECIFIC: Apply responsive styles for smaller screens
     if (window.innerWidth <= 768) {
       const modalContent = editModal.querySelector('.edit-modal-content');
       modalContent.style.maxWidth = '95%';
@@ -6884,7 +6884,7 @@ RULES:
       modalContent.style.width = '95%';
     }
 
-    // ðŸ›¡ï¸ CRITICAL: Multi-device scroll event isolation (desktop + mobile)
+    // 🛡️ CRITICAL: Multi-device scroll event isolation (desktop + mobile)
     const content = editModal.querySelector('.edit-modal-content');
     
     // Desktop: Block wheel events outside content area
@@ -6898,7 +6898,7 @@ RULES:
       e.stopPropagation();
     }, { passive: false, capture: false });
     
-    // ðŸ“± MOBILE: Handle touch events for mobile/tablet scrolling
+    // 📱 MOBILE: Handle touch events for mobile/tablet scrolling
     const isTouchWithinContent = (node) => {
       if (!content || !node) return false;
       if (node === content) return true;
@@ -6935,7 +6935,7 @@ RULES:
     
     // (closeBtn will be declared below with other UI elements)
     
-    // ðŸ§ª SHERLOCK: Add keyboard scroll support
+    // 🧪 SHERLOCK: Add keyboard scroll support
     content.setAttribute('tabindex', '0'); // Make it focusable
     content.focus(); // Auto-focus for immediate keyboard scroll
     
@@ -6950,9 +6950,9 @@ RULES:
       }
     });
     
-    // ðŸ” SHERLOCK: Debug wheel events specifically on content
+    // 🔍 SHERLOCK: Debug wheel events specifically on content
     content.addEventListener('wheel', (e) => {
-      console.log('ðŸŽ¯ WHEEL EVENT on content:', {
+      console.log('🎯 WHEEL EVENT on content:', {
         deltaY: e.deltaY,
         target: e.target,
         scrollTop: content.scrollTop,
@@ -6984,12 +6984,12 @@ RULES:
     // Add media handler
     addMediaBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', async (e) => {
-      // ðŸŽ¯ CRITICAL FIX: Implement proper file upload like memory capsules
+      // 🎯 CRITICAL FIX: Implement proper file upload like memory capsules
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
       
-      console.log('ðŸ“Ž EDIT: Processing', files.length, 'uploaded files');
-      this.showToast(`ðŸ“Ž Processing ${files.length} file${files.length > 1 ? 's' : ''}...`, 'info');
+      console.log('📎 EDIT: Processing', files.length, 'uploaded files');
+      this.showToast(`📎 Processing ${files.length} file${files.length > 1 ? 's' : ''}...`, 'info');
       
       try {
         // Process each file
@@ -7015,11 +7015,11 @@ RULES:
         // Re-render the edit modal to show new attachments
         this.editMemoryDetails(memoryId);
         
-        this.showToast(`âœ… Added ${files.length} file${files.length > 1 ? 's' : ''} to memory!`, 'success');
+        this.showToast(`✅ Added ${files.length} file${files.length > 1 ? 's' : ''} to memory!`, 'success');
         
       } catch (error) {
-        console.error('âŒ Error processing files:', error);
-        this.showToast('âŒ Failed to process files', 'error');
+        console.error('❌ Error processing files:', error);
+        this.showToast('❌ Failed to process files', 'error');
       }
     });
 
@@ -7029,9 +7029,9 @@ RULES:
         const index = parseInt(e.target.dataset.index);
         memory.attachments.splice(index, 1);
         
-        // ðŸŽ¯ CRITICAL FIX: Update temporary memory storage after removal
+        // 🎯 CRITICAL FIX: Update temporary memory storage after removal
         this.temporaryMemories.set(memory.id, memory);
-        console.log('ðŸ—‘ï¸ EDIT: Removed attachment at index', index);
+        console.log('🗑️ EDIT: Removed attachment at index', index);
         
         // Re-render attachments grid
         this.editMemoryDetails(memoryId);
@@ -7071,17 +7071,17 @@ RULES:
       memory.title = title;
       memory.content = content;
       
-      // ðŸŽ¯ CRITICAL FIX: Update temporary memory storage with changes
+      // 🎯 CRITICAL FIX: Update temporary memory storage with changes
       this.temporaryMemories.set(memory.id, memory);
-      console.log('âœ… EDIT: Updated temporary memory:', memory.id, 'with changes');
+      console.log('✅ EDIT: Updated temporary memory:', memory.id, 'with changes');
 
-      // ðŸŽ¯ CRITICAL FIX: For media request workflows, save to vault first, THEN close dialog
-      console.log('ðŸ” EDIT: Checking mediaUpload flag:', memory.metadata?.mediaUpload, 'Full metadata:', memory.metadata);
+      // 🎯 CRITICAL FIX: For media request workflows, save to vault first, THEN close dialog
+      console.log('🔍 EDIT: Checking mediaUpload flag:', memory.metadata?.mediaUpload, 'Full metadata:', memory.metadata);
       if (memory.metadata?.mediaUpload) {
-        console.log('ðŸ’¾ EDIT: Media request workflow detected - saving to vault before closing dialog');
+        console.log('💾 EDIT: Media request workflow detected - saving to vault before closing dialog');
         
         // Show saving toast but don't close dialog yet
-        this.showToast('ðŸ’¾ Saving to vault...', 'info');
+        this.showToast('💾 Saving to vault...', 'info');
         
         setTimeout(async () => {
           try {
@@ -7089,10 +7089,10 @@ RULES:
             
             // NOW close the dialog after successful save
             closeModal();
-            this.showToast('âœ… Memory saved to vault!', 'success');
+            this.showToast('✅ Memory saved to vault!', 'success');
             
-            // ðŸŽ¯ TRIGGER CONSTELLATION REFRESH
-            console.log('ðŸ”„ EDIT: Triggering constellation refresh after vault save...');
+            // 🎯 TRIGGER CONSTELLATION REFRESH
+            console.log('🔄 EDIT: Triggering constellation refresh after vault save...');
             window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
               detail: { 
                 memoryId: memory.id,
@@ -7102,17 +7102,73 @@ RULES:
             }));
             
           } catch (error) {
-            console.error('âŒ EDIT: Error auto-saving to vault:', error);
-            this.showToast('âŒ Failed to save to vault', 'error');
+            console.error('❌ EDIT: Error auto-saving to vault:', error);
+            this.showToast('❌ Failed to save to vault', 'error');
             // Close dialog even if save failed
             closeModal();
           }
         }, 500);
       } else {
         // Regular edit flow - close immediately and refresh preview
-        this.showToast('ðŸ’¾ Changes saved!', 'success');
         closeModal();
-        
+
+        if (this.shouldSkipMemoryPreview(memory)) {
+          console.log('[Emma] Auto-save editing flow active - updating vault immediately');
+          try {
+            this.showToast('💾 Saving changes to your vault...', 'info');
+
+            const memoryToSave = this.prepareMemoryForVault(memory);
+            const webVault = window.emmaWebVault;
+
+            if (!webVault || !webVault.isOpen) {
+              throw new Error('Vault not unlocked');
+            }
+
+            const isExisting = !!(memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+            if (isExisting && typeof webVault.updateMemory === 'function') {
+              const updates = {
+                content: memoryToSave.content,
+                metadata: memoryToSave.metadata
+              };
+              if (typeof memoryToSave.title === 'string') {
+                updates.title = memoryToSave.title;
+              }
+              if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+                updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+              }
+
+              await webVault.updateMemory(memoryToSave.id, updates);
+            } else {
+              await webVault.addMemory(memoryToSave);
+            }
+
+            this.temporaryMemories.delete(memory.id);
+            window.dispatchEvent(new CustomEvent('emmaMemoryUpdated', {
+              detail: {
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now()
+              }
+            }));
+            window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+              detail: {
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now(),
+                action: 'refresh_constellation'
+              }
+            }));
+
+            this.showToast('Changes saved to your vault!', 'success');
+            return;
+          } catch (error) {
+            console.error('💾 EDIT: Auto-save update failed, falling back to preview', error);
+            this.showToast('Auto-save failed, please review and save manually.', 'error');
+          }
+        } else {
+          this.showToast('💾 Changes saved!', 'success');
+        }
+
         setTimeout(() => {
           this.showMemoryPreviewDialog(memory);
         }, 300);
@@ -7135,7 +7191,7 @@ RULES:
       let people = [];
       
       // FIXED: Use proper vault methods that resolve avatar URLs
-      console.log('ðŸ‘¥ PICKER: Loading people with avatars...');
+      console.log('👥 PICKER: Loading people with avatars...');
       
       // Try EmmaAPI first
       if (window.emmaAPI && 
@@ -7146,10 +7202,10 @@ RULES:
           const result = await window.emmaAPI.people.list();
           if (result && result.success && Array.isArray(result.items)) {
             people = result.items;
-            console.log('ðŸ‘¥ PICKER: Got people from EmmaAPI:', people.length);
+            console.log('👥 PICKER: Got people from EmmaAPI:', people.length);
           }
         } catch (apiError) {
-          console.log('ðŸ“ EmmaAPI people.list failed:', apiError);
+          console.log('📝 EmmaAPI people.list failed:', apiError);
         }
       }
       
@@ -7157,9 +7213,9 @@ RULES:
       if (people.length === 0 && window.emmaVaultPrimary && typeof window.emmaVaultPrimary.getPeople === 'function') {
         try {
           people = await window.emmaVaultPrimary.getPeople();
-          console.log('ðŸ‘¥ PICKER: Got people from VaultPrimary with avatars:', people.length);
+          console.log('👥 PICKER: Got people from VaultPrimary with avatars:', people.length);
         } catch (vaultError) {
-          console.log('ðŸ“ VaultPrimary getPeople failed:', vaultError);
+          console.log('📝 VaultPrimary getPeople failed:', vaultError);
         }
       }
       
@@ -7169,9 +7225,9 @@ RULES:
           typeof window.emmaWebVault.listPeople === 'function') {
         try {
           people = await window.emmaWebVault.listPeople();
-          console.log('ðŸ‘¥ PICKER: Got people from WebVault listPeople:', people.length);
+          console.log('👥 PICKER: Got people from WebVault listPeople:', people.length);
         } catch (vaultError) {
-          console.log('ðŸ“ Vault listPeople failed:', vaultError);
+          console.log('📝 Vault listPeople failed:', vaultError);
         }
       }
       
@@ -7182,7 +7238,7 @@ RULES:
           window.emmaWebVault.vaultData.content &&
           window.emmaWebVault.vaultData.content.people) {
         try {
-          console.log('ðŸ‘¥ PICKER: Manually resolving people avatars from raw data...');
+          console.log('👥 PICKER: Manually resolving people avatars from raw data...');
           const rawPeople = Object.values(window.emmaWebVault.vaultData.content.people) || [];
           const media = window.emmaWebVault.vaultData.content.media || {};
           
@@ -7197,7 +7253,7 @@ RULES:
                 avatarUrl = mediaItem.data.startsWith('data:')
                   ? mediaItem.data
                   : `data:${mediaItem.type};base64,${mediaItem.data}`;
-                console.log(`ðŸ‘¥ PICKER: Resolved avatar for ${person.name}:`, avatarUrl.substring(0, 50) + '...');
+                console.log(`👥 PICKER: Resolved avatar for ${person.name}:`, avatarUrl.substring(0, 50) + '...');
               }
             }
             
@@ -7207,9 +7263,9 @@ RULES:
             };
           });
           
-          console.log('ðŸ‘¥ PICKER: Manually resolved avatars for', people.length, 'people');
+          console.log('👥 PICKER: Manually resolved avatars for', people.length, 'people');
         } catch (directError) {
-          console.log('ðŸ“ Manual avatar resolution failed:', directError);
+          console.log('📝 Manual avatar resolution failed:', directError);
         }
       }
 
@@ -7237,8 +7293,8 @@ RULES:
         return;
       }
 
-      // ðŸŽ¯ CRITICAL FIX: Clear grid to prevent duplication!
-      console.log('ðŸ§¹ PICKER: Clearing grid to prevent duplication...');
+      // 🎯 CRITICAL FIX: Clear grid to prevent duplication!
+      console.log('🧹 PICKER: Clearing grid to prevent duplication...');
       grid.innerHTML = '';
       
       // Hide loading text
@@ -7368,7 +7424,7 @@ RULES:
         const initials = person.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         avatar.textContent = initials; // Start with initials
         
-        console.log(`ðŸ‘¥ PICKER: Loading avatar for ${person.name}:`, {
+        console.log(`👥 PICKER: Loading avatar for ${person.name}:`, {
           avatarUrl: person.avatarUrl ? person.avatarUrl.substring(0, 50) + '...' : 'none',
           avatarId: person.avatarId,
           avatar: person.avatar ? person.avatar.substring(0, 50) + '...' : 'none'
@@ -7376,43 +7432,43 @@ RULES:
         
         // Try avatarUrl first (resolved by vault methods)
         if (person.avatarUrl && person.avatarUrl.startsWith('data:')) {
-          console.log(`ðŸ“¸ PICKER: Using resolved avatarUrl for ${person.name}`);
+          console.log(`📸 PICKER: Using resolved avatarUrl for ${person.name}`);
           const img = document.createElement('img');
           img.src = person.avatarUrl;
           img.alt = `${person.name} avatar`;
           img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
           img.onload = () => {
-            console.log(`âœ… PICKER: Avatar loaded successfully for ${person.name}`);
+            console.log(`✅ PICKER: Avatar loaded successfully for ${person.name}`);
             avatar.innerHTML = '';
             avatar.appendChild(img);
           };
           img.onerror = (error) => {
-            console.log(`âŒ PICKER: Avatar URL failed for ${person.name}:`, error);
+            console.log(`❌ PICKER: Avatar URL failed for ${person.name}:`, error);
           };
         } 
         // Fallback to legacy avatar field
         else if (person.avatar && person.avatar.startsWith('data:')) {
-          console.log(`ðŸ“¸ PICKER: Using legacy avatar field for ${person.name}`);
+          console.log(`📸 PICKER: Using legacy avatar field for ${person.name}`);
           const img = document.createElement('img');
           img.src = person.avatar;
           img.alt = `${person.name} avatar`;
           img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
           img.onload = () => {
-            console.log(`âœ… PICKER: Legacy avatar loaded for ${person.name}`);
+            console.log(`✅ PICKER: Legacy avatar loaded for ${person.name}`);
             avatar.innerHTML = '';
             avatar.appendChild(img);
           };
           img.onerror = (error) => {
-            console.log(`âŒ PICKER: Legacy avatar failed for ${person.name}:`, error);
+            console.log(`❌ PICKER: Legacy avatar failed for ${person.name}:`, error);
           };
         }
         // Final fallback: try to manually resolve avatarId if still needed
         else if (person.avatarId && window.emmaWebVault) {
-          console.log(`ðŸ“¸ PICKER: Manually loading avatarId for ${person.name}:`, person.avatarId);
+          console.log(`📸 PICKER: Manually loading avatarId for ${person.name}:`, person.avatarId);
           try {
             window.emmaWebVault.getMedia(person.avatarId).then(avatarData => {
               if (avatarData) {
-                console.log(`ðŸ“¸ PICKER: Got media data for ${person.name}:`, typeof avatarData);
+                console.log(`📸 PICKER: Got media data for ${person.name}:`, typeof avatarData);
                 // Handle both ArrayBuffer and data URL responses
                 let imageUrl;
                 if (typeof avatarData === 'string' && avatarData.startsWith('data:')) {
@@ -7428,25 +7484,25 @@ RULES:
                   img.alt = `${person.name} avatar`;
                   img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
                   img.onload = () => {
-                    console.log(`âœ… PICKER: Manual avatar loaded for ${person.name}`);
+                    console.log(`✅ PICKER: Manual avatar loaded for ${person.name}`);
                     avatar.innerHTML = '';
                     avatar.appendChild(img);
                   };
                   img.onerror = (error) => {
-                    console.log(`âŒ PICKER: Manual avatar failed for ${person.name}:`, error);
+                    console.log(`❌ PICKER: Manual avatar failed for ${person.name}:`, error);
                   };
                 }
               } else {
-                console.log(`ðŸ“¸ PICKER: No media data returned for ${person.name}`);
+                console.log(`📸 PICKER: No media data returned for ${person.name}`);
               }
             }).catch(error => {
-              console.log(`âŒ PICKER: Avatar fetch failed for ${person.name}:`, error);
+              console.log(`❌ PICKER: Avatar fetch failed for ${person.name}:`, error);
             });
           } catch (error) {
-            console.log(`âŒ PICKER: Avatar access failed for ${person.name}:`, error);
+            console.log(`❌ PICKER: Avatar access failed for ${person.name}:`, error);
           }
         } else {
-          console.log(`ðŸ“¸ PICKER: No avatar available for ${person.name}, using initials`);
+          console.log(`📸 PICKER: No avatar available for ${person.name}, using initials`);
         }
         
         // Create name label
@@ -7491,7 +7547,7 @@ RULES:
           font-weight: bold;
           transition: all 0.3s ease;
         `;
-        selectionIndicator.textContent = isSelected ? 'âœ“' : '';
+        selectionIndicator.textContent = isSelected ? '✓' : '';
         
         // Make personItem relative for absolute positioning
         personItem.style.position = 'relative';
@@ -7522,7 +7578,7 @@ RULES:
             personItem.style.transform = 'scale(1.05)';
             avatar.style.border = '3px solid #22c55e';
             selectionIndicator.style.background = '#22c55e';
-            selectionIndicator.textContent = 'âœ“';
+            selectionIndicator.textContent = '✓';
           }
         });
         
@@ -7545,7 +7601,7 @@ RULES:
       });
       
     } catch (error) {
-      console.error('âŒ Error loading people for picker:', error);
+      console.error('❌ Error loading people for picker:', error);
       loadingText.textContent = 'Error loading people from vault';
       loadingText.style.color = 'rgba(255, 100, 100, 0.8)';
     }
@@ -7588,7 +7644,7 @@ RULES:
         transition: all 0.3s ease;
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">ðŸ‘¤ Add New Person</h2>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">👤 Add New Person</h2>
           <button class="close-add-person-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
         </div>
 
@@ -7631,7 +7687,7 @@ RULES:
 
         <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 15px; margin-bottom: 25px;">
           <div style="font-size: 14px; color: rgba(255, 255, 255, 0.8); line-height: 1.4;">
-            ðŸ’¡ <strong>Tip:</strong> This person will be saved to your vault and automatically added to this memory!
+            💡 <strong>Tip:</strong> This person will be saved to your vault and automatically added to this memory!
           </div>
         </div>
 
@@ -7656,7 +7712,7 @@ RULES:
             font-weight: 700;
             font-size: 16px;
             box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-          ">âœ¨ Add Person</button>
+          ">✨ Add Person</button>
         </div>
       </div>
     `;
@@ -7699,13 +7755,13 @@ RULES:
       if (!name) {
         nameInput.focus();
         nameInput.style.border = '2px solid #ef4444';
-        this.showToast('âŒ Please enter a name!', 'error');
+        this.showToast('❌ Please enter a name!', 'error');
         return;
       }
 
       try {
         saveBtn.disabled = true;
-        saveBtn.textContent = 'ðŸ’« Creating...';
+        saveBtn.textContent = '💫 Creating...';
 
         // Create person in vault
         const newPerson = {
@@ -7726,7 +7782,7 @@ RULES:
           try {
             personResult = await window.emmaAPI.people.add(newPerson);
           } catch (apiError) {
-            console.log('ðŸ“ EmmaAPI people.add failed, trying vault method:', apiError);
+            console.log('📝 EmmaAPI people.add failed, trying vault method:', apiError);
           }
         }
         
@@ -7737,7 +7793,7 @@ RULES:
           try {
             personResult = await window.emmaWebVault.addPerson(newPerson);
           } catch (vaultError) {
-            console.log('ðŸ“ Vault addPerson failed:', vaultError);
+            console.log('📝 Vault addPerson failed:', vaultError);
             throw new Error('Failed to add person to vault');
           }
         }
@@ -7768,7 +7824,7 @@ RULES:
             }
           }
 
-          this.showToast(`âœ¨ ${name} added to vault and memory!`, 'success');
+          this.showToast(`✨ ${name} added to vault and memory!`, 'success');
           closeDialog();
 
           // Refresh the people picker
@@ -7781,10 +7837,10 @@ RULES:
         }
 
       } catch (error) {
-        console.error('âŒ Error adding person:', error);
-        this.showToast('âŒ Failed to add person. Please try again.', 'error');
+        console.error('❌ Error adding person:', error);
+        this.showToast('❌ Failed to add person. Please try again.', 'error');
         saveBtn.disabled = false;
-        saveBtn.textContent = 'âœ¨ Add Person';
+        saveBtn.textContent = '✨ Add Person';
       }
     });
 
@@ -7829,7 +7885,7 @@ RULES:
             content: state.collectedData.enrichedContent || state.memory.content
           };
           
-          console.log('ðŸ’¾ EMMA CHAT: Using ENRICHED memory with people:', memory.metadata.people);
+          console.log('💾 EMMA CHAT: Using ENRICHED memory with people:', memory.metadata.people);
           break;
         }
       }
@@ -7839,14 +7895,14 @@ RULES:
         for (const [msgId, analysis] of this.detectedMemories) {
           if (analysis.memory && analysis.memory.id === memoryId) {
             memory = analysis.memory;
-            console.log('ðŸ’¾ EMMA CHAT: Using detected memory (no enrichment)');
+            console.log('💾 EMMA CHAT: Using detected memory (no enrichment)');
             break;
           }
         }
       }
 
       if (!memory) {
-        this.showToast('âŒ Memory not found', 'error');
+        this.showToast('❌ Memory not found', 'error');
         return;
       }
 
@@ -7855,17 +7911,17 @@ RULES:
       const existingPeople = memory.metadata.people || [];
       const peopleNames = memory.metadata.peopleNames || [];
       
-      console.log('ðŸ‘¥ EMMA CHAT: Memory people analysis:', {
+      console.log('👥 EMMA CHAT: Memory people analysis:', {
         newPeople,
         existingPeople, 
         peopleNames,
         hasNewPeople: newPeople.length > 0
       });
       
-      console.log('ðŸš¨ DEBUG: confirmSaveMemory called with memoryId:', memoryId);
+      console.log('🚨 DEBUG: confirmSaveMemory called with memoryId:', memoryId);
       
       if (newPeople.length > 0) {
-        console.log('ðŸ‘¥ EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
+        console.log('👥 EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
         await this.startNewPersonOnboarding(memoryId, newPeople);
         return;
       }
@@ -7873,8 +7929,8 @@ RULES:
       // If no new people, proceed directly to memory capsule creation
       await this.finalizeMemorySave(memory, memoryId);
     } catch (error) {
-      console.error('ðŸ’¾ EMMA CHAT: Error in confirmSaveMemory:', error);
-      this.showToast('âŒ Failed to save memory', 'error');
+      console.error('💾 EMMA CHAT: Error in confirmSaveMemory:', error);
+      this.showToast('Failed to save memory', 'error');
     }
   }
 
@@ -7887,7 +7943,7 @@ RULES:
     this.captureSession.pendingNewPeople = [...newPeople]; // Copy array
     this.captureSession.memoryId = memoryId;
     
-    console.log('ðŸ‘¥ EMMA CHAT: Starting onboarding for ALL new people:', newPeople);
+    console.log('👥 EMMA CHAT: Starting onboarding for ALL new people:', newPeople);
     
     // Start with the first person
     await this.processNextNewPerson();
@@ -7899,7 +7955,7 @@ RULES:
   async processNextNewPerson() {
     if (!this.captureSession || !this.captureSession.pendingNewPeople || this.captureSession.pendingNewPeople.length === 0) {
       // All people processed - finalize memory save
-      console.log('ðŸ‘¥ EMMA CHAT: All new people processed, finalizing memory save');
+      console.log('👥 EMMA CHAT: All new people processed, finalizing memory save');
       const memory = this.temporaryMemories.get(this.captureSession.memoryId);
       if (memory) {
         await this.finalizeMemorySave(memory, this.captureSession.memoryId);
@@ -7929,7 +7985,7 @@ RULES:
    */
   async addPersonToVault(memoryId, personName, relationship) {
     try {
-      console.log(`ðŸ‘¥ ADDING PERSON: ${personName} as ${relationship}`);
+      console.log(`👥 ADDING PERSON: ${personName} as ${relationship}`);
       
       // CRITICAL: Check vault access first
       if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
@@ -7944,7 +8000,7 @@ RULES:
         avatar: null // Add default avatar
       });
 
-      console.log('âœ… PERSON ADDED SUCCESSFULLY:', result);
+      console.log('✅ PERSON ADDED SUCCESSFULLY:', result);
 
       this.addMessage(`Perfect! I've added ${personName} as a ${relationship} to your vault. Now let me create your memory capsule...`, 'emma');
 
@@ -7953,7 +8009,7 @@ RULES:
 
       // Check if there are more people to process
       if (this.captureSession && this.captureSession.pendingNewPeople && this.captureSession.pendingNewPeople.length > 0) {
-        console.log('ðŸ‘¥ EMMA CHAT: Person added, continuing with next person...');
+        console.log('👥 EMMA CHAT: Person added, continuing with next person...');
         await this.processNextNewPerson();
         return;
       }
@@ -7963,13 +8019,13 @@ RULES:
       if (state && state.memory) {
         await this.finalizeMemorySave(state.memory, memoryId);
       } else {
-        console.error('âŒ ADD PERSON: No state or memory found, cannot proceed with enrichment');
+        console.error('❌ ADD PERSON: No state or memory found, cannot proceed with enrichment');
         // Try to save anyway with basic memory structure
         await this.fallbackMemorySave(memoryId, personName);
       }
       
     } catch (error) {
-      console.error('âŒ CRITICAL: Failed to add person to vault:', error);
+      console.error('❌ CRITICAL: Failed to add person to vault:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault (${error.message}), but let me save your memory anyway.`, 'emma');
       
       // Always try to save the memory even if person addition fails
@@ -7999,7 +8055,7 @@ RULES:
    */
   async fallbackMemorySave(memoryId, personName = null) {
     try {
-      console.log('ðŸš¨ FALLBACK: Attempting to save memory without enrichment state');
+      console.log('🚨 FALLBACK: Attempting to save memory without enrichment state');
       
       // Try to find the memory in detected memories
       let memory = null;
@@ -8011,7 +8067,7 @@ RULES:
       }
       
       if (!memory) {
-        console.error('âŒ FALLBACK: No memory found for ID:', memoryId);
+        console.error('❌ FALLBACK: No memory found for ID:', memoryId);
         this.addMessage("I'm sorry, I couldn't find the memory to save. Please try creating it again.", 'emma');
         return;
       }
@@ -8027,7 +8083,7 @@ RULES:
       await this.finalizeMemorySave(memory, memoryId);
       
     } catch (error) {
-      console.error('âŒ FALLBACK SAVE FAILED:', error);
+      console.error('❌ FALLBACK SAVE FAILED:', error);
       this.addMessage("I'm having trouble saving your memory. Please try again.", 'emma');
     }
   }
@@ -8070,12 +8126,129 @@ RULES:
         state.memory.metadata.newPeopleDetected = (state.memory.metadata.newPeopleDetected || [])
           .filter(name => name.toLowerCase() !== personName.toLowerCase());
           
-        console.log('âœ… Updated memory with real person ID:', newPerson.id);
-        console.log('ðŸ’¾ FINAL MEMORY PEOPLE:', state.memory.metadata.people);
+        console.log('✅ Updated memory with real person ID:', newPerson.id);
+        console.log('💾 FINAL MEMORY PEOPLE:', state.memory.metadata.people);
       }
     } catch (error) {
-      console.error('âŒ Failed to update memory with real person ID:', error);
+      console.error('❌ Failed to update memory with real person ID:', error);
     }
+  }
+
+  isAutoSaveReady() {
+    const webVault = window.emmaWebVault;
+    if (!webVault || !webVault.isOpen) {
+      console.log('[Emma] isAutoSaveReady -> false (vault closed or missing)', {
+        hasVault: !!webVault,
+        isOpen: webVault?.isOpen
+      });
+      return false;
+    }
+
+    const sessionActive = typeof sessionStorage !== 'undefined' &&
+      sessionStorage.getItem('emmaVaultActive') === 'true';
+    const localActive = typeof localStorage !== 'undefined' &&
+      localStorage.getItem('emmaVaultActive') === 'true';
+    if (!webVault.isWebappPrimary && !sessionActive && !localActive) {
+      console.log('[Emma] isAutoSaveReady -> false (no active session markers)', {
+        webappPrimary: webVault.isWebappPrimary,
+        sessionActive,
+        localActive
+      });
+      return false;
+    }
+
+    if (webVault.needsFileReauth && !webVault.isWebappPrimary) {
+      console.log('[Emma] isAutoSaveReady -> false (needs file reauth)', {
+        webappPrimary: webVault.isWebappPrimary,
+        needsFileReauth: webVault.needsFileReauth
+      });
+      return false;
+    }
+
+    const autoSavePreference = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('emmaVaultAutoSaveEnabled')
+      : null;
+    const prefersAutoSave = autoSavePreference !== 'false';
+    if (!prefersAutoSave) {
+      console.log('[Emma] isAutoSaveReady -> false (autosave disabled by preference)');
+      return false;
+    }
+
+    const hasFileHandle = !!webVault.fileHandle;
+    const extensionSync = !!webVault.extensionAvailable && webVault.extensionSyncEnabled !== false;
+    const webAppPrimary = !!webVault.isWebappPrimary || !!webVault.useWebappPrimary;
+    const hasAutoSaveCapability = hasFileHandle || extensionSync || webAppPrimary;
+    if (!hasAutoSaveCapability) {
+      console.log('[Emma] isAutoSaveReady -> false (no autosave capability)', {
+        hasFileHandle,
+        extensionSync,
+        webAppPrimary
+      });
+      return false;
+    }
+
+    console.log('[Emma] isAutoSaveReady -> true', {
+      sessionActive,
+      localActive,
+      hasFileHandle,
+      extensionSync,
+      webAppPrimary
+    });
+    return true;
+  }
+
+  shouldSkipMemoryPreview(memory) {
+    const manualPreview = localStorage.getItem('emmaVaultManualPreview') === 'true';
+    if (manualPreview) return false;
+
+    const webVault = window.emmaWebVault;
+    console.log('[Emma] shouldSkipMemoryPreview state', {
+      manualPreview,
+      hasVault: !!webVault,
+      isOpen: webVault?.isOpen,
+      isWebappPrimary: webVault?.isWebappPrimary,
+      autoSaveEnabled: webVault?.autoSaveEnabled,
+      needsFileReauth: webVault?.needsFileReauth
+    });
+    if (webVault?.isWebappPrimary && webVault.isOpen) {
+      const autoSaveEnabled = webVault.autoSaveEnabled !== false;
+      const hasVaultData = !!webVault.vaultData?.content;
+      if (autoSaveEnabled) {
+        console.log('[Emma] Webapp-primary autosave ready - skipping preview', {
+          hasVaultData,
+          needsFileReauth: webVault.needsFileReauth,
+          autoSaveEnabled
+        });
+        return true;
+      }
+    }
+
+    if (!this.isAutoSaveReady()) return false;
+
+    return true;
+  }
+
+  prepareMemoryForVault(memory) {
+    const hasContent = memory && typeof memory.content === 'string';
+    const content = hasContent ? memory.content : '';
+    const baseMetadata = memory && memory.metadata ? { ...memory.metadata } : {};
+    if (!baseMetadata.created) {
+      baseMetadata.created = new Date().toISOString();
+    }
+    if (!baseMetadata.title) {
+      const trimmed = hasContent ? content.trim() : '';
+      baseMetadata.title = trimmed ? trimmed.substring(0, 50) + (trimmed.length > 50 ? '...' : '') : 'Untitled Memory';
+    }
+
+    return {
+      id: memory && memory.id ? memory.id : undefined,
+      title: memory && memory.title ? memory.title : baseMetadata.title,
+      content,
+      metadata: baseMetadata,
+      attachments: memory && Array.isArray(memory.attachments)
+        ? memory.attachments.map(att => ({ ...att }))
+        : []
+    };
   }
 
   /**
@@ -8083,10 +8256,16 @@ RULES:
    */
   async finalizeMemorySave(memory, memoryId) {
     try {
-      console.log('ðŸ’¾ EMMA CHAT: Creating memory capsule preview for:', memoryId);
-      
+      console.log('💾 EMMA CHAT: Creating memory capsule preview for:', memoryId);
+
+      if (this.shouldSkipMemoryPreview(memory)) {
+        console.log('[Emma] Auto-save enabled - skipping preview; saving directly');
+        await this.saveMemoryDirectly(memory, memoryId);
+        return;
+      }
+
       // Create beautiful memory capsule with people avatars
-      this.addMessage(`Perfect! Let me show you your beautiful memory capsule before we save it to your vault! ðŸ’œ`, 'emma');
+      this.addMessage(`Perfect! Let me show you your beautiful memory capsule before we save it to your vault! 💜`, 'emma');
       
       // Wait a moment for the message to appear, then show preview
       setTimeout(async () => {
@@ -8098,9 +8277,9 @@ RULES:
       }, 1000);
       
     } catch (error) {
-      console.error('ðŸ’¾ EMMA CHAT: Error creating preview:', error);
-      this.showToast('âŒ Failed to create memory preview', 'error');
-      this.addMessage(`I had trouble creating your memory preview. Let me save it directly to your vault instead! ðŸ¤—`, 'emma');
+      console.error('💾 EMMA CHAT: Error creating preview:', error);
+      this.showToast('❌ Failed to create memory preview', 'error');
+      this.addMessage(`I had trouble creating your memory preview. Let me save it directly to your vault instead! 🤗`, 'emma');
       await this.saveMemoryDirectly(memory, memoryId);
     }
   }
@@ -8110,63 +8289,76 @@ RULES:
    */
   async saveMemoryToVault(memoryId) {
     try {
-      // ðŸŽ¯ CRITICAL FIX: Get memory from temporary storage first (in case it was edited)
+      // 🎯 CRITICAL FIX: Get memory from temporary storage first (in case it was edited)
       let memory = this.temporaryMemories.get(memoryId);
       
       // Fallback to enrichment state if not in temporary storage
       if (!memory) {
         const state = this.enrichmentState.get(memoryId);
         if (!state || !state.memory) {
-          this.showToast('âŒ Memory not found', 'error');
+          this.showToast('❌ Memory not found', 'error');
           return;
         }
         memory = state.memory;
       }
-      console.log('ðŸ’¾ EMMA CHAT: Saving memory to vault from preview:', memoryId);
+      console.log('💾 EMMA CHAT: Saving memory to vault from preview:', memoryId);
       
       // Prepare memory for vault
-      const memoryToSave = {
-        content: memory.content,
-        metadata: {
-          ...memory.metadata,
-          created: new Date().toISOString(),
-          title: memory.content.substring(0, 50) + (memory.content.length > 50 ? '...' : '')
-        },
-        attachments: memory.attachments || []
-      };
+      const memoryToSave = this.prepareMemoryForVault(memory);
       
-      // Save to vault
-      const result = await window.emmaWebVault.addMemory(memoryToSave);
+      const webVault = window.emmaWebVault;
+      if (!webVault || typeof webVault.addMemory !== 'function') {
+        throw new Error('Vault service unavailable');
+      }
+      const isExistingMemory = !!(webVault && memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+
+      let result;
+      if (isExistingMemory && typeof webVault.updateMemory === 'function') {
+        const updates = {
+          content: memoryToSave.content,
+          metadata: memoryToSave.metadata
+        };
+        if (typeof memoryToSave.title === 'string') {
+          updates.title = memoryToSave.title;
+        }
+        if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+          updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+        }
+
+        result = await webVault.updateMemory(memoryToSave.id, updates);
+      } else {
+        result = await webVault.addMemory(memoryToSave);
+      }
       
-      if (result.success) {
-        this.showToast('âœ… Memory saved to vault!', 'success');
+      if (result && result.success) {
+        this.showToast('✅ Memory saved to vault!', 'success');
         
         // Clear enrichment state
         this.enrichmentState.delete(memoryId);
         
-        // ðŸŽ¯ CRITICAL FIX: Clean up temporary memory after successful save
+        // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
         this.temporaryMemories.delete(memoryId);
-        console.log('ðŸ§¹ VAULT: Cleaned up temporary memory after successful save:', memoryId);
+        console.log('🧹 VAULT: Cleaned up temporary memory after successful save:', memoryId);
         
         // Add success message
-        this.addMessage(`Perfect! I've saved your memory to your vault. It's now preserved forever! ðŸ’œ`, 'emma');
+        this.addMessage(`Perfect! I've saved your memory to your vault. It's now preserved forever! 💜`, 'emma');
         
         // Close any preview dialogs
         const dialogs = document.querySelectorAll('.memory-preview-dialog');
         dialogs.forEach(dialog => dialog.remove());
         
-        // ðŸŒŸ CRITICAL: Refresh constellation IMMEDIATELY after memory save
+        // 🌟 CRITICAL: Refresh constellation IMMEDIATELY after memory save
         setTimeout(() => {
-          console.log('ðŸ”„ EMMA CHAT: Forcing constellation refresh after memory save');
+          console.log('🔄 EMMA CHAT: Forcing constellation refresh after memory save');
           
           // Method 1: If we're on memories page, directly refresh constellation
           if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
-            console.log('ðŸ”„ EMMA CHAT: Calling loadConstellationView() directly');
+            console.log('🔄 EMMA CHAT: Calling loadConstellationView() directly');
             window.loadConstellationView();
           }
           // Method 2: If we're on dashboard, trigger constellation mode directly
           else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
-            console.log('ðŸ”„ EMMA CHAT: Triggering constellation mode on dashboard');
+            console.log('🔄 EMMA CHAT: Triggering constellation mode on dashboard');
             // Trigger constellation mode directly (same as clicking "Memories" menu)
             if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
               window.emmaDashboard.enterMemoryConstellation();
@@ -8177,7 +8369,7 @@ RULES:
           }
           // Method 3: Dispatch event for constellation to listen
           else {
-            console.log('ðŸ”„ EMMA CHAT: Dispatching memory added event for constellation');
+            console.log('🔄 EMMA CHAT: Dispatching memory added event for constellation');
             window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
               detail: { 
                 action: 'refresh_constellation',
@@ -8190,13 +8382,14 @@ RULES:
         }, 500);
         
       } else {
-        throw new Error(result.error || 'Failed to save memory');
+        const errorMessage = result && result.error ? result.error : 'Failed to save memory';
+        throw new Error(errorMessage);
       }
       
     } catch (error) {
-      console.error('ðŸ’¾ EMMA CHAT: Error saving memory to vault:', error);
-      this.showToast('âŒ Failed to save memory', 'error');
-      this.addMessage(`I had trouble saving your memory to the vault. Please try again! ðŸ¤—`, 'emma');
+      console.error('💾 EMMA CHAT: Error saving memory to vault:', error);
+      this.showToast('Failed to save memory', 'error');
+      this.addMessage(`I had trouble saving your memory to the vault. Please try again! 🤗`, 'emma');
     }
   }
 
@@ -8205,27 +8398,46 @@ RULES:
    */
   async saveMemoryDirectly(memory, memoryId) {
     try {
-      // Save to vault (webapp-only mode)
-      if (window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true') {
-        console.log('ðŸ’¾ EMMA CHAT: Saving curated memory to webapp-only vault');
-        await window.emmaWebVault.addMemory({
-          content: memory.content,
-          metadata: memory.metadata,
-          attachments: memory.attachments || []
-        });
+      const webVault = window.emmaWebVault;
+      const sessionActive = typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem('emmaVaultActive') === 'true';
+      const localActive = typeof localStorage !== 'undefined' &&
+        localStorage.getItem('emmaVaultActive') === 'true';
 
-        this.showToast('âœ… Memory saved to vault successfully!', 'success');
+      if (webVault && webVault.isOpen && (webVault.isWebappPrimary || sessionActive || localActive)) {
+        console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
+        const memoryToSave = this.prepareMemoryForVault(memory);
+        const isExistingMemory = !!(memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+
+        if (isExistingMemory && typeof webVault.updateMemory === 'function') {
+          const updates = {
+            content: memoryToSave.content,
+            metadata: memoryToSave.metadata
+          };
+          if (typeof memoryToSave.title === 'string') {
+            updates.title = memoryToSave.title;
+          }
+          if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+            updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+          }
+
+          await webVault.updateMemory(memoryToSave.id, updates);
+        } else {
+          await webVault.addMemory(memoryToSave);
+        }
+
+        this.showToast('✅ Memory saved to vault successfully!', 'success');
         
-        // ðŸŽ¯ CRITICAL FIX: Clean up temporary memory after successful save
+        // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
         this.temporaryMemories.delete(memoryId);
-        console.log('ðŸ§¹ VAULT: Cleaned up temporary memory after direct save:', memoryId);
+        console.log('🧹 VAULT: Cleaned up temporary memory after direct save:', memoryId);
 
         // Close dialog
         const dialog = document.querySelector('.memory-preview-dialog');
         if (dialog) dialog.remove();
 
         // Add confirmation message and redirect to constellation
-        this.addMessage("Perfect! Your memory has been saved to your vault. Let me show you how it connects to your other memories! ðŸŒŸ", 'emma');
+        this.addMessage("Perfect! Your memory has been saved to your vault. Let me show you how it connects to your other memories! 🌟", 'emma');
 
         // CRITICAL: Refresh constellation IMMEDIATELY after memory save
         setTimeout(() => {
@@ -8236,16 +8448,16 @@ RULES:
 
           // FORCE CONSTELLATION REFRESH after memory save
           setTimeout(() => {
-            console.log('ðŸ”„ EMMA CHAT: Forcing constellation refresh after memory save');
+            console.log('🔄 EMMA CHAT: Forcing constellation refresh after memory save');
             
             // Method 1: If we're on memories page, directly refresh constellation
             if (window.loadConstellationView && typeof window.loadConstellationView === 'function') {
-              console.log('ðŸ”„ EMMA CHAT: Calling loadConstellationView() directly');
+              console.log('🔄 EMMA CHAT: Calling loadConstellationView() directly');
               window.loadConstellationView();
             }
             // Method 2: If we're on dashboard, trigger constellation mode directly
             else if (window.location.pathname.includes('dashboard.html') || window.location.pathname === '/' || window.location.pathname === '') {
-              console.log('ðŸ”„ EMMA CHAT: Triggering constellation mode on dashboard');
+              console.log('🔄 EMMA CHAT: Triggering constellation mode on dashboard');
               // Trigger constellation mode directly (same as clicking "Memories" menu)
               if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
                 window.emmaDashboard.enterMemoryConstellation();
@@ -8256,14 +8468,14 @@ RULES:
             }
             // Method 3: If we're on memories page but constellation function not available, reload with constellation view
             else if (window.location.pathname.includes('memories.html')) {
-              console.log('ðŸ”„ EMMA CHAT: On memories page, forcing constellation view');
+              console.log('🔄 EMMA CHAT: On memories page, forcing constellation view');
               const currentUrl = new URL(window.location);
               currentUrl.searchParams.set('view', 'constellation');
               window.location.href = currentUrl.toString();
             }
             // Method 4: Fallback - navigate to constellation from any other page
             else {
-              console.log('ðŸ”„ EMMA CHAT: Fallback navigation to constellation view');
+              console.log('🔄 EMMA CHAT: Fallback navigation to constellation view');
               const baseUrl = window.location.origin;
               window.location.href = baseUrl + '/dashboard.html#constellation';
             }
@@ -8271,16 +8483,28 @@ RULES:
         }, 1500);
 
       } else {
-        console.warn('ðŸ’¾ EMMA CHAT: Vault save failed - debugging info:');
-        console.warn('ðŸ’¾ DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
-        console.warn('ðŸ’¾ DEBUG: emmaWebVault.isOpen?', window.emmaWebVault?.isOpen);
-        console.warn('ðŸ’¾ DEBUG: sessionStorage active?', sessionStorage.getItem('emmaVaultActive'));
-        this.showToast('âŒ Vault not unlocked - please unlock your .emma vault first', 'error');
+        console.warn('💾 EMMA CHAT: Vault save failed - debugging info:');
+        console.warn('[Emma] emmaWebVault exists?', !!webVault);
+        console.warn('[Emma] emmaWebVault.isOpen?', webVault?.isOpen);
+        console.warn('[Emma] sessionStorage active?', sessionActive);
+        console.warn('[Emma] localStorage active?', localActive);
+        this.showToast('Vault not unlocked - please unlock your .emma vault first', 'error');
       }
 
     } catch (error) {
-      console.error('ðŸ’¾ SAVE: Error saving memory:', error);
-      this.showToast('âŒ Failed to save memory', 'error');
+      console.error('[Emma] Error saving memory:', error);
+      const needsManualSave = error && typeof error.message === 'string' &&
+        (/direct save required/i.test(error.message) || /vault access required/i.test(error.message));
+
+      if (needsManualSave) {
+        this.showToast('Direct vault save needs your attention. Please review and save manually.', 'warning');
+        const existingDialog = document.querySelector('.memory-preview-dialog');
+        if (!existingDialog) {
+          this.showMemoryPreviewDialog(memory);
+        }
+      } else {
+        this.showToast('Failed to save memory', 'error');
+      }
     }
   }
 
@@ -8288,13 +8512,13 @@ RULES:
    * Start enrichment conversation for memory capsule creation
    */
   async startEnrichmentConversation(memoryId) {
-    console.log('ðŸ’ EMMA CHAT: Starting enrichment conversation for memory:', memoryId);
-    console.log('ðŸ’ EMMA CHAT: Current enrichmentState size:', this.enrichmentState.size);
+    console.log('💝 EMMA CHAT: Starting enrichment conversation for memory:', memoryId);
+    console.log('💝 EMMA CHAT: Current enrichmentState size:', this.enrichmentState.size);
     
     // Get the state
     const state = this.enrichmentState.get(memoryId);
     if (!state) {
-      console.error('ðŸ’ EMMA CHAT: No enrichment state found for memory:', memoryId);
+      console.error('💝 EMMA CHAT: No enrichment state found for memory:', memoryId);
       return;
     }
 
@@ -8355,7 +8579,7 @@ RULES:
       document.querySelector('.memory-preview-dialog')?.remove();
       this.showMemoryPreviewDialog(memory);
 
-      this.addMessage(`ðŸ“¸ Great! I've added ${files.length} photo${files.length > 1 ? 's' : ''} to your memory. This will make it even more special!`, 'emma');
+      this.addMessage(`📸 Great! I've added ${files.length} photo${files.length > 1 ? 's' : ''} to your memory. This will make it even more special!`, 'emma');
     };
 
     fileInput.click();
@@ -8498,7 +8722,7 @@ RULES:
 
     const state = this.enrichmentState.get(memoryId);
     if (!state) {
-      console.error('ðŸŽ¯ ENRICHMENT: No state found for memory:', memoryId);
+      console.error('🎯 ENRICHMENT: No state found for memory:', memoryId);
       return;
     }
 
@@ -8516,7 +8740,7 @@ RULES:
       },
       content: this.buildEnrichedContent(state.collectedData),
       attachments: (state.collectedData.media || []).map(mediaItem => {
-        console.log('ðŸ”¥ ENRICHMENT CONVERSION: Converting media item:', {
+        console.log('🔥 ENRICHMENT CONVERSION: Converting media item:', {
           id: mediaItem.id,
           name: mediaItem.name,
           type: mediaItem.type,
@@ -8536,7 +8760,7 @@ RULES:
       })
     };
 
-    console.log('ðŸ”¥ FINAL ENRICHED MEMORY:', {
+    console.log('🔥 FINAL ENRICHED MEMORY:', {
       memoryId: enrichedMemory.id,
       attachmentCount: enrichedMemory.attachments?.length || 0,
       attachments: enrichedMemory.attachments || [],
@@ -8737,7 +8961,7 @@ RULES:
       index === self.findIndex(p => p.name.toLowerCase() === person.name.toLowerCase())
     );
 
-    console.log('ðŸ‘¥ EMMA CHAT: Detected people in response:', uniqueNames);
+    console.log('👥 EMMA CHAT: Detected people in response:', uniqueNames);
 
     // Create or find each person in the vault
     for (const personData of uniqueNames) {
@@ -8747,12 +8971,12 @@ RULES:
           people.push(personId);
         }
       } catch (error) {
-        console.error('ðŸ‘¥ EMMA CHAT: Failed to create person:', personData.name, error);
+        console.error('👥 EMMA CHAT: Failed to create person:', personData.name, error);
         // Continue with other people if one fails
       }
     }
 
-    console.log('ðŸ‘¥ EMMA CHAT: Final people IDs for memory:', people);
+    console.log('👥 EMMA CHAT: Final people IDs for memory:', people);
     return people;
   }
 
@@ -8763,7 +8987,7 @@ RULES:
     try {
       // Check if we have vault access
       if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
-        console.warn('ðŸ‘¥ EMMA CHAT: No vault access for person creation');
+        console.warn('👥 EMMA CHAT: No vault access for person creation');
         return null;
       }
 
@@ -8772,7 +8996,7 @@ RULES:
       if (window.emmaWebVault && typeof window.emmaWebVault.listPeople === 'function') {
         existingPeople = await window.emmaWebVault.listPeople();
       }
-      console.log('ðŸ‘¥ EMMA CHAT: Checking against existing people:', existingPeople?.length || 0);
+      console.log('👥 EMMA CHAT: Checking against existing people:', existingPeople?.length || 0);
 
       // Check if person already exists (case-insensitive)
       const existingPerson = existingPeople.find(person => 
@@ -8780,12 +9004,12 @@ RULES:
       );
 
       if (existingPerson) {
-        console.log('ðŸ‘¥ EMMA CHAT: Found existing person:', existingPerson.name, existingPerson.id);
+        console.log('👥 EMMA CHAT: Found existing person:', existingPerson.name, existingPerson.id);
         return existingPerson.id;
       }
 
       // Create new person
-      console.log('ðŸ‘¥ EMMA CHAT: Creating new person:', name, 'with relationship:', relationship);
+      console.log('👥 EMMA CHAT: Creating new person:', name, 'with relationship:', relationship);
       const newPerson = await window.emmaWebVault.addPerson({
         name: name,
         relation: relationship, // CRITICAL FIX: API expects 'relation' not 'relationship'
@@ -8793,11 +9017,11 @@ RULES:
         avatar: null // Add default avatar
       });
 
-      console.log('âœ… EMMA CHAT: Created new person:', newPerson);
+      console.log('✅ EMMA CHAT: Created new person:', newPerson);
       return newPerson.id || newPerson.person?.id;
 
     } catch (error) {
-      console.error('âŒ EMMA CHAT: Failed to find/create person:', name, error);
+      console.error('❌ EMMA CHAT: Failed to find/create person:', name, error);
       return null;
     }
   }
@@ -8926,7 +9150,7 @@ RULES:
 
     const messageEl = document.getElementById(messageId);
     if (!messageEl) {
-      console.error('ðŸ“· UPLOAD: Message element not found:', messageId);
+      console.error('📷 UPLOAD: Message element not found:', messageId);
       return;
     }
 
@@ -8942,10 +9166,10 @@ RULES:
 
         <div class="upload-button-container">
           <button class="emma-file-btn" onclick="document.getElementById('${uploadId}-input').click(); event.stopPropagation();">
-            ðŸ“· Choose Photos & Videos
+            📷 Choose Photos & Videos
           </button>
           <button class="emma-skip-btn" onclick="window.chatExperience.skipMediaUpload('${memoryId}')">
-            â­ï¸ Continue Without Photos
+            ⏭️ Continue Without Photos
           </button>
           <div class="upload-formats">JPG, PNG, MP4, MOV, etc.</div>
         </div>
@@ -8955,7 +9179,7 @@ RULES:
         </div>
 
         <div class="upload-status" id="${uploadId}-status" style="display: none;">
-          <div class="upload-success">âœ… Files added to memory</div>
+          <div class="upload-success">✅ Files added to memory</div>
         </div>
       </div>
     `;
@@ -8968,7 +9192,7 @@ RULES:
       // Auto-scroll to show upload area
       setTimeout(() => this.scrollToBottom(), 300);
     } else {
-      console.error('ðŸ“· UPLOAD: Content container not found in message');
+      console.error('📷 UPLOAD: Content container not found in message');
     }
   }
 
@@ -9030,11 +9254,11 @@ RULES:
       try {
         // Validate file type
         if (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !file.type.startsWith('audio/')) {
-          this.showToast(`âŒ "${file.name}" is not a supported media file`, 'error');
+          this.showToast(`❌ "${file.name}" is not a supported media file`, 'error');
           continue;
         }
 
-        this.showToast(`ðŸ“· Processing ${file.name}...`, 'info');
+        this.showToast(`📷 Processing ${file.name}...`, 'info');
 
         // Convert to data URL
         const dataUrl = await new Promise((resolve, reject) => {
@@ -9060,11 +9284,11 @@ RULES:
         // Show preview
         this.addFilePreview(mediaItem, `${uploadId}-preview`);
 
-        this.showToast(`âœ… ${file.name} ready to add!`, 'success');
+        this.showToast(`✅ ${file.name} ready to add!`, 'success');
 
       } catch (error) {
-        console.error('ðŸ“· Error processing file:', error);
-        this.showToast(`âŒ Failed to process ${file.name}`, 'error');
+        console.error('📷 Error processing file:', error);
+        this.showToast(`❌ Failed to process ${file.name}`, 'error');
       }
     }
 
@@ -9111,15 +9335,15 @@ RULES:
           ${mediaItem.type.startsWith('image/')
             ? `<img src="${mediaItem.dataUrl}" alt="${mediaItem.name}">`
             : mediaItem.type.startsWith('video/')
-            ? 'ðŸŽ¥'
-            : 'ðŸŽµ'}
+            ? '🎥'
+            : '🎵'}
         </div>
         <div class="file-preview-info">
           <div class="file-preview-name">${mediaItem.name}</div>
           <div class="file-preview-size">${this.formatFileSize(mediaItem.size)}</div>
         </div>
         <button class="file-remove-btn" onclick="window.chatExperience.removeEnrichmentFile('${mediaItem.id}', '${previewAreaId}')">
-          âœ•
+          ✕
         </button>
       </div>
     `;
@@ -9747,7 +9971,7 @@ Just the question:`;
       peopleGrid.innerHTML = peopleCards;
 
     } catch (error) {
-      console.error('âŒ Error loading people for selection:', error);
+      console.error('❌ Error loading people for selection:', error);
     }
   }
 
@@ -9886,7 +10110,7 @@ Just the question:`;
       if (window.emmaWebVault && window.emmaWebVault.vaultData && window.emmaWebVault.vaultData.content) {
         const existingMemory = window.emmaWebVault.vaultData.content.memories?.[memoryId];
         if (existingMemory) {
-          console.log('ðŸ“ SAVING: Found existing memory, updating content');
+          console.log('📝 SAVING: Found existing memory, updating content');
           memory = { ...existingMemory };
           memory.content = content;
           memory.title = content.substring(0, 50) + (content.length > 50 ? '...' : '');
@@ -9896,7 +10120,7 @@ Just the question:`;
       
       // If not existing memory, create new one from enhanced data
       if (!memory) {
-        console.log('ðŸ“ SAVING: Creating new enhanced memory');
+        console.log('📝 SAVING: Creating new enhanced memory');
         const memoryData = this.enhancedMemoryData?.[memoryId] || { selectedPeople: [], uploadedFiles: [] };
         
         memory = {
@@ -9914,7 +10138,7 @@ Just the question:`;
 
         // Process uploaded files (only for new enhanced memories)
         if (memoryData.uploadedFiles && memoryData.uploadedFiles.length > 0) {
-          console.log('ðŸ“Ž SAVING: Processing uploaded files:', memoryData.uploadedFiles.length);
+          console.log('📎 SAVING: Processing uploaded files:', memoryData.uploadedFiles.length);
           for (const file of memoryData.uploadedFiles) {
             try {
               const mediaId = `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -9931,7 +10155,7 @@ Just the question:`;
                 });
               }
             } catch (fileError) {
-              console.error('âŒ Error processing file:', file.name, fileError);
+              console.error('❌ Error processing file:', file.name, fileError);
             }
           }
         }
@@ -9939,7 +10163,7 @@ Just the question:`;
 
       // Save memory to vault
       if (window.emmaWebVault && memory) {
-        console.log('ðŸ’¾ SAVING: Final memory save to vault');
+        console.log('💾 SAVING: Final memory save to vault');
         await window.emmaWebVault.addMemory(memory);
         
         // Show success and close dialog
@@ -9955,9 +10179,9 @@ Just the question:`;
         }
         
         // Show success message
-        await this.addMessage("Your photo memory has been saved! ðŸ“·âœ¨", 'emma', null, 'response');
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
         
-        this.showToast("Memory saved successfully! ðŸ’", "success");
+        this.showToast("Memory saved successfully! 💝", "success");
         
         // CRITICAL: Refresh constellation IMMEDIATELY after memory save
         setTimeout(() => {
@@ -9971,14 +10195,14 @@ Just the question:`;
       }
 
     } catch (error) {
-      console.error('âŒ Error saving enhanced memory:', error);
+      console.error('❌ Error saving enhanced memory:', error);
       this.showToast("Error saving memory. Please try again.", "error");
     }
   }
 }
 
 /**
- * ðŸ§  CTO UNIFIED EMMA INTELLIGENCE SYSTEM
+ * 🧠 CTO UNIFIED EMMA INTELLIGENCE SYSTEM
  * Single, intelligent response engine that replaces all pattern-matching hacks
  */
 class EmmaUnifiedIntelligence {
@@ -9994,11 +10218,11 @@ class EmmaUnifiedIntelligence {
   }
 
   /**
-   * ðŸŽ¯ SINGLE ENTRY POINT: Analyze user message and generate intelligent response
+   * 🎯 SINGLE ENTRY POINT: Analyze user message and generate intelligent response
    */
   async analyzeAndRespond(userMessage, chatInstance) {
     try {
-      console.log('ðŸ§  UNIFIED INTELLIGENCE: Processing:', userMessage);
+      console.log('🧠 UNIFIED INTELLIGENCE: Processing:', userMessage);
       
       // Add to conversation history
       this.addToHistory(userMessage, 'user');
@@ -10008,7 +10232,7 @@ class EmmaUnifiedIntelligence {
       
       // Use LLM for intelligent analysis if available, fallback to smart heuristics
       const analysis = await this.analyzeUserIntent(userMessage, vaultContext);
-      console.log('ðŸ§  UNIFIED ANALYSIS:', analysis);
+      console.log('🧠 UNIFIED ANALYSIS:', analysis);
       
       // Generate single, contextual response
       const response = await this.generateUnifiedResponse(analysis, chatInstance);
@@ -10019,7 +10243,7 @@ class EmmaUnifiedIntelligence {
       return response;
       
     } catch (error) {
-      console.error('ðŸ§  UNIFIED INTELLIGENCE ERROR:', error);
+      console.error('🧠 UNIFIED INTELLIGENCE ERROR:', error);
       return {
         text: "I'm here to listen and help with your memories. What would you like to share?",
         actions: []
@@ -10028,7 +10252,7 @@ class EmmaUnifiedIntelligence {
   }
 
   /**
-   * ðŸ§  INTELLIGENT INTENT ANALYSIS using LLM reasoning
+   * 🧠 INTELLIGENT INTENT ANALYSIS using LLM reasoning
    */
   async analyzeUserIntent(userMessage, vaultContext) {
     const conversationContext = this.conversationHistory.slice(-5).map(h => 
@@ -10045,7 +10269,7 @@ class EmmaUnifiedIntelligence {
   }
 
   /**
-   * ðŸ¤– LLM-POWERED INTENT ANALYSIS
+   * 🤖 LLM-POWERED INTENT ANALYSIS
    */
   async llmAnalyzeIntent(userMessage, vaultContext, conversationContext) {
     const prompt = `You are Emma's intelligence system. Analyze this user message and determine the appropriate response type.
@@ -10077,13 +10301,13 @@ Analyze the user's intent and respond with JSON:
       const response = await this.callLLM(prompt);
       return JSON.parse(response);
     } catch (error) {
-      console.warn('ðŸ§  LLM analysis failed, using heuristic fallback');
+      console.warn('🧠 LLM analysis failed, using heuristic fallback');
       return this.heuristicAnalyzeIntent(userMessage, vaultContext);
     }
   }
 
   /**
-   * ðŸŽ¯ SMART HEURISTIC ANALYSIS (LLM fallback)
+   * 🎯 SMART HEURISTIC ANALYSIS (LLM fallback)
    */
   heuristicAnalyzeIntent(userMessage, vaultContext) {
     const lower = userMessage.toLowerCase().trim();
@@ -10130,7 +10354,7 @@ Analyze the user's intent and respond with JSON:
   }
 
   /**
-   * ðŸŽ¯ GENERATE UNIFIED RESPONSE - NO DUPLICATES!
+   * 🎯 GENERATE UNIFIED RESPONSE - NO DUPLICATES!
    */
   async generateUnifiedResponse(analysis, chatInstance) {
     // Update context based on analysis
@@ -10213,7 +10437,7 @@ Analyze the user's intent and respond with JSON:
     return `That sounds like a special memory with ${person}! I love hearing about moments like that. What else do you remember about it?`;
   }
 
-  // ðŸŽ¯ HANDLE VAULT QUERIES (person lookups)
+  // 🎯 HANDLE VAULT QUERIES (person lookups)
   async handleVaultQuery(analysis, chatInstance) {
     const person = await chatInstance.findPersonInVault(analysis.targetPerson);
     
@@ -10237,7 +10461,7 @@ Analyze the user's intent and respond with JSON:
     };
   }
 
-  // ðŸ“· HANDLE PHOTO REQUESTS  
+  // 📷 HANDLE PHOTO REQUESTS  
   async handlePhotoRequest(analysis, chatInstance) {
     return {
       text: `Wonderful! I'd love to help you add photos with ${analysis.targetPerson}. You can drag and drop photos here, or click to browse your files.`,
@@ -10246,7 +10470,7 @@ Analyze the user's intent and respond with JSON:
     };
   }
 
-  // ðŸ’ HANDLE MEMORY SHARING
+  // 💝 HANDLE MEMORY SHARING
   handleMemorySharing(analysis) {
     return {
       text: analysis.suggestedResponse,
@@ -10255,7 +10479,7 @@ Analyze the user's intent and respond with JSON:
     };
   }
 
-  // ðŸ¤” HANDLE CONFUSION
+  // 🤔 HANDLE CONFUSION
   handleConfusion(analysis) {
     const person = this.currentContext.lastQueriedPerson;
     return {
@@ -10290,6 +10514,6 @@ Analyze the user's intent and respond with JSON:
 
 // Export for use in other modules
 window.EmmaChatExperience = EmmaChatExperience;
-console.log('ðŸ’¬ Emma Chat Experience: Module loaded successfully');
+console.log('💬 Emma Chat Experience: Module loaded successfully');
 
 

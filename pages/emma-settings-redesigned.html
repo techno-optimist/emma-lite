@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -328,12 +328,34 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.2rem;
+      font-size: 1.4rem;
+      font-family: inherit;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
       background: linear-gradient(180deg, rgba(var(--emma-accent-primary-rgb), 0.18), rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.26));
       box-shadow:
         0 18px 40px rgba(0, 0, 0, 0.35),
         inset 0 1px 0 rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(var(--emma-accent-primary-rgb), 0.45);
+      color: rgba(244, 244, 255, 0.9);
+    }
+
+    .section-title__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb), 0.75), rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.55));
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.74rem;
+      font-family: inherit;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      text-transform: uppercase;
     }
 
     .settings-section__headline .section-title {
@@ -636,24 +658,24 @@
 
     .toggle-switch {
       position: relative;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       width: 64px;
       height: 32px;
     }
 
     .toggle-switch input {
+      position: absolute;
+      inset: 0;
+      margin: 0;
       opacity: 0;
-      width: 0;
-      height: 0;
+      cursor: pointer;
     }
 
     .toggle-slider {
-      position: relative;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 100%;
+      position: absolute;
+      inset: 0;
+      display: block;
       background: linear-gradient(125deg, rgba(24, 24, 52, 0.9), rgba(18, 20, 46, 0.78));
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -762,9 +784,28 @@
     }
 
     .api-key-button__icon {
-      font-size: 1.1rem;
-      opacity: 0.9;
-      transition: transform 250ms ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.92);
+      transition: transform 250ms ease, background 250ms ease;
+    }
+
+    .api-key-button__icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+    }
+
+    .api-key-button__icon--active {
+      background: rgba(52, 211, 153, 0.18);
+      color: rgba(52, 211, 153, 0.95);
     }
 
     .api-key-button__label {
@@ -1182,7 +1223,7 @@
         <!-- Visual Theme Selection -->
         <section id="section-visual" class="settings-section" data-section-title="Visual Themes">
           <div class="settings-section__header">
-            <h2 class="section-title">ðŸŽ¨ Visual Themes</h2>
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">VT</span> Visual Themes</h2>
             <p class="section-description">
               Preview different Emma looks and moods. Themes update instantly so you can find the palette that feels just right, and you can choose a signature background to match.
             </p>
@@ -1197,9 +1238,9 @@
         <section id="section-ai" class="settings-section settings-section--ai" data-section-title="Intelligence">
           <div class="settings-section__halo" aria-hidden="true"></div>
           <div class="settings-section__header">
-            <span class="settings-section__glyph" aria-hidden="true">ðŸ§ </span>
+            <span class="settings-section__glyph" aria-hidden="true">AI</span>
             <div class="settings-section__headline">
-              <h2 class="section-title">Artificial Intelligence</h2>
+              <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">AI</span> Artificial Intelligence</h2>
               <p class="section-description">
                 Emma's AI works beautifully offline with intelligent heuristics. For even more advanced understanding and nuanced conversations, connect your OpenAI API key to unlock Emma's full potential.
               </p>
@@ -1218,8 +1259,13 @@
                 class="api-key-button emma-button emma-button--outline"
               >
                 <span class="emma-button__pulse" aria-hidden="true"></span>
-                <span class="api-key-button__icon" aria-hidden="true">ðŸ”</span>
-                <span id="api-key-status" class="api-key-button__label">ðŸ”‘ Setup API Key</span>
+                <span class="api-key-button__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" role="presentation" focusable="false" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="11" width="16" height="10" rx="2" ry="2" fill="none"></rect>
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none"></path>
+                  </svg>
+                </span>
+                <span id="api-key-status" class="api-key-button__label">Set Up API Key</span>
               </button>
             </div>
 
@@ -1261,7 +1307,7 @@
         <!-- Memory & Care -->
         <section id="section-care" class="settings-section" data-section-title="Memory & Care">
           <div class="settings-section__header">
-            <h2 class="section-title">ðŸ’œ Memory &amp; Care</h2>
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">MC</span> Memory &amp; Care</h2>
             <p class="section-description">
               Specialized features for memory preservation and dementia care support.
             </p>
@@ -1294,7 +1340,7 @@
         <!-- Privacy & Security -->
         <section id="section-privacy" class="settings-section" data-section-title="Privacy & Security">
           <div class="settings-section__header">
-            <h2 class="section-title">ðŸ”’ Privacy &amp; Security</h2>
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">PS</span> Privacy &amp; Security</h2>
             <p class="section-description">
               Emma prioritizes your privacy with local-only processing and secure vault encryption.
             </p>
@@ -1321,13 +1367,24 @@
                 <span>Always Enabled</span>
               </div>
             </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Vault Auto-Save</strong>
+                <span>Automatically write updates to your .emma vault whenever memories or people change.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-save-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>
         </section>
 
         <!-- Dementia Care & Accessibility -->
         <section id="section-accessibility" class="settings-section" data-section-title="Care & Accessibility">
           <div class="settings-section__header">
-            <h2 class="section-title">â¤ï¸ Dementia Care &amp; Accessibility</h2>
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">CA</span> Dementia Care &amp; Accessibility</h2>
             <p class="section-description">
               Specialized features designed for users with memory impairment and their caregivers. Emma adapts to provide gentle, supportive interactions.
             </p>
@@ -1339,10 +1396,10 @@
                 <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
               </div>
               <div class="font-size-controls">
-                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">Aâ»</button>
+                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">A−</button>
                 <span id="font-size-display" class="font-size-value">100%</span>
-                <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">Aâº</button>
-                <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">â†º</button>
+                <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">A+</button>
+                <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">Reset</button>
               </div>
             </div>
             
@@ -1406,7 +1463,7 @@
         <!-- System Information -->
         <section id="section-system" class="settings-section" data-section-title="System Information">
           <div class="settings-section__header">
-            <h2 class="section-title">â„¹ï¸ System Information</h2>
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">SI</span> System Information</h2>
             <p class="section-description">
               Basic system information and compatibility status.
             </p>
@@ -1427,7 +1484,7 @@
 
         <div class="settings-actions">
           <button class="save-button emma-button emma-button--primary" type="button" id="save-all-settings">
-            âœ¨ Save All Settings
+            Save All Settings
           </button>
         </div>
       </main>
@@ -1443,10 +1500,14 @@
       constructor() {
         this.settings = {};
         this.loadSettings();
+        if (typeof this.settings.autoSaveEnabled !== 'boolean') {
+          this.settings.autoSaveEnabled = this.getAutoSavePreference();
+        }
+        this.applyAutoSavePreference(this.settings.autoSaveEnabled !== false);
         this.setupEventListeners();
         this.updateUI();
         
-        console.log('âš™ï¸ Emma Settings Manager initialized');
+        console.log('[Settings] Emma Settings Manager initialized');
       }
       
       loadSettings() {
@@ -1459,19 +1520,21 @@
             peopleRecognition: true,
             fontSize: 100,
             reducedMotion: false,
-            highContrast: false
+            highContrast: false,
+            autoSaveEnabled: true
           };
           
-          console.log('âš™ï¸ Settings loaded:', this.settings);
+          console.log('[Settings] Settings loaded:', this.settings);
         } catch (error) {
-          console.error('âš™ï¸ Failed to load settings:', error);
+          console.error('[Settings] Failed to load settings:', error);
           this.settings = {
             apiKey: '',
             memoryDetection: true,
             peopleRecognition: true,
             fontSize: 100,
             reducedMotion: false,
-            highContrast: false
+            highContrast: false,
+            autoSaveEnabled: true
           };
         }
       }
@@ -1493,15 +1556,61 @@
           right: 16px;
         }
       }
-      
+
+      getAutoSavePreference() {
+        try {
+          const stored = localStorage.getItem('emmaVaultAutoSaveEnabled');
+          if (stored === 'false') {
+            return false;
+          }
+          if (stored === 'true') {
+            return true;
+          }
+
+          if (stored === null) {
+            localStorage.setItem('emmaVaultAutoSaveEnabled', 'true');
+            return true;
+          }
+        } catch (error) {
+          console.warn('[Settings] Unable to read auto-save preference:', error);
+        }
+        return true;
+      }
+
+      applyAutoSavePreference(enabled) {
+        const value = enabled ? 'true' : 'false';
+        try {
+          localStorage.setItem('emmaVaultAutoSaveEnabled', value);
+        } catch (error) {
+          console.warn('[Settings] Unable to persist auto-save preference:', error);
+        }
+
+        if (window.emmaWebVault) {
+          if (typeof window.emmaWebVault.setAutoSaveEnabled === 'function') {
+            window.emmaWebVault.setAutoSaveEnabled(enabled);
+          } else {
+            window.emmaWebVault.autoSaveEnabled = enabled;
+          }
+        }
+
+        if (window.emmaVaultPrimary) {
+          if (typeof window.emmaVaultPrimary.setAutoSaveEnabled === 'function') {
+            window.emmaVaultPrimary.setAutoSaveEnabled(enabled);
+          } else {
+            window.emmaVaultPrimary.autoSaveEnabled = enabled;
+          }
+        }
+      }
+
       saveSettings() {
         try {
           localStorage.setItem('emmaSettings', JSON.stringify(this.settings));
-          console.log('âš™ï¸ Settings saved:', this.settings);
-          this.showToast('âœ… Settings saved successfully!', 'success');
+          this.applyAutoSavePreference(this.settings.autoSaveEnabled !== false);
+          console.log('[Settings] Settings saved:', this.settings);
+          this.showToast('Settings saved successfully!', 'success');
         } catch (error) {
-          console.error('âš™ï¸ Failed to save settings:', error);
-          this.showToast('âŒ Failed to save settings', 'error');
+          console.error('[Settings] Failed to save settings:', error);
+          this.showToast('Failed to save settings', 'error');
         }
       }
       
@@ -1514,11 +1623,13 @@
         const peopleToggle = document.getElementById('people-recognition-toggle');
         const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
         const highContrastToggle = document.getElementById('high-contrast-toggle');
+        const autoSaveToggle = document.getElementById('auto-save-toggle');
         
         if (memoryToggle) memoryToggle.checked = this.settings.memoryDetection !== false;
         if (peopleToggle) peopleToggle.checked = this.settings.peopleRecognition !== false;
         if (reducedMotionToggle) reducedMotionToggle.checked = this.settings.reducedMotion || false;
         if (highContrastToggle) highContrastToggle.checked = this.settings.highContrast || false;
+        if (autoSaveToggle) autoSaveToggle.checked = this.settings.autoSaveEnabled !== false;
         
         // Update font size
         this.updateFontSize();
@@ -1587,7 +1698,15 @@
             this.applyAccessibilitySettings();
           });
         }
-        
+
+        if (autoSaveToggle) {
+          autoSaveToggle.addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            this.settings.autoSaveEnabled = enabled;
+            this.applyAutoSavePreference(enabled);
+          });
+        }
+
         // Font size controls
         const decreaseFont = document.getElementById('decrease-font');
         const increaseFont = document.getElementById('increase-font');
@@ -1723,22 +1842,17 @@
         const apiKeyButton = document.getElementById('api-key-setup-btn');
         const iconSpan = apiKeyButton ? apiKeyButton.querySelector('.api-key-button__icon') : null;
         if (statusSpan) {
-          if (this.settings.apiKey && this.settings.apiKey.startsWith('sk-')) {
-            statusSpan.textContent = 'âœ… API Key Connected';
-            if (apiKeyButton) {
+          const hasKey = this.settings.apiKey && this.settings.apiKey.startsWith('sk-');
+          statusSpan.textContent = hasKey ? 'API Key Connected' : 'Set Up API Key';
+          if (apiKeyButton) {
+            if (hasKey) {
               apiKeyButton.dataset.state = 'connected';
-            }
-            if (iconSpan) {
-              iconSpan.textContent = 'âš¡';
-            }
-          } else {
-            statusSpan.textContent = 'ðŸ”‘ Setup API Key';
-            if (apiKeyButton) {
+            } else {
               delete apiKeyButton.dataset.state;
             }
-            if (iconSpan) {
-              iconSpan.textContent = 'ðŸ”';
-            }
+          }
+          if (iconSpan) {
+            iconSpan.classList.toggle('api-key-button__icon--active', !!hasKey);
           }
         }
       }
@@ -1827,7 +1941,7 @@
           
           // Basic validation
           if (apiKey && !apiKey.startsWith('sk-')) {
-            this.showToast('âš ï¸ API key should start with "sk-"', 'warning');
+            this.showToast('Note: API keys should start with "sk-" or "sk-proj-"', 'warning');
             return;
           }
 
@@ -1838,7 +1952,7 @@
           this.closeAPIKeyModal();
           
           if (apiKey) {
-            this.showToast('ðŸ”‘ API key saved successfully!', 'success');
+            this.showToast('API key saved successfully!', 'success');
           } else {
             this.showToast('API key removed', 'info');
           }
@@ -1918,7 +2032,7 @@
     <div class="api-modal-overlay"></div>
     <div class="api-modal-content">
       <div class="api-modal-header">
-        <h3>ðŸ”‘ OpenAI API Key Setup</h3>
+        <h3>OpenAI API Key Setup</h3>
         <button class="api-modal-close">&times;</button>
       </div>
       
@@ -1937,7 +2051,7 @@
             rows="3"
           ></textarea>
           <div class="api-key-hint">
-            ðŸ’¡ Your API key should start with "sk-proj-" or "sk-"
+            Note: Your API key should start with "sk-proj-" or "sk-"
           </div>
         </div>
         
@@ -1956,4 +2070,11 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
 
