@@ -16,6 +16,44 @@ const EmmaServerAgent = require('./emma-agent');
 const VaultService = require('./lib/vault-service');
 const { getEmmaAppManifest, APP_NAME, APP_DEFAULT_MODEL } = require('./apps/emma-openai-app');
 
+const DEFAULT_DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
+const DEFAULT_PROD_ORIGINS = ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com','https://emma-lite-optimized.onrender.com'];
+
+function normalizeOrigin(value) {
+  if (!value || typeof value !== 'string') return null;
+  return value.replace(/\/+$/, '').toLowerCase();
+}
+
+function parseEnvOrigins(raw) {
+  if (!raw || typeof raw !== 'string') return [];
+  return raw
+    .split(',')
+    .map(part => normalizeOrigin(part.trim()))
+    .filter(Boolean);
+}
+
+function resolveAllowedOrigins() {
+  const envOrigins = parseEnvOrigins(process.env.EMMA_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS);
+  const renderOrigin = normalizeOrigin(process.env.RENDER_EXTERNAL_URL || process.env.RENDER_EXTERNAL_HOSTNAME);
+  if (renderOrigin) {
+    envOrigins.push(renderOrigin.startsWith('http') ? renderOrigin : `https://${renderOrigin}`);
+  }
+
+  const fallback = process.env.NODE_ENV === 'production'
+    ? DEFAULT_PROD_ORIGINS
+    : DEFAULT_DEV_ORIGINS;
+
+  const origins = [...envOrigins, ...fallback]
+    .map(normalizeOrigin)
+    .filter(Boolean);
+
+  return Array.from(new Set(origins));
+}
+
+const allowedOrigins = resolveAllowedOrigins();
+const allowedOriginSet = new Set(allowedOrigins);
+console.log('Emma Voice Service allowed origins:', allowedOrigins.length ? allowedOrigins.join(', ') : '(none)');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -46,9 +84,19 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com']
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'],
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const normalized = normalizeOrigin(origin);
+    if (allowedOriginSet.has(normalized)) {
+      return callback(null, true);
+    }
+
+    console.warn('Blocked CORS origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
@@ -266,11 +314,7 @@ const wss = new WebSocket.Server({
 });
 
 // WebSocket security controls
-const ALLOWED_WS_ORIGINS = new Set(
-  (process.env.NODE_ENV === 'production')
-    ? ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com']
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000']
-);
+const ALLOWED_WS_ORIGINS = new Set(allowedOrigins.map(normalizeOrigin));
 const ipConnCount = new Map();
 const MAX_WS_PER_IP = parseInt(process.env.MAX_WS_PER_IP || '5', 10);
 
@@ -279,8 +323,8 @@ const MAX_WS_PER_IP = parseInt(process.env.MAX_WS_PER_IP || '5', 10);
  */
 wss.on('connection', (browserWs, request) => {
   // Origin check
-  const origin = request.headers.origin;
-  if (!ALLOWED_WS_ORIGINS.has(origin)) {
+  const origin = normalizeOrigin(request.headers.origin);
+  if (origin && !ALLOWED_WS_ORIGINS.has(origin)) {
     try { browserWs.close(1008, 'Origin not allowed'); } catch (_) {}
     return;
   }
