@@ -112,6 +112,11 @@ class EmmaChatExperience extends ExperiencePopup {
       capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
 
+    // Agent SDK chat support
+    this.agentChatEnabled = false;
+    this.agentConnectPromise = null;
+    this.agentConnectionNotified = false;
+
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
@@ -248,6 +253,9 @@ class EmmaChatExperience extends ExperiencePopup {
           this.setupVoiceEventHandlers();
         }
 
+        // Ensure the chat interface connects to the Agent SDK backend
+        this.connectAgentForChat();
+
         console.log('✅ Emma voice client ready!');
       } else {
         console.warn('⚠️ Emma voice client not available');
@@ -261,6 +269,70 @@ class EmmaChatExperience extends ExperiencePopup {
     } finally {
       this.voiceIntegrationInitializing = false;
     }
+  }
+
+  /**
+   * Ensure the chat agent connection is established for tool usage
+   */
+  async connectAgentForChat() {
+    try {
+      if (!this.emmaVoice) return;
+      if (this.agentChatEnabled && this.emmaVoice.isConnected) return;
+      if (this.agentConnectPromise) return this.agentConnectPromise;
+
+      this.agentConnectPromise = (async () => {
+        try {
+          if (!this.emmaVoice.isConnected) {
+            await this.emmaVoice.connectToEmmaAgent();
+          }
+        } catch (error) {
+          console.error('❌ Failed to connect Emma agent for chat:', error);
+          this.agentChatEnabled = false;
+          if (!this.agentConnectionNotified) {
+            this.addMessage('system', '⚠️ I could not reach Emma\'s advanced memory tools yet. I\'ll keep helping locally.');
+            this.agentConnectionNotified = true;
+          }
+        } finally {
+          this.agentConnectPromise = null;
+        }
+      })();
+
+      return this.agentConnectPromise;
+    } catch (error) {
+      console.error('❌ Agent connection setup error:', error);
+    }
+  }
+
+  /**
+   * Mark that the Agent SDK connection is active
+   */
+  markAgentReady() {
+    if (this.agentChatEnabled) {
+      if (typeof this.hideTypingIndicator === 'function') {
+        this.hideTypingIndicator();
+      }
+      return;
+    }
+
+    this.agentChatEnabled = true;
+    this.agentConnectionNotified = true;
+    this.addMessage('system', '🤖 Emma is connected to your memory tools and can use them for you.');
+    if (typeof this.hideTypingIndicator === 'function') {
+      this.hideTypingIndicator();
+    }
+  }
+
+  /**
+   * Handle agent disconnects gracefully
+   */
+  markAgentDisconnected() {
+    this.agentChatEnabled = false;
+    this.agentConnectionNotified = false;
+    if (typeof this.hideTypingIndicator === 'function') {
+      this.hideTypingIndicator();
+    }
+    this.addMessage('system', '⚠️ Emma lost connection to the advanced memory tools. Trying to reconnect...');
+    this.connectAgentForChat();
   }
 
   /**
@@ -2118,6 +2190,19 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.value = '';
     this.autoResizeTextarea();
     this.handleInputChange();
+
+    if (this.emmaVoice) {
+      await this.connectAgentForChat();
+    }
+
+    const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
+    if (canUseAgent) {
+      if (typeof this.showTypingIndicator === 'function') {
+        this.showTypingIndicator();
+      }
+      this.emmaVoice.sendToAgent({ type: 'user_text', text: message, source: 'chat' });
+      return;
+    }
 
     // 🎯 ENRICHMENT FSM: Check if this is a response to an enrichment question
     const activeEnrichment = this.findActiveEnrichmentForResponse();
@@ -9385,6 +9470,43 @@ RULES:
     if (previewArea && previewArea.children.length === 0) {
       previewArea.style.display = 'none';
     }
+  }
+
+  /**
+   * Allow Emma's agent tools to resolve uploaded media by id
+   */
+  lookupMediaUpload(uploadId) {
+    if (!uploadId) return null;
+
+    try {
+      if (this.enrichmentState && typeof this.enrichmentState.values === 'function') {
+        for (const state of this.enrichmentState.values()) {
+          const mediaItems = state?.collectedData?.media;
+          if (Array.isArray(mediaItems)) {
+            const found = mediaItems.find(item => item.id === uploadId);
+            if (found) {
+              return { ...found };
+            }
+          }
+        }
+      }
+
+      if (this.temporaryMemories && typeof this.temporaryMemories.values === 'function') {
+        for (const memory of this.temporaryMemories.values()) {
+          const attachments = memory?.attachments;
+          if (Array.isArray(attachments)) {
+            const found = attachments.find(item => item.id === uploadId);
+            if (found) {
+              return { ...found };
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('📷 CHAT: lookupMediaUpload error:', error);
+    }
+
+    return null;
   }
 
   /**

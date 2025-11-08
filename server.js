@@ -13,10 +13,13 @@ const crypto = require('crypto');
 const WebSocket = require('ws');
 const http = require('http');
 const EmmaServerAgent = require('./emma-agent');
+const VaultService = require('./lib/vault-service');
+const { getEmmaAppManifest, APP_NAME, APP_DEFAULT_MODEL } = require('./apps/emma-openai-app');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const vaultService = new VaultService();
 // Security hardening
 app.disable('x-powered-by');
 
@@ -49,7 +52,16 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.static('.', { 
+  index: 'index.html',
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
+app.use(express.json({ limit: '10mb' }));
 // Serve project assets while keeping tighter cache control for HTML
 app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use('/css', express.static(path.join(__dirname, 'css')));
@@ -183,6 +195,40 @@ app.get('/test', (req, res) => {
   res.send('Emma Voice Backend is running!');
 });
 
+const appsRouter = express.Router();
+
+appsRouter.get('/manifest', (req, res) => {
+  const model = typeof req.query.model === 'string' ? req.query.model : APP_DEFAULT_MODEL;
+  const manifest = getEmmaAppManifest({ model, vaultService });
+  res.json({
+    app: APP_NAME,
+    manifest
+  });
+});
+
+appsRouter.post('/tools/:toolName', async (req, res) => {
+  const toolName = req.params.toolName;
+
+  if (!vaultService.canExecute(toolName)) {
+    return res.status(404).json({
+      ok: false,
+      error: `Unsupported tool: ${toolName}`
+    });
+  }
+
+  try {
+    const result = await vaultService.execute(toolName, req.body || {});
+    res.json({ ok: true, result });
+  } catch (error) {
+    res.status(400).json({
+      ok: false,
+      error: error?.message || 'Tool execution failed'
+    });
+  }
+});
+
+app.use('/apps/emma', appsRouter);
+
 /**
  * CTO SECURITY: Block all other API endpoints
  */
@@ -254,7 +300,8 @@ wss.on('connection', (browserWs, request) => {
     speed: 1.0,
     tone: 'caring',
     pacing: 2.5,
-    validationMode: true
+    validationMode: true,
+    vaultService
   });
 
   // Handle messages from browser
@@ -270,6 +317,29 @@ wss.on('connection', (browserWs, request) => {
             await emmaAgent.sendUserText(message.text || '');
           }
           break;
+
+        case 'tool_result':
+          if (message.call_id) {
+            const payload = Object.prototype.hasOwnProperty.call(message, 'result')
+              ? message.result
+              : message;
+            emmaAgent.handleToolResult(message.call_id, payload);
+          }
+          break;
+
+        case 'voice_settings':
+          emmaAgent.updateVoiceSettings(message.settings);
+          break;
+
+        case 'stop_session':
+          await emmaAgent.stopSession();
+          break;
+
+        default:
+          console.warn('Unhandled browser message type:', message.type);
+          break;
+      }
+
         case 'user_audio_chunk':
           break;
         case 'realtime_audio_chunk':
@@ -277,12 +347,7 @@ wss.on('connection', (browserWs, request) => {
             await emmaAgent.handleRealtimeAudio(message.chunk);
           }
           break;
-        case 'tool_result':
-          if (message.call_id && message.result) {
-            emmaAgent.handleToolResult(message.call_id, message.result);
-          }
-          break;
-      }
+      
     } catch (error) {
       try {
         browserWs.send(JSON.stringify({ type: 'error', message: 'Failed to process message' }));
@@ -293,7 +358,9 @@ wss.on('connection', (browserWs, request) => {
   // Handle browser disconnect
   browserWs.on('close', () => {
     if (emmaAgent) {
-      emmaAgent.stopSession();
+      emmaAgent.stopSession().catch((error) => {
+        console.error('Emma session cleanup error:', error);
+      });
     }
     const ip = request.socket?.remoteAddress || 'unknown';
     const curr = ipConnCount.get(ip) || 1;
