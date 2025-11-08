@@ -93,7 +93,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       window.postMessage({
         type: 'EMMA_VAULT_CHECK',
         messageId: messageId
-      }, '*');
+      }, window.location.origin);
       
       // Timeout after 1 second
       setTimeout(() => {
@@ -129,7 +129,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             type: 'EMMA_VAULT_SAVE',
             messageId: saveMessageId,
             memoryData: request.memoryData
-          }, '*');
+          }, window.location.origin);
           
           // Timeout after 10 seconds
           setTimeout(() => {

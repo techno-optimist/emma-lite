@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Emma Web Vault System
  * Browser-compatible .emma file system with Web Crypto API
  * Preserves ALL desktop functionality while working in any browser
  *
- * 💜 Built with love for preserving precious memories
+ *  Built with love for preserving precious memories
  */
 
 class EmmaWebVault {
@@ -15,6 +15,26 @@ class EmmaWebVault {
     this.fileHandle = null; // For File System Access API
     this.pendingChanges = false;
     this.saveDebounceTimer = null;
+    this.isFileSelectionInProgress = false;
+    this.needsFileReauth = false;
+    const storedAutoSave = (() => {
+      try {
+        return localStorage.getItem('emmaVaultAutoSaveEnabled');
+      } catch (error) {
+        console.warn('[EmmaWebVault] Failed to read auto-save preference:', error);
+        return null;
+      }
+    })();
+    if (storedAutoSave === null) {
+      try {
+        localStorage.setItem('emmaVaultAutoSaveEnabled', 'true');
+      } catch (error) {
+        console.warn('[EmmaWebVault] Failed to prime auto-save preference:', error);
+      }
+      this.autoSaveEnabled = true;
+    } else {
+      this.autoSaveEnabled = storedAutoSave !== 'false';
+    }
 
     // WEBAPP-FIRST ARCHITECTURE: Webapp is single source of truth
     this.extensionAvailable = false; // Extension defers to webapp
@@ -40,12 +60,12 @@ class EmmaWebVault {
 
             // SECURITY: Passphrase no longer stored in sessionStorage for security
             // User will be prompted for passphrase when needed
-            console.log('🔒 CONSTRUCTOR: Vault restored from IndexedDB - passphrase required for operations');
+            console.log(' CONSTRUCTOR: Vault restored from IndexedDB - passphrase required for operations');
 
-            console.log('✅ CONSTRUCTOR: Vault data restored from IndexedDB with',
+            console.log(' CONSTRUCTOR: Vault data restored from IndexedDB with',
               Object.keys(vaultData.content?.memories || {}).length, 'memories');
           } else {
-            console.warn('⚠️ CONSTRUCTOR: No vault data in IndexedDB - creating minimal structure');
+            console.warn(' CONSTRUCTOR: No vault data in IndexedDB - creating minimal structure');
             // Fallback to minimal structure
             this.vaultData = {
               content: { memories: {}, people: {}, media: {} },
@@ -54,7 +74,7 @@ class EmmaWebVault {
             };
           }
         } catch (error) {
-          console.error('❌ CONSTRUCTOR: Failed to restore vault data:', error);
+          console.error(' CONSTRUCTOR: Failed to restore vault data:', error);
           // Fallback to minimal structure
           this.vaultData = {
             content: { memories: {}, people: {}, media: {} },
@@ -128,7 +148,7 @@ class EmmaWebVault {
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
-      console.log('✅ Session storage set - new vault active AND unlocked (no expiry - user controlled)!');
+      console.log(' Session storage set - new vault active AND unlocked (no expiry - user controlled)!');
 
       // Save to IndexedDB for persistence
       await this.saveToIndexedDB();      const originalAutoDownload = this.vaultData.settings?.autoDownload;
@@ -143,7 +163,7 @@ class EmmaWebVault {
       return { success: true, name: name };
 
     } catch (error) {
-      console.error('❌ Failed to create vault:', error);
+      console.error(' Failed to create vault:', error);
       throw error;
     }
   }
@@ -154,6 +174,12 @@ class EmmaWebVault {
    */
   async openVaultFile(file) {
     try {
+      if (this.isFileSelectionInProgress) {
+        console.warn(' VAULT: File selection already in progress - ignoring duplicate request');
+        return { success: false, reason: 'file_selection_in_progress' };
+      }
+
+      this.isFileSelectionInProgress = true;
 
       let fileToProcess = file;
 
@@ -161,7 +187,7 @@ class EmmaWebVault {
       if (file) {
         this.originalFileName = file.name;
         // Persist for restoration across pages
-        try { sessionStorage.setItem('emmaVaultOriginalFileName', file.name); } catch (_) {}
+        try { sessionStorage.setItem('emmaVaultOriginalFileName', file.name); localStorage.setItem('emmaVaultOriginalFileName', file.name); } catch (_) {}
 
         // CRITICAL: If file is provided but no fileHandle, we need write access
         if (!this.fileHandle && 'showOpenFilePicker' in window) {
@@ -207,12 +233,29 @@ class EmmaWebVault {
         throw new Error('No file selected');
       }
 
-      // Get passphrase securely with CLEAN modal
-      const passphrase = await window.cleanSecurePasswordModal.show({
-        title: 'Unlock Vault',
-        message: `Enter the passphrase for your vault: ${fileToProcess.name}`,
-        placeholder: 'Enter vault passphrase...'
-      });
+      // Get passphrase securely with CLEAN modal or fallback
+      let passphrase = null;
+      try {
+        if (window.cleanSecurePasswordModal && typeof window.cleanSecurePasswordModal.show === 'function') {
+          passphrase = await window.cleanSecurePasswordModal.show({
+            title: 'Unlock Vault',
+            message: `Enter the passphrase for your vault: ${fileToProcess.name}`,
+            placeholder: 'Enter vault passphrase...'
+          });
+        } else if (typeof window.showPasswordModal === 'function') {
+          passphrase = await window.showPasswordModal(`Enter the passphrase for ${fileToProcess.name}`, 'Passphrase:');
+        } else {
+          passphrase = window.prompt(`Enter the passphrase for ${fileToProcess.name}`);
+        }
+      } catch (modalError) {
+        console.error(' PASSCODE MODAL: Failed to collect passphrase:', modalError);
+        passphrase = null;
+      }
+
+      if (!passphrase) {
+        console.warn(' VAULT: Passphrase entry cancelled - aborting open flow');
+        return { success: false, reason: 'passphrase_cancelled' };
+      }
 
       this.passphrase = passphrase;
 
@@ -230,7 +273,7 @@ class EmmaWebVault {
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
-      console.log('✅ Session storage set - vault active AND unlocked (no expiry - user controlled)!');
+      console.log(' Session storage set - vault active AND unlocked (no expiry - user controlled)!');
 
       // Save to IndexedDB as backup AFTER loading from file
       await this.saveToIndexedDB();
@@ -238,8 +281,10 @@ class EmmaWebVault {
       return { success: true, stats: this.getStats() };
 
     } catch (error) {
-      console.error('❌ Failed to open vault:', error);
+      console.error(' Failed to open vault:', error);
       throw error;
+    } finally {
+      this.isFileSelectionInProgress = false;
     }
   }
 
@@ -249,7 +294,7 @@ class EmmaWebVault {
   async addMemory({ content, metadata = {}, attachments = [] }) {
 
     // WEBAPP-FIRST: All memory operations go through webapp vault
-    console.log('🚀 WEBAPP-FIRST: Adding memory to webapp vault:', {
+    console.log(' WEBAPP-FIRST: Adding memory to webapp vault:', {
       isOpen: this.isOpen,
       hasPassphrase: !!this.passphrase,
       sessionActive: sessionStorage.getItem('emmaVaultActive'),
@@ -271,12 +316,12 @@ class EmmaWebVault {
       if (!this.passphrase) {
         // FIRST: Try to restore passphrase from session storage
         // SECURITY: Passphrase no longer stored in sessionStorage for security
-        console.log('🔐 EMERGENCY FIX: Checking passphrase for memory save');
+        console.log(' EMERGENCY FIX: Checking passphrase for memory save');
 
         if (this.passphrase) {
-          console.log('✅ EMERGENCY FIX: Passphrase available in memory');
+          console.log(' EMERGENCY FIX: Passphrase available in memory');
         } else {
-          console.error('🔐 CRITICAL: No passphrase available - emergency re-authentication required');
+          console.error(' CRITICAL: No passphrase available - emergency re-authentication required');
 
           // Emergency prompt - ALWAYS show for missing passphrase
           if (window.cleanSecurePasswordModal) {
@@ -290,10 +335,10 @@ class EmmaWebVault {
               // Restore sessionStorage after emergency unlock
               if (this.passphrase) {
                 // SECURITY: Never store passphrase in web storage
-                console.log('✅ EMERGENCY FIX: Passphrase restored and cached');
+                console.log(' EMERGENCY FIX: Passphrase restored and cached');
               }
             } catch (error) {
-              console.error('🔐 Secure modal failed:', error);
+              console.error(' Secure modal failed:', error);
               throw new Error('Vault access required to save memories. Please unlock your vault first.');
             }
           } else {
@@ -333,7 +378,7 @@ class EmmaWebVault {
 
       for (const attachment of attachments) {
 
-        console.log('🔥 ATTACHMENT DEBUG: Processing attachment:', {
+        console.log(' ATTACHMENT DEBUG: Processing attachment:', {
           name: attachment.name,
           type: attachment.type,
           hasData: !!attachment.data,
@@ -345,7 +390,7 @@ class EmmaWebVault {
 
         const attachmentData = attachment.data || attachment.dataUrl;
         if (!attachmentData) {
-          console.error('❌ ATTACHMENT MISSING DATA:', attachment);
+          console.error(' ATTACHMENT MISSING DATA:', attachment);
           throw new Error('Attachment missing data - file may not have been uploaded properly');
         }
 
@@ -390,12 +435,12 @@ class EmmaWebVault {
         delete this.vaultData.content.memories[memoryId];
         this.vaultData.stats.memoryCount--;
 
-        console.error('❌ Memory save failed - rolled back:', saveError);
+        console.error(' Memory save failed - rolled back:', saveError);
         throw new Error(`Failed to save memory: ${saveError.message}`);
       }
 
     } catch (error) {
-      console.error('❌ Failed to add memory:', error);
+      console.error(' Failed to add memory:', error);
       throw error;
     }
   }
@@ -404,7 +449,7 @@ class EmmaWebVault {
    * Update memory (CRITICAL: Missing method causing data loss!)
    */
   async updateMemory(memoryId, updates) {
-    console.log('🔄 VAULT: Updating memory:', memoryId, updates);
+    console.log(' VAULT: Updating memory:', memoryId, updates);
 
     // Extension mode: Route through extension
     if (this.extensionAvailable) {
@@ -451,15 +496,15 @@ class EmmaWebVault {
       // Always update the timestamp
       memory.updated = timestamp;
 
-      console.log('✅ VAULT: Memory updated successfully:', memoryId);
-      console.log('📊 VAULT: Updated metadata.people:', memory.metadata?.people);
+      console.log(' VAULT: Memory updated successfully:', memoryId);
+      console.log(' VAULT: Updated metadata.people:', memory.metadata?.people);
 
       // Auto-save the vault
       await this.autoSave();
 
       return { success: true, memory: memory };
     } catch (error) {
-      console.error('❌ VAULT: Failed to update memory:', error);
+      console.error(' VAULT: Failed to update memory:', error);
       throw error;
     }
   }
@@ -575,7 +620,7 @@ class EmmaWebVault {
 
               resolve({ success: true });
             } else {
-              console.error('🗑️ EXTENSION DELETE: Failed:', event.data.error);
+              console.error(' EXTENSION DELETE: Failed:', event.data.error);
               reject(new Error(event.data.error || 'Delete failed'));
             }
           }
@@ -681,7 +726,7 @@ class EmmaWebVault {
             });
           }
         } catch (avatarErr) {
-          console.warn('⚠️ Failed to process avatar, continuing without:', avatarErr);
+          console.warn(' Failed to process avatar, continuing without:', avatarErr);
         }
       }
 
@@ -698,12 +743,12 @@ class EmmaWebVault {
         delete this.vaultData.content.people[personId];
         this.vaultData.stats.peopleCount--;
 
-        console.error('❌ Person save failed - rolled back:', saveError);
+        console.error(' Person save failed - rolled back:', saveError);
         throw new Error(`Failed to save person: ${saveError.message}`);
       }
 
     } catch (error) {
-      console.error('❌ Failed to add person:', error);
+      console.error(' Failed to add person:', error);
       throw error;
     }
   }
@@ -711,7 +756,7 @@ class EmmaWebVault {
   /**
    * Update an existing person
    */
-  async updatePerson({ id, name, relation, contact, avatar }) {
+  async updatePerson({ id, name, relation, contact, avatar, avatarId, avatarUrl }) {
     if (!this.isOpen) throw new Error('No vault is open');
     if (!id) throw new Error('Missing person id');
 
@@ -724,19 +769,53 @@ class EmmaWebVault {
     if (typeof contact === 'string') existing.contact = contact;
     existing.updated = new Date().toISOString();
 
-    if (avatar) {
-      try {
-        if (typeof avatar === 'string' && this.vaultData?.content?.media && this.vaultData.content.media[avatar]) {
-          existing.avatarId = avatar;
-        } else if (typeof avatar === 'string' && avatar.startsWith('data:')) {
-          existing.avatarId = await this.addMedia({
-            type: 'image/jpeg',
-            data: avatar,
-            name: `${existing.name || 'person'}-avatar`
-          });
+    const avatarParamProvided = typeof avatar !== 'undefined';
+    const avatarIdProvided = typeof avatarId !== 'undefined';
+    const avatarUrlProvided = typeof avatarUrl !== 'undefined';
+
+    try {
+      if (avatarParamProvided) {
+        if (avatar === null) {
+          existing.avatarId = null;
+          delete existing.avatarUrl;
+        } else if (typeof avatar === 'string') {
+          const mediaStore = this.vaultData?.content?.media || {};
+          if (mediaStore[avatar]) {
+            existing.avatarId = avatar;
+          } else if (avatar.startsWith('data:')) {
+            const newAvatarId = await this.addMedia({
+              type: 'image/jpeg',
+              data: avatar,
+              name: `${existing.name || 'person'}-avatar`
+            });
+            existing.avatarId = newAvatarId;
+          } else {
+            // Fallback: attempt to store raw string data
+            const newAvatarId = await this.addMedia({
+              type: 'image/jpeg',
+              data: avatar,
+              name: `${existing.name || 'person'}-avatar`
+            });
+            existing.avatarId = newAvatarId;
+          }
         }
-      } catch (avatarErr) {
-        console.warn('⚠️ Failed to update avatar:', avatarErr);
+      } else if (avatarIdProvided) {
+        if (avatarId === null) {
+          existing.avatarId = null;
+          delete existing.avatarUrl;
+        } else if (typeof avatarId === 'string') {
+          existing.avatarId = avatarId;
+        }
+      }
+    } catch (avatarErr) {
+      console.warn(' Failed to update avatar:', avatarErr);
+    }
+
+    if (avatarUrlProvided) {
+      if (avatarUrl) {
+        existing.avatarUrl = avatarUrl;
+      } else {
+        delete existing.avatarUrl;
       }
     }
 
@@ -744,7 +823,7 @@ class EmmaWebVault {
       await this.autoSave();
       return { success: true, person: existing };
     } catch (saveError) {
-      console.error('❌ Person update save failed:', saveError);
+      console.error(' Person update save failed:', saveError);
       throw new Error(`Failed to save person update: ${saveError.message}`);
     }
   }
@@ -807,7 +886,7 @@ class EmmaWebVault {
    */
   async addMedia({ type, data, name, file }) {
 
-    console.log('🔥 ADD_MEDIA DEBUG: Received parameters:', {
+    console.log(' ADD_MEDIA DEBUG: Received parameters:', {
       type,
       name,
       hasFile: !!file,
@@ -858,7 +937,7 @@ class EmmaWebVault {
       const mediaId = this.generateId('media');
 
       let mediaData;
-      console.log('🔥 MEDIA DATA TYPE CHECK:', {
+      console.log(' MEDIA DATA TYPE CHECK:', {
         hasFile: !!file,
         hasData: !!data,
         dataType: typeof data,
@@ -875,10 +954,10 @@ class EmmaWebVault {
 
         mediaData = data;
       } else if (typeof data === 'string') {
-        console.log('📝 Using string data (base64/dataURL)');
+        console.log(' Using string data (base64/dataURL)');
         // SPECIAL CASE: For extension captures, store data URLs directly without encryption
         if (data.startsWith('data:')) {
-          console.log('🔧 EXTENSION CAPTURE: Storing data URL directly without encryption');
+          console.log(' EXTENSION CAPTURE: Storing data URL directly without encryption');
           const media = {
             id: mediaId,
             name: name,
@@ -903,7 +982,7 @@ class EmmaWebVault {
         // Base64 or data URL - convert to ArrayBuffer for encryption
         mediaData = this.dataURLToArrayBuffer(data);
       } else {
-        console.error('❌ INVALID DATA FORMAT - DETAILED ANALYSIS:', {
+        console.error(' INVALID DATA FORMAT - DETAILED ANALYSIS:', {
           hasFile: !!file,
           hasData: !!data,
           dataType: typeof data,
@@ -940,7 +1019,7 @@ class EmmaWebVault {
       return mediaId;
 
     } catch (error) {
-      console.error('❌ Failed to add media:', error);
+      console.error(' Failed to add media:', error);
       throw error;
     }
   }
@@ -972,7 +1051,7 @@ class EmmaWebVault {
       // CRITICAL FIX: Handle both encrypted and unencrypted media
       if (media.encrypted === false || typeof media.data === 'string') {
         // Unencrypted data (base64 data URL) - return directly
-        console.log('📸 MEDIA: Returning unencrypted media data:', mediaId);
+        console.log(' MEDIA: Returning unencrypted media data:', mediaId);
         
         if (media.data.startsWith('data:')) {
           // Already a data URL - return as is
@@ -983,7 +1062,7 @@ class EmmaWebVault {
         }
       } else {
         // Encrypted data - decrypt first
-        console.log('🔐 MEDIA: Decrypting encrypted media data:', mediaId);
+        console.log(' MEDIA: Decrypting encrypted media data:', mediaId);
         
         let salt = this.vaultData.encryption.salt;
         if (salt && typeof salt === 'object' && !(salt instanceof Uint8Array)) {
@@ -1000,11 +1079,11 @@ class EmmaWebVault {
       }
 
     } catch (error) {
-      console.error('❌ Failed to get media:', error);
+      console.error(' Failed to get media:', error);
       // Fallback: if decryption fails, try treating as unencrypted
       const media = this.vaultData.content.media[mediaId];
       if (media && typeof media.data === 'string') {
-        console.log('🔄 MEDIA: Decryption failed, trying as unencrypted data');
+        console.log(' MEDIA: Decryption failed, trying as unencrypted data');
         if (media.data.startsWith('data:')) {
           return media.data;
         } else {
@@ -1067,7 +1146,7 @@ class EmmaWebVault {
       await this.autoSave();
       return { success: true };
     } catch (error) {
-      console.error('❌ Failed to remove media:', error);
+      console.error(' Failed to remove media:', error);
       return { success: false, error: error.message };
     }
   }
@@ -1105,12 +1184,18 @@ class EmmaWebVault {
    */
   async autoSave() {
 
-    // 🔥 CRITICAL: .emma file MUST be updated or operation fails
+    if (!this.autoSaveEnabled) {
+      this.pendingChanges = true;
+      console.debug('[EmmaWebVault] Auto-save disabled by settings; skipping autoSave run');
+      return;
+    }
+
+    //  CRITICAL: .emma file MUST be updated or operation fails
     const hasFileSystemAccess = 'showOpenFilePicker' in window;
 
     if (hasFileSystemAccess && this.fileHandle) {
-      // ✅ PREFERRED: Direct save to original file
-      console.log('💾 VAULT: Saving directly to .emma file');
+      //  PREFERRED: Direct save to original file
+      console.log(' VAULT: Saving directly to .emma file');
       
       // Show sync status
       if (window.emmaSyncStatus) {
@@ -1119,14 +1204,17 @@ class EmmaWebVault {
       
       this.pendingChanges = true;
       this.scheduleElegantSave();
+      this.needsFileReauth = false;
+      const syncModal = document.querySelector('.emma-sync-error-modal');
+      if (syncModal) syncModal.remove();
       
       // CRITICAL: Also sync to extension if available (merged from removed duplicate)
       if (this.extensionAvailable && this.extensionSyncEnabled) {
         try {
           await this.syncToExtension();
-          console.log('✅ VAULT: Extension sync completed');
+          console.log(' VAULT: Extension sync completed');
         } catch (extensionError) {
-          console.warn('⚠️ EXTENSION: Sync failed (non-critical):', extensionError);
+          console.warn(' EXTENSION: Sync failed (non-critical):', extensionError);
         }
       }
       
@@ -1134,20 +1222,31 @@ class EmmaWebVault {
       try {
         await this.saveToIndexedDB();
       } catch (error) {
-        console.warn('⚠️ BACKUP: IndexedDB save failed (non-critical):', error);
+        console.warn(' BACKUP: IndexedDB save failed (non-critical):', error);
       }
       
     } else if (hasFileSystemAccess && !this.fileHandle) {
-      // 🔄 GRACEFUL: No file handle - save to IndexedDB and defer file save
-      console.warn('⚠️ GRACEFUL: No file handle - saving to IndexedDB, will prompt for file access on next user interaction');
+      //  GRACEFUL: No file handle - save to IndexedDB and defer file save
+      console.warn(' GRACEFUL: No file handle - saving to IndexedDB, will prompt for file access on next user interaction');
       
       // Save to IndexedDB immediately as backup
       try {
         await this.saveToIndexedDB();
-        console.log('✅ GRACEFUL: Saved to IndexedDB backup');
+        console.log(' GRACEFUL: Saved to IndexedDB backup');
+
+        if (this.isWebappPrimary) {
+          // Pure webapp mode treats IndexedDB as primary storage so autosave can proceed
+          this.needsFileReauth = false;
+          this.pendingChanges = false;
+          if (window.emmaSyncStatus) {
+            window.emmaSyncStatus.show('success', 'Changes saved to Emma Web Vault');
+          }
+          return;
+        }
         
         // Mark that we need file re-authentication 
         this.needsFileReauth = true;
+        this.promptForFileReauth();
         
         // Show gentle notification (not blocking error)
         if (window.emmaSyncStatus) {
@@ -1158,7 +1257,7 @@ class EmmaWebVault {
         return;
         
       } catch (indexedDBError) {
-        console.error('❌ GRACEFUL: IndexedDB backup also failed:', indexedDBError);
+        console.error(' GRACEFUL: IndexedDB backup also failed:', indexedDBError);
         
         // Only now show error since both methods failed
         if (window.emmaSyncStatus) {
@@ -1168,8 +1267,8 @@ class EmmaWebVault {
       }
       
     } else {
-      // 🔄 FALLBACK: File System Access API not supported
-      console.log('📥 FALLBACK: Using download method for .emma file');
+      //  FALLBACK: File System Access API not supported
+      console.log(' FALLBACK: Using download method for .emma file');
       
       // Show fallback sync status
       if (window.emmaSyncStatus) {
@@ -1193,22 +1292,22 @@ class EmmaWebVault {
       clearTimeout(this.saveDebounceTimer);
     }
 
-    // 🔥 CRITICAL: Reduced debounce to 500ms for Emma's precious memories
+    //  CRITICAL: Reduced debounce to 500ms for Emma's precious memories
     // Balance between data safety and file performance
     this.saveDebounceTimer = setTimeout(async () => {
       if (this.pendingChanges) {
-        console.log('💾 EMMA: Performing immediate .emma file save');
+        console.log(' EMMA: Performing immediate .emma file save');
         try {
           await this.performElegantSave();
           this.pendingChanges = false;
-          console.log('✅ EMMA: .emma file saved successfully');
+          console.log(' EMMA: .emma file saved successfully');
           
           // Show success status
           if (window.emmaSyncStatus) {
             window.emmaSyncStatus.show('success', '.emma file updated successfully');
           }
         } catch (error) {
-          console.error('❌ EMMA: Critical .emma file save failed:', error);
+          console.error(' EMMA: Critical .emma file save failed:', error);
           
           // Show error status
           if (window.emmaSyncStatus) {
@@ -1231,8 +1330,9 @@ class EmmaWebVault {
 
       // Direct-save-only: Must have file handle
       if (!this.fileHandle || !('createWritable' in this.fileHandle)) {
-        console.error('⛔ DIRECT-SAVE: No file handle available');
-        this.showDirectSaveAffordance && this.showDirectSaveAffordance();
+        console.error(' DIRECT-SAVE: No file handle available');
+        this.needsFileReauth = true;
+        this.promptForFileReauth();
         throw new Error('Direct save required: no file access available');
       }
 
@@ -1240,7 +1340,7 @@ class EmmaWebVault {
       await this.atomicFileUpdate();
 
     } catch (error) {
-      console.error('❌ DIRECT-SAVE: Save failed:', error);
+      console.error(' DIRECT-SAVE: Save failed:', error);
       throw error; // Propagate error to caller
     }
   }
@@ -1263,19 +1363,21 @@ class EmmaWebVault {
       try {
         // Test handle validity by attempting to get file info
         await this.fileHandle.getFile();
-        console.log('✅ ATOMIC: File handle preserved after write');
+        console.log(' ATOMIC: File handle preserved after write');
       } catch (handleError) {
-        console.warn('⚠️ ATOMIC: File handle invalidated after write, will need re-auth:', handleError);
+        console.warn(' ATOMIC: File handle invalidated after write, will need re-auth:', handleError);
         // Don't throw - just log for debugging
       }
 
     } catch (error) {
-      console.error('❌ ATOMIC: File update failed:', error);
+      console.error(' ATOMIC: File update failed:', error);
       
       // If write failed, check if it's a handle issue
       if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
-        console.warn('⚠️ ATOMIC: Permission denied - file handle may be invalid');
+        console.warn(' ATOMIC: Permission denied - file handle may be invalid');
         this.fileHandle = null; // Clear invalid handle
+        this.needsFileReauth = true;
+        this.promptForFileReauth();
       }
       
       throw error;
@@ -1295,14 +1397,25 @@ class EmmaWebVault {
       });
 
       const file = await fileHandle.getFile();
-      if (file.name === this.originalFileName) {
-        this.fileHandle = fileHandle;
 
-        return true;
-      } else {
-
-        return false;
+      if (this.originalFileName && file.name !== this.originalFileName) {
+        console.warn(' REAUTH: Selected file name differs from stored reference. Accepting new file handle.', {
+          stored: this.originalFileName,
+          selected: file.name
+        });
       }
+
+      this.fileHandle = fileHandle;
+      this.originalFileName = file.name;
+      try {
+        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
+        localStorage.setItem('emmaVaultOriginalFileName', file.name);
+      } catch (_) {}
+      this.needsFileReauth = false;
+      const syncModal = document.querySelector('.emma-sync-error-modal');
+      if (syncModal) syncModal.remove();
+
+      return true;
     } catch (error) {
 
       return false;
@@ -1319,15 +1432,16 @@ class EmmaWebVault {
 
       // Direct-save-only: Must have file handle for final save
       if (!this.fileHandle || !('createWritable' in this.fileHandle)) {
-        console.error('⛔ DIRECT-SAVE: Cannot lock - no file access');
-        this.showDirectSaveAffordance && this.showDirectSaveAffordance();
+        console.error(' DIRECT-SAVE: Cannot lock - no file access');
+        this.needsFileReauth = true;
+        this.promptForFileReauth();
         throw new Error('Direct save required to lock vault');
       }
 
       // Perform final atomic update
       await this.atomicFileUpdate();
 
-      // 🔥 CRITICAL: Preserve filename for file access restoration
+      //  CRITICAL: Preserve filename for file access restoration
       const preservedFileName = this.originalFileName;
       
       // Clear vault state
@@ -1346,16 +1460,16 @@ class EmmaWebVault {
       localStorage.removeItem('emmaVaultActive');
       localStorage.removeItem('emmaVaultName');
       
-      // 🔄 PRESERVE: Keep filename in localStorage for file access restoration
+      //  PRESERVE: Keep filename in localStorage for file access restoration
       if (preservedFileName) {
         localStorage.setItem('emmaVaultOriginalFileName', preservedFileName);
-        console.log('💾 LOCK: Preserved filename for restoration:', preservedFileName);
+        console.log(' LOCK: Preserved filename for restoration:', preservedFileName);
       }
 
       return { success: true };
 
     } catch (error) {
-      console.error('❌ DIRECT-SAVE: Failed to lock vault:', error);
+      console.error(' DIRECT-SAVE: Failed to lock vault:', error);
       throw error;
     }
   }
@@ -1390,7 +1504,7 @@ class EmmaWebVault {
 
           // Check if object store exists
           if (!db.objectStoreNames.contains('vaults')) {
-            console.warn('⚠️ IndexedDB: Object store "vaults" not found - returning null');
+            console.warn(' IndexedDB: Object store "vaults" not found - returning null');
             resolve(null);
             return;
           }
@@ -1414,7 +1528,7 @@ class EmmaWebVault {
         };
       });
     } catch (error) {
-      console.error('❌ Failed to load from IndexedDB:', error);
+      console.error(' Failed to load from IndexedDB:', error);
       return null;
     }
   }
@@ -1459,21 +1573,10 @@ class EmmaWebVault {
         this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName') || 
                                localStorage.getItem('emmaVaultOriginalFileName');
         
-        // 🔥 CRITICAL: Try to restore file access for .emma file sync
-        if (this.originalFileName && 'showOpenFilePicker' in window) {
-          console.log('🔄 RESTORE: Attempting to restore file access for:', this.originalFileName);
-          try {
-            // Try silent restoration first (may work if browser remembers permission)
-            const restored = await this.reEstablishFileAccess();
-            if (restored) {
-              console.log('✅ RESTORE: File access restored automatically');
-            } else {
-              console.warn('⚠️ RESTORE: File access not restored - will prompt on first save');
-            }
-          } catch (error) {
-            console.warn('⚠️ RESTORE: File access restoration failed:', error);
-            // Not critical - user will be prompted on first save
-          }
+        //  CRITICAL: Defer re-auth until user action to avoid unsolicited file pickers
+        if (!this.fileHandle && this.originalFileName) {
+          this.needsFileReauth = true;
+          this.promptForFileReauth();
         }
 
         return { vaultData: this.vaultData, hasPassphrase: true, hasFileName: !!this.originalFileName };
@@ -1483,7 +1586,7 @@ class EmmaWebVault {
       }
 
     } catch (error) {
-      console.error('❌ ELEGANT: Failed to restore vault state:', error);
+      console.error(' ELEGANT: Failed to restore vault state:', error);
       return null;
     }
   }
@@ -1506,7 +1609,7 @@ class EmmaWebVault {
               db.deleteObjectStore(storeName);
 
             } catch (e) {
-              console.warn('⚠️ IndexedDB: Could not delete store:', storeName);
+              console.warn(' IndexedDB: Could not delete store:', storeName);
             }
           });
 
@@ -1547,7 +1650,7 @@ class EmmaWebVault {
     try {
 
       if (!this.vaultData) {
-        console.error('❌ No vault data available for download');
+        console.error(' No vault data available for download');
         return;
       }
 
@@ -1587,11 +1690,11 @@ class EmmaWebVault {
 
       // Show user message about file update
       if (typeof showToast === 'function') {
-        showToast(`📥 Updated ${baseName}.emma downloaded - replace your original file`, 'info');
+        showToast(` Updated ${baseName}.emma downloaded - replace your original file`, 'info');
       }
 
     } catch (error) {
-      console.error('❌ Failed to download vault:', error);
+      console.error(' Failed to download vault:', error);
       throw error;
     }
   }
@@ -1633,7 +1736,7 @@ class EmmaWebVault {
         throw new Error('Invalid vault salt format');
       }
       if (salt.length !== 32) {
-        console.warn('⚠️ SALT: Unexpected salt length:', salt.length, '- attempting to proceed with normalized value');
+        console.warn(' SALT: Unexpected salt length:', salt.length, '- attempting to proceed with normalized value');
       }
       // Persist normalized salt back in memory to avoid future issues
       try { this.vaultData.encryption.salt = salt; } catch (_) {}
@@ -1661,8 +1764,8 @@ class EmmaWebVault {
       return result;
 
     } catch (error) {
-      console.error('❌ Failed to encrypt vault data:', error);
-      console.error('❌ Error details:', error.stack);
+      console.error(' Failed to encrypt vault data:', error);
+      console.error(' Error details:', error.stack);
       throw error;
     }
   }
@@ -1711,7 +1814,7 @@ class EmmaWebVault {
       return vaultData;
 
     } catch (error) {
-      console.error('❌ Failed to decrypt vault file:', error);
+      console.error(' Failed to decrypt vault file:', error);
       throw new Error('Failed to decrypt vault. Please check your passphrase.');
     }
   }
@@ -1724,73 +1827,16 @@ class EmmaWebVault {
   }
 
   /**
-   * Show a small, reusable affordance to re-establish direct file save
+   * Prompt user to re-establish direct file save when auto-save requires a handle
    */
-  showDirectSaveAffordance() {
-    try {
+  promptForFileReauth() {
+    if (!this.needsFileReauth) return;
+    if (typeof document === 'undefined') return;
+    if (document.querySelector('.emma-sync-error-modal')) return;
 
-      console.log('🔍 AFFORDANCE: isFallbackMode?', this.isFallbackMode());      if (!this.isFallbackMode()) {
-
-        return;
-      }
-
-      if (document.getElementById('emma-direct-save-btn')) {
-
-        return; // Already shown
-      }
-
-      const btn = document.createElement('button');
-      btn.id = 'emma-direct-save-btn';
-      btn.innerHTML = '🔓 Enable Direct Save';
-      btn.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 2147483647;
-        padding: 12px 18px;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: #fff;
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(239, 68, 68, 0.4);
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 14px;
-        animation: pulse 2s infinite;
-      `;
-
-      // Add pulsing animation
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-      `;
-      document.head.appendChild(style);
-      document.body.appendChild(btn);
-
-      const enable = async () => {
-        try {
-          btn.disabled = true;
-          btn.innerHTML = '🔄 Requesting access...';
-          const ok = await this.reEstablishFileAccess();
-          if (ok && this.fileHandle) {
-            btn.innerHTML = '✅ Direct save enabled!';
-            btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            setTimeout(() => btn.remove(), 2000);
-            if (typeof showToast === 'function') showToast('✅ Direct save enabled - all changes now save automatically!', 'success');
-          } else {
-            btn.innerHTML = '🔓 Enable Direct Save';
-            btn.disabled = false;
-          }
-        } catch (e) {
-          btn.textContent = 'Enable direct save';
-          btn.disabled = false;
-        }
-      };
-      btn.addEventListener('click', enable);
-    } catch (_) {}
+    if (typeof this.showFileSyncError === 'function') {
+      this.showFileSyncError();
+    }
   }
 
   /**
@@ -1869,8 +1915,8 @@ class EmmaWebVault {
       return result.buffer;
 
     } catch (error) {
-      console.error('❌ Encryption failed:', error);
-      console.error('❌ Error details:', error.stack);
+      console.error(' Encryption failed:', error);
+      console.error(' Error details:', error.stack);
       throw error;
     }
   }
@@ -1927,7 +1973,7 @@ class EmmaWebVault {
       return decryptedData;
 
     } catch (error) {
-      console.error('❌ Decryption failed:', error);
+      console.error(' Decryption failed:', error);
       throw error;
     }
   }
@@ -2016,14 +2062,14 @@ class EmmaWebVault {
     // Return emoji based on memory content or metadata
     const emotion = memory.metadata?.emotion || 'neutral';
     const emojis = {
-      happy: '😊',
-      sad: '😢',
-      love: '💕',
-      excited: '🎉',
-      peaceful: '🌸',
-      neutral: '📝'
+      happy: '',
+      sad: '',
+      love: '',
+      excited: '',
+      peaceful: '',
+      neutral: ''
     };
-    return emojis[emotion] || '📝';
+    return emojis[emotion] || '';
   }
 
   calculateMemorySize(memory) {
@@ -2096,7 +2142,7 @@ class EmmaWebVault {
         break;
 
       case 'SYNC_ERROR':
-        console.error('❌ Sync error:', message.error);
+        console.error(' Sync error:', message.error);
         this.showSyncNotification('error', 'Sync failed: ' + message.error);
         break;
 
@@ -2215,7 +2261,7 @@ class EmmaWebVault {
   }
 
   /**
-   * 🚨 REMOVED DUPLICATE autoSave - was overriding .emma file saving!
+   *  REMOVED DUPLICATE autoSave - was overriding .emma file saving!
    * Original autoSave (line ~1106) handles proper .emma file persistence.
    */
 
@@ -2276,33 +2322,42 @@ class EmmaWebVault {
   /**
    * EXACT WORKING CRYPTO: Copied from extension background.js
    */
-  async exactWorkingDecrypt(fileData, passphrase) {
+    async exactWorkingDecrypt(fileData, passphrase) {
     try {
-
-      // Parse .emma file format: EMMA + version + salt + iv + encrypted data
       const data = new Uint8Array(fileData);
 
-      // Check magic bytes
       const magic = new TextDecoder().decode(data.slice(0, 4));
       if (magic !== 'EMMA') {
         throw new Error('Invalid .emma file format');
       }
 
-      // Extract components (EXACT format from working extension)
-      const version = data.slice(4, 6);
-      const salt = data.slice(6, 38); // 32 bytes
-      const iv = data.slice(38, 50); // 12 bytes
-      const encrypted = data.slice(50);
+      let offset = 4;
+      let version = null;
+      if (data.length >= offset + 2) {
+        const candidate = data.slice(offset, offset + 2);
+        const [major, minor] = candidate;
+        const looksLikeVersion = (major === 1 && minor <= 10) || (major === 0 && minor <= 10);
+        const bytesRemaining = data.length - (offset + 2 + 32 + 12);
+        if (looksLikeVersion && bytesRemaining >= 0) {
+          version = candidate;
+          offset += 2;
+        }
+      }
 
-      console.log('🔓 EXACT WORKING: Extracted vault components:', {
+      const salt = data.slice(offset, offset + 32);
+      offset += 32;
+      const iv = data.slice(offset, offset + 12);
+      offset += 12;
+      const encrypted = data.slice(offset);
+
+      console.log('EXACT WORKING: Extracted vault components:', {
         magic,
-        version: Array.from(version),
+        version: version ? Array.from(version) : null,
         saltLength: salt.length,
         ivLength: iv.length,
         encryptedLength: encrypted.length
       });
 
-      // Derive key from passphrase using PBKDF2 (EXACT parameters)
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(passphrase),
@@ -2311,45 +2366,62 @@ class EmmaWebVault {
         ['deriveBits', 'deriveKey']
       );
 
-      const key = await crypto.subtle.deriveKey(
-        {
-          name: 'PBKDF2',
-          salt: salt,
-          iterations: 250000, // EXACT same as extension
-          hash: 'SHA-256'
-        },
-        keyMaterial,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['decrypt']
-      );
+      const iterationCandidates = [250000, 100000];
+      let decrypted = null;
+      let chosenIterations = null;
+      let lastError = null;
 
-      // Decrypt the data (EXACT same as extension)
-      const decrypted = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: iv },
-        key,
-        encrypted
-      );
+      for (const iterations of iterationCandidates) {
+        try {
+          const key = await crypto.subtle.deriveKey(
+            {
+              name: 'PBKDF2',
+              salt: salt,
+              iterations,
+              hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+          );
 
-      // Parse JSON
+          decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            encrypted
+          );
+          chosenIterations = iterations;
+          break;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      if (!decrypted) {
+        throw lastError || new Error('Failed to derive Emma vault key.');
+      }
+
       const jsonString = new TextDecoder().decode(decrypted);
       const vaultData = JSON.parse(jsonString);
 
-      console.log('✅ EXACT WORKING: Vault decrypted successfully! Memories:',
+      vaultData.encryption = vaultData.encryption || {};
+      vaultData.encryption.salt = new Uint8Array(salt);
+      if (chosenIterations) {
+        vaultData.encryption.iterations = chosenIterations;
+      }
+
+      console.log('EXACT WORKING: Vault decrypted successfully! Memories:',
         Object.keys(vaultData.content?.memories || {}).length);
 
       return vaultData;
 
     } catch (error) {
-      console.error('❌ EXACT WORKING: Decryption failed:', error);
+      console.error('EXACT WORKING: Decryption failed:', error);
       throw new Error('Failed to decrypt vault: ' + error.message);
     }
   }
-
-  /**
-   * PURE WEB APP: Native vault encryption (no extension needed)
-   */
-  async nativeEncryptVault(vaultData, passphrase) {
+async nativeEncryptVault(vaultData, passphrase) {
     try {
 
       // Generate encryption salt and IV
@@ -2406,7 +2478,7 @@ class EmmaWebVault {
       return fileData;
 
     } catch (error) {
-      console.error('❌ NATIVE CRYPTO: Encryption failed:', error);
+      console.error(' NATIVE CRYPTO: Encryption failed:', error);
       throw error;
     }
   }
@@ -2447,10 +2519,10 @@ window.emmaAPI = {
             sessionStorage.setItem('emmaVaultName', decryptedData.metadata?.name || decryptedData.name || 'Web Vault');
             // SECURITY: Never store passphrase in web storage
 
-            console.log('✅ Vault unlocked successfully via API!');
+            console.log(' Vault unlocked successfully via API!');
             return { success: true, stats: window.emmaWebVault.getStats() };
           } catch (error) {
-            console.error('❌ Failed to decrypt vault with provided passphrase:', error);
+            console.error(' Failed to decrypt vault with provided passphrase:', error);
             return { success: false, error: 'Incorrect passphrase or corrupted vault data' };
           }
         } else {
@@ -2465,11 +2537,11 @@ window.emmaAPI = {
           sessionStorage.setItem('emmaVaultActive', 'true');
           sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || vaultData.name || 'Web Vault');
 
-          console.log('✅ Vault opened successfully (unencrypted data)!');
+          console.log(' Vault opened successfully (unencrypted data)!');
           return { success: true, stats: window.emmaWebVault.getStats() };
         }
       } catch (error) {
-        console.error('❌ Failed to unlock vault:', error);
+        console.error(' Failed to unlock vault:', error);
         return { success: false, error: error.message };
       }
     },
@@ -2508,7 +2580,7 @@ window.emmaAPI = {
 
           return { success: true, id: mediaId };
         } catch (error) {
-          console.error('❌ Failed to add attachment:', error);
+          console.error(' Failed to add attachment:', error);
           return { success: false, error: error.message };
         }
       },
@@ -2517,7 +2589,7 @@ window.emmaAPI = {
           const res = await window.emmaWebVault.removeMedia(mediaId);
           return { success: res.success };
         } catch (error) {
-          console.error('❌ Failed to remove attachment:', error);
+          console.error(' Failed to remove attachment:', error);
           return { success: false, error: error.message };
         }
       }
@@ -2538,7 +2610,7 @@ window.emmaAPI = {
         const res = await window.emmaWebVault.deleteMemory(memoryId);
         return { success: res.success };
       } catch (error) {
-        console.error('❌ Failed to delete memory:', error);
+        console.error(' Failed to delete memory:', error);
         return { success: false, error: error.message };
       }
     }
@@ -2553,7 +2625,7 @@ window.emmaAPI = {
         const res = await window.emmaWebVault.updatePerson(person);
         return { success: true, person: res.person };
       } catch (error) {
-        console.error('❌ Failed to update person:', error);
+        console.error(' Failed to update person:', error);
         return { success: false, error: error.message };
       }
     },
@@ -2562,7 +2634,7 @@ window.emmaAPI = {
         const res = await window.emmaWebVault.deletePerson(personId);
         return { success: res.success };
       } catch (error) {
-        console.error('❌ Failed to delete person:', error);
+        console.error(' Failed to delete person:', error);
         return { success: false, error: error.message };
       }
     },
@@ -2571,21 +2643,21 @@ window.emmaAPI = {
       try {
         // CLEAN: Direct vault access since vault should exist on all pages now
         if (!window.emmaWebVault) {
-          console.warn('⚠️ EmmaWebVault not available, returning empty people list');
+          console.warn(' EmmaWebVault not available, returning empty people list');
           return { success: true, items: [] };
         }
         
         if (typeof window.emmaWebVault.listPeople !== 'function') {
-          console.warn('⚠️ listPeople method not available, returning empty people list');
+          console.warn(' listPeople method not available, returning empty people list');
           return { success: true, items: [] };
         }
         
-        console.log('👥 API: Calling vault.listPeople()...');
+        console.log(' API: Calling vault.listPeople()...');
         const people = await window.emmaWebVault.listPeople();
-        console.log(`👥 API: Retrieved ${people?.length || 0} people from vault`);
+        console.log(` API: Retrieved ${people?.length || 0} people from vault`);
         return { success: true, items: people || [] };
       } catch (error) {
-        console.error('❌ Failed to list people:', error);
+        console.error(' Failed to list people:', error);
         return { success: false, error: error.message, items: [] };
       }
     },
@@ -2621,7 +2693,7 @@ window.emmaAPI = {
         // Fallback for non-extension mode
         return await window.emmaWebVault.updatePerson(personData);
       } catch (error) {
-        console.error('❌ Failed to update person:', error);
+        console.error(' Failed to update person:', error);
         return { success: false, error: error.message };
       }
     }
@@ -2634,12 +2706,24 @@ window.emmaAPI = {
   }
 };
 
+EmmaWebVault.prototype.setAutoSaveEnabled = function(enabled) {
+  this.autoSaveEnabled = !!enabled;
+  if (!this.autoSaveEnabled) {
+    this.pendingChanges = true;
+  }
+};
+
+EmmaWebVault.prototype.showDirectSaveAffordance = function() {
+  this.needsFileReauth = true;
+  this.promptForFileReauth();
+};
+
 /**
  * Show critical error when .emma file sync is broken
  * EMMA ETHOS: Never silently fail - always inform the user
  */
 EmmaWebVault.prototype.showFileSyncError = function() {
-  console.error('🚨 CRITICAL: .emma file sync broken - showing user error');
+  console.error(' CRITICAL: .emma file sync broken - showing user error');
   
   // Remove any existing sync error modal
   const existing = document.querySelector('.emma-sync-error-modal');
@@ -2672,7 +2756,7 @@ EmmaWebVault.prototype.showFileSyncError = function() {
       text-align: center;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     ">
-      <div style="font-size: 48px; margin-bottom: 20px;">🚨</div>
+      <div style="font-size: 48px; margin-bottom: 20px;"></div>
       <h2 style="margin: 0 0 20px 0; font-size: 24px;">CRITICAL: .emma File Access Lost</h2>
       <p style="margin: 0 0 30px 0; font-size: 16px; line-height: 1.5; opacity: 0.9;">
         Your memories cannot be saved to your .emma file right now. This means your memories 
@@ -2689,7 +2773,7 @@ EmmaWebVault.prototype.showFileSyncError = function() {
         font-weight: 600;
         cursor: pointer;
         margin-right: 15px;
-      ">🔗 Restore File Access</button>
+      "> Restore File Access</button>
       <button id="cancel-save" style="
         background: transparent;
         color: white;
@@ -2711,7 +2795,7 @@ EmmaWebVault.prototype.showFileSyncError = function() {
       if (restored) {
         modal.remove();
         // Show success and retry the save operation
-        this.showToast && this.showToast('✅ File access restored! Saving to .emma file...', 'success');
+        this.showToast && this.showToast(' File access restored! Saving to .emma file...', 'success');
         // The autoSave will retry automatically
       } else {
         window.emmaError('Could not restore file access. Please ensure you select the correct .emma file.', {
@@ -2736,4 +2820,5 @@ EmmaWebVault.prototype.showFileSyncError = function() {
 };
 
 // Emma Web Vault System ready for production
-console.log('🌟 Emma Web Vault System ready - preserving memories with love! 💜');
+console.log(' Emma Web Vault System ready - preserving memories with love! ');
+

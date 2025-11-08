@@ -119,7 +119,7 @@ async function loadPeopleInTab() {
           <div style="text-align: center; color: rgba(255,255,255,0.7); margin: 40px 0;">
             <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
             <p>No people in your vault yet.</p>
-            <button onclick="window.open('/pages/people.html', '_blank')" style="
+            <button onclick="window.open('/pages/people-emma.html', '_blank')" style="
               background: linear-gradient(135deg, #8658ff, #f093fb);
               border: none;
               color: white;
@@ -213,7 +213,7 @@ async function loadPeopleInTab() {
             margin-right: 12px;
           ">Save Connections</button>
           
-          <button onclick="window.open('/pages/people.html', '_blank')" style="
+          <button onclick="window.open('/pages/people-emma.html', '_blank')" style="
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;

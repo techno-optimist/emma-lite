@@ -36,6 +36,10 @@ class SecurePasswordModal {
         confirmPassword = false
       } = options;
 
+      const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+
       this.currentResolve = resolve;
       this.currentReject = reject;
       this.isOpen = true;
@@ -45,19 +49,19 @@ class SecurePasswordModal {
         <div class="emma-secure-modal-overlay" id="secureModalOverlay">
           <div class="emma-secure-modal">
             <div class="emma-secure-modal-header">
-              <h3 class="emma-secure-modal-title">${title}</h3>
+              <h3 class="emma-secure-modal-title">${esc(title)}</h3>
               <button class="emma-secure-modal-close" onclick="window.securePasswordModal.cancel()">×</button>
             </div>
             
             <div class="emma-secure-modal-body">
-              <p class="emma-secure-modal-message">${message}</p>
+              <p class="emma-secure-modal-message">${esc(message)}</p>
               
               <div class="emma-secure-input-group">
                 <input 
                   type="password" 
                   id="securePasswordInput" 
                   class="emma-secure-input" 
-                  placeholder="${placeholder}"
+                  placeholder="${esc(placeholder)}"
                   autocomplete="new-password"
                 >
                 <div class="emma-password-strength" id="passwordStrength"></div>

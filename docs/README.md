@@ -14,6 +14,12 @@ Emma Lite is a Chrome extension that gives your AI assistants perfect memory. It
 📦 **Export/Import**: Backup and restore your memories  
 🎨 **Clean UI**: Beautiful, intuitive interface  
 
+## Documentation Index
+
+- `docs/reports/` – executive audits, readiness reports, and security reviews consolidated from the project root  
+- `docs/extension/` – Chrome extension guides (install, testing, final status) previously stored in `emma-vault-extension-fixed/`
+- Existing design notes and plans remain alongside this README under the `docs/` folder for quick reference
+
 ## Installation
 
 ### Development Mode
@@ -62,8 +68,7 @@ emma-lite-extension/
 ├── lib/
 │   └── database.js       # IndexedDB wrapper
 ├── css/
-│   ├── popup.css         # Popup styles
-│   └── content.css       # Injected UI styles
+│   └── popup.css         # Popup styles
 └── icons/                # Extension icons
 ```
 

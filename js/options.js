@@ -95,9 +95,9 @@ function setupUniversalNavigationHandlers() {
 
     try {
       if (window.chrome && chrome.tabs) {
-        chrome.tabs.create({ url: chrome.runtime.getURL('dashboard-new.html') });
+        chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
       } else if (window.emmaAPI) {
-        window.location.href = 'dashboard-new.html';
+        window.location.href = '../dashboard.html';
       } else if (action === 'back') {
         window.history.back();
       } else {
@@ -105,7 +105,7 @@ function setupUniversalNavigationHandlers() {
       }
     } catch (err) {
       console.error('Navigation failed:', err);
-      window.location.href = 'dashboard-new.html';
+      window.location.href = '../dashboard.html';
     }
   };
 
@@ -527,6 +527,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await updateStats();
   attachEventListeners();
   setupOrbManager();
+  if (window.EmmaThemeUI) {
+    window.EmmaThemeUI.init({
+      themeContainerId: 'theme-gallery',
+      backgroundContainerId: 'background-options'
+    });
+  }
   // Wire exit buttons with enhanced navigation
   try {
     const backBtn = document.getElementById('settings-back');
@@ -555,17 +561,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           if (window.chrome && chrome.tabs) {
             // Extension environment
-            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard-new.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
           } else if (window.emmaAPI) {
             // Electron environment
-            window.location.href = 'dashboard-new.html';
+            window.location.href = '../dashboard.html';
           } else {
             // Fallback
             window.history.back();
           }
         } catch (err) {
           console.error('Navigation failed:', err);
-          window.location.href = 'dashboard-new.html';
+          window.location.href = '../dashboard.html';
         }
       };
 
@@ -586,15 +592,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.stopPropagation();
         try {
           if (window.chrome && chrome.tabs) {
-            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard-new.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
           } else if (window.emmaAPI) {
-            window.location.href = 'dashboard-new.html';
+            window.location.href = '../dashboard.html';
           } else {
             window.close();
           }
         } catch (err) {
           console.error('Close failed:', err);
-          window.location.href = 'dashboard-new.html';
+          window.location.href = '../dashboard.html';
         }
       };
 
@@ -2306,7 +2312,7 @@ async function saveDialogSettings() {
       // Update localStorage for dementia companion
       if (currentDialogOrb === 'dementia') {
         localStorage.setItem('dementia.settings.bump', Date.now().toString());
-        window.postMessage({ type: 'DEMENTIA_SETTINGS_CHANGED', settings }, '*');
+        window.postMessage({ type: 'DEMENTIA_SETTINGS_CHANGED', settings }, window.location.origin);
       }
     }
 

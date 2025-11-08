@@ -58,11 +58,11 @@ async function init() {
         } else if (!status.isUnlocked) {
           console.log('🔍 Welcome: Vault exists but locked, redirecting to dashboard with unlock prompt');
           // Redirect to dashboard which will handle vault unlock
-          window.location.href = '../pages/dashboard-new.html';
+          window.location.href = '../dashboard.html';
         } else {
           console.log('🔍 Welcome: Vault exists and unlocked, redirecting to dashboard');
           // Vault exists and is unlocked, redirect to dashboard
-          window.location.href = '../pages/dashboard-new.html';
+          window.location.href = '../dashboard.html';
         }
       } else {
         // Fallback to Chrome extension API
@@ -192,7 +192,7 @@ async function createVault() {
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
         console.log('🔐 Welcome: Vault created successfully, redirecting to dashboard');
-        window.location.href = '../pages/dashboard-new.html';
+        window.location.href = '../dashboard.html';
       }, 2000);
     } else {
       showStatus(response.error || 'Failed to create vault', 'error');

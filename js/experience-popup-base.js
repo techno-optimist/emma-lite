@@ -20,6 +20,7 @@ class ExperiencePopup {
 
     this.element = this.createElement();
     document.body.appendChild(this.element);
+    document.body.classList.add('modal-open');
     
     // Animate in
     requestAnimationFrame(() => {
@@ -82,6 +83,9 @@ class ExperiencePopup {
     // Cleanup
     this.cleanup();
     console.log('🔵 SIMPLIFIED Close: Complete');
+    if (!document.querySelector('.emma-experience-popup')) {
+      document.body.classList.remove('modal-open');
+    }
   }
 
   /**
@@ -94,8 +98,10 @@ class ExperiencePopup {
     popup.className = 'emma-experience-popup';
     
     // MOBILE RESPONSIVENESS: Detect mobile and adjust positioning
-    const isMobile = window.innerWidth <= 768;
-    const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+    const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const isMobile = viewportWidth <= 768;
+    const isTablet = viewportWidth > 768 && viewportWidth <= 1024;
     
     let finalPosition = { ...this.position };
     
@@ -104,22 +110,22 @@ class ExperiencePopup {
       finalPosition = {
         left: 12,
         top: 24,
-        width: window.innerWidth - 24,
-        height: window.innerHeight - 48
+        width: viewportWidth - 24,
+        height: viewportHeight - 48
       };
     } else if (isTablet) {
       // Tablet: Larger but not full screen
       finalPosition = {
-        left: Math.max(20, (window.innerWidth - Math.min(this.position.width, 700)) / 2),
-        top: Math.max(20, (window.innerHeight - Math.min(this.position.height, 600)) / 2),
+        left: Math.max(20, (viewportWidth - Math.min(this.position.width, 700)) / 2),
+        top: Math.max(20, (viewportHeight - Math.min(this.position.height, 600)) / 2),
         width: Math.min(this.position.width, 700),
         height: Math.min(this.position.height, 600)
       };
     } else {
       // Desktop: Ensure it fits within viewport
       finalPosition = {
-        left: Math.max(8, Math.min(window.innerWidth - this.position.width - 8, this.position.left)),
-        top: Math.max(8, Math.min(window.innerHeight - this.position.height - 8, this.position.top)),
+        left: Math.max(8, Math.min(viewportWidth - this.position.width - 8, this.position.left)),
+        top: Math.max(8, Math.min(viewportHeight - this.position.height - 8, this.position.top)),
         width: this.position.width,
         height: this.position.height
       };
@@ -146,11 +152,15 @@ class ExperiencePopup {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: white;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
       ${isMobile ? '' : 'resize: both;'}
       min-width: ${isMobile ? 'auto' : '400px'};
       min-height: ${isMobile ? 'auto' : '300px'};
       max-width: calc(100vw - ${isMobile ? '24px' : '16px'});
       max-height: calc(100vh - ${isMobile ? '48px' : '16px'});
+      max-height: calc(100dvh - ${isMobile ? '48px' : '16px'});
+      padding-bottom: env(safe-area-inset-bottom, 0);
     `;
 
     // Create header
@@ -250,8 +260,10 @@ class ExperiencePopup {
     
     content.style.cssText = `
       padding: ${contentPadding};
-      height: auto;
-      overflow: visible;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
       box-sizing: border-box;
     `;
 

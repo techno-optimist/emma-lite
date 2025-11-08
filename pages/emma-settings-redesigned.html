@@ -4,30 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emma Settings - Your Intelligent Memory Companion</title>
+  <link rel="stylesheet" href="../css/theme-tokens.css">
+  <link rel="stylesheet" href="../css/emma-components.css">
   
   <!-- Emma Core Systems -->
-  <script src="../js/emma-input-modal.js"></script>
-  <script src="../js/clean-password-modal.js"></script>
-  <script src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-input-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/clean-password-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../themes/theme-catalog.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-settings-ui.js"></script>
   
-  <!-- Browser Compatibility Layer -->
-  <script src="../emma-browser-compatibility-fix.js"></script>
-  
-  <!-- Mobile UI Fixes -->
-  <script src="../emma-mobile-ui-fixes.js"></script>
+  <!-- Optional compatibility layers removed: files not present in web build -->
   
   <style>
     /* Emma Brand Variables */
     :root {
-      --emma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-      --emma-purple: #8B5CF6;
-      --emma-pink: #F093FB;
-      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
-      --emma-glass: rgba(255, 255, 255, 0.1);
-      --emma-border: rgba(255, 255, 255, 0.2);
-      --emma-text: #ffffff;
-      --emma-text-secondary: rgba(255, 255, 255, 0.8);
-      --emma-text-tertiary: rgba(255, 255, 255, 0.6);
+      --emma-gradient: var(--emma-bg-gradient);
+      --emma-purple: var(--emma-accent-primary);
+      --emma-pink: var(--emma-accent-secondary);
+      --emma-glow: var(--emma-glow-strong);
+      --emma-glass: rgba(var(--emma-neutral-rgb), 0.08);
+      --emma-border: rgba(var(--emma-neutral-rgb), 0.18);
+      --emma-text: var(--emma-text-strong);
+      --emma-text-secondary: var(--emma-text-standard);
+      --emma-text-tertiary: var(--emma-text-muted);
     }
 
     * {
@@ -41,89 +42,596 @@
       background: var(--emma-gradient);
       color: var(--emma-text);
       min-height: 100vh;
-      padding: 20px;
+      padding: clamp(24px, 4vw, 48px);
     }
 
     .settings-container {
-      max-width: 800px;
+      max-width: 1180px;
       margin: 0 auto;
-      position: relative;
     }
 
-    .settings-header {
-      text-align: center;
-      margin-bottom: 40px;
+    .settings-exit-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(236, 72, 153, 0.85));
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 18px 36px rgba(139, 92, 246, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(18px);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      z-index: 140;
+      cursor: pointer;
+    }
+
+    .settings-exit-fab:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 24px 44px rgba(139, 92, 246, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    }
+
+    .settings-exit-fab svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+    }
+
+    .settings-shell {
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+      gap: clamp(28px, 4vw, 48px);
+      align-items: start;
+    }
+
+    .settings-sidebar {
+      display: grid;
+      gap: clamp(18px, 2vw, 28px);
+      padding: clamp(20px, 2.4vw, 28px);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: linear-gradient(165deg, rgba(26, 26, 56, 0.82), rgba(10, 10, 32, 0.9));
+      box-shadow:
+        0 24px 60px rgba(6, 4, 20, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      position: sticky;
+      top: clamp(24px, 4vw, 48px);
+    }
+
+    .settings-sidebar__header {
+      display: grid;
+      gap: 12px;
     }
 
     .emma-logo {
-      font-size: 48px;
+      font-size: clamp(42px, 3vw, 54px);
       font-weight: 300;
-      margin-bottom: 8px;
+      margin: 0;
       background: linear-gradient(135deg, var(--emma-purple), var(--emma-pink));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      letter-spacing: 0.1em;
+      text-transform: lowercase;
     }
 
-    .settings-subtitle {
-      font-size: 18px;
-      color: var(--emma-text-secondary);
-      margin-bottom: 12px;
+    .settings-sidebar__subtitle {
+      font-size: 0.95rem;
+      color: rgba(220, 225, 255, 0.82);
+      line-height: 1.7;
     }
 
     .back-button {
-      position: absolute;
-      top: -10px;
-      left: 0;
-      background: var(--emma-glass);
-      border: 2px solid var(--emma-border);
-      color: var(--emma-text);
-      padding: 12px 20px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-decoration: none;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-      backdrop-filter: blur(10px);
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(24, 28, 60, 0.65);
+      color: rgba(236, 240, 255, 0.85);
+      text-decoration: none;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      width: fit-content;
     }
 
     .back-button:hover {
-      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(6, 8, 24, 0.45);
+    }
+
+    .settings-sidebar__card {
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: rgba(32, 30, 64, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(218, 222, 255, 0.85);
+      display: grid;
+      gap: 6px;
+    }
+
+    .settings-sidebar__card strong {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(198, 205, 255, 0.7);
+    }
+
+    .settings-nav {
+      display: grid;
+      gap: 10px;
+    }
+
+    .settings-nav__item {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(130deg, rgba(24, 26, 60, 0.75), rgba(18, 20, 48, 0.65));
+      color: rgba(232, 236, 255, 0.9);
+      font-size: 0.9rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    }
+
+    .settings-nav__item::after {
+      content: "\2192";
+      font-size: 0.8rem;
+      opacity: 0.6;
+    }
+
+    .settings-nav__item.is-active,
+    .settings-nav__item:hover {
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.45);
+      box-shadow: 0 18px 36px rgba(6, 8, 24, 0.45);
       transform: translateY(-2px);
     }
 
-    .settings-section {
-      background: var(--emma-glass);
-      backdrop-filter: blur(20px);
-      border: 2px solid var(--emma-border);
-      border-radius: 20px;
-      padding: 32px;
-      margin-bottom: 32px;
-      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    .settings-sidebar__meta {
+      display: grid;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: rgba(205, 210, 245, 0.7);
     }
 
-    .section-title {
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--emma-text);
+    .settings-sidebar__meta a {
+      color: rgba(232, 236, 255, 0.9);
+      text-decoration: none;
+    }
+
+    .settings-sidebar__meta a:hover {
+      text-decoration: underline;
+    }
+
+    .settings-main {
+      display: grid;
+      gap: clamp(24px, 3vw, 36px);
+      position: relative;
+      z-index: 1;
+    }
+
+    .settings-actions {
       display: flex;
+      justify-content: flex-end;
       align-items: center;
-      gap: 12px;
+      margin-top: 8px;
+      padding-top: 12px;
     }
 
-    .section-description {
-      font-size: 16px;
+    .settings-section {
+      position: relative;
+      margin: 0;
+      padding: clamp(26px, 2.6vw, 34px);
+      border-radius: 26px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(150deg, rgba(28, 28, 64, 0.78), rgba(12, 12, 32, 0.9));
+      box-shadow:
+        0 24px 60px rgba(4, 4, 12, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      display: grid;
+      gap: 18px;
+      overflow: hidden;
+      scroll-margin-top: clamp(80px, 12vh, 120px);
+    }
+
+    .settings-section::before {
+      content: attr(data-section-title);
+      position: absolute;
+      top: 22px;
+      left: 24px;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(198, 205, 250, 0.3);
+    }
+
+    .settings-section::after {
+      content: '';
+      position: absolute;
+      inset: -48% -10% 72% -45%;
+      background: radial-gradient(circle at 0% 50%, rgba(var(--emma-accent-primary-rgb), 0.22), transparent 58%);
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .settings-section__header {
+      display: grid;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .settings-section__content {
+      display: grid;
+      gap: clamp(16px, 2vw, 24px);
+      position: relative;
+      z-index: 1;
+    }
+
+    .settings-section--ai {
+      position: relative;
+      display: grid;
+      gap: 26px;
+      padding: 40px;
+      overflow: hidden;
+      border-radius: 26px;
+      border: 1px solid rgba(var(--emma-accent-primary-rgb), 0.45);
+      background: linear-gradient(160deg, rgba(var(--emma-accent-primary-rgb), 0.18) 0%, rgba(26, 20, 52, 0.92) 55%, rgba(8, 8, 20, 0.94) 100%);
+      box-shadow:
+        0 32px 68px rgba(16, 10, 42, 0.55),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .settings-section__halo {
+      position: absolute;
+      inset: -40% -30% 10%;
+      background: radial-gradient(circle at 15% 20%, rgba(var(--emma-accent-primary-rgb), 0.55), transparent 55%),
+                  radial-gradient(circle at 80% 10%, rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.4), transparent 65%);
+      filter: blur(60px);
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .settings-section__header {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 20px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .settings-section__glyph {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-family: inherit;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, rgba(var(--emma-accent-primary-rgb), 0.18), rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.26));
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(var(--emma-accent-primary-rgb), 0.45);
+      color: rgba(244, 244, 255, 0.9);
+    }
+
+    .section-title__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb), 0.75), rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.55));
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 0.74rem;
+      font-family: inherit;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .settings-section__headline .section-title {
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .settings-section__headline .section-description {
+      margin-bottom: 0;
+      max-width: 540px;
+    }
+
+    .settings-section__content--ai {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 20px;
+    }
+
+    .settings-section--ai .setting-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 24px 26px;
+      border-radius: 20px;
+      border: 1px solid rgba(var(--emma-accent-primary-rgb), 0.18);
+      background: linear-gradient(140deg, rgba(20, 18, 40, 0.92) 0%, rgba(20, 24, 52, 0.75) 60%, rgba(20, 24, 52, 0.55) 100%);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      transition: transform 260ms ease, box-shadow 260ms ease;
+      border-bottom: none;
+    }
+
+    .settings-section--ai .setting-item::before {
+      content: '';
+      position: absolute;
+      inset: 1px;
+      border-radius: inherit;
+      background: linear-gradient(110deg, rgba(var(--emma-accent-primary-rgb), 0.22), rgba(255, 255, 255, 0) 75%);
+      opacity: 0.5;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .settings-section--ai .setting-item::after {
+      content: '';
+      position: absolute;
+      inset: -20% 45% 30% -20%;
+      background: radial-gradient(circle at 0% 50%, rgba(var(--emma-accent-primary-rgb), 0.25), transparent 60%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .settings-section--ai .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .settings-section--ai .setting-item:hover {
+      transform: translateY(-6px);
+      box-shadow:
+        0 28px 60px rgba(0, 0, 0, 0.45),
+        0 0 28px rgba(var(--emma-accent-primary-rgb), 0.28);
+    }
+
+    .settings-section--ai .setting-label strong {
+      letter-spacing: 0.03em;
+      font-size: 1.05rem;
+    }
+
+    .settings-section--ai .setting-label span {
+      color: rgba(224, 223, 240, 0.7);
+      max-width: 520px;
+    }
+
+    .settings-section--ai .setting-item > .emma-button,
+    .settings-section--ai .setting-item > .api-key-button,
+    .settings-section--ai .setting-item > .status-indicator,
+    .settings-section--ai .setting-item > .toggle-switch {
+      justify-self: end;
+    }
+
+    .settings-section--ai .toggle-switch {
+      justify-self: end;
+    }
+
+    .ai-setting--status .status-indicator {
+      justify-self: end;
+      background: rgba(12, 180, 129, 0.15);
+      border-color: rgba(52, 211, 153, 0.35);
+      box-shadow: inset 0 0 12px rgba(52, 211, 153, 0.25);
+    }
+
+    .ai-setting--status .status-dot {
+      width: 14px;
+      height: 14px;
+    }
+
+    .ai-setting--status .status-dot.active {
+      box-shadow: 0 0 18px rgba(52, 211, 153, 0.6);
+    }
+
+    /* Theme gallery styles */
+    .theme-gallery {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      margin-top: 20px;
+    }
+
+    .theme-card {
+      position: relative;
+      border: 1px solid rgba(var(--emma-neutral-rgb), 0.15);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(var(--emma-neutral-rgb), 0.06);
       color: var(--emma-text-secondary);
-      margin-bottom: 24px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 150px;
+      text-align: left;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.4);
+    }
+
+    .theme-card--active {
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.65);
+      box-shadow: 0 18px 50px rgba(var(--emma-accent-primary-rgb), 0.35);
+    }
+
+    .theme-card__preview {
+      height: 80px;
+      border-radius: 14px;
+      background: var(--emma-gradient-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-card__swatches {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .theme-card__swatch {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .theme-card__info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .theme-card__name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--emma-text);
+    }
+
+    .theme-card__description {
+      font-size: 13px;
+      color: var(--emma-text-secondary);
       line-height: 1.5;
     }
 
-    .setting-item {
+    .theme-card__badges {
       display: flex;
-      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .theme-card__badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(var(--emma-accent-primary-rgb), 0.18);
+      color: var(--emma-accent-primary);
+      font-weight: 600;
+    }
+
+    .background-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .background-option {
+      flex: 1 1 160px;
+      min-width: 160px;
+      border: 1px solid rgba(var(--emma-neutral-rgb), 0.18);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(var(--emma-neutral-rgb), 0.05);
+      color: var(--emma-text-secondary);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .background-option:hover {
+      transform: translateY(-2px);
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.45);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
+    }
+
+    .background-option--active {
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.65);
+      box-shadow: 0 18px 40px rgba(var(--emma-accent-primary-rgb), 0.3);
+    }
+
+    .background-option__preview {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--emma-gradient-primary);
+      flex-shrink: 0;
+    }
+
+    .background-option__info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .background-option__name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--emma-text);
+    }
+
+    .background-option__description {
+      font-size: 12px;
+      color: var(--emma-text-secondary);
+      line-height: 1.4;
+    }
+
+    .section-title {
+      font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+      font-weight: 600;
+      margin: 0;
+      color: var(--emma-text);
+      letter-spacing: 0.02em;
+    }
+
+    .section-description {
+      font-size: 0.95rem;
+      color: rgba(214, 218, 255, 0.78);
+      margin: 0;
+      line-height: 1.7;
+      max-width: 46ch;
+    }
+
+    .setting-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
       align-items: center;
       padding: 20px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -132,10 +640,6 @@
     .setting-item:last-child {
       border-bottom: none;
       padding-bottom: 0;
-    }
-
-    .setting-label {
-      flex: 1;
     }
 
     .setting-label strong {
@@ -154,50 +658,70 @@
 
     .toggle-switch {
       position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      width: 64px;
+      height: 32px;
     }
 
     .toggle-switch input {
+      position: absolute;
+      inset: 0;
+      margin: 0;
       opacity: 0;
-      width: 0;
-      height: 0;
+      cursor: pointer;
     }
 
     .toggle-slider {
       position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(255, 255, 255, 0.2);
-      transition: 0.4s;
-      border-radius: 30px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      inset: 0;
+      display: block;
+      background: linear-gradient(125deg, rgba(24, 24, 52, 0.9), rgba(18, 20, 46, 0.78));
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.35s cubic-bezier(0.3, 0.7, 0.4, 1.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
-    .toggle-slider:before {
-      position: absolute;
+    .toggle-slider::before {
       content: "";
-      height: 22px;
-      width: 22px;
-      left: 2px;
-      bottom: 2px;
-      background-color: white;
-      transition: 0.4s;
+      position: absolute;
+      top: 3px;
+      left: 4px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.95), rgba(220, 225, 255, 0.6));
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transition: all 0.35s cubic-bezier(0.3, 0.7, 0.4, 1.1);
     }
 
-    input:checked + .toggle-slider {
-      background: linear-gradient(135deg, var(--emma-purple), var(--emma-pink));
-      border-color: var(--emma-purple);
+    .toggle-slider::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 999px;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+      pointer-events: none;
+      transition: opacity 0.35s ease;
     }
 
-    input:checked + .toggle-slider:before {
-      transform: translateX(30px);
+    .toggle-switch input:checked + .toggle-slider {
+      background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb), 0.7), rgba(var(--emma-accent-secondary-rgb), 0.55));
+      border-color: rgba(var(--emma-accent-primary-rgb), 0.5);
+      box-shadow:
+        0 0 22px rgba(var(--emma-accent-primary-rgb), 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(32px);
+      background: radial-gradient(circle at 30% 30%, #ffffff, rgba(255, 255, 255, 0.78));
+      box-shadow:
+        0 4px 18px rgba(var(--emma-accent-primary-rgb), 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
     }
 
     .api-key-input {
@@ -230,6 +754,7 @@
       background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      justify-self: end;
     }
 
     .status-dot {
@@ -245,23 +770,71 @@
       box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
     }
 
-    .save-button {
-      background: linear-gradient(135deg, var(--emma-purple), var(--emma-pink));
-      border: none;
-      color: white;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      width: 100%;
-      margin-top: 32px;
+    .api-key-button {
+      --emma-button-gradient-start: rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.42);
+      --emma-button-gradient-end: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.18);
+      --emma-button-surface: rgba(16, 18, 36, 0.92);
+      --emma-button-ink: var(--emma-text-standard);
+      --emma-button-outline-opacity: 0.35;
+      justify-content: flex-start;
+      gap: 0.75rem;
+      padding: 0.9rem 1.4rem;
+      min-width: 230px;
+      margin-top: 12px;
     }
 
-    .save-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+    .api-key-button__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.92);
+      transition: transform 250ms ease, background 250ms ease;
+    }
+
+    .api-key-button__icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+    }
+
+    .api-key-button__icon--active {
+      background: rgba(52, 211, 153, 0.18);
+      color: rgba(52, 211, 153, 0.95);
+    }
+
+    .api-key-button__label {
+      font-size: 0.95rem;
+      text-transform: none;
+      letter-spacing: 0.02em;
+    }
+
+    .api-key-button:hover .api-key-button__icon,
+    .api-key-button:focus-visible .api-key-button__icon {
+      transform: rotate(-8deg) scale(1.05);
+    }
+
+    .api-key-button[data-state="connected"] {
+      --emma-button-accent: var(--emma-success, #34d399);
+      --emma-button-accent-rgb: 52, 211, 153;
+      --emma-button-ink: var(--emma-text-on-accent, #0f172a);
+      --emma-button-outline-opacity: 0.55;
+    }
+
+    .save-button {
+      --emma-button-gradient-start: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.96);
+      --emma-button-gradient-end: rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.72);
+      --emma-button-surface: rgba(33, 16, 55, 0.92);
+      margin-top: 0;
+      justify-content: center;
+      font-size: 1rem;
+      letter-spacing: 0.03em;
+      text-transform: none;
     }
 
     .help-text {
@@ -269,39 +842,6 @@
       color: var(--emma-text-tertiary);
       margin-top: 8px;
       line-height: 1.4;
-    }
-
-    /* Mobile Responsive */
-    @media (max-width: 768px) {
-      body {
-        padding: 16px;
-      }
-
-      .settings-section {
-        padding: 24px 20px;
-        margin-bottom: 24px;
-      }
-
-      .section-title {
-        font-size: 20px;
-      }
-
-      .setting-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 16px 0;
-      }
-
-      .toggle-switch {
-        align-self: flex-end;
-      }
-
-      .back-button {
-        position: static;
-        margin-bottom: 20px;
-        align-self: flex-start;
-      }
     }
 
     /* Animations */
@@ -563,264 +1103,395 @@
         font-size: 12px;
       }
     }
+
+      @media (max-width: 1100px) {
+        body {
+          padding-bottom: 120px;
+        }
+
+        .settings-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .settings-sidebar {
+        position: static;
+        order: -1;
+      }
+    }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 20px;
+          padding-bottom: calc(20px + 108px);
+        }
+
+        .settings-sidebar {
+          padding: 18px;
+        }
+
+      .settings-nav__item {
+        font-size: 0.78rem;
+      }
+
+      .settings-section {
+        padding: 22px 20px;
+      }
+
+      .settings-section__header {
+        gap: 10px;
+      }
+
+      .settings-section__glyph {
+        width: 54px;
+        height: 54px;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+      }
+
+      .setting-item {
+        grid-template-columns: 1fr;
+        align-items: start;
+        gap: 12px;
+      }
+
+      .settings-section--ai .setting-item {
+        padding: 20px;
+      }
+
+      .settings-section--ai .setting-item > .emma-button,
+      .settings-section--ai .setting-item > .api-key-button,
+      .settings-section--ai .setting-item > .status-indicator,
+      .settings-section--ai .setting-item > .toggle-switch {
+        justify-self: start;
+      }
+
+      .settings-actions {
+        justify-content: center;
+      }
+
+      .back-button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .status-indicator {
+        justify-self: stretch;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="settings-container">
-    <a href="../dashboard.html" class="back-button">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m12 19-7-7 7-7"/>
-        <path d="m19 12H5"/>
-      </svg>
-      Back to Emma
-    </a>
+    <div class="settings-shell">
+      <aside class="settings-sidebar" aria-label="Settings navigation">
+        <a href="../dashboard.html" class="back-button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 19-7-7 7-7"/>
+            <path d="m19 12H5"/>
+          </svg>
+          Back to Emma
+        </a>
 
-    <div class="settings-header">
-      <h1 class="emma-logo">emma</h1>
-      <p class="settings-subtitle">Configure your intelligent memory companion</p>
+        <div class="settings-sidebar__header">
+          <h1 class="emma-logo">emma</h1>
+          <p class="settings-sidebar__subtitle">Configure your intelligent memory companion with a space that feels distinctly yours.</p>
+        </div>
+
+        <div class="settings-sidebar__card">
+          <strong>Experience Tip</strong>
+          <p>Backgrounds you choose now ripple through the vault and modal surfaces so every interaction stays on-theme.</p>
+        </div>
+
+        <nav class="settings-nav" id="settings-nav" aria-label="Settings sections">
+          <button type="button" class="settings-nav__item is-active" data-target="#section-visual">Visual Themes</button>
+          <button type="button" class="settings-nav__item" data-target="#section-ai">Intelligence</button>
+          <button type="button" class="settings-nav__item" data-target="#section-care">Memory &amp; Care</button>
+          <button type="button" class="settings-nav__item" data-target="#section-privacy">Privacy &amp; Security</button>
+          <button type="button" class="settings-nav__item" data-target="#section-accessibility">Care &amp; Accessibility</button>
+          <button type="button" class="settings-nav__item" data-target="#section-system">System Information</button>
+        </nav>
+
+        <div class="settings-sidebar__meta">
+          <p class="settings-sidebar__version">Emma v1.0 Beta</p>
+          <p class="settings-sidebar__support">Need guidance? <a href="mailto:support@emma.ai">support@emma.ai</a></p>
+        </div>
+      </aside>
+
+      <main class="settings-main" id="settings-main">
+        <!-- Visual Theme Selection -->
+        <section id="section-visual" class="settings-section" data-section-title="Visual Themes">
+          <div class="settings-section__header">
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">VT</span> Visual Themes</h2>
+            <p class="section-description">
+              Preview different Emma looks and moods. Themes update instantly so you can find the palette that feels just right, and you can choose a signature background to match.
+            </p>
+          </div>
+          <div class="settings-section__content">
+            <div id="settings-theme-gallery" class="theme-gallery" role="list" aria-label="Available themes"></div>
+            <div id="settings-background-options" class="background-options" role="list" aria-label="Background options"></div>
+          </div>
+        </section>
+
+        <!-- AI Configuration -->
+        <section id="section-ai" class="settings-section settings-section--ai" data-section-title="Intelligence">
+          <div class="settings-section__halo" aria-hidden="true"></div>
+          <div class="settings-section__header">
+            <span class="settings-section__glyph" aria-hidden="true">AI</span>
+            <div class="settings-section__headline">
+              <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">AI</span> Artificial Intelligence</h2>
+              <p class="section-description">
+                Emma's AI works beautifully offline with intelligent heuristics. For even more advanced understanding and nuanced conversations, connect your OpenAI API key to unlock Emma's full potential.
+              </p>
+            </div>
+          </div>
+
+          <div class="settings-section__content settings-section__content--ai">
+            <div class="setting-item ai-setting">
+              <div class="setting-label">
+                <strong>OpenAI API Key</strong>
+                <span>Enable Emma's most advanced AI responses with your OpenAI API key. Emma works great offline with smart heuristics, but an API key unlocks deeper understanding and more nuanced conversations.</span>
+              </div>
+              <button 
+                id="api-key-setup-btn" 
+                type="button"
+                class="api-key-button emma-button emma-button--outline"
+              >
+                <span class="emma-button__pulse" aria-hidden="true"></span>
+                <span class="api-key-button__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" role="presentation" focusable="false" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="11" width="16" height="10" rx="2" ry="2" fill="none"></rect>
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none"></path>
+                  </svg>
+                </span>
+                <span id="api-key-status" class="api-key-button__label">Set Up API Key</span>
+              </button>
+            </div>
+
+            <div class="setting-item ai-setting">
+              <div class="setting-label">
+                <strong>Memory Detection</strong>
+                <span>Emma automatically recognizes when you're sharing meaningful memories and gently suggests saving them to your vault.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="memory-detection-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item ai-setting">
+              <div class="setting-label">
+                <strong>People Recognition</strong>
+                <span>Emma identifies names mentioned in conversations and connects them to people in your vault or suggests adding new ones.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="people-recognition-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item ai-setting ai-setting--status">
+              <div class="setting-label">
+                <strong>Vectorless AI Status</strong>
+                <span>Real-time status of Emma's intelligent memory processing system.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot" id="ai-status-dot"></div>
+                <span id="ai-status-text">Initializing...</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Memory & Care -->
+        <section id="section-care" class="settings-section" data-section-title="Memory & Care">
+          <div class="settings-section__header">
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">MC</span> Memory &amp; Care</h2>
+            <p class="section-description">
+              Specialized features for memory preservation and dementia care support.
+            </p>
+          </div>
+          <div class="settings-section__content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Dementia Care Mode</strong>
+                <span>Enables validation therapy principles and specialized responses for users with memory impairment. Designed with love for Debbe.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="dementia-mode-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Memory Auto-Capture</strong>
+                <span>Automatically detect and suggest capturing meaningful moments during conversations.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-capture-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Privacy & Security -->
+        <section id="section-privacy" class="settings-section" data-section-title="Privacy & Security">
+          <div class="settings-section__header">
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">PS</span> Privacy &amp; Security</h2>
+            <p class="section-description">
+              Emma prioritizes your privacy with local-only processing and secure vault encryption.
+            </p>
+          </div>
+          <div class="settings-section__content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Local Processing</strong>
+                <span>All memory analysis happens on your device. No data is sent to external servers.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Vault Encryption</strong>
+                <span>Your .emma files are protected with AES-256 encryption and PBKDF2 key derivation.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Vault Auto-Save</strong>
+                <span>Automatically write updates to your .emma vault whenever memories or people change.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-save-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Dementia Care & Accessibility -->
+        <section id="section-accessibility" class="settings-section" data-section-title="Care & Accessibility">
+          <div class="settings-section__header">
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">CA</span> Dementia Care &amp; Accessibility</h2>
+            <p class="section-description">
+              Specialized features designed for users with memory impairment and their caregivers. Emma adapts to provide gentle, supportive interactions.
+            </p>
+          </div>
+          <div class="settings-section__content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Font Size</strong>
+                <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
+              </div>
+              <div class="font-size-controls">
+                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">A−</button>
+                <span id="font-size-display" class="font-size-value">100%</span>
+                <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">A+</button>
+                <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">Reset</button>
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Reduced Motion</strong>
+                <span>Minimize animations and transitions to reduce disorientation. Helpful for users sensitive to visual motion.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="reduced-motion-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>High Contrast Mode</strong>
+                <span>Increase color contrast for better visibility. Makes text and interface elements easier to distinguish.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="high-contrast-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Gentle Reminders</strong>
+                <span>Emma uses encouraging language and avoids correcting or contradicting. Based on validation therapy principles.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Repetition Tolerance</strong>
+                <span>Emma patiently handles repeated questions without highlighting repetition. Maintains dignity and reduces anxiety.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Response Pacing</strong>
+                <span>Emma waits 2-3 seconds before responding to reduce pressure and allow processing time.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- System Information -->
+        <section id="section-system" class="settings-section" data-section-title="System Information">
+          <div class="settings-section__header">
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">SI</span> System Information</h2>
+            <p class="section-description">
+              Basic system information and compatibility status.
+            </p>
+          </div>
+          <div class="settings-section__content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Emma Version</strong>
+                <span>Current version of Emma and compatibility information.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>v1.0 Beta</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="settings-actions">
+          <button class="save-button emma-button emma-button--primary" type="button" id="save-all-settings">
+            Save All Settings
+          </button>
+        </div>
+      </main>
     </div>
-
-    <!-- AI Configuration -->
-    <div class="settings-section">
-      <h2 class="section-title">
-        🧠 Artificial Intelligence
-      </h2>
-      <p class="section-description">
-        Emma's AI works beautifully offline with intelligent heuristics. For even more advanced understanding and nuanced conversations, connect your OpenAI API key to unlock Emma's full potential.
-      </p>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>OpenAI API Key</strong>
-          <span>Enable Emma's most advanced AI responses with your OpenAI API key. Emma works great offline with smart heuristics, but an API key unlocks deeper understanding and more nuanced conversations.</span>
-        </div>
-        <button 
-          id="api-key-setup-btn" 
-          class="api-key-button"
-          style="
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 8px;
-            min-width: 200px;
-          "
-          onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.borderColor='rgba(255, 255, 255, 0.5)'"
-          onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.borderColor='rgba(255, 255, 255, 0.3)'"
-        >
-          <span id="api-key-status">🔑 Setup API Key</span>
-        </button>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Memory Detection</strong>
-          <span>Emma automatically recognizes when you're sharing meaningful memories and gently suggests saving them to your vault.</span>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="memory-detection-toggle" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>People Recognition</strong>
-          <span>Emma identifies names mentioned in conversations and connects them to people in your vault or suggests adding new ones.</span>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="people-recognition-toggle" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Vectorless AI Status</strong>
-          <span>Real-time status of Emma's intelligent memory processing system.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot" id="ai-status-dot"></div>
-          <span id="ai-status-text">Initializing...</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Memory & Care -->
-    <div class="settings-section">
-      <h2 class="section-title">
-        💜 Memory & Care
-      </h2>
-      <p class="section-description">
-        Specialized features for memory preservation and dementia care support.
-      </p>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Dementia Care Mode</strong>
-          <span>Enables validation therapy principles and specialized responses for users with memory impairment. Designed with love for Debbe.</span>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="dementia-mode-toggle">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Memory Auto-Capture</strong>
-          <span>Automatically detect and suggest capturing meaningful moments during conversations.</span>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="auto-capture-toggle" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Privacy & Security -->
-    <div class="settings-section">
-      <h2 class="section-title">
-        🔒 Privacy & Security
-      </h2>
-      <p class="section-description">
-        Emma prioritizes your privacy with local-only processing and secure vault encryption.
-      </p>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Local Processing</strong>
-          <span>All memory analysis happens on your device. No data is sent to external servers.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot active"></div>
-          <span>Always Enabled</span>
-        </div>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Vault Encryption</strong>
-          <span>Your .emma files are protected with AES-256 encryption and PBKDF2 key derivation.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot active"></div>
-          <span>Always Enabled</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dementia Care & Accessibility -->
-    <div class="settings-section">
-      <h2 class="section-title">
-        ❤️ Dementia Care & Accessibility
-      </h2>
-      <p class="section-description">
-        Specialized features designed for users with memory impairment and their caregivers. Emma adapts to provide gentle, supportive interactions.
-      </p>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Font Size</strong>
-          <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
-        </div>
-        <div class="font-size-controls">
-          <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">A⁻</button>
-          <span id="font-size-display" class="font-size-value">100%</span>
-          <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">A⁺</button>
-          <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">↺</button>
-        </div>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Reduced Motion</strong>
-          <span>Minimize animations and transitions to reduce disorientation. Helpful for users sensitive to visual motion.</span>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="reduced-motion-toggle">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>High Contrast Mode</strong>
-          <span>Increase color contrast for better visibility. Makes text and interface elements easier to distinguish.</span>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="high-contrast-toggle">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Gentle Reminders</strong>
-          <span>Emma uses encouraging language and avoids correcting or contradicting. Based on validation therapy principles.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot active"></div>
-          <span>Always Enabled</span>
-        </div>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Repetition Tolerance</strong>
-          <span>Emma patiently handles repeated questions without highlighting repetition. Maintains dignity and reduces anxiety.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot active"></div>
-          <span>Always Enabled</span>
-        </div>
-      </div>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Response Pacing</strong>
-          <span>Emma waits 2-3 seconds before responding to reduce pressure and allow processing time.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot active"></div>
-          <span>Always Enabled</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- System Information -->
-    <div class="settings-section">
-      <h2 class="section-title">
-        ℹ️ System Information
-      </h2>
-      <p class="section-description">
-        Basic system information and compatibility status.
-      </p>
-      
-      <div class="setting-item">
-        <div class="setting-label">
-          <strong>Emma Version</strong>
-          <span>Current version of Emma and compatibility information.</span>
-        </div>
-        <div class="status-indicator">
-          <div class="status-dot active"></div>
-          <span>v1.0 Beta</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Save Button -->
-    <button class="save-button" id="save-all-settings">
-      ✨ Save All Settings
-    </button>
   </div>
 
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     /**
      * Emma Settings Manager
      * Clean, modern settings interface with Emma branding
@@ -829,10 +1500,14 @@
       constructor() {
         this.settings = {};
         this.loadSettings();
+        if (typeof this.settings.autoSaveEnabled !== 'boolean') {
+          this.settings.autoSaveEnabled = this.getAutoSavePreference();
+        }
+        this.applyAutoSavePreference(this.settings.autoSaveEnabled !== false);
         this.setupEventListeners();
         this.updateUI();
         
-        console.log('⚙️ Emma Settings Manager initialized');
+        console.log('[Settings] Emma Settings Manager initialized');
       }
       
       loadSettings() {
@@ -845,31 +1520,97 @@
             peopleRecognition: true,
             fontSize: 100,
             reducedMotion: false,
-            highContrast: false
+            highContrast: false,
+            autoSaveEnabled: true
           };
           
-          console.log('⚙️ Settings loaded:', this.settings);
+          console.log('[Settings] Settings loaded:', this.settings);
         } catch (error) {
-          console.error('⚙️ Failed to load settings:', error);
+          console.error('[Settings] Failed to load settings:', error);
           this.settings = {
             apiKey: '',
             memoryDetection: true,
             peopleRecognition: true,
             fontSize: 100,
             reducedMotion: false,
-            highContrast: false
+            highContrast: false,
+            autoSaveEnabled: true
           };
         }
       }
-      
+
+      @media (max-width: 720px) {
+        .settings-exit-fab {
+          width: 52px;
+          height: 52px;
+          bottom: 18px;
+          right: 18px;
+        }
+      }
+
+      @media (max-width: 540px) {
+        .settings-exit-fab {
+          width: 48px;
+          height: 48px;
+          bottom: calc(env(safe-area-inset-bottom, 0) + 14px);
+          right: 16px;
+        }
+      }
+
+      getAutoSavePreference() {
+        try {
+          const stored = localStorage.getItem('emmaVaultAutoSaveEnabled');
+          if (stored === 'false') {
+            return false;
+          }
+          if (stored === 'true') {
+            return true;
+          }
+
+          if (stored === null) {
+            localStorage.setItem('emmaVaultAutoSaveEnabled', 'true');
+            return true;
+          }
+        } catch (error) {
+          console.warn('[Settings] Unable to read auto-save preference:', error);
+        }
+        return true;
+      }
+
+      applyAutoSavePreference(enabled) {
+        const value = enabled ? 'true' : 'false';
+        try {
+          localStorage.setItem('emmaVaultAutoSaveEnabled', value);
+        } catch (error) {
+          console.warn('[Settings] Unable to persist auto-save preference:', error);
+        }
+
+        if (window.emmaWebVault) {
+          if (typeof window.emmaWebVault.setAutoSaveEnabled === 'function') {
+            window.emmaWebVault.setAutoSaveEnabled(enabled);
+          } else {
+            window.emmaWebVault.autoSaveEnabled = enabled;
+          }
+        }
+
+        if (window.emmaVaultPrimary) {
+          if (typeof window.emmaVaultPrimary.setAutoSaveEnabled === 'function') {
+            window.emmaVaultPrimary.setAutoSaveEnabled(enabled);
+          } else {
+            window.emmaVaultPrimary.autoSaveEnabled = enabled;
+          }
+        }
+      }
+
       saveSettings() {
         try {
           localStorage.setItem('emmaSettings', JSON.stringify(this.settings));
-          console.log('⚙️ Settings saved:', this.settings);
-          this.showToast('✅ Settings saved successfully!', 'success');
+          this.applyAutoSavePreference(this.settings.autoSaveEnabled !== false);
+          console.log('[Settings] Settings saved:', this.settings);
+          this.showToast('Settings saved successfully!', 'success');
         } catch (error) {
-          console.error('⚙️ Failed to save settings:', error);
-          this.showToast('❌ Failed to save settings', 'error');
+          console.error('[Settings] Failed to save settings:', error);
+          this.showToast('Failed to save settings', 'error');
         }
       }
       
@@ -882,11 +1623,13 @@
         const peopleToggle = document.getElementById('people-recognition-toggle');
         const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
         const highContrastToggle = document.getElementById('high-contrast-toggle');
+        const autoSaveToggle = document.getElementById('auto-save-toggle');
         
         if (memoryToggle) memoryToggle.checked = this.settings.memoryDetection !== false;
         if (peopleToggle) peopleToggle.checked = this.settings.peopleRecognition !== false;
         if (reducedMotionToggle) reducedMotionToggle.checked = this.settings.reducedMotion || false;
         if (highContrastToggle) highContrastToggle.checked = this.settings.highContrast || false;
+        if (autoSaveToggle) autoSaveToggle.checked = this.settings.autoSaveEnabled !== false;
         
         // Update font size
         this.updateFontSize();
@@ -955,7 +1698,15 @@
             this.applyAccessibilitySettings();
           });
         }
-        
+
+        if (autoSaveToggle) {
+          autoSaveToggle.addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            this.settings.autoSaveEnabled = enabled;
+            this.applyAutoSavePreference(enabled);
+          });
+        }
+
         // Font size controls
         const decreaseFont = document.getElementById('decrease-font');
         const increaseFont = document.getElementById('increase-font');
@@ -1088,11 +1839,20 @@
 
       updateAPIKeyButton() {
         const statusSpan = document.getElementById('api-key-status');
+        const apiKeyButton = document.getElementById('api-key-setup-btn');
+        const iconSpan = apiKeyButton ? apiKeyButton.querySelector('.api-key-button__icon') : null;
         if (statusSpan) {
-          if (this.settings.apiKey && this.settings.apiKey.startsWith('sk-')) {
-            statusSpan.textContent = '✅ API Key Connected';
-          } else {
-            statusSpan.textContent = '🔑 Setup API Key';
+          const hasKey = this.settings.apiKey && this.settings.apiKey.startsWith('sk-');
+          statusSpan.textContent = hasKey ? 'API Key Connected' : 'Set Up API Key';
+          if (apiKeyButton) {
+            if (hasKey) {
+              apiKeyButton.dataset.state = 'connected';
+            } else {
+              delete apiKeyButton.dataset.state;
+            }
+          }
+          if (iconSpan) {
+            iconSpan.classList.toggle('api-key-button__icon--active', !!hasKey);
           }
         }
       }
@@ -1181,7 +1941,7 @@
           
           // Basic validation
           if (apiKey && !apiKey.startsWith('sk-')) {
-            this.showToast('⚠️ API key should start with "sk-"', 'warning');
+            this.showToast('Note: API keys should start with "sk-" or "sk-proj-"', 'warning');
             return;
           }
 
@@ -1192,7 +1952,7 @@
           this.closeAPIKeyModal();
           
           if (apiKey) {
-            this.showToast('🔑 API key saved successfully!', 'success');
+            this.showToast('API key saved successfully!', 'success');
           } else {
             this.showToast('API key removed', 'info');
           }
@@ -1211,6 +1971,59 @@
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
       window.emmaSettingsManager = new EmmaSettingsManager();
+
+      if (window.EmmaThemeUI) {
+        window.EmmaThemeUI.init({
+          themeContainerId: 'settings-theme-gallery',
+          backgroundContainerId: 'settings-background-options'
+        });
+      }
+
+      const navItems = Array.from(document.querySelectorAll('.settings-nav__item'));
+      const sections = Array.from(document.querySelectorAll('.settings-section'));
+
+      const setActiveNav = (targetSelector) => {
+        navItems.forEach((item) => {
+          if (item.dataset.target === targetSelector) {
+            item.classList.add('is-active');
+            item.setAttribute('aria-current', 'true');
+          } else {
+            item.classList.remove('is-active');
+            item.removeAttribute('aria-current');
+          }
+        });
+      };
+
+      navItems.forEach((btn) => {
+        const targetSelector = btn.dataset.target;
+        const section = document.querySelector(targetSelector);
+        if (!section) return;
+
+        btn.addEventListener('click', () => {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setActiveNav(targetSelector);
+        });
+      });
+
+      setActiveNav('#section-visual');
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                setActiveNav(`#${entry.target.id}`);
+              }
+            });
+          },
+          {
+            rootMargin: '-45% 0px -45% 0px',
+            threshold: 0.2
+          }
+        );
+
+        sections.forEach((section) => observer.observe(section));
+      }
     });
   </script>
 
@@ -1219,7 +2032,7 @@
     <div class="api-modal-overlay"></div>
     <div class="api-modal-content">
       <div class="api-modal-header">
-        <h3>🔑 OpenAI API Key Setup</h3>
+        <h3>OpenAI API Key Setup</h3>
         <button class="api-modal-close">&times;</button>
       </div>
       
@@ -1238,7 +2051,7 @@
             rows="3"
           ></textarea>
           <div class="api-key-hint">
-            💡 Your API key should start with "sk-proj-" or "sk-"
+            Note: Your API key should start with "sk-proj-" or "sk-"
           </div>
         </div>
         
@@ -1251,5 +2064,17 @@
     </div>
   </div>
 
+  <button class="settings-exit-fab" type="button" onclick="window.location.href='../dashboard.html'" aria-label="Back to dashboard">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
 </body>
 </html>
+
+
+
+
+
+
+
+

@@ -1,22 +1,4 @@
-/* Emma Main CSS - Shared styles for all pages */
-
-/* CSS Variables for Emma Brand Colors */
-:root {
-  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
-  --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
-  --emma-purple: #764ba2;
-  --emma-pink: #f093fb;
-  --emma-dark: #1a1033;
-  --emma-card-bg: rgba(255, 255, 255, 0.05);
-  --emma-border: rgba(255, 255, 255, 0.1);
-  --emma-text: #ffffff;
-  --emma-text-secondary: rgba(255, 255, 255, 0.7);
-  --emma-text-tertiary: rgba(255, 255, 255, 0.5);
-  --emma-success: #4ade80;
-  --emma-error: #f87171;
-  --emma-warning: #fbbf24;
-}
+﻿/* Emma Main CSS - Shared styles for all pages */
 
 /* Reset and Base Styles */
 * {
@@ -51,6 +33,33 @@ body::before {
   z-index: -1;
 }
 
+:root[data-background="aurora"] body::before {
+  background: var(--emma-background-aurora);
+}
+
+:root[data-background="sunrise"] body::before {
+  background: var(--emma-background-sunrise);
+}
+
+:root[data-background="forest"] body::before {
+  background: var(--emma-background-forest);
+}
+
+:root[data-background="ocean"] body::before {
+  background: var(--emma-background-ocean);
+}
+
+:root[data-background="ember"] body::before {
+  background: var(--emma-background-ember);
+}
+
+:root[data-background="blossom"] body::before {
+  background: var(--emma-background-blossom);
+}
+
+:root[data-background="zen"] body::before {
+  background: var(--emma-background-zen);
+}
 @keyframes float {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
   50% { transform: translate(-20px, -20px) rotate(180deg); }
@@ -80,7 +89,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 300;
   line-height: 1.2;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  background: linear-gradient(135deg, rgba(var(--emma-neutral-rgb), 1) 0%, rgba(var(--emma-neutral-rgb), 0.8) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -104,6 +113,7 @@ a:hover {
 }
 
 /* Buttons */
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -126,13 +136,13 @@ a:hover {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--emma-neutral-rgb), 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid var(--emma-border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--emma-neutral-rgb), 0.15);
 }
 
 /* Logo */
@@ -263,16 +273,16 @@ a:hover {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--emma-neutral-rgb), 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--emma-neutral-rgb), 0.2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(var(--emma-neutral-rgb), 0.3);
 }
 
 /* Animations */
@@ -304,3 +314,121 @@ a:hover {
     padding: 24px;
   }
 }
+.modal-overlay.invite-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.invite-modal__container {
+  background: linear-gradient(135deg, rgba(40, 30, 60, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(134, 88, 255, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+.invite-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.invite-modal__title {
+  margin: 0;
+  color: var(--emma-text-strong);
+  font-size: 24px;
+}
+
+.invite-modal__close {
+  background: none;
+  border: none;
+  color: var(--emma-text-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.invite-modal__body {
+  margin-bottom: 24px;
+}
+
+.invite-modal__description {
+  color: var(--emma-text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.invite-modal__permissions {
+  background: rgba(134, 88, 255, 0.1);
+  border: 1px solid rgba(134, 88, 255, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.invite-modal__permissions-title {
+  margin: 0 0 8px 0;
+  color: var(--emma-accent-primary);
+}
+
+.invite-modal__permissions-list {
+  margin: 0;
+  color: var(--emma-text-standard);
+}
+
+.invite-modal__meta {
+  color: var(--emma-text-muted);
+  font-size: 12px;
+}
+
+.invite-modal__meta-item {
+  margin: 4px 0;
+}
+
+.invite-modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.invite-modal__button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.invite-modal__button--ghost {
+  background: rgba(var(--emma-neutral-rgb), 0.1);
+  border: 1px solid rgba(var(--emma-neutral-rgb), 0.2);
+  color: var(--emma-text-standard);
+}
+
+.invite-modal__button--primary {
+  background: var(--emma-gradient-primary);
+  border: none;
+  color: var(--emma-text-on-accent);
+}
+
+.text-white {
+  color: var(--emma-text-strong);
+}
+
+.text-accent {
+  color: var(--emma-accent-primary);
+}
+
+
+
+
