@@ -116,11 +116,11 @@ class EmmaRealtimeVoice {
       this.updateStatus('Preparing voice session...');
 
       // Get ephemeral token (privacy-first)
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
+      const backendOrigin = (typeof window.getEmmaBackendOrigin === 'function')
+        ? window.getEmmaBackendOrigin()
         : 'https://emma-voice-backend.onrender.com';
         
-      const tokenResponse = await fetch(`${backendUrl}/token`);
+      const tokenResponse = await fetch(`${backendOrigin}/token`);
 
       if (!tokenResponse.ok) {
         const error = await tokenResponse.json();

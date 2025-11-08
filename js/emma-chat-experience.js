@@ -62,6 +62,9 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = null;
     this.voiceIntegrationInitialized = false;
     this.voiceIntegrationInitializing = false;
+    this.initialWelcomeTimeout = null;
+    this.localWelcomeShown = false;
+    this.remoteGreetingReceived = false;
 
     // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
@@ -188,8 +191,8 @@ class EmmaChatExperience extends ExperiencePopup {
     setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
 
-    // Add initial Emma welcome message (single clean bubble)
-    await this.addInitialWelcomeMessage();
+    // Add initial Emma welcome message only if remote agent doesn’t greet
+    this.scheduleInitialWelcome();
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
@@ -230,7 +233,8 @@ class EmmaChatExperience extends ExperiencePopup {
           speed: 1.0,
           tone: 'caring',
           pacing: 2.5,
-          validationMode: true
+          validationMode: true,
+          apiKey: this.apiKey || null
         });
       } else {
         console.warn('⚠️ EmmaBrowserClient not available');
@@ -242,6 +246,7 @@ class EmmaChatExperience extends ExperiencePopup {
       if (this.emmaVoice) {
         // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
+        this.syncVoiceApiKey(true);
 
         // Connect voice button to Emma's voice system
         this.setupVoiceButton();
@@ -268,6 +273,15 @@ class EmmaChatExperience extends ExperiencePopup {
       this.voiceButton.title = 'Voice system error: ' + error.message;
     } finally {
       this.voiceIntegrationInitializing = false;
+    }
+  }
+
+  /**
+   * Sync the runtime API key with the voice client (if connected)
+   */
+  syncVoiceApiKey(silent = true) {
+    if (this.emmaVoice && typeof this.emmaVoice.setApiKey === 'function') {
+      this.emmaVoice.setApiKey(this.apiKey, { silent });
     }
   }
 
@@ -307,6 +321,11 @@ class EmmaChatExperience extends ExperiencePopup {
    * Mark that the Agent SDK connection is active
    */
   markAgentReady() {
+    this.remoteGreetingReceived = true;
+    if (this.initialWelcomeTimeout) {
+      clearTimeout(this.initialWelcomeTimeout);
+      this.initialWelcomeTimeout = null;
+    }
     if (this.agentChatEnabled) {
       if (typeof this.hideTypingIndicator === 'function') {
         this.hideTypingIndicator();
@@ -4874,6 +4893,10 @@ RULES:
    * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
   async addInitialWelcomeMessage() {
+    if (this.remoteGreetingReceived || this.localWelcomeShown) {
+      return;
+    }
+    this.localWelcomeShown = true;
 
     // Get current session context
     const hour = new Date().getHours();
@@ -4922,6 +4945,18 @@ RULES:
 
     this.addMessage(welcomeMessage, 'emma');
     console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
+  }
+
+  scheduleInitialWelcome() {
+    if (this.initialWelcomeTimeout || this.localWelcomeShown) {
+      return;
+    }
+    this.initialWelcomeTimeout = setTimeout(() => {
+      this.initialWelcomeTimeout = null;
+      if (!this.remoteGreetingReceived) {
+        this.addInitialWelcomeMessage();
+      }
+    }, 1200);
   }
 
   // Chat settings modal removed - access via main settings panel
@@ -5055,6 +5090,8 @@ RULES:
     this.debugMode = debugMode;
     this.dementiaMode = dementiaMode;
 
+    this.syncVoiceApiKey(false);
+
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
       this.initializeVectorlessEngine();
@@ -5160,6 +5197,8 @@ RULES:
     this.dementiaMode = newDementiaMode;
     this.debugMode = newDebugMode;
 
+    this.syncVoiceApiKey(false);
+
     // Save to localStorage
     const settings = {
       apiKey: this.apiKey,
@@ -5217,37 +5256,87 @@ RULES:
    */
   loadVectorlessSettings() {
     try {
-          // 🚀 DEMO SECURITY: API keys disabled for family demo
-    
-    // 1. SECURITY LOCKDOWN: No API key access for demo safety
-    this.apiKey = null; // DEMO MODE: API keys disabled for security
-      
-      // 2. Check old vectorless settings format (backup)
-      if (!this.apiKey) {
-        const stored = localStorage.getItem('emma-vectorless-settings');
-        if (stored) {
-          const settings = JSON.parse(stored);
-          this.apiKey = settings.apiKey || null;
+      const normalizeApiKey = (value) => {
+        if (!value || typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+      };
+
+      this.apiKey = null;
+      let legacySettings = null;
+
+      // 1. Primary source: redesigned settings page
+      const generalSettingsRaw = localStorage.getItem('emmaSettings');
+      if (generalSettingsRaw) {
+        try {
+          const generalSettings = JSON.parse(generalSettingsRaw);
+          const modernKey = normalizeApiKey(generalSettings?.apiKey);
+          if (modernKey) {
+            this.apiKey = modernKey;
+          }
+        } catch (settingsError) {
+          if (window.EMMA_DEBUG) {
+            console.warn('emmaSettings parse failed:', settingsError);
+          }
         }
       }
-      
-      // 3. Check global API key (backup)
-      if (!this.apiKey && window.API_KEY) {
-        this.apiKey = window.API_KEY;
-        console.log('💬 Using global API key for Emma responses');
+
+      // 2. Legacy storage fallback (vectorless modal)
+      const legacyRaw = localStorage.getItem('emma-vectorless-settings');
+      if (legacyRaw) {
+        try {
+          legacySettings = JSON.parse(legacyRaw);
+          if (!this.apiKey) {
+            const legacyKey = normalizeApiKey(legacySettings.apiKey);
+            if (legacyKey) {
+              this.apiKey = legacyKey;
+            }
+          }
+        } catch (legacyError) {
+          if (window.EMMA_DEBUG) {
+            console.warn('Legacy vectorless settings parse failed:', legacyError);
+          }
+          legacySettings = null;
+        }
       }
-      
-      // 🔧 Load other settings
-      this.dementiaMode = localStorage.getItem('emma-dementia-mode') === 'true';
-      this.debugMode = localStorage.getItem('emma-debug-mode') === 'true';
-      
+
+      // 3. Global fallback for embedded demos or manual overrides
+      if (!this.apiKey && window.API_KEY) {
+        const globalKey = normalizeApiKey(window.API_KEY);
+        if (globalKey) {
+          this.apiKey = globalKey;
+          console.log('💬 Using global API key for Emma responses');
+        }
+      }
+
+      // 4. Feature toggles (persisted separately, with legacy fallback)
+      const dementiaFlag = localStorage.getItem('emma-dementia-mode');
+      if (dementiaFlag !== null) {
+        this.dementiaMode = dementiaFlag === 'true';
+      } else if (legacySettings && typeof legacySettings.dementiaMode === 'boolean') {
+        this.dementiaMode = legacySettings.dementiaMode;
+      } else {
+        this.dementiaMode = false;
+      }
+
+      const debugFlag = localStorage.getItem('emma-debug-mode');
+      if (debugFlag !== null) {
+        this.debugMode = debugFlag === 'true';
+      } else if (legacySettings && typeof legacySettings.debugMode === 'boolean') {
+        this.debugMode = legacySettings.debugMode;
+      } else {
+        this.debugMode = false;
+      }
+
+      this.syncVoiceApiKey(true);
+
       // 🎯 LOG RESULTS
       if (this.apiKey) {
         console.log('✅ OpenAI API key found and loaded successfully!');
       } else {
         console.warn('💬 No API key found - Emma will use intelligent fallbacks');
       }
-      
+
     } catch (error) {
       console.warn('💬 Could not load vectorless settings:', error);
     }
@@ -10678,5 +10767,3 @@ Analyze the user's intent and respond with JSON:
 // Export for use in other modules
 window.EmmaChatExperience = EmmaChatExperience;
 console.log('💬 Emma Chat Experience: Module loaded successfully');
-
-

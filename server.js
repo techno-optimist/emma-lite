@@ -343,6 +343,11 @@ wss.on('connection', (browserWs, request) => {
             await emmaAgent.handleRealtimeAudio(message.chunk);
           }
           break;
+        case 'set_api_key':
+          if (emmaAgent && typeof emmaAgent.updateApiKey === 'function') {
+            emmaAgent.updateApiKey(message.apiKey || null);
+          }
+          break;
         default:
           console.warn('Unhandled browser message type:', message.type);
           break;

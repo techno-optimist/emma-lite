@@ -131,12 +131,12 @@ class EmmaWebVault {
   }
 
   cacheSessionPassphrase(passphrase) {
-    if (!passphrase) return;
-    const normalized = typeof passphrase === 'string' ? passphrase.trim() : '';
-    if (!normalized) return;
-    this.passphrase = normalized;
+    if (typeof passphrase !== 'string') return;
+    const hasValue = passphrase.length > 0 && passphrase.trim().length > 0;
+    if (!hasValue) return;
+    this.passphrase = passphrase;
     try {
-      sessionStorage.setItem('emmaVaultPassphrase', normalized);
+      sessionStorage.setItem('emmaVaultPassphrase', passphrase);
     } catch (error) {
       console.warn(' PASSCODE CACHE: Failed to persist passphrase in sessionStorage:', error);
     }
@@ -230,9 +230,8 @@ class EmmaWebVault {
   }
 
   async ensureActivePassphrase(context = 'operation') {
-    const hasPassphrase = typeof this.passphrase === 'string' && this.passphrase.trim().length > 0;
+    const hasPassphrase = typeof this.passphrase === 'string' && this.passphrase.length > 0;
     if (hasPassphrase) {
-      this.passphrase = this.passphrase.trim();
       return this.passphrase;
     }
 
@@ -242,8 +241,8 @@ class EmmaWebVault {
     } catch (error) {
       console.warn(' PASSCODE CACHE: Unable to read sessionStorage:', error);
     }
-    if (restored && restored.trim()) {
-      this.passphrase = restored.trim();
+    if (typeof restored === 'string' && restored.length > 0) {
+      this.passphrase = restored;
       return this.passphrase;
     }
 
@@ -271,11 +270,11 @@ class EmmaWebVault {
       passphrase = null;
     }
 
-    if (!passphrase || !passphrase.trim()) {
+    if (typeof passphrase !== 'string' || passphrase.trim().length === 0) {
       throw new Error('Passphrase required to continue.');
     }
 
-    this.cacheSessionPassphrase(passphrase.trim());
+    this.cacheSessionPassphrase(passphrase);
     return this.passphrase;
   }
 
@@ -372,9 +371,7 @@ class EmmaWebVault {
 
       // Store the original filename for better UX
       if (file) {
-        this.originalFileName = file.name;
-        // Persist for restoration across pages
-        try { sessionStorage.setItem('emmaVaultOriginalFileName', file.name); localStorage.setItem('emmaVaultOriginalFileName', file.name); } catch (_) {}
+        this.updateOriginalFileName(file.name);
 
         // CRITICAL: If file is provided but no fileHandle, we need write access
         if (!this.fileHandle && 'showOpenFilePicker' in window) {
@@ -412,11 +409,7 @@ class EmmaWebVault {
       });
 
       const openedFile = await fileHandle.getFile();
-      this.originalFileName = openedFile.name;
-      try {
-        sessionStorage.setItem('emmaVaultOriginalFileName', openedFile.name);
-        localStorage.setItem('emmaVaultOriginalFileName', openedFile.name);
-      } catch (_) {}
+      this.updateOriginalFileName(openedFile.name);
       this.fileHandle = fileHandle;
       fileToProcess = openedFile;
 
@@ -480,6 +473,14 @@ class EmmaWebVault {
 
       // Save to IndexedDB as backup AFTER loading from file
       await this.saveToIndexedDB();
+
+      if (!this.fileHandle && typeof this.ensureDirectFileHandle === 'function') {
+        try {
+          await this.ensureDirectFileHandle('initial-open', { promptOnFailure: true });
+        } catch (handleError) {
+          console.warn(' FILE-ACCESS: Unable to capture direct file access after open:', handleError);
+        }
+      }
 
       return { success: true, stats: this.getStats() };
 
@@ -1613,19 +1614,30 @@ class EmmaWebVault {
       });
 
       const file = await fileHandle.getFile();
+      const isDifferentFileSelection = !!(this.originalFileName && file.name !== this.originalFileName);
 
-      if (this.originalFileName && file.name !== this.originalFileName) {
-        console.warn(' REAUTH: Selected file name differs from stored reference. Accepting new file handle.', {
+      if (isDifferentFileSelection) {
+        console.warn(' REAUTH: Selected file name differs from stored reference. Switching vault to new file.', {
           stored: this.originalFileName,
           selected: file.name
         });
+
+        try {
+          await this.switchVaultToSelectedFile(fileHandle, file, { source: 'reauth' });
+          return true;
+        } catch (switchError) {
+          console.error(' REAUTH: Failed to switch vault from new selection:', switchError);
+          if (window.emmaError) {
+            window.emmaError('Could not switch to the selected .emma file: ' + switchError.message, {
+              title: 'Vault Switch Failed',
+              helpText: 'Let’s try selecting the file again and double-check the passphrase.'
+            });
+          }
+          return false;
+        }
       }
 
-      this.originalFileName = file.name;
-      try {
-        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
-        localStorage.setItem('emmaVaultOriginalFileName', file.name);
-      } catch (_) {}
+      this.updateOriginalFileName(file.name);
       this.fileHandle = fileHandle;
       this.needsFileReauth = false;
       const syncModal = document.querySelector('.emma-sync-error-modal');
@@ -2338,16 +2350,14 @@ class EmmaWebVault {
       let salt = customSalt || this.vaultData.encryption.salt;
       let passphrase = customPassphrase || this.passphrase;
 
-      if (!passphrase || typeof passphrase !== 'string' || !passphrase.trim()) {
+      if (typeof passphrase !== 'string' || passphrase.trim().length === 0) {
         if (!customPassphrase) {
           await this.ensureActivePassphrase('encrypt-data');
           passphrase = this.passphrase;
         }
       }
 
-      passphrase = passphrase?.trim();
-
-      if (!passphrase) {
+      if (typeof passphrase !== 'string' || passphrase.length === 0) {
         throw new Error('Passphrase is required for encryption');
       }
 
@@ -3464,6 +3474,177 @@ EmmaWebVault.prototype.setAutoSaveEnabled = function(enabled) {
   if (!this.autoSaveEnabled) {
     this.pendingChanges = true;
   }
+};
+
+EmmaWebVault.prototype.updateOriginalFileName = function(fileName) {
+  if (!fileName) {
+    return;
+  }
+
+  this.originalFileName = fileName;
+
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem('emmaVaultOriginalFileName', fileName);
+    } catch (_) {}
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('emmaVaultOriginalFileName', fileName);
+    } catch (_) {}
+  }
+};
+
+EmmaWebVault.prototype.promptForVaultPassphrase = async function(fileName, options = {}) {
+  const {
+    title = options.title || 'Unlock Vault',
+    message = options.message || `Enter the passphrase for your vault: ${fileName}`,
+    placeholder = options.placeholder || 'Enter vault passphrase...',
+    promptText = options.promptText || `Enter the passphrase for ${fileName}`
+  } = options;
+
+  try {
+    if (window.cleanSecurePasswordModal && typeof window.cleanSecurePasswordModal.show === 'function') {
+      return await window.cleanSecurePasswordModal.show({
+        title,
+        message,
+        placeholder
+      });
+    }
+
+    if (typeof window.showPasswordModal === 'function') {
+      return await window.showPasswordModal(message, 'Passphrase:');
+    }
+  } catch (modalError) {
+    console.error(' PASSCODE MODAL: Failed to collect passphrase:', modalError);
+    return null;
+  }
+
+  return window.prompt(promptText);
+};
+
+EmmaWebVault.prototype.switchVaultToSelectedFile = async function(fileHandle, file, options = {}) {
+  const {
+    passphraseOverride = null,
+    promptTitle,
+    promptMessage,
+    promptPlaceholder,
+    promptText,
+    promptOnFailure = true,
+    source = 'manual'
+  } = options || {};
+
+  console.log(' SWITCH: Starting vault swap', {
+    hasHandle: !!fileHandle,
+    fileProvided: !!file,
+    source
+  });
+
+  const fileBlob = file || (fileHandle && typeof fileHandle.getFile === 'function'
+    ? await fileHandle.getFile()
+    : null);
+
+  if (!fileBlob) {
+    throw new Error('No vault file available to load');
+  }
+  console.log(' SWITCH: File resolved', { name: fileBlob.name, size: fileBlob.size, type: fileBlob.type });
+
+  let passphrase = passphraseOverride;
+  const hasProvidedPassphrase = typeof passphrase === 'string' && passphrase.length > 0 && passphrase.trim().length > 0;
+
+  if (!hasProvidedPassphrase) {
+    passphrase = await this.promptForVaultPassphrase(fileBlob.name, {
+      title: promptTitle || 'Switch Vault',
+      message: promptMessage || `Enter the passphrase to open ${fileBlob.name}`,
+      placeholder: promptPlaceholder || 'Enter vault passphrase...',
+      promptText: promptText || `Enter the passphrase for ${fileBlob.name}`
+    });
+  }
+
+  if (typeof passphrase !== 'string' || passphrase.trim().length === 0) {
+    throw new Error('Passphrase is required to switch vaults');
+  }
+
+  const fileBuffer = await fileBlob.arrayBuffer();
+  console.log(' SWITCH: File buffer ready. Decrypting with native flow...');
+
+  const vaultData = await this.nativeDecryptVault(fileBuffer, passphrase);
+  console.log(' SWITCH: Vault decrypted successfully');
+
+  if (!vaultData || !vaultData.content) {
+    throw new Error('Invalid vault data structure');
+  }
+  console.log(' SWITCH: Vault decrypted. Updating state...', {
+    memoryCount: Object.keys(vaultData.content?.memories || {}).length,
+    peopleCount: Object.keys(vaultData.content?.people || {}).length
+  });
+
+  this.vaultData = vaultData;
+  this.isOpen = true;
+  this.passphrase = passphrase;
+  this.cacheSessionPassphrase(passphrase);
+
+  const normalizedName = this.ensureVaultMetadataName(
+    vaultData.metadata?.name ||
+    vaultData.name ||
+    fileBlob.name ||
+    'Web Vault'
+  );
+
+  try {
+    sessionStorage.setItem('emmaVaultActive', 'true');
+    sessionStorage.setItem('emmaVaultName', normalizedName);
+  } catch (_) {}
+
+  try {
+    localStorage.setItem('emmaVaultActive', 'true');
+    localStorage.setItem('emmaVaultName', normalizedName);
+  } catch (_) {}
+
+  this.updateOriginalFileName(fileBlob.name);
+
+  if (fileHandle) {
+    this.fileHandle = fileHandle;
+    this.needsFileReauth = false;
+  } else if (!this.fileHandle) {
+    this.fileHandle = null;
+  }
+
+  if (!this.fileHandle && typeof this.ensureDirectFileHandle === 'function') {
+    try {
+      await this.ensureDirectFileHandle(`${source}-switch`, { promptOnFailure });
+    } catch (handleError) {
+      console.warn(' FILE-ACCESS: Unable to capture direct file handle after switch:', handleError);
+    }
+  }
+
+  try {
+    await this.saveToIndexedDB();
+    console.log(' SWITCH: Vault saved to IndexedDB after switching files');
+  } catch (idbError) {
+    console.warn(' SWITCH: IndexedDB save failed (non-critical):', idbError);
+  }
+
+  const syncModal = document.querySelector('.emma-sync-error-modal');
+  if (syncModal) syncModal.remove();
+
+  if (window.webVaultStatus && typeof window.webVaultStatus.unlock === 'function') {
+    window.webVaultStatus.unlock(normalizedName);
+  } else {
+    window.currentVaultStatus = {
+      isUnlocked: true,
+      hasVault: true,
+      name: normalizedName
+    };
+  }
+
+  if (this.showToast) {
+    this.showToast(` Switched to ${normalizedName}`, 'success');
+  }
+
+  console.log(' SWITCH: Completed successfully');
+  return true;
 };
 
 EmmaWebVault.prototype.showDirectSaveAffordance = function() {

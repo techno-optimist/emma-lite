@@ -23,6 +23,11 @@ class EmmaBrowserClient {
     
     // Privacy-first tools (for local execution)
     this.tools = new EmmaVoiceTools();
+
+    this.apiKey = typeof this.options.apiKey === 'string' && this.options.apiKey.trim()
+      ? this.options.apiKey.trim()
+      : null;
+    this._lastSentApiKey = undefined;
     
     console.log('🎙️ Emma Browser Client initialized');
 
@@ -209,13 +214,11 @@ class EmmaBrowserClient {
    */
   async connectToEmmaAgent() {
     try {
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'ws://localhost:3001' 
-        : 'wss://emma-voice-backend.onrender.com';
+      const wsUrl = (typeof window.getEmmaBackendWsUrl === 'function')
+        ? window.getEmmaBackendWsUrl()
+        : 'wss://emma-voice-backend.onrender.com/voice';
       
-      const wsUrl = `${backendUrl}/voice`;
-      
-      console.log('🔗 Connecting to Emma agent...');
+      console.log('🔗 Connecting to Emma agent...', wsUrl);
       
       this.websocket = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
@@ -230,7 +233,9 @@ class EmmaBrowserClient {
           clearTimeout(timeout);
           console.log('✅ Connected to Emma agent');
           this.isConnected = true;
-          
+
+          this.sendRuntimeApiKey({ force: Boolean(this.apiKey) });
+
           // Notify chat of connection
           if (this.chatInstance) {
             this.chatInstance.addMessage('system', '🔗 Connected to Emma backend');
@@ -610,6 +615,52 @@ class EmmaBrowserClient {
         }
         break;
     }
+  }
+
+  /**
+   * Update runtime API key (shared with server-side agent)
+   */
+  setApiKey(apiKey, { silent = false } = {}) {
+    const normalized = typeof apiKey === 'string' ? apiKey.trim() : '';
+    const nextValue = normalized || null;
+    const changed = nextValue !== this.apiKey;
+
+    this.apiKey = nextValue;
+    if (changed) {
+      this._lastSentApiKey = undefined;
+    }
+
+    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+      this.sendRuntimeApiKey({ force: changed });
+    } else if (!silent && this.apiKey) {
+      console.log('🔐 Stored OpenAI key for next Emma connection');
+    }
+  }
+
+  /**
+   * Send current API key to Emma server (if connected)
+   */
+  sendRuntimeApiKey({ force = false } = {}) {
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const normalized = typeof this.apiKey === 'string' ? this.apiKey.trim() : '';
+    const payload = normalized || null;
+
+    if (!force && payload === this._lastSentApiKey) {
+      return;
+    }
+
+    if (!payload && !force) {
+      return;
+    }
+
+    this._lastSentApiKey = payload;
+    this.sendToAgent({
+      type: 'set_api_key',
+      apiKey: payload
+    });
   }
 
   /**

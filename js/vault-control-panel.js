@@ -424,7 +424,39 @@ class EmmaVaultControlPanel {
     try {
       console.log('\u{1F4C1} Opening different vault for session recovery...');
       
-      // Trigger file input
+      // Prefer File System Access API when available so we capture a writable handle
+      if (typeof window !== 'undefined' && 'showOpenFilePicker' in window) {
+        try {
+          const [fileHandle] = await window.showOpenFilePicker({
+            types: [{
+              description: 'Emma Vault Files',
+              accept: {
+                'application/emma-vault': ['.emma'],
+                'application/emma': ['.emma']
+              }
+            }],
+            excludeAcceptAllOption: true,
+            multiple: false
+          });
+
+          if (!fileHandle) {
+            console.warn('\u26A0\uFE0F No file handle returned from picker');
+            return;
+          }
+
+          const file = await fileHandle.getFile();
+          await this.processVaultFile(file, fileHandle);
+          return;
+        } catch (pickerError) {
+          if (pickerError?.name === 'AbortError') {
+            console.log('\u{1F6AB} Vault selection cancelled by user');
+            return;
+          }
+          console.warn('\u26A0\uFE0F File picker failed, falling back to legacy input:', pickerError);
+        }
+      }
+      
+      // Legacy fallback for browsers without File System Access API
       const fileInput = document.getElementById('vaultControlFileInput');
       fileInput.onchange = async (event) => {
         const file = event.target.files[0];
@@ -449,28 +481,31 @@ class EmmaVaultControlPanel {
    */
   async processVaultFile(file, fileHandle = null) {
     try {
-      console.log('\u{1F4C2} Processing vault file:', file.name);
+      const workingFile = file || (fileHandle ? await fileHandle.getFile() : null);
+      if (!workingFile) {
+        throw new Error('No vault file selected');
+      }
+
+      console.log('\u{1F4C2} Processing vault file:', workingFile.name);
       
       // Show loading state
       this.showToast('\u{1F4C2} Processing vault file...', 'info');
       
-      // Read file data
-      const fileData = await file.arrayBuffer();
-      console.log('\u{1F4C4} File data loaded, size:', fileData.byteLength);
+      console.log('\u{1F4C4} File data loaded, size:', workingFile.size);
       
       // Request passphrase using Emma's beautiful modal
       let passphrase;
       try {
         if (window.cleanSecurePasswordModal) {
           passphrase = await window.cleanSecurePasswordModal.show({
-            title: `Unlock ${file.name}`,
+            title: `Unlock ${workingFile.name}`,
             message: 'Enter your vault passphrase to unlock your memories:',
             placeholder: 'Enter passphrase...'
           });
         } else {
           // Fallback to simple prompt if modal not available
           // SECURITY FIX: Replace prompt with proper modal
-          passphrase = await showPasswordModal(`Enter passphrase for ${file.name}`, 'Passphrase:');
+          passphrase = await showPasswordModal(`Enter passphrase for ${workingFile.name}`, 'Passphrase:');
         }
       } catch (error) {
         if (error.message === 'User cancelled') {
@@ -485,52 +520,49 @@ class EmmaVaultControlPanel {
         return;
       }
       
+      console.log('\u{1F9F0} File ready for vault switch. Size (bytes):', workingFile.size);
       this.showToast('\u{1F510} Decrypting vault...', 'info');
       
-      // Decrypt vault using Emma Web Vault's native crypto
-      const vaultData = await window.emmaWebVault.exactWorkingDecrypt(fileData, passphrase);
-      
-      if (!vaultData || !vaultData.content) {
-        throw new Error('Invalid vault data structure');
+      if (!window.emmaWebVault || typeof window.emmaWebVault.switchVaultToSelectedFile !== 'function') {
+        throw new Error('Vault system unavailable');
       }
       
-      console.log('\u2705 Vault decrypted successfully:', vaultData.metadata?.name);
+      console.log('\u{1F6E0} Calling EmmaWebVault.switchVaultToSelectedFile...');
+      await window.emmaWebVault.switchVaultToSelectedFile(fileHandle, workingFile, {
+        passphraseOverride: passphrase,
+        promptOnFailure: true,
+        source: 'vault-control-panel',
+        promptTitle: `Unlock ${workingFile.name}`,
+        promptMessage: 'Enter your vault passphrase to unlock your memories:',
+        promptPlaceholder: 'Enter passphrase...'
+      });
+      console.log('\u2705 switchVaultToSelectedFile resolved');
       
-      // Update Emma Web Vault with new data
-      window.emmaWebVault.vaultData = vaultData;
-      window.emmaWebVault.isOpen = true;
-      window.emmaWebVault.originalFileName = file.name;
-      try {
-        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
-        localStorage.setItem('emmaVaultOriginalFileName', file.name);
-      } catch (_) {}
-      window.emmaWebVault.fileHandle = fileHandle;
+      const normalizedVaultName =
+        sessionStorage.getItem('emmaVaultName') ||
+        localStorage.getItem('emmaVaultName') ||
+        window.emmaWebVault?.vaultData?.metadata?.name ||
+        workingFile.name;
       
-      // Update session storage and localStorage
-      sessionStorage.setItem('emmaVaultActive', 'true');
-      sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
-      localStorage.setItem('emmaVaultActive', 'true');
-      localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
-      
-      // Save to IndexedDB for persistence
-      try {
-        await window.emmaWebVault.saveToIndexedDB();
-        console.log('\u2705 New vault saved to IndexedDB successfully');
-      } catch (idbError) {
-        console.warn('\u26A0\uFE0F IndexedDB save failed (non-critical):', idbError);
-      }
+      console.log('\u{1F4C2} Vault context after switch:', {
+        normalizedVaultName,
+        hasVaultData: !!window.emmaWebVault?.vaultData,
+        isOpen: !!window.emmaWebVault?.isOpen
+      });
       
       // Update control panel display
       this.updateSyncStatus();
       
       // Close control panel and show success
       this.closeControlPanel();
-      this.showToast(`\u2705 Vault "${vaultData.metadata?.name || file.name}" loaded successfully!`, 'success');
+      this.showToast(`\u2705 Vault "${normalizedVaultName}" loaded successfully!`, 'success');
+      this.showToast('\u{1F504} Refreshing dashboard with new vault data...', 'info');
       
       // Refresh page to show new vault data
       setTimeout(() => {
+        console.log('\u{1F504} Reloading page to hydrate UI with new vault...');
         window.location.reload();
-      }, 2000);
+      }, 1200);
       
     } catch (error) {
       console.error('\u274C Failed to process vault:', error);

@@ -246,11 +246,11 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
       }
 
       // Get ephemeral token from consolidated backend
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : window.location.origin; // Use same origin (emma-voice-backend.onrender.com)
+      const backendOrigin = (typeof window.getEmmaBackendOrigin === 'function')
+        ? window.getEmmaBackendOrigin()
+        : (window.location && window.location.origin ? window.location.origin : 'https://emma-voice-backend.onrender.com');
         
-      const tokenResponse = await fetch(`${backendUrl}/token`);
+      const tokenResponse = await fetch(`${backendOrigin}/token`);
       const tokenData = await tokenResponse.json();
 
       console.log('🔑 Got ephemeral token for Emma');

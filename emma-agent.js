@@ -30,10 +30,11 @@ class EmmaServerAgent {
     this.vaultService = options.vaultService || new VaultService(options.vaultOptions || {});
     this.supportedToolNames = new Set(TOOL_DEFINITIONS.map((tool) => tool.name));
 
-    this.hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
+    this.runtimeApiKey = this.normalizeApiKey(process.env.OPENAI_API_KEY);
+    this.hasOpenAI = Boolean(this.runtimeApiKey);
 
     if (!this.hasOpenAI) {
-      console.warn('OPENAI_API_KEY not configured – Emma will use local fallback responses.');
+      console.warn('OPENAI_API_KEY not configured – waiting for runtime key from dashboard.');
     }
   }
 
@@ -205,7 +206,7 @@ class EmmaServerAgent {
    * Fetch an assistant reply from OpenAI, resolving tool calls as needed.
    */
   async fetchAssistantReply() {
-    if (!this.hasOpenAI) {
+    if (!this.getActiveApiKey()) {
       return null;
     }
 
@@ -351,15 +352,20 @@ class EmmaServerAgent {
 
     this.lastSpokenText = text;
 
-    if (!this.hasOpenAI) {
+    if (!this.getActiveApiKey()) {
       return;
     }
 
     try {
+      const apiKey = this.getActiveApiKey();
+      if (!apiKey) {
+        return;
+      }
+
       const response = await fetch('https://api.openai.com/v1/audio/speech', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -388,10 +394,15 @@ class EmmaServerAgent {
   }
 
   async postToOpenAI(path, body) {
+    const apiKey = this.getActiveApiKey();
+    if (!apiKey) {
+      throw new Error('OpenAI API key not available');
+    }
+
     const response = await fetch(`https://api.openai.com${path}`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
@@ -403,6 +414,32 @@ class EmmaServerAgent {
     }
 
     return response.json();
+  }
+
+  updateApiKey(newKey) {
+    const normalized = this.normalizeApiKey(newKey);
+    this.runtimeApiKey = normalized;
+    this.hasOpenAI = Boolean(this.runtimeApiKey);
+
+    const status = this.runtimeApiKey ? 'updated' : 'cleared';
+    const masked = this.runtimeApiKey ? this.maskApiKey(this.runtimeApiKey) : 'none';
+    console.log(`EmmaServerAgent runtime API key ${status}: ${masked}`);
+  }
+
+  getActiveApiKey() {
+    return this.runtimeApiKey;
+  }
+
+  normalizeApiKey(value) {
+    if (!value || typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : null;
+  }
+
+  maskApiKey(value) {
+    if (!value) return 'none';
+    const suffix = value.slice(-4);
+    return `****${suffix}`;
   }
 }
 

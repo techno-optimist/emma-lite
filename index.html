@@ -599,11 +599,15 @@
                     if (window.emmaWebVault.cacheSessionPassphrase) {
                         window.emmaWebVault.cacheSessionPassphrase(passphrase);
                     }
-                    window.emmaWebVault.originalFileName = file.name;
-                    try {
-                        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
-                        localStorage.setItem('emmaVaultOriginalFileName', file.name);
-                    } catch (_) {}
+                    if (typeof window.emmaWebVault.updateOriginalFileName === 'function') {
+                        window.emmaWebVault.updateOriginalFileName(file.name);
+                    } else {
+                        window.emmaWebVault.originalFileName = file.name;
+                        try {
+                            sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
+                            localStorage.setItem('emmaVaultOriginalFileName', file.name);
+                        } catch (_) {}
+                    }
                     if (fileHandle) {
                         window.emmaWebVault.fileHandle = fileHandle;
                     }

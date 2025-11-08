@@ -98,6 +98,7 @@
         this.setupUtilityIcons();
 
         this.isMenuOpen = false;
+        this.emmaChatLoaderPromise = null;
         this.stats = { memories: 0, people: 0, today: 0 };
         this.particles = [];
         this.nodes = [];
@@ -1518,6 +1519,72 @@
         }
       }
 
+      resolveEmmaChatScriptUrl() {
+        const existingScript = document.querySelector('script[src*="emma-chat-experience.js"]');
+        if (existingScript?.src) {
+          return existingScript.src;
+        }
+
+        try {
+          return new URL('js/emma-chat-experience.js', window.location.href).href;
+        } catch (error) {
+          console.warn('[Emma] Unable to resolve chat script URL, falling back to relative path', error);
+          return 'js/emma-chat-experience.js';
+        }
+      }
+
+      async ensureEmmaChatExperienceLoaded() {
+        if (typeof EmmaChatExperience !== 'undefined') {
+          return true;
+        }
+
+        if (!this.emmaChatLoaderPromise) {
+          this.emmaChatLoaderPromise = new Promise((resolve, reject) => {
+            const markLoaded = (scriptEl) => {
+              if (scriptEl) {
+                scriptEl.dataset.loaded = 'true';
+              }
+              resolve();
+            };
+
+            const handleError = (error) => reject(error || new Error('Failed to load EmmaChatExperience script'));
+            const existing = document.querySelector('script[src*="emma-chat-experience.js"]');
+
+            if (existing) {
+              const alreadyLoaded = existing.dataset.loaded === 'true' ||
+                existing.readyState === 'complete' ||
+                existing.readyState === 'loaded';
+
+              if (alreadyLoaded) {
+                markLoaded(existing);
+                return;
+              }
+
+              existing.addEventListener('load', () => markLoaded(existing), { once: true });
+              existing.addEventListener('error', () => handleError(new Error('Failed to load EmmaChatExperience script')), { once: true });
+              return;
+            }
+
+            const script = document.createElement('script');
+            script.src = this.resolveEmmaChatScriptUrl();
+            script.async = true;
+            script.addEventListener('load', () => markLoaded(script), { once: true });
+            script.addEventListener('error', () => handleError(new Error('Failed to load EmmaChatExperience script')), { once: true });
+            document.head.appendChild(script);
+          }).finally(() => {
+            this.emmaChatLoaderPromise = null;
+          });
+        }
+
+        try {
+          await this.emmaChatLoaderPromise;
+          return typeof EmmaChatExperience !== 'undefined';
+        } catch (error) {
+          console.error('[Emma] Unable to load EmmaChatExperience:', error);
+          return false;
+        }
+      }
+
       async startVoiceCapture() {
         document.body.classList.remove('dashboard-minimal');
 
@@ -1585,9 +1652,13 @@
         };
 
         if (typeof EmmaChatExperience === 'undefined') {
-          console.warn('[Emma] EmmaChatExperience class not available');
-          this.showToast('Chat module still loading. Please retry in a moment.', 'warning');
-          return;
+          console.warn('[Emma] EmmaChatExperience class not available, attempting to load script');
+          this.showToast('Loading chat module…', 'info');
+          const loaded = await this.ensureEmmaChatExperienceLoaded();
+          if (!loaded) {
+            this.showToast('Chat module could not load. Check your connection and try again.', 'error');
+            return;
+          }
         }
 
         // Create and show Emma chat experience
