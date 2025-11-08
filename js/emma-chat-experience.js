@@ -3086,7 +3086,8 @@ RULES:
         setTimeout(() => {
           this.startPersonEnrichmentFlow(personName);
         }, 1500);
-        
+
+        saved = true;
       } else {
         console.error('❌ Vault not available:', { 
           hasWebVault: !!window.emmaWebVault, 
@@ -5590,7 +5591,11 @@ RULES:
       return;
     }
 
-    // Show memory preview dialog
+    const autoSaved = await this.tryAutoSaveMemory(analysis.memory, analysis.memory?.id, 'chat-detected');
+    if (autoSaved) {
+      return;
+    }
+
     this.showMemoryPreviewDialog(analysis.memory);
   }
 
@@ -7174,7 +7179,6 @@ RULES:
             
             // NOW close the dialog after successful save
             closeModal();
-            this.showToast('✅ Memory saved to vault!', 'success');
             
             // 🎯 TRIGGER CONSTELLATION REFRESH
             console.log('🔄 EDIT: Triggering constellation refresh after vault save...');
@@ -7244,7 +7248,6 @@ RULES:
               }
             }));
 
-            this.showToast('Changes saved to your vault!', 'success');
             return;
           } catch (error) {
             console.error('💾 EDIT: Auto-save update failed, falling back to preview', error);
@@ -8313,6 +8316,32 @@ RULES:
     return true;
   }
 
+  async tryAutoSaveMemory(memory, memoryId = null, context = 'default') {
+    if (!memory) {
+      return false;
+    }
+
+    if (!this.shouldSkipMemoryPreview(memory)) {
+      return false;
+    }
+
+    const targetId = memoryId || memory.id || `memory_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    if (!memory.id) {
+      memory.id = targetId;
+    }
+
+    console.log('[Emma] Auto-save ready - skipping preview', {
+      context,
+      memoryId: targetId,
+      autoSaveEnabled: window.emmaWebVault?.autoSaveEnabled,
+      isWebappPrimary: window.emmaWebVault?.isWebappPrimary,
+      needsFileReauth: window.emmaWebVault?.needsFileReauth
+    });
+
+    const saved = await this.saveMemoryDirectly(memory, targetId);
+    return !!saved;
+  }
+
   prepareMemoryForVault(memory) {
     const hasContent = memory && typeof memory.content === 'string';
     const content = hasContent ? memory.content : '';
@@ -8416,7 +8445,6 @@ RULES:
       }
       
       if (result && result.success) {
-        this.showToast('✅ Memory saved to vault!', 'success');
         
         // Clear enrichment state
         this.enrichmentState.delete(memoryId);
@@ -8482,6 +8510,7 @@ RULES:
    * Save memory directly to vault (fallback or final save)
    */
   async saveMemoryDirectly(memory, memoryId) {
+    let saved = false;
     try {
       const webVault = window.emmaWebVault;
       const sessionActive = typeof sessionStorage !== 'undefined' &&
@@ -8511,7 +8540,6 @@ RULES:
           await webVault.addMemory(memoryToSave);
         }
 
-        this.showToast('✅ Memory saved to vault successfully!', 'success');
         
         // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
         this.temporaryMemories.delete(memoryId);
@@ -8590,7 +8618,10 @@ RULES:
       } else {
         this.showToast('Failed to save memory', 'error');
       }
+      return false;
     }
+
+    return saved;
   }
 
   /**
@@ -8854,6 +8885,12 @@ RULES:
 
     if (this.debugMode) {
 
+    }
+
+    const autoSaved = await this.tryAutoSaveMemory(enrichedMemory, memoryId, 'enrichment-complete');
+    if (autoSaved) {
+      this.enrichmentState.delete(memoryId);
+      return;
     }
 
     // Show preview dialog for final confirmation
@@ -9222,9 +9259,13 @@ RULES:
     if (result.continue && result.nextPrompt) {
       this.addMessage(result.nextPrompt.text, 'emma', { type: 'memory-prompt' });
     } else if (result.complete) {
-      // Show final memory preview
-      this.showMemoryPreviewDialog(result.memory);
+      const autoSaved = await this.tryAutoSaveMemory(result.memory, result.memory?.id, 'capture-complete');
       this.activeCapture = null;
+      if (autoSaved) {
+        return;
+      }
+
+      this.showMemoryPreviewDialog(result.memory);
     }
   }
 

@@ -12,11 +12,44 @@ class EmmaWebVault {
     this.vaultData = null;
     this.autoSaveTimer = null;
     this.passphrase = null;
-    this.fileHandle = null; // For File System Access API
+    this._fileHandle = null; // Underlying File System Access API handle
+    this._suspendHandlePersistence = false;
+    this.fileHandlePersistenceDisabled = false;
+    Object.defineProperty(this, 'fileHandle', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._fileHandle,
+      set: (handle) => {
+        const normalizedHandle = handle || null;
+        const previousHandle = this._fileHandle;
+
+        if (previousHandle === normalizedHandle) {
+          this._fileHandle = normalizedHandle;
+          return;
+        }
+
+        this._fileHandle = normalizedHandle;
+
+        if (this._suspendHandlePersistence || this.fileHandlePersistenceDisabled) {
+          return;
+        }
+
+        if (normalizedHandle) {
+          this.persistFileHandle(normalizedHandle).catch(error => {
+            console.warn(' FILE-HANDLE: Failed to persist handle:', error);
+          });
+        } else if (previousHandle) {
+          this.clearPersistedFileHandle().catch(error => {
+            console.warn(' FILE-HANDLE: Failed to clear persisted handle:', error);
+          });
+        }
+      }
+    });
     this.pendingChanges = false;
     this.saveDebounceTimer = null;
     this.isFileSelectionInProgress = false;
     this.needsFileReauth = false;
+    this.originalFileName = null;
     const storedAutoSave = (() => {
       try {
         return localStorage.getItem('emmaVaultAutoSaveEnabled');
@@ -94,6 +127,96 @@ class EmmaWebVault {
 
   }
 
+  cacheSessionPassphrase(passphrase) {
+    if (!passphrase) return;
+    const normalized = typeof passphrase === 'string' ? passphrase.trim() : '';
+    if (!normalized) return;
+    this.passphrase = normalized;
+    try {
+      sessionStorage.setItem('emmaVaultPassphrase', normalized);
+    } catch (error) {
+      console.warn(' PASSCODE CACHE: Failed to persist passphrase in sessionStorage:', error);
+    }
+  }
+
+  getPassphrasePromptCopy(context = 'operation') {
+    const copy = {
+      title: 'Vault Passphrase Required',
+      message: 'Please re-enter your vault passphrase to continue. Emma never stores passphrases permanently.',
+      placeholder: 'Enter passphrase...',
+      promptText: 'Enter your vault passphrase to continue:'
+    };
+
+    switch (context) {
+      case 'file-save':
+        copy.title = 'Save Changes to .emma File';
+        copy.message = 'To keep your .emma file secure, re-enter your vault passphrase before saving.';
+        break;
+      case 'encrypt-data':
+        copy.title = 'Secure Memory Save';
+        copy.message = 'Emma needs your passphrase to encrypt this memory in your .emma vault.';
+        break;
+      case 'download':
+        copy.title = 'Download Updated Vault';
+        copy.message = 'Enter the passphrase that should protect the downloaded .emma file.';
+        break;
+      default:
+        break;
+    }
+
+    return copy;
+  }
+
+  async ensureActivePassphrase(context = 'operation') {
+    const hasPassphrase = typeof this.passphrase === 'string' && this.passphrase.trim().length > 0;
+    if (hasPassphrase) {
+      this.passphrase = this.passphrase.trim();
+      return this.passphrase;
+    }
+
+    let restored = null;
+    try {
+      restored = sessionStorage.getItem('emmaVaultPassphrase');
+    } catch (error) {
+      console.warn(' PASSCODE CACHE: Unable to read sessionStorage:', error);
+    }
+    if (restored && restored.trim()) {
+      this.passphrase = restored.trim();
+      return this.passphrase;
+    }
+
+    if (typeof window === 'undefined') {
+      throw new Error('Passphrase required to continue');
+    }
+
+    const copy = this.getPassphrasePromptCopy(context);
+    let passphrase = null;
+
+    try {
+      if (window.cleanSecurePasswordModal && typeof window.cleanSecurePasswordModal.show === 'function') {
+        passphrase = await window.cleanSecurePasswordModal.show({
+          title: copy.title,
+          message: copy.message,
+          placeholder: copy.placeholder
+        });
+      } else if (typeof window.showPasswordModal === 'function') {
+        passphrase = await window.showPasswordModal(copy.message, copy.placeholder || 'Passphrase:');
+      } else {
+        passphrase = window.prompt(copy.promptText || copy.message);
+      }
+    } catch (promptError) {
+      console.error(' PASSCODE PROMPT: Failed to collect passphrase:', promptError);
+      passphrase = null;
+    }
+
+    if (!passphrase || !passphrase.trim()) {
+      throw new Error('Passphrase required to continue.');
+    }
+
+    this.cacheSessionPassphrase(passphrase.trim());
+    return this.passphrase;
+  }
+
   /**
    * Create new .emma vault file
    * Same API as desktop version!
@@ -111,7 +234,7 @@ class EmmaWebVault {
         throw new Error(`Missing required parameters: name=${name}, passphrase=${passphrase ? 'provided' : 'missing'}`);
       }
 
-      this.passphrase = passphrase;
+      this.cacheSessionPassphrase(passphrase);
 
       // Create vault structure (IDENTICAL to desktop version)
       this.vaultData = {
@@ -144,7 +267,7 @@ class EmmaWebVault {
       // Set session storage for dashboard
       sessionStorage.setItem('emmaVaultActive', 'true');
       sessionStorage.setItem('emmaVaultName', name);
-      // SECURITY: Never store passphrase in web storage - keep in memory only
+      // SECURITY: Passphrase cached in sessionStorage for this tab only (cleared on lock)
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
@@ -212,22 +335,28 @@ class EmmaWebVault {
         }
       }
 
-      // PURE WEB APP: Use native File System Access API (no extension needed)
-      if (!file && 'showOpenFilePicker' in window) {
+    // PURE WEB APP: Use native File System Access API (no extension needed)
+    if (!file && 'showOpenFilePicker' in window) {
 
-        const [fileHandle] = await window.showOpenFilePicker({
-          types: [{
-            description: 'Emma Vault Files',
-            accept: { 'application/emma-vault': ['.emma'] }
-          }],
-          excludeAcceptAllOption: true,
-          multiple: false
-        });
+      const [fileHandle] = await window.showOpenFilePicker({
+        types: [{
+          description: 'Emma Vault Files',
+          accept: { 'application/emma-vault': ['.emma'] }
+        }],
+        excludeAcceptAllOption: true,
+        multiple: false
+      });
 
-        this.fileHandle = fileHandle;
-        fileToProcess = await fileHandle.getFile();
+      const openedFile = await fileHandle.getFile();
+      this.originalFileName = openedFile.name;
+      try {
+        sessionStorage.setItem('emmaVaultOriginalFileName', openedFile.name);
+        localStorage.setItem('emmaVaultOriginalFileName', openedFile.name);
+      } catch (_) {}
+      this.fileHandle = fileHandle;
+      fileToProcess = openedFile;
 
-      }
+    }
 
       if (!fileToProcess) {
         throw new Error('No file selected');
@@ -257,11 +386,11 @@ class EmmaWebVault {
         return { success: false, reason: 'passphrase_cancelled' };
       }
 
-      this.passphrase = passphrase;
+      this.cacheSessionPassphrase(passphrase);
 
       // Decrypt and load vault
-      // Decrypt vault data using NATIVE crypto (no extension needed)
-      const vaultData = await this.nativeDecryptVault(fileData, passphrase);
+      const fileBuffer = await fileToProcess.arrayBuffer();
+      const vaultData = await this.nativeDecryptVault(fileBuffer, passphrase);
 
       this.vaultData = vaultData;
       this.isOpen = true;
@@ -269,7 +398,7 @@ class EmmaWebVault {
       // Set session storage for dashboard
       sessionStorage.setItem('emmaVaultActive', 'true');
       sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || 'Web Vault');
-      // SECURITY: Never store passphrase in web storage - keep in memory only
+      // SECURITY: Passphrase cached in sessionStorage for this tab only (cleared on lock)
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
       localStorage.removeItem('emmaVaultSessionExpiry'); // Remove any existing expiry
@@ -334,8 +463,10 @@ class EmmaWebVault {
 
               // Restore sessionStorage after emergency unlock
               if (this.passphrase) {
-                // SECURITY: Never store passphrase in web storage
+                // SECURITY: Passphrase cached in sessionStorage for this tab only
                 console.log(' EMERGENCY FIX: Passphrase restored and cached');
+                this.cacheSessionPassphrase(this.passphrase);
+                await this.ensureDirectFileHandle('passphrase-reauth', { promptOnFailure: false });
               }
             } catch (error) {
               console.error(' Secure modal failed:', error);
@@ -1193,6 +1324,17 @@ class EmmaWebVault {
     //  CRITICAL: .emma file MUST be updated or operation fails
     const hasFileSystemAccess = 'showOpenFilePicker' in window;
 
+    if (hasFileSystemAccess && !this.fileHandle) {
+      try {
+        const restored = await this.ensureDirectFileHandle('auto-save', { promptOnFailure: true });
+        if (restored && this.fileHandle) {
+          this.needsFileReauth = false;
+        }
+      } catch (handleError) {
+        console.warn(' AUTO-SAVE: Failed to restore file handle automatically:', handleError);
+      }
+    }
+
     if (hasFileSystemAccess && this.fileHandle) {
       //  PREFERRED: Direct save to original file
       console.log(' VAULT: Saving directly to .emma file');
@@ -1405,12 +1547,12 @@ class EmmaWebVault {
         });
       }
 
-      this.fileHandle = fileHandle;
       this.originalFileName = file.name;
       try {
         sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
         localStorage.setItem('emmaVaultOriginalFileName', file.name);
       } catch (_) {}
+      this.fileHandle = fileHandle;
       this.needsFileReauth = false;
       const syncModal = document.querySelector('.emma-sync-error-modal');
       if (syncModal) syncModal.remove();
@@ -1418,6 +1560,75 @@ class EmmaWebVault {
       return true;
     } catch (error) {
 
+      return false;
+    }
+  }
+
+  async ensureDirectFileHandle(context = 'operation', options = {}) {
+    const { promptOnFailure = true } = options || {};
+
+    if (typeof window === 'undefined' || !('showOpenFilePicker' in window)) {
+      return false;
+    }
+
+    if (this.fileHandle) {
+      return true;
+    }
+
+    try {
+      const persistedHandle = await this.loadPersistedFileHandle({ silent: true });
+      if (persistedHandle?.handle) {
+        this._suspendHandlePersistence = true;
+        this.fileHandle = persistedHandle.handle;
+        this._suspendHandlePersistence = false;
+
+        if (persistedHandle.originalFileName && !this.originalFileName) {
+          this.originalFileName = persistedHandle.originalFileName;
+        }
+
+        if (persistedHandle.permission !== 'denied') {
+          this.needsFileReauth = false;
+          return true;
+        }
+
+        // Permission denied - reset handle so we can prompt again
+        this.fileHandle = null;
+      }
+    } catch (error) {
+      console.warn(` FILE-ACCESS: Failed to restore persisted handle before ${context}:`, error);
+    }
+
+    if (this.isFileSelectionInProgress) {
+      return false;
+    }
+
+    if (!this.originalFileName) {
+      try {
+        this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName') ||
+          localStorage.getItem('emmaVaultOriginalFileName') ||
+          this.originalFileName;
+      } catch (error) {
+        console.warn(' FILE-ACCESS: Unable to restore cached filename before reauth:', error);
+      }
+    }
+
+    if (!this.originalFileName) {
+      return false;
+    }
+
+    try {
+      const restored = await this.reEstablishFileAccess();
+      this.needsFileReauth = !restored;
+      if (!restored && promptOnFailure) {
+        this.promptForFileReauth();
+      }
+      return restored;
+    } catch (error) {
+      console.warn(` FILE-ACCESS: Failed to restore handle after ${context}:`, error);
+      this.needsFileReauth = true;
+      if (promptOnFailure) {
+        this.promptForFileReauth();
+      }
       return false;
     }
   }
@@ -1572,9 +1783,37 @@ class EmmaWebVault {
         // Restore original filename (check both session and localStorage)
         this.originalFileName = sessionStorage.getItem('emmaVaultOriginalFileName') || 
                                localStorage.getItem('emmaVaultOriginalFileName');
+
+        let persistedHandleStatus = null;
+        if (!this.fileHandle && this.canPersistFileHandles()) {
+          persistedHandleStatus = await this.loadPersistedFileHandle({ silent: true });
+          if (persistedHandleStatus?.handle) {
+            this._suspendHandlePersistence = true;
+            this.fileHandle = persistedHandleStatus.handle;
+            this._suspendHandlePersistence = false;
+
+            if (persistedHandleStatus.originalFileName && !this.originalFileName) {
+              this.originalFileName = persistedHandleStatus.originalFileName;
+            }
+
+            if (this.originalFileName) {
+              try {
+                sessionStorage.setItem('emmaVaultOriginalFileName', this.originalFileName);
+                localStorage.setItem('emmaVaultOriginalFileName', this.originalFileName);
+              } catch (_) {}
+            }
+          }
+        }
         
-        //  CRITICAL: Defer re-auth until user action to avoid unsolicited file pickers
-        if (!this.fileHandle && this.originalFileName) {
+        if (this.fileHandle) {
+          if (persistedHandleStatus && persistedHandleStatus.permission === 'denied') {
+            this.needsFileReauth = true;
+            this.promptForFileReauth();
+          } else {
+            this.needsFileReauth = false;
+          }
+        } else if (this.originalFileName) {
+          //  CRITICAL: Defer re-auth until user action to avoid unsolicited file pickers
           this.needsFileReauth = true;
           this.promptForFileReauth();
         }
@@ -1708,6 +1947,11 @@ class EmmaWebVault {
       // Use provided vault data or default to current
       const dataToEncrypt = vaultData || this.vaultData;
 
+      if (!customPassphrase) {
+        await this.ensureActivePassphrase('file-save');
+      }
+      const activePassphrase = customPassphrase || this.passphrase;
+
       // Convert vault data to JSON
       const jsonData = JSON.stringify(dataToEncrypt);
 
@@ -1716,7 +1960,7 @@ class EmmaWebVault {
 
       // Encrypt using Web Crypto API with specified passphrase
 
-      const encryptedData = await this.encryptData(data, null, customPassphrase);
+      const encryptedData = await this.encryptData(data, null, activePassphrase);
 
       // Create .emma file format
       const header = new TextEncoder().encode('EMMA'); // Magic bytes (4 bytes)
@@ -1839,6 +2083,176 @@ class EmmaWebVault {
     }
   }
 
+  canPersistFileHandles() {
+    return typeof window !== 'undefined' &&
+      typeof indexedDB !== 'undefined' &&
+      ('showOpenFilePicker' in window);
+  }
+
+  async openHandleDatabase() {
+    if (!this.canPersistFileHandles()) {
+      return null;
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const request = indexedDB.open('EmmaVaultHandles', 1);
+
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('handles')) {
+            db.createObjectStore('handles', { keyPath: 'id' });
+          }
+        };
+
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = () => reject(request.error);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  async persistFileHandle(fileHandle) {
+    if (!fileHandle || this.fileHandlePersistenceDisabled || !this.canPersistFileHandles()) {
+      return;
+    }
+
+    try {
+      const db = await this.openHandleDatabase();
+      if (!db) return;
+
+      await new Promise((resolve, reject) => {
+        const transaction = db.transaction(['handles'], 'readwrite');
+        const store = transaction.objectStore('handles');
+        store.put({
+          id: 'primary',
+          handle: fileHandle,
+          originalFileName: this.originalFileName || fileHandle.name || null,
+          timestamp: new Date().toISOString()
+        });
+
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        transaction.onabort = () => {
+          const error = transaction.error || new Error('handle persistence aborted');
+          db.close();
+          reject(error);
+        };
+        transaction.onerror = transaction.onabort;
+      });
+    } catch (error) {
+      if (error?.name === 'DataCloneError') {
+        this.fileHandlePersistenceDisabled = true;
+        console.warn(' FILE-HANDLE: Browser blocked handle persistence - falling back to reauth prompts');
+      } else {
+        console.warn(' FILE-HANDLE: Failed to persist handle:', error);
+      }
+    }
+  }
+
+  async clearPersistedFileHandle() {
+    if (this.fileHandlePersistenceDisabled || !this.canPersistFileHandles()) {
+      return;
+    }
+
+    try {
+      const db = await this.openHandleDatabase();
+      if (!db) return;
+
+      await new Promise((resolve, reject) => {
+        const transaction = db.transaction(['handles'], 'readwrite');
+        transaction.objectStore('handles').delete('primary');
+
+        transaction.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        transaction.onabort = () => {
+          const error = transaction.error || new Error('handle persistence delete aborted');
+          db.close();
+          reject(error);
+        };
+        transaction.onerror = transaction.onabort;
+      });
+    } catch (error) {
+      console.warn(' FILE-HANDLE: Failed to clear persisted handle:', error);
+    }
+  }
+
+  async loadPersistedFileHandle(options = {}) {
+    if (this.fileHandlePersistenceDisabled || !this.canPersistFileHandles()) {
+      return null;
+    }
+
+    try {
+      const db = await this.openHandleDatabase();
+      if (!db) return null;
+
+      const record = await new Promise((resolve, reject) => {
+        let result = null;
+        const transaction = db.transaction(['handles'], 'readonly');
+        const store = transaction.objectStore('handles');
+        const request = store.get('primary');
+
+        request.onsuccess = () => {
+          result = request.result || null;
+        };
+
+        transaction.oncomplete = () => {
+          db.close();
+          resolve(result);
+        };
+
+        transaction.onabort = () => {
+          const error = transaction.error || new Error('handle persistence read aborted');
+          db.close();
+          reject(error);
+        };
+
+        transaction.onerror = transaction.onabort;
+      });
+
+      if (!record || !record.handle) {
+        return null;
+      }
+
+      const permission = await this.getHandlePermissionState(
+        record.handle,
+        options.permissionMode || 'readwrite'
+      );
+
+      return {
+        handle: record.handle,
+        originalFileName: record.originalFileName || record.handle?.name || null,
+        permission
+      };
+    } catch (error) {
+      if (error?.name === 'DataCloneError') {
+        this.fileHandlePersistenceDisabled = true;
+        console.warn(' FILE-HANDLE: Stored handle is no longer readable - disabling persistence');
+      } else if (!options.silent) {
+        console.warn(' FILE-HANDLE: Failed to load persisted handle:', error);
+      }
+      return null;
+    }
+  }
+
+  async getHandlePermissionState(fileHandle, mode = 'readwrite') {
+    if (!fileHandle || typeof fileHandle.queryPermission !== 'function') {
+      return 'unknown';
+    }
+
+    try {
+      return await fileHandle.queryPermission({ mode });
+    } catch (error) {
+      console.warn(' FILE-HANDLE: queryPermission failed:', error);
+      return 'unknown';
+    }
+  }
+
   /**
    * Encrypt data using Web Crypto API
    */
@@ -1846,7 +2260,20 @@ class EmmaWebVault {
     try {
 
       let salt = customSalt || this.vaultData.encryption.salt;
-      const passphrase = customPassphrase || this.passphrase;
+      let passphrase = customPassphrase || this.passphrase;
+
+      if (!passphrase || typeof passphrase !== 'string' || !passphrase.trim()) {
+        if (!customPassphrase) {
+          await this.ensureActivePassphrase('encrypt-data');
+          passphrase = this.passphrase;
+        }
+      }
+
+      passphrase = passphrase?.trim();
+
+      if (!passphrase) {
+        throw new Error('Passphrase is required for encryption');
+      }
 
       if (salt && typeof salt === 'object' && !(salt instanceof Uint8Array)) {
         salt = new Uint8Array(Object.values(salt));
@@ -1985,6 +2412,37 @@ class EmmaWebVault {
 
   generateSalt() {
     return crypto.getRandomValues(new Uint8Array(32));
+  }
+
+  normalizeToArrayBuffer(data) {
+    if (data instanceof ArrayBuffer) {
+      return data;
+    }
+    if (ArrayBuffer.isView(data)) {
+      return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    }
+    throw new Error('Unsupported vault buffer format');
+  }
+
+  inspectVaultBytes(data, label = 'vault-file') {
+    try {
+      const buffer = data instanceof Uint8Array ? data : new Uint8Array(this.normalizeToArrayBuffer(data));
+      const header = new TextDecoder().decode(buffer.slice(0, 4));
+      const asciiPreview = this.peekAsciiString(buffer.slice(0, 128));
+      const hexPreview = Array.from(buffer.slice(0, 40)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      const summary = {
+        label,
+        totalBytes: buffer.length,
+        header,
+        hexPreview,
+        asciiPreview,
+      };
+      console.log('🔎 VAULT INSPECTOR:', summary);
+      return summary;
+    } catch (error) {
+      console.warn('VAULT INSPECTOR: Failed to analyze buffer:', error);
+      return null;
+    }
   }
 
   async fileToArrayBuffer(file) {
@@ -2322,41 +2780,77 @@ class EmmaWebVault {
   /**
    * EXACT WORKING CRYPTO: Copied from extension background.js
    */
-    async exactWorkingDecrypt(fileData, passphrase) {
+  async exactWorkingDecrypt(fileData, passphrase) {
     try {
-      const data = new Uint8Array(fileData);
+      const arrayBuffer = this.normalizeToArrayBuffer(fileData);
+      const data = new Uint8Array(arrayBuffer);
 
       const magic = new TextDecoder().decode(data.slice(0, 4));
       if (magic !== 'EMMA') {
         throw new Error('Invalid .emma file format');
       }
 
-      let offset = 4;
-      let version = null;
-      if (data.length >= offset + 2) {
-        const candidate = data.slice(offset, offset + 2);
-        const [major, minor] = candidate;
-        const looksLikeVersion = (major === 1 && minor <= 10) || (major === 0 && minor <= 10);
-        const bytesRemaining = data.length - (offset + 2 + 32 + 12);
-        if (looksLikeVersion && bytesRemaining >= 0) {
-          version = candidate;
-          offset += 2;
-        }
+      const plaintextCandidate = this.tryParsePlaintextVault(data.slice(4));
+      if (plaintextCandidate) {
+        console.warn('EXACT WORKING: Plaintext vault detected - returning parsed data directly');
+        plaintextCandidate.encryption = plaintextCandidate.encryption || {};
+        plaintextCandidate.encryption.iterations = plaintextCandidate.encryption.iterations || 0;
+        plaintextCandidate.encryption.salt = plaintextCandidate.encryption.salt || new Uint8Array(32);
+        return plaintextCandidate;
       }
 
-      const salt = data.slice(offset, offset + 32);
-      offset += 32;
-      const iv = data.slice(offset, offset + 12);
-      offset += 12;
-      const encrypted = data.slice(offset);
+      const buildLayouts = () => {
+        const attempts = [];
+        const versionFlags = [true, false];
+        const preambleLengths = [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 28, 32];
+        const saltLengths = [32, 16, 24, 48, 64, 40];
+        const ivLengths = [12, 16, 24];
 
-      console.log('EXACT WORKING: Extracted vault components:', {
-        magic,
-        version: version ? Array.from(version) : null,
-        saltLength: salt.length,
-        ivLength: iv.length,
-        encryptedLength: encrypted.length
-      });
+        for (const includeVersion of versionFlags) {
+          for (const preamble of preambleLengths) {
+            for (const saltLength of saltLengths) {
+              for (const ivLength of ivLengths) {
+                let offset = 4;
+                let version = null;
+
+                if (includeVersion) {
+                  if (data.length >= offset + 2) {
+                    const candidate = data.slice(offset, offset + 2);
+                    const [major, minor] = candidate;
+                    const looksLikeVersion = (major === 1 && minor <= 10) || (major === 0 && minor <= 10);
+                    const bytesRemaining = data.length - (offset + 2 + preamble + saltLength + ivLength);
+                    if (looksLikeVersion && bytesRemaining >= 0) {
+                      version = candidate;
+                      offset += 2;
+                    } else {
+                      continue;
+                    }
+                  } else {
+                    continue;
+                  }
+                }
+
+                offset += preamble;
+                if (data.length < offset + saltLength + ivLength + 16) {
+                  continue;
+                }
+
+                const salt = data.slice(offset, offset + saltLength);
+                const iv = data.slice(offset + saltLength, offset + saltLength + ivLength);
+                const encrypted = data.slice(offset + saltLength + ivLength);
+                attempts.push({ salt, iv, encrypted, version, ivLength, saltLength, preamble });
+              }
+            }
+          }
+        }
+
+        return attempts;
+      };
+
+      const layoutAttempts = buildLayouts();
+      if (layoutAttempts.length === 0) {
+        throw new Error('Unsupported .emma file layout');
+      }
 
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
@@ -2366,63 +2860,241 @@ class EmmaWebVault {
         ['deriveBits', 'deriveKey']
       );
 
-      const iterationCandidates = [250000, 100000];
-      let decrypted = null;
+      const iterationCandidates = [
+        500000,
+        400000,
+        350000,
+        330000,
+        320000,
+        310000,
+        300000,
+        280000,
+        262144,
+        250000,
+        200000,
+        175000,
+        150000,
+        125000,
+        110000,
+        100000,
+        96000,
+        80000,
+        64000,
+        50000
+      ];
       let chosenIterations = null;
+      let vaultData = null;
       let lastError = null;
 
-      for (const iterations of iterationCandidates) {
-        try {
-          const key = await crypto.subtle.deriveKey(
-            {
-              name: 'PBKDF2',
-              salt: salt,
-              iterations,
-              hash: 'SHA-256'
-            },
-            keyMaterial,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['decrypt']
-          );
+      for (const layout of layoutAttempts) {
+        for (const iterations of iterationCandidates) {
+          try {
+            const key = await crypto.subtle.deriveKey(
+              {
+                name: 'PBKDF2',
+                salt: layout.salt,
+                iterations,
+                hash: 'SHA-256'
+              },
+              keyMaterial,
+              { name: 'AES-GCM', length: 256 },
+              false,
+              ['decrypt']
+            );
 
-          decrypted = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: iv },
-            key,
-            encrypted
-          );
-          chosenIterations = iterations;
-          break;
-        } catch (error) {
-          lastError = error;
+            const decrypted = await crypto.subtle.decrypt(
+              { name: 'AES-GCM', iv: layout.iv },
+              key,
+              layout.encrypted
+            );
+
+            const jsonString = new TextDecoder().decode(decrypted);
+            vaultData = JSON.parse(jsonString);
+            chosenIterations = iterations;
+            vaultData.encryption = vaultData.encryption || {};
+            vaultData.encryption.salt = new Uint8Array(layout.salt);
+            if (chosenIterations) {
+              vaultData.encryption.iterations = chosenIterations;
+            }
+
+            console.log('EXACT WORKING: Vault decrypted successfully!', {
+              memories: Object.keys(vaultData.content?.memories || {}).length,
+              layout: layout.version ? 'versioned' : 'legacy'
+            });
+            return vaultData;
+          } catch (error) {
+            lastError = error;
+          }
         }
       }
 
-      if (!decrypted) {
-        throw lastError || new Error('Failed to derive Emma vault key.');
+      const summary = layoutAttempts.map(layout => ({
+        saltLength: layout.saltLength || layout.salt?.length || null,
+        ivLength: layout.ivLength || layout.iv?.length || null,
+        encryptedLength: layout.encrypted?.length || null,
+        version: layout.version ? Array.from(layout.version) : null
+      }));
+      const firstBytes = Array.from(data.slice(0, 64));
+      const asciiPreview = this.peekAsciiString(data.slice(0, 128));
+      console.error('EXACT WORKING: Exhausted all layout/iteration combinations', summary);
+      console.error('EXACT WORKING: Layout summary raw', JSON.stringify(summary));
+      console.error('EXACT WORKING: File first bytes', firstBytes);
+      if (asciiPreview) {
+        console.error('EXACT WORKING: ASCII preview', asciiPreview);
       }
 
-      const jsonString = new TextDecoder().decode(decrypted);
-      const vaultData = JSON.parse(jsonString);
-
-      vaultData.encryption = vaultData.encryption || {};
-      vaultData.encryption.salt = new Uint8Array(salt);
-      if (chosenIterations) {
-        vaultData.encryption.iterations = chosenIterations;
-      }
-
-      console.log('EXACT WORKING: Vault decrypted successfully! Memories:',
-        Object.keys(vaultData.content?.memories || {}).length);
-
-      return vaultData;
+      throw lastError || new Error('Failed to derive Emma vault key.');
 
     } catch (error) {
       console.error('EXACT WORKING: Decryption failed:', error);
       throw new Error('Failed to decrypt vault: ' + error.message);
     }
   }
+
+  async nativeDecryptVault(source, passphrase) {
+    try {
+      if (!source) {
+        throw new Error('No vault data provided');
+      }
+
+      if (source && typeof source === 'object') {
+        if (source.data && source.data.content) {
+          return source.data;
+        }
+        if (source.content && source.metadata) {
+          return source;
+        }
+      }
+
+      const effectivePassphrase = passphrase || this.passphrase;
+      if (!effectivePassphrase) {
+        throw new Error('Passphrase required to decrypt vault');
+      }
+
+      let buffer = null;
+
+      if (source instanceof ArrayBuffer) {
+        buffer = source;
+      } else if (ArrayBuffer.isView(source)) {
+        buffer = source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
+      } else if (typeof Blob !== 'undefined' && source instanceof Blob) {
+        buffer = await source.arrayBuffer();
+      } else if (typeof source === 'string') {
+        const binary = atob(source);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        buffer = bytes.buffer;
+      }
+
+      if (buffer) {
+        return await this.exactWorkingDecrypt(buffer, effectivePassphrase);
+      }
+
+      throw new Error('Unsupported vault data format');
+    } catch (error) {
+      console.error(' NATIVE DECRYPT: Failed to restore vault:', error);
+      throw error;
+    }
+  }
+
+  peekAsciiString(data) {
+    try {
+      const decoder = new TextDecoder('utf-8', { fatal: false });
+      const decoded = decoder.decode(data);
+      const printable = decoded.replace(/[^\x20-\x7E]/g, ' ').trim();
+      if (!printable) return null;
+      return printable;
+    } catch {
+      return null;
+    }
+  }
+
+  tryParsePlaintextVault(data) {
+    try {
+      const decoder = new TextDecoder('utf-8', { fatal: false });
+      const decoded = decoder.decode(data);
+      const trimmed = decoded.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        return JSON.parse(trimmed);
+      }
+      // Base64 fallback
+      const compact = trimmed.replace(/\s+/g, '');
+      if (/^[A-Za-z0-9+/=]+$/.test(compact) && compact.length % 4 === 0) {
+        const binary = atob(compact);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        const nestedDecoded = decoder.decode(bytes);
+        const nestedTrimmed = nestedDecoded.trim();
+        if (nestedTrimmed.startsWith('{') && nestedTrimmed.endsWith('}')) {
+          return JSON.parse(nestedTrimmed);
+        }
+      }
+    } catch (error) {
+      console.warn('PLAINTEXT DETECTION: Failed to parse plaintext vault:', error);
+    }
+    return null;
+  }
+
+  async hasBrowserBackup() {
+    try {
+      const backup = await this.loadFromIndexedDB();
+      return !!backup;
+    } catch (error) {
+      console.warn('BROWSER BACKUP: Unable to check IndexedDB:', error);
+      return false;
+    }
+  }
+
+  applyNewPassphrase(passphrase) {
+    if (!passphrase) {
+      throw new Error('Passphrase required to re-encrypt vault');
+    }
+    this.passphrase = passphrase;
+    this.cacheSessionPassphrase(passphrase);
+    this.vaultData.encryption = {
+      algorithm: 'AES-GCM',
+      keyDerivation: 'PBKDF2',
+      iterations: 310000,
+      salt: this.generateSalt()
+    };
+  }
+
+  async recoverFromBrowserBackup(passphrase) {
+    const backup = await this.loadFromIndexedDB();
+    if (!backup) {
+      throw new Error('No browser backup found in this browser');
+    }
+
+    this.vaultData = backup;
+    this.isOpen = true;
+    this.applyNewPassphrase(passphrase);
+    this.vaultData.metadata = this.vaultData.metadata || {};
+    if (!this.vaultData.metadata.name) {
+      this.vaultData.metadata.name = 'Recovered Vault';
+    }
+    sessionStorage.setItem('emmaVaultActive', 'true');
+    sessionStorage.setItem('emmaVaultName', this.vaultData.metadata.name);
+    localStorage.setItem('emmaVaultActive', 'true');
+    localStorage.setItem('emmaVaultName', this.vaultData.metadata.name);
+    await this.saveToIndexedDB();
+    return this.vaultData;
+  }
 async nativeEncryptVault(vaultData, passphrase) {
     try {
+
+      let activePassphrase = passphrase;
+      if (!activePassphrase || !activePassphrase.trim()) {
+        await this.ensureActivePassphrase('download');
+        activePassphrase = this.passphrase;
+      }
+      activePassphrase = activePassphrase.trim();
+      if (!activePassphrase) {
+        throw new Error('Passphrase required to encrypt vault');
+      }
 
       // Generate encryption salt and IV
       const salt = crypto.getRandomValues(new Uint8Array(32));
@@ -2435,7 +3107,7 @@ async nativeEncryptVault(vaultData, passphrase) {
       // Derive encryption key
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
-        new TextEncoder().encode(passphrase),
+        new TextEncoder().encode(activePassphrase),
         'PBKDF2',
         false,
         ['deriveKey']
@@ -2511,16 +3183,18 @@ window.emmaAPI = {
           try {
             const decryptedData = await window.emmaWebVault.nativeDecryptVault(vaultData, data.passphrase);
             window.emmaWebVault.vaultData = decryptedData;
-            window.emmaWebVault.passphrase = data.passphrase;
+            window.emmaWebVault.cacheSessionPassphrase(data.passphrase);
             window.emmaWebVault.isOpen = true;
 
             // Set session storage for dashboard
             sessionStorage.setItem('emmaVaultActive', 'true');
             sessionStorage.setItem('emmaVaultName', decryptedData.metadata?.name || decryptedData.name || 'Web Vault');
-            // SECURITY: Never store passphrase in web storage
+            // SECURITY: Passphrase cached in sessionStorage for this tab only
 
             console.log(' Vault unlocked successfully via API!');
-            return { success: true, stats: window.emmaWebVault.getStats() };
+            const stats = window.emmaWebVault.getStats();
+            await window.emmaWebVault.ensureDirectFileHandle('unlock', { promptOnFailure: false });
+            return { success: true, stats };
           } catch (error) {
             console.error(' Failed to decrypt vault with provided passphrase:', error);
             return { success: false, error: 'Incorrect passphrase or corrupted vault data' };
@@ -2530,15 +3204,16 @@ window.emmaAPI = {
           window.emmaWebVault.vaultData = vaultData;
           window.emmaWebVault.isOpen = true;
           if (data.passphrase) {
-            window.emmaWebVault.passphrase = data.passphrase;
-            // SECURITY: Never store passphrase in web storage - keep in memory only
+            window.emmaWebVault.cacheSessionPassphrase(data.passphrase);
           }
 
           sessionStorage.setItem('emmaVaultActive', 'true');
           sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || vaultData.name || 'Web Vault');
 
           console.log(' Vault opened successfully (unencrypted data)!');
-          return { success: true, stats: window.emmaWebVault.getStats() };
+          const stats = window.emmaWebVault.getStats();
+          await window.emmaWebVault.ensureDirectFileHandle('unlock', { promptOnFailure: false });
+          return { success: true, stats };
         }
       } catch (error) {
         console.error(' Failed to unlock vault:', error);

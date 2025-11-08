@@ -335,18 +335,18 @@ wss.on('connection', (browserWs, request) => {
           await emmaAgent.stopSession();
           break;
 
-        default:
-          console.warn('Unhandled browser message type:', message.type);
-          break;
-      }
-
         case 'user_audio_chunk':
+          // Reserved for future streamed audio handling
           break;
         case 'realtime_audio_chunk':
           if (emmaAgent && message.chunk) {
             await emmaAgent.handleRealtimeAudio(message.chunk);
           }
           break;
+        default:
+          console.warn('Unhandled browser message type:', message.type);
+          break;
+      }
       
     } catch (error) {
       try {

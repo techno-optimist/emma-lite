@@ -10,6 +10,7 @@
   
   <!-- Z-Index Hierarchy Fix - Prevents modal conflicts -->
   <link rel="stylesheet" href="css/z-index-hierarchy.css">
+  <link rel="stylesheet" href="css/theme-tokens.css">
 
   <!-- Environment bootstrap (must load first) -->
   <script src="js/emma-env.js"></script>
@@ -244,6 +245,86 @@
         .hidden {
             display: none;
     }
+    /* Emma Theme Alignment */
+    :root {
+      --landing-card: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.07);
+      --landing-card-strong: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.12);
+      --landing-border: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.18);
+    }
+
+    body {
+      background: var(--emma-bg-gradient);
+      color: var(--emma-text-strong, #ffffff);
+      padding: clamp(24px, 4vw, 48px);
+    }
+
+    .emma-container {
+      /* background: var(--landing-card);
+      border: 1px solid var(--landing-border);
+      border-radius: 32px; */
+      padding: clamp(32px, 5vw, 48px);
+      box-shadow: var(--emma-shadow-raised, 0 12px 48px rgba(0, 0, 0, 0.35));
+      max-width: 720px;
+      width: 100%;
+    }
+
+    .emma-subtitle {
+      color: var(--emma-text-muted, rgba(255, 255, 255, 0.65));
+      margin-bottom: 40px;
+    }
+
+    #vaultStatus {
+      background: var(--landing-card);
+      border: 1px solid var(--landing-border);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .vault-controls {
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .vault-btn {
+      background: var(--landing-card);
+      border: 1px solid var(--landing-border);
+      color: var(--emma-text-strong, #ffffff);
+      padding: 14px 28px;
+      border-radius: 14px;
+      backdrop-filter: blur(12px);
+    }
+
+    .vault-btn:hover {
+      background: var(--landing-card-strong);
+      border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.35);
+    }
+
+    .vault-btn.primary {
+      background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.9), rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.85));
+      border-color: transparent;
+      box-shadow: 0 12px 36px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.45);
+    }
+
+    .vault-btn.warning {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.5);
+      color: #fbbf24;
+    }
+
+    .vault-btn.success {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: rgba(16, 185, 129, 0.55);
+      color: #10b981;
+    }
+
+    .drag-drop-zone {
+      background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.15);
+      border: 3px dashed rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.5);
+    }
+
+    .drag-drop-message {
+      color: var(--emma-text-strong, #ffffff);
+    }
   </style>
 </head>
 <body>
@@ -278,13 +359,16 @@
         <!-- Clean Vault Controls -->
         <div class="vault-controls">
             <button class="vault-btn primary" id="openVaultBtn">
-                📁 Open Vault
+                &#128275; Open Vault
             </button>
             <button class="vault-btn" id="createVaultBtn">
-                ✨ Create New Vault
+                &#10024; Create New Vault
+            </button>
+            <button class="vault-btn warning" id="recoverVaultBtn">
+                &#128257; Recover Browser Backup
             </button>
             <button class="vault-btn success" id="goToDashboardBtn" style="display: none;">
-                🚀 Go to Dashboard
+                &#10145; Go to Dashboard
               </button>
         </div>
 
@@ -346,6 +430,7 @@
                 this.vaultStatusText = document.getElementById('vaultStatusText');
                 this.openVaultBtn = document.getElementById('openVaultBtn');
                 this.createVaultBtn = document.getElementById('createVaultBtn');
+                this.recoverVaultBtn = document.getElementById('recoverVaultBtn');
                 this.goToDashboardBtn = document.getElementById('goToDashboardBtn');
                 this.dragDropZone = document.getElementById('dragDropZone');
                 this.fileInput = document.getElementById('vaultFileInput');
@@ -392,6 +477,11 @@
 
                 // Create vault button
                 this.createVaultBtn.addEventListener('click', () => this.createVault());
+
+                // Recover browser backup
+                if (this.recoverVaultBtn) {
+                    this.recoverVaultBtn.addEventListener('click', () => this.recoverFromBrowserBackup());
+                }
 
                 // Go to dashboard button
                 this.goToDashboardBtn.addEventListener('click', () => this.goToDashboard());
@@ -489,6 +579,9 @@
 
                     // Read file data first
                     const fileData = new Uint8Array(await file.arrayBuffer());
+                    if (window.emmaWebVault && typeof window.emmaWebVault.inspectVaultBytes === 'function') {
+                        window.emmaWebVault.inspectVaultBytes(fileData, file.name);
+                    }
 
                     // Use working Emma modal (copied from extension)
                     const passphrase = await this.showEmmaPassphraseModal(file.name);
@@ -503,8 +596,23 @@
                     window.emmaWebVault.vaultData = vaultData;
                     window.emmaWebVault.isOpen = true;
                     window.emmaWebVault.passphrase = passphrase;
+                    if (window.emmaWebVault.cacheSessionPassphrase) {
+                        window.emmaWebVault.cacheSessionPassphrase(passphrase);
+                    }
+                    window.emmaWebVault.originalFileName = file.name;
+                    try {
+                        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
+                        localStorage.setItem('emmaVaultOriginalFileName', file.name);
+                    } catch (_) {}
                     if (fileHandle) {
                         window.emmaWebVault.fileHandle = fileHandle;
+                    }
+                    if (!fileHandle && window.emmaWebVault && typeof window.emmaWebVault.ensureDirectFileHandle === 'function') {
+                        try {
+                            await window.emmaWebVault.ensureDirectFileHandle('initial-open', { promptOnFailure: true });
+                        } catch (handleError) {
+                            console.warn('⚠️ Emma Web Vault: Unable to capture direct file access automatically:', handleError);
+                        }
                     }
 
                     // Set session storage
@@ -599,6 +707,36 @@
             goToDashboard() {
 
                 window.location.href = 'dashboard.html';
+            }
+
+            async recoverFromBrowserBackup() {
+                try {
+                    await ensureEmmaWebVault();
+
+                    if (!window.emmaWebVault || typeof window.emmaWebVault.hasBrowserBackup !== 'function') {
+                        this.showError('Recovery system unavailable in this browser.');
+                        return;
+                    }
+
+                    const hasBackup = await window.emmaWebVault.hasBrowserBackup();
+                    if (!hasBackup) {
+                        this.showError('No browser backup found. Please open your .emma file or create a new vault.');
+                        return;
+                    }
+
+                    const passphrase = await this.showEmmaPassphraseModal('Recovered Vault', true);
+                    if (!passphrase) return;
+
+                    await window.emmaWebVault.recoverFromBrowserBackup(passphrase);
+                    this.vaultStatus = 'unlocked';
+                    this.currentVault = { name: window.emmaWebVault.vaultData?.metadata?.name || 'Recovered Vault' };
+                    this.updateUI();
+                    this.showSuccess('Recovered vault restored. Downloading fresh .emma file...');
+                    await window.emmaWebVault.downloadVaultFile(this.currentVault.name || 'Recovered-Vault');
+                } catch (error) {
+                    console.error('? Recovery failed:', error);
+                    this.showError('Failed to recover from browser backup: ' + (error?.message || error));
+                }
             }
 
             showSuccess(message) {
@@ -908,3 +1046,7 @@
   </script>
 </body>
 </html>
+
+
+
+

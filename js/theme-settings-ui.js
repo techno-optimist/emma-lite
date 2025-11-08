@@ -54,7 +54,6 @@
     const container = instance.themeContainer;
     if (!container) return;
 
-    container.innerHTML = '';
     const themes = window.emmaThemeManager.getThemes();
     if (!Array.isArray(themes) || themes.length === 0) {
       console.warn('EmmaThemeUI: no themes available to render, retrying shortly...');
@@ -63,7 +62,7 @@
         container.dataset.pendingMessage = 'true';
         container.innerHTML = `
           <div style="padding:16px;border:1px solid rgba(var(--emma-neutral-rgb),0.12);border-radius:12px;background:rgba(var(--emma-neutral-rgb),0.04);color:var(--emma-text-secondary);">
-            Loading themes…
+            Loading themes...
           </div>
         `;
       }
@@ -72,122 +71,18 @@
     console.log('[EmmaThemeUI] rendering themes:', themes.length);
     delete container.dataset.pendingMessage;
     const activeThemeId = window.emmaThemeManager.getActiveTheme()?.id || null;
-
+    const fragment = document.createDocumentFragment();
     themes.forEach(theme => {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'theme-card';
-      card.dataset.themeId = theme.id;
-      card.setAttribute('role', 'listitem');
-      card.setAttribute('aria-label', `${theme.name} theme`);
-
-      const preview = document.createElement('div');
-      preview.className = 'theme-card__preview';
-      const gradientPrimary = theme.cssVars?.['--emma-gradient-primary'] || theme.preview?.primary;
-      if (gradientPrimary) {
-        preview.style.background = gradientPrimary;
-      }
-
-      const swatches = document.createElement('div');
-      swatches.className = 'theme-card__swatches';
-      ['primary', 'secondary', 'surface'].forEach(key => {
-        const value = theme.preview?.[key];
-        if (!value) return;
-        const swatch = document.createElement('div');
-        swatch.className = 'theme-card__swatch';
-        swatch.style.background = value;
-        swatches.appendChild(swatch);
-      });
-      preview.appendChild(swatches);
-
-      const info = document.createElement('div');
-      info.className = 'theme-card__info';
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'theme-card__name';
-      nameEl.textContent = theme.name;
-
-      const descEl = document.createElement('div');
-      descEl.className = 'theme-card__description';
-      descEl.textContent = theme.description || 'Custom Emma theme.';
-
-      info.appendChild(nameEl);
-      info.appendChild(descEl);
-
-      const badgeRow = document.createElement('div');
-      badgeRow.className = 'theme-card__badges';
-      if (theme.flags?.highContrast) {
-        const badge = document.createElement('span');
-        badge.className = 'theme-card__badge';
-        badge.textContent = 'High Contrast';
-        badgeRow.appendChild(badge);
-      }
-      if (theme.flags?.animatedBackground) {
-        const badge = document.createElement('span');
-        badge.className = 'theme-card__badge';
-        badge.textContent = 'Animated';
-        badgeRow.appendChild(badge);
-      }
-
-      card.append(preview, info);
-      if (badgeRow.childElementCount > 0) {
-        card.appendChild(badgeRow);
-      }
-
-      card.addEventListener('click', () => applyThemeSelection(theme.id));
-      card.addEventListener('mouseenter', () => previewTheme(theme.id));
-      card.addEventListener('mouseleave', cancelThemePreview);
-      card.addEventListener('focus', () => previewTheme(theme.id));
-      card.addEventListener('blur', cancelThemePreview);
-
-      if (theme.id === activeThemeId) {
-        card.classList.add('theme-card--active');
-        card.setAttribute('aria-current', 'true');
-      }
-
-      container.appendChild(card);
+      fragment.appendChild(createThemeCard(theme));
     });
+    container.innerHTML = '';
+    container.appendChild(fragment);
+    updateThemeActiveState(activeThemeId);
   }
 
   function renderBackgroundOptions(instance) {
     const container = instance.backgroundContainer;
     if (!container) return;
-
-    container.innerHTML = '';
-
-  const defaultButton = document.createElement('button');
-  defaultButton.type = 'button';
-  defaultButton.className = 'background-option';
-  defaultButton.dataset.backgroundId = '';
-  defaultButton.setAttribute('role', 'listitem');
-
-    const defaultPreview = document.createElement('div');
-    defaultPreview.className = 'background-option__preview';
-    defaultPreview.style.background = 'var(--emma-gradient-secondary)';
-
-    const defaultInfo = document.createElement('div');
-    defaultInfo.className = 'background-option__info';
-
-    const defaultName = document.createElement('div');
-    defaultName.className = 'background-option__name';
-    defaultName.textContent = 'Follow Theme';
-
-    const defaultDescription = document.createElement('div');
-    defaultDescription.className = 'background-option__description';
-    defaultDescription.textContent = 'Automatically uses the background recommended by each theme.';
-
-    defaultInfo.append(defaultName, defaultDescription);
-    defaultButton.append(defaultPreview, defaultInfo);
-  defaultButton.addEventListener('click', () => {
-    updateBackground(null, { persist: true });
-    try {
-      localStorage.removeItem('emma.theme.background');
-    } catch (error) {
-      console.warn('EmmaThemeUI: could not clear stored background', error);
-    }
-    updateBackgroundActiveState(null);
-  });
-    container.appendChild(defaultButton);
 
     const backgroundsRaw = window.emmaThemeManager.getBackgrounds() || [];
     if (!Array.isArray(backgroundsRaw) || backgroundsRaw.length === 0) {
@@ -195,64 +90,236 @@
       setTimeout(() => renderBackgroundOptions(instance), 200);
       container.innerHTML = `
         <div style="padding:14px;border:1px solid rgba(var(--emma-neutral-rgb),0.12);border-radius:12px;background:rgba(var(--emma-neutral-rgb),0.04);color:var(--emma-text-secondary);">
-          Loading backgrounds…
+          Loading backgrounds...
         </div>
       `;
       return;
     }
-    const backgrounds = backgroundsRaw.sort((a, b) => {
-      const nameA = (a.name || a.id).toLowerCase();
-      const nameB = (b.name || b.id).toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
+    delete container.dataset.pendingMessage;
+    const backgrounds = backgroundsRaw
+      .slice()
+      .sort((a, b) => {
+        const nameA = (a.name || a.id).toLowerCase();
+        const nameB = (b.name || b.id).toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    const backgroundMap = new Map(backgrounds.map(bg => [bg.id, bg]));
     console.log('[EmmaThemeUI] rendering backgrounds:', backgrounds.length);
 
-    backgrounds.forEach(bg => {
-      const option = document.createElement('button');
-      option.type = 'button';
-      option.className = 'background-option';
-      option.dataset.backgroundId = bg.id;
-      option.setAttribute('role', 'listitem');
-      option.setAttribute('aria-label', `${bg.name || bg.id} background`);
-
-      const preview = document.createElement('div');
-      preview.className = 'background-option__preview';
-      const firstThemeId = Array.isArray(bg.themeIds) ? bg.themeIds[0] : null;
-      if (firstThemeId) {
-        const theme = window.emmaThemeManager.getTheme(firstThemeId);
-        const gradient = theme?.cssVars?.['--emma-gradient-primary'];
-        if (gradient) {
-          preview.style.background = gradient;
-        }
-      }
-
-      const info = document.createElement('div');
-      info.className = 'background-option__info';
-
-      const nameEl = document.createElement('div');
-      nameEl.className = 'background-option__name';
-      nameEl.textContent = bg.name || bg.id;
-
-      const descriptionEl = document.createElement('div');
-      descriptionEl.className = 'background-option__description';
-      descriptionEl.textContent = bg.description || 'Applies a thematic animated background.';
-
-      info.append(nameEl, descriptionEl);
-      option.append(preview, info);
-
-      option.addEventListener('click', () => {
-        console.log('[EmmaThemeUI] selecting background', bg.id);
-        updateBackground(bg.id, { persist: true });
-        try {
-          localStorage.setItem('emma.theme.background', bg.id);
-        } catch (error) {
-          console.warn('EmmaThemeUI: could not persist background directly', error);
-        }
-        updateBackgroundActiveState(bg.id);
-      });
-
-      container.appendChild(option);
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(createBackgroundOption(null));
+    backgrounds.forEach(background => {
+      fragment.appendChild(createBackgroundOption(background));
     });
+    container.innerHTML = '';
+    container.appendChild(fragment);
+    updateBackgroundActiveState(window.emmaThemeManager.getBackground());
+  }
+
+  function createThemeCard(theme) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'theme-card';
+    card.dataset.themeId = theme.id;
+    card.setAttribute('role', 'listitem');
+    card.setAttribute('aria-label', `${theme.name} theme`);
+
+    const preview = document.createElement('div');
+    preview.className = 'theme-card__preview';
+    preview.setAttribute('aria-hidden', 'true');
+    card.appendChild(preview);
+    const gradientPrimary = theme.cssVars?.['--emma-gradient-primary'] || theme.preview?.primary || '';
+    preview.style.background = gradientPrimary;
+
+    const swatches = document.createElement('div');
+    swatches.className = 'theme-card__swatches';
+    preview.appendChild(swatches);
+    const swatchEls = [];
+    for (let i = 0; i < 3; i += 1) {
+      const swatch = document.createElement('span');
+      swatch.className = 'theme-card__swatch';
+      swatches.appendChild(swatch);
+      swatchEls.push(swatch);
+    }
+    const swatchColors = [
+      theme.preview?.primary || theme.cssVars?.['--emma-accent-primary'],
+      theme.preview?.secondary || theme.cssVars?.['--emma-accent-secondary'],
+      theme.preview?.surface || theme.cssVars?.['--emma-surface-primary']
+    ];
+    swatchEls.forEach((swatch, index) => {
+      const color = swatchColors[index];
+      if (color) {
+        swatch.style.background = color;
+        swatch.style.opacity = '1';
+      } else {
+        swatch.style.background = 'var(--emma-glass)';
+        swatch.style.opacity = '0.25';
+      }
+    });
+
+    const info = document.createElement('div');
+    info.className = 'theme-card__info';
+    card.appendChild(info);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'theme-card__name';
+    nameEl.textContent = theme.name;
+    info.appendChild(nameEl);
+
+    const descEl = document.createElement('div');
+    descEl.className = 'theme-card__description';
+    descEl.textContent = theme.description || 'Custom Emma theme.';
+    info.appendChild(descEl);
+
+    const badges = [];
+    if (theme.flags?.highContrast) {
+      badges.push('High Contrast');
+    }
+    if (theme.flags?.animatedBackground) {
+      badges.push('Animated');
+    }
+    if (badges.length) {
+      const badgeRow = document.createElement('div');
+      badgeRow.className = 'theme-card__badges';
+      badges.forEach(label => {
+        const badge = document.createElement('span');
+        badge.className = 'theme-card__badge';
+        badge.textContent = label;
+        badgeRow.appendChild(badge);
+      });
+      card.appendChild(badgeRow);
+    }
+
+    attachThemeCardEvents(card);
+    return card;
+  }
+
+  function attachThemeCardEvents(card) {
+    if (card.dataset.themeEventsBound === 'true') {
+      return;
+    }
+    card.addEventListener('click', handleThemeCardClick);
+    card.addEventListener('mouseenter', handleThemeCardEnter);
+    card.addEventListener('mouseleave', cancelThemePreview);
+    card.addEventListener('focus', handleThemeCardEnter);
+    card.addEventListener('blur', cancelThemePreview);
+    card.dataset.themeEventsBound = 'true';
+  }
+
+  function handleThemeCardClick(event) {
+    const themeId = event?.currentTarget?.dataset?.themeId;
+    if (themeId) {
+      applyThemeSelection(themeId);
+    }
+  }
+
+  function handleThemeCardEnter(event) {
+    const themeId = event?.currentTarget?.dataset?.themeId;
+    if (themeId) {
+      previewTheme(themeId);
+    }
+  }
+
+  function createBackgroundOption(background) {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'background-option';
+    option.setAttribute('role', 'listitem');
+    hydrateBackgroundOption(option, background);
+    return option;
+  }
+
+  function hydrateBackgroundOption(option, background) {
+    const id = background?.id || '';
+    option.dataset.backgroundId = id;
+    option.type = 'button';
+    option.classList.add('background-option');
+    option.setAttribute('role', 'listitem');
+    const name = background?.name || 'Emma Adaptive';
+    const description = background?.description || 'Automatically uses the background recommended by each theme.';
+    option.setAttribute('aria-label', `${name} background`);
+
+    let preview = option.querySelector('.background-option__preview');
+    if (!preview) {
+      preview = document.createElement('div');
+      preview.className = 'background-option__preview';
+      preview.setAttribute('aria-hidden', 'true');
+      option.insertBefore(preview, option.firstChild);
+    }
+    preview.style.background = getBackgroundPreviewFill(background);
+
+    let info = option.querySelector('.background-option__info');
+    if (!info) {
+      info = document.createElement('div');
+      info.className = 'background-option__info';
+      option.appendChild(info);
+    }
+    let nameEl = info.querySelector('.background-option__name');
+    if (!nameEl) {
+      nameEl = document.createElement('div');
+      nameEl.className = 'background-option__name';
+      info.appendChild(nameEl);
+    }
+    nameEl.textContent = name;
+
+    let descEl = info.querySelector('.background-option__description');
+    if (!descEl) {
+      descEl = document.createElement('div');
+      descEl.className = 'background-option__description';
+      info.appendChild(descEl);
+    }
+    descEl.textContent = description;
+
+    attachBackgroundOptionEvents(option);
+  }
+
+  function getBackgroundPreviewFill(background) {
+    if (!background || !background.id) {
+      return 'var(--emma-gradient-secondary)';
+    }
+    const firstThemeId = Array.isArray(background.themeIds) ? background.themeIds[0] : null;
+    if (firstThemeId) {
+      const theme = window.emmaThemeManager.getTheme(firstThemeId);
+      const gradient = theme?.cssVars?.['--emma-gradient-primary'];
+      if (gradient) {
+        return gradient;
+      }
+    }
+    const fallbackTheme = window.emmaThemeManager
+      .getThemes()
+      .find(theme => theme.background?.id === background.id);
+    if (fallbackTheme?.cssVars?.['--emma-gradient-primary']) {
+      return fallbackTheme.cssVars['--emma-gradient-primary'];
+    }
+    return `var(--emma-background-${background.id})`;
+  }
+
+  function attachBackgroundOptionEvents(option) {
+    if (option.dataset.backgroundEventsBound === 'true') {
+      return;
+    }
+    option.addEventListener('click', handleBackgroundClick);
+    option.dataset.backgroundEventsBound = 'true';
+  }
+
+  function handleBackgroundClick(event) {
+    const target = event?.currentTarget;
+    if (!target) {
+      return;
+    }
+    const backgroundId = target.dataset.backgroundId || '';
+    console.log('[EmmaThemeUI] selecting background', backgroundId || 'follow-theme');
+    updateBackground(backgroundId || null, { persist: true });
+    try {
+      if (backgroundId) {
+        localStorage.setItem('emma.theme.background', backgroundId);
+      } else {
+        localStorage.removeItem('emma.theme.background');
+      }
+    } catch (error) {
+      console.warn('EmmaThemeUI: could not persist background directly', error);
+    }
+    updateBackgroundActiveState(backgroundId || null);
   }
 
   function applyThemeSelection(themeId) {

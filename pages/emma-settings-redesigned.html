@@ -86,6 +86,24 @@
       stroke-width: 1.8;
     }
 
+    @media (max-width: 720px) {
+      .settings-exit-fab {
+        width: 52px;
+        height: 52px;
+        bottom: 18px;
+        right: 18px;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .settings-exit-fab {
+        width: 48px;
+        height: 48px;
+        bottom: calc(env(safe-area-inset-bottom, 0) + 14px);
+        right: 16px;
+      }
+    }
+
     .settings-shell {
       display: grid;
       grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
@@ -1229,8 +1247,179 @@
             </p>
           </div>
           <div class="settings-section__content">
-            <div id="settings-theme-gallery" class="theme-gallery" role="list" aria-label="Available themes"></div>
-            <div id="settings-background-options" class="background-options" role="list" aria-label="Background options"></div>
+            <div id="settings-theme-gallery" class="theme-gallery" role="list" aria-label="Available themes">
+              <button type="button" class="theme-card" data-theme-id="aurora-classic" role="listitem" aria-label="Aurora Classic theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Aurora Classic</div>
+                  <div class="theme-card__description">Signature Emma gradient with deep cosmos ambiance.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">Animated</span>
+                </div>
+              </button>
+              <button type="button" class="theme-card" data-theme-id="sunrise-glow" role="listitem" aria-label="Sunrise Glow theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Sunrise Glow</div>
+                  <div class="theme-card__description">Warm peach and coral palette with soft morning light.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">Animated</span>
+                </div>
+              </button>
+              <button type="button" class="theme-card" data-theme-id="midnight-forest" role="listitem" aria-label="Midnight Forest theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Midnight Forest</div>
+                  <div class="theme-card__description">Deep greens and teals with luminous accents for focus.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">High Contrast</span>
+                </div>
+              </button>
+              <button type="button" class="theme-card" data-theme-id="lunar-tide" role="listitem" aria-label="Lunar Tide theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Lunar Tide</div>
+                  <div class="theme-card__description">Noctilucent blues with aqua highlights for calm focus.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">High Contrast</span>
+                  <span class="theme-card__badge">Animated</span>
+                </div>
+              </button>
+              <button type="button" class="theme-card" data-theme-id="ember-noir" role="listitem" aria-label="Ember Noir theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Ember Noir</div>
+                  <div class="theme-card__description">Sleek charcoal base with ember-lit highlights.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">Animated</span>
+                </div>
+              </button>
+              <button type="button" class="theme-card" data-theme-id="blossom-dream" role="listitem" aria-label="Blossom Dream theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Blossom Dream</div>
+                  <div class="theme-card__description">Pastel bloom with gentle light for uplifting moments.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">Animated</span>
+                </div>
+              </button>
+              <button type="button" class="theme-card" data-theme-id="zen-slate" role="listitem" aria-label="Zen Slate theme">
+                <div class="theme-card__preview" aria-hidden="true">
+                  <div class="theme-card__swatches">
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                    <span class="theme-card__swatch"></span>
+                  </div>
+                </div>
+                <div class="theme-card__info">
+                  <div class="theme-card__name">Zen Slate</div>
+                  <div class="theme-card__description">Modern graphite palette with calm blue-green accents.</div>
+                </div>
+                <div class="theme-card__badges">
+                  <span class="theme-card__badge">High Contrast</span>
+                </div>
+              </button>
+            </div>
+            <div id="settings-background-options" class="background-options" role="list" aria-label="Background options">
+              <button type="button" class="background-option" data-background-id="" role="listitem" aria-label="Emma Adaptive background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Emma Adaptive</div>
+                  <div class="background-option__description">Let each theme choose the perfect ambient motion.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="aurora" role="listitem" aria-label="Aurora Field background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Aurora Field</div>
+                  <div class="background-option__description">Soft cosmic gradients with Emma's signature glow.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="sunrise" role="listitem" aria-label="Sunrise Veil background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Sunrise Veil</div>
+                  <div class="background-option__description">Warm morning light with gentle amber motion.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="forest" role="listitem" aria-label="Forest Night background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Forest Night</div>
+                  <div class="background-option__description">Luminous particles drifting through deep forest hues.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="ocean" role="listitem" aria-label="Lunar Tide background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Lunar Tide</div>
+                  <div class="background-option__description">Slow aurora bands drifting over deep ocean blues.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="ember" role="listitem" aria-label="Ember Noir background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Ember Noir</div>
+                  <div class="background-option__description">Amber sparks drifting across a noir twilight.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="blossom" role="listitem" aria-label="Blossom Veil background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Blossom Veil</div>
+                  <div class="background-option__description">Soft petal diffraction floating across gentle light.</div>
+                </div>
+              </button>
+              <button type="button" class="background-option" data-background-id="zen" role="listitem" aria-label="Zen Slate background">
+                <div class="background-option__preview" aria-hidden="true"></div>
+                <div class="background-option__info">
+                  <div class="background-option__name">Zen Slate</div>
+                  <div class="background-option__description">Holographic mist gliding over graphite horizons.</div>
+                </div>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1539,24 +1728,6 @@
         }
       }
 
-      @media (max-width: 720px) {
-        .settings-exit-fab {
-          width: 52px;
-          height: 52px;
-          bottom: 18px;
-          right: 18px;
-        }
-      }
-
-      @media (max-width: 540px) {
-        .settings-exit-fab {
-          width: 48px;
-          height: 48px;
-          bottom: calc(env(safe-area-inset-bottom, 0) + 14px);
-          right: 16px;
-        }
-      }
-
       getAutoSavePreference() {
         try {
           const stored = localStorage.getItem('emmaVaultAutoSaveEnabled');
@@ -1672,6 +1843,7 @@
         const peopleToggle = document.getElementById('people-recognition-toggle');
         const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
         const highContrastToggle = document.getElementById('high-contrast-toggle');
+        const autoSaveToggle = document.getElementById('auto-save-toggle');
         
         if (memoryToggle) {
           memoryToggle.addEventListener('change', (e) => {

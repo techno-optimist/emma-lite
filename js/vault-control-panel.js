@@ -498,6 +498,11 @@ class EmmaVaultControlPanel {
       // Update Emma Web Vault with new data
       window.emmaWebVault.vaultData = vaultData;
       window.emmaWebVault.isOpen = true;
+      window.emmaWebVault.originalFileName = file.name;
+      try {
+        sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
+        localStorage.setItem('emmaVaultOriginalFileName', file.name);
+      } catch (_) {}
       window.emmaWebVault.fileHandle = fileHandle;
       
       // Update session storage and localStorage
