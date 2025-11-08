@@ -90,6 +90,7 @@ class EmmaWebVault {
           const vaultData = await this.loadFromIndexedDB();
           if (vaultData) {
             this.vaultData = vaultData;
+            this.ensureVaultMetadataName(vaultName);
 
             // SECURITY: Passphrase no longer stored in sessionStorage for security
             // User will be prompted for passphrase when needed
@@ -105,6 +106,7 @@ class EmmaWebVault {
               stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
               metadata: { name: vaultName }
             };
+            this.ensureVaultMetadataName(vaultName);
           }
         } catch (error) {
           console.error(' CONSTRUCTOR: Failed to restore vault data:', error);
@@ -114,6 +116,7 @@ class EmmaWebVault {
             stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
             metadata: { name: vaultName }
           };
+          this.ensureVaultMetadataName(vaultName);
         }
       }, 100); // Small delay to ensure IndexedDB is ready
 
@@ -137,6 +140,65 @@ class EmmaWebVault {
     } catch (error) {
       console.warn(' PASSCODE CACHE: Failed to persist passphrase in sessionStorage:', error);
     }
+  }
+
+  ensureVaultMetadataName(preferredName) {
+    if (!this.vaultData) {
+      return preferredName || null;
+    }
+
+    this.vaultData.metadata = this.vaultData.metadata || {};
+    const placeholderNames = new Set([
+      'Recovered Vault',
+      'Recoved Vault',
+      'Web Vault',
+      'Unknown Vault',
+      'Emma Vault'
+    ]);
+    const existing = typeof this.vaultData.metadata.name === 'string'
+      ? this.vaultData.metadata.name.trim()
+      : '';
+    if (existing && !placeholderNames.has(existing)) {
+      this.vaultData.metadata.name = existing;
+      return existing;
+    }
+
+    const safePreferred = typeof preferredName === 'string' ? preferredName.trim() : '';
+    let storedName = '';
+    try {
+      const sessionName = typeof sessionStorage !== 'undefined'
+        ? sessionStorage.getItem('emmaVaultName')
+        : null;
+      const localName = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('emmaVaultName')
+        : null;
+      storedName = (sessionName || localName || '').trim();
+    } catch (_) {
+      storedName = '';
+    }
+
+    const fallbackSources = [
+      safePreferred,
+      this.vaultData.name,
+      this.originalFileName,
+      storedName
+    ];
+
+    let normalized = '';
+    for (const candidate of fallbackSources) {
+      const trimmed = typeof candidate === 'string' ? candidate.trim() : '';
+      if (trimmed && !placeholderNames.has(trimmed)) {
+        normalized = trimmed;
+        break;
+      }
+    }
+
+    if (!normalized) {
+      normalized = existing || 'Emma Vault';
+    }
+
+    this.vaultData.metadata.name = normalized;
+    return normalized;
   }
 
   getPassphrasePromptCopy(context = 'operation') {
@@ -264,9 +326,11 @@ class EmmaWebVault {
 
       this.isOpen = true;
 
+      const normalizedName = this.ensureVaultMetadataName(name);
+
       // Set session storage for dashboard
       sessionStorage.setItem('emmaVaultActive', 'true');
-      sessionStorage.setItem('emmaVaultName', name);
+      sessionStorage.setItem('emmaVaultName', normalizedName);
       // SECURITY: Passphrase cached in sessionStorage for this tab only (cleared on lock)
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
@@ -394,10 +458,20 @@ class EmmaWebVault {
 
       this.vaultData = vaultData;
       this.isOpen = true;
+      const normalizedName = this.ensureVaultMetadataName(
+        vaultData.metadata?.name ||
+        vaultData.name ||
+        fileToProcess?.name ||
+        this.originalFileName ||
+        'Web Vault'
+      );
 
       // Set session storage for dashboard
       sessionStorage.setItem('emmaVaultActive', 'true');
-      sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || 'Web Vault');
+      sessionStorage.setItem('emmaVaultName', normalizedName);
+      try {
+        localStorage.setItem('emmaVaultName', normalizedName);
+      } catch (_) {}
       // SECURITY: Passphrase cached in sessionStorage for this tab only (cleared on lock)
 
       // CRITICAL FIX: Remove automatic session expiry - vault stays unlocked until user locks it
@@ -1765,6 +1839,7 @@ class EmmaWebVault {
         const vaultData = await this.loadFromIndexedDB();
         if (vaultData) {
           this.vaultData = vaultData;
+          this.ensureVaultMetadataName(vaultName);
 
         } else {
           // Create minimal vault structure if no IndexedDB data
@@ -1773,6 +1848,7 @@ class EmmaWebVault {
             stats: { memoryCount: 0, peopleCount: 0, mediaCount: 0 },
             metadata: { name: vaultName || 'Web Vault' }
           };
+          this.ensureVaultMetadataName(vaultName);
 
         }
 
@@ -3072,14 +3148,16 @@ class EmmaWebVault {
     this.vaultData = backup;
     this.isOpen = true;
     this.applyNewPassphrase(passphrase);
-    this.vaultData.metadata = this.vaultData.metadata || {};
-    if (!this.vaultData.metadata.name) {
-      this.vaultData.metadata.name = 'Recovered Vault';
-    }
+    const normalizedName = this.ensureVaultMetadataName(
+      this.vaultData.metadata?.name ||
+      this.vaultData.name ||
+      this.originalFileName ||
+      'Recovered Vault'
+    );
     sessionStorage.setItem('emmaVaultActive', 'true');
-    sessionStorage.setItem('emmaVaultName', this.vaultData.metadata.name);
+    sessionStorage.setItem('emmaVaultName', normalizedName);
     localStorage.setItem('emmaVaultActive', 'true');
-    localStorage.setItem('emmaVaultName', this.vaultData.metadata.name);
+    localStorage.setItem('emmaVaultName', normalizedName);
     await this.saveToIndexedDB();
     return this.vaultData;
   }

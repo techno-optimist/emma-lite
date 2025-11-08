@@ -178,12 +178,12 @@ class EmmaVaultControlPanel {
     const heroSignalText = (syncHeadline || 'Sync Status').replace(/[<>]/g, '').trim();
     
     return `
+      <button type="button" class="vault-control__dismiss" id="closeControlPanelIcon" aria-label="Close vault control panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
       <div class="vault-control">
-        <button type="button" class="vault-control__dismiss" id="closeControlPanelIcon" aria-label="Close vault control panel">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
-        </button>
         <header class="vault-control__hero" aria-label="Vault overview">
           <div class="vault-hero">
             <span class="vault-hero__glow" aria-hidden="true"></span>
@@ -312,13 +312,6 @@ class EmmaVaultControlPanel {
           <input type="file" id="vaultControlFileInput" accept=".emma" hidden>
         </section>
         
-        <!-- Close Button -->
-        <footer class="vault-control__footer">
-          <button id="closeControlPanelBtn" class="vault-button emma-button emma-button--ghost">
-            <span class="vault-button__icon" aria-hidden="true">\u2715</span>
-            <span class="vault-button__label">Close</span>
-          </button>
-        </footer>
       </div>
     `;
   }
@@ -347,11 +340,6 @@ class EmmaVaultControlPanel {
     const statsBtn = get('#vaultStatsBtn');
     if (statsBtn) {
       statsBtn.addEventListener('click', () => this.showVaultStatistics());
-    }
-
-    const closeBtn = get('#closeControlPanelBtn');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.closeControlPanel());
     }
 
     const closeIcon = get('#closeControlPanelIcon');
@@ -385,9 +373,22 @@ class EmmaVaultControlPanel {
     const people = Object.keys(vaultData.content?.people || {}).length;
     const media = Object.keys(vaultData.content?.media || {}).length;
     const sizeBytes = JSON.stringify(vaultData).length;
-    
+    const fallbackName = vaultData.metadata?.name
+      || vaultData.name
+      || window.emmaWebVault.originalFileName
+      || (() => {
+        try {
+          return sessionStorage.getItem('emmaVaultName') || localStorage.getItem('emmaVaultName');
+        } catch (_) {
+          return null;
+        }
+      })();
+    const normalizedName = typeof window.emmaWebVault.ensureVaultMetadataName === 'function'
+      ? window.emmaWebVault.ensureVaultMetadataName(fallbackName)
+      : (fallbackName || 'Unknown Vault');
+
     return {
-      name: vaultData.metadata?.name || 'Unknown Vault',
+      name: normalizedName,
       memoryCount: memories,
       peopleCount: people,
       mediaCount: media,

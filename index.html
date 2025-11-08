@@ -611,16 +611,20 @@
                         try {
                             await window.emmaWebVault.ensureDirectFileHandle('initial-open', { promptOnFailure: true });
                         } catch (handleError) {
-                            console.warn('⚠️ Emma Web Vault: Unable to capture direct file access automatically:', handleError);
+                        console.warn('⚠️ Emma Web Vault: Unable to capture direct file access automatically:', handleError);
                         }
                     }
 
+                    const normalizedVaultName = window.emmaWebVault.ensureVaultMetadataName(
+                        vaultData.metadata?.name || vaultData.name || file.name
+                    );
+
                     // Set session storage
                     sessionStorage.setItem('emmaVaultActive', 'true');
-                    sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+                    sessionStorage.setItem('emmaVaultName', normalizedVaultName);
                     // SECURITY: Never store passphrase in web storage - keep in memory only
                     localStorage.setItem('emmaVaultActive', 'true');
-                    localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+                    localStorage.setItem('emmaVaultName', normalizedVaultName);
 
                     // Save to IndexedDB for persistence (version 2 - clean rebuild)
                     try {
@@ -633,7 +637,7 @@
 
                     this.vaultStatus = 'unlocked';
                     this.currentVault = {
-                        name: vaultData.metadata?.name || file.name,
+                        name: normalizedVaultName,
                         stats: {
                             memoryCount: Object.keys(vaultData.content?.memories || {}).length,
                             peopleCount: Object.keys(vaultData.content?.people || {}).length
