@@ -43,16 +43,6 @@
    CHAT TOOLBAR / VOICE TOGGLE
    ================================ */
 
-.emma-chat-toolbar {
-  width: 100%;
-  padding: 12px 20px 0 20px;
-  box-sizing: border-box;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 12px;
-}
-
 .voice-toggle {
   display: inline-flex;
   align-items: center;
@@ -88,14 +78,6 @@
 
 .voice-toggle-label {
   line-height: 1.2;
-}
-
-@media (max-width: 600px) {
-  .emma-chat-toolbar {
-    justify-content: center;
-    padding-left: 16px;
-    padding-right: 16px;
-  }
 }
 
 /* ================================

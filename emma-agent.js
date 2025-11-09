@@ -161,12 +161,22 @@ class EmmaServerAgent {
   }
 
   /**
-   * Execute an Emma tool, preferring the server-side vault when available.
+   * Execute an Emma tool, preferring privacy-first browser execution.
    */
   async requestBrowserTool(toolName, params) {
-    const canUseVault = this.vaultService && this.vaultService.canExecute(toolName);
+    if (this.canUseBrowserTools()) {
+      try {
+        return await this.executeToolViaBrowser(toolName, params);
+      } catch (error) {
+        console.warn(`Browser tool execution failed for ${toolName}:`, error?.message || error);
+        if (!this.canUseServerTools(toolName)) {
+          throw error;
+        }
+        console.warn(`Falling back to server vault execution for ${toolName}`);
+      }
+    }
 
-    if (canUseVault) {
+    if (this.canUseServerTools(toolName)) {
       try {
         return await this.vaultService.execute(toolName, params);
       } catch (error) {
@@ -174,12 +184,9 @@ class EmmaServerAgent {
         if (!this.canUseBrowserTools()) {
           throw error;
         }
-        console.warn(`Falling back to browser execution for ${toolName}`);
+        console.warn(`Retrying ${toolName} via browser after vault failure`);
+        return this.executeToolViaBrowser(toolName, params);
       }
-    }
-
-    if (this.canUseBrowserTools()) {
-      return this.executeToolViaBrowser(toolName, params);
     }
 
     throw new Error('No available execution path for requested tool');
@@ -187,6 +194,10 @@ class EmmaServerAgent {
 
   canUseBrowserTools() {
     return this.browserWs && this.browserWs.readyState === WebSocket.OPEN;
+  }
+
+  canUseServerTools(toolName) {
+    return Boolean(this.vaultService && this.vaultService.canExecute(toolName));
   }
 
   executeToolViaBrowser(toolName, params) {

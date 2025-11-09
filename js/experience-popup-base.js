@@ -182,6 +182,22 @@ class ExperiencePopup {
     `;
     title.textContent = this.getTitle();
 
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'popup-header-left';
+    headerLeft.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1 1 auto;
+      min-width: 0;
+    `;
+    headerLeft.appendChild(title);
+
+    const headerActions = (this.getHeaderActions() || []).filter(Boolean);
+    for (const action of headerActions) {
+      headerLeft.appendChild(action);
+    }
+
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '×';
     closeBtn.style.cssText = `
@@ -231,17 +247,21 @@ class ExperiencePopup {
       }
     };
 
-    header.appendChild(title);
+    header.appendChild(headerLeft);
     header.appendChild(closeBtn);
 
     // Customize header appearance based on title
     const titleText = this.getTitle();
+    const hasActions = headerActions.length > 0;
     if (!titleText || titleText.trim() === '') {
-      // No title - just show close button with no border/padding
-      header.style.borderBottom = 'none';
-      header.style.padding = '8px 12px 0 0';
-      header.style.justifyContent = 'flex-end';
       title.style.display = 'none';
+      if (!hasActions) {
+        // No title or actions - collapse header to just the close button
+        header.style.borderBottom = 'none';
+        header.style.padding = '8px 12px 0 0';
+        header.style.justifyContent = 'flex-end';
+        headerLeft.style.display = 'none';
+      }
     }
 
     // Create content area
@@ -336,6 +356,10 @@ class ExperiencePopup {
 
   renderContent(contentElement) {
     contentElement.innerHTML = '<p>Experience content goes here</p>';
+  }
+
+  getHeaderActions() {
+    return [];
   }
 
   async initialize() {

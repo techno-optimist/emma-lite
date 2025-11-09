@@ -531,6 +531,34 @@ class EmmaChatExperience extends ExperiencePopup {
     }
   }
 
+  getHeaderActions() {
+    const toggle = this.createVoiceToggleButton();
+    return toggle ? [toggle] : [];
+  }
+
+  createVoiceToggleButton() {
+    if (this.voiceToggleButton && this.voiceToggleButton.tagName) {
+      return this.voiceToggleButton;
+    }
+
+    const button = document.createElement('button');
+    button.id = 'voice-tts-toggle';
+    button.className = 'voice-toggle is-on';
+    button.setAttribute('aria-pressed', 'true');
+
+    const icon = document.createElement('span');
+    icon.className = 'voice-toggle-icon';
+    icon.textContent = '🔊';
+
+    const label = document.createElement('span');
+    label.className = 'voice-toggle-label';
+    label.textContent = 'Voice On';
+
+    button.append(icon, label);
+    this.voiceToggleButton = button;
+    return button;
+  }
+
   renderContent(contentElement) {
     // CLEAN REDESIGN: Remove inner container styling - let ExperiencePopup handle the container
     // Just set up the content layout without duplicating container styles
@@ -550,13 +578,6 @@ class EmmaChatExperience extends ExperiencePopup {
     `;
 
     contentElement.innerHTML = `
-      <div class="emma-chat-toolbar">
-        <button class="voice-toggle is-on" id="voice-tts-toggle" aria-pressed="true">
-          <span class="voice-toggle-icon">🔊</span>
-          <span class="voice-toggle-label">Voice On</span>
-        </button>
-      </div>
-
       <!-- Settings button removed - clean chat interface -->
 
       <!-- Chat Messages -->
@@ -616,7 +637,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = document.getElementById('send-btn');
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
-    this.voiceToggleButton = document.getElementById('voice-tts-toggle');
+    this.voiceToggleButton = this.voiceToggleButton || document.getElementById('voice-tts-toggle');
     // Settings button removed - clean chat interface
 
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
@@ -632,10 +653,11 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
-    if (this.voiceToggleButton) {
+    if (this.voiceToggleButton && !this.voiceToggleButton.dataset.toggleBound) {
       this.voiceToggleButton.addEventListener('click', () => this.toggleVoicePlayback());
-      this.updateVoiceToggleUI();
+      this.voiceToggleButton.dataset.toggleBound = 'true';
     }
+    this.updateVoiceToggleUI();
 
     // Settings removed from chat - access via main settings panel
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
@@ -2244,12 +2266,10 @@ class EmmaChatExperience extends ExperiencePopup {
     const message = this.inputField.value.trim();
     if (!message) return;
 
-    // Hide quick start prompts when user starts typing their own messages
     if (this.hasQuickPromptsShowing) {
       this.hideQuickStartPrompts();
     }
 
-    // Add user message
     const messageId = this.addMessage(message, 'user');
     this.inputField.value = '';
     this.autoResizeTextarea();
@@ -2260,6 +2280,14 @@ class EmmaChatExperience extends ExperiencePopup {
     }
 
     const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
+    const localHandled = await this.processLocalChatMessage(message, messageId, {
+      allowDefaultResponse: !canUseAgent
+    });
+
+    if (localHandled) {
+      return;
+    }
+
     if (canUseAgent) {
       if (typeof this.showTypingIndicator === 'function') {
         this.showTypingIndicator();
@@ -2268,46 +2296,47 @@ class EmmaChatExperience extends ExperiencePopup {
       return;
     }
 
-    // 🎯 ENRICHMENT FSM: Check if this is a response to an enrichment question
+    await this.respondAsEmma(message);
+  }
+
+
+
+
+  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true } = {}) {
     const activeEnrichment = this.findActiveEnrichmentForResponse();
     if (activeEnrichment) {
       await this.processEnrichmentResponse(activeEnrichment, message);
-      return;
+      return true;
     }
 
-    // 🎯 CTO OPTIMIZATION: VAULT OPERATIONS FIRST - Complete intent hierarchy
-    // This prevents ALL vault queries from being captured as memories
     const intent = this.classifyUserIntent(message);
-    
-    // VAULT OPERATIONS have HIGHEST PRIORITY
     if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
       console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
       }, 1000 + Math.random() * 1500);
-      return;
+      return true;
     }
 
-    // 💝 Check for memory detection (new messages only)
     if (this.intelligentCapture) {
       const analysisResult = await this.analyzeForMemory(message, messageId);
-      // If intelligent capture already produced a response (unified prompt), stop here
       if (analysisResult && analysisResult.handled) {
-        return;
+        return true;
       }
-    } else {
-      // ... existing code ...
     }
 
-    // Show typing indicator
-    this.showTypingIndicator();
+    if (!allowDefaultResponse) {
+      return false;
+    }
 
-    // Simulate Emma thinking and respond
+    this.showTypingIndicator();
     setTimeout(() => {
       this.respondAsEmma(message);
-    }, 1000 + Math.random() * 1500); // 1-2.5s realistic delay
+    }, 1000 + Math.random() * 1500);
+    return true;
   }
+
 
   addMessage(content, sender, options = {}) {
     // Defensive argument handling: many call sites mistakenly pass (sender, content).
@@ -10222,6 +10251,8 @@ Just the question:`;
 
     // Disable focus mode
     this.disableFocusMode();
+
+    this.voiceToggleButton = null;
 
     super.cleanup();
   }
