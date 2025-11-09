@@ -9,9 +9,9 @@
   --emma-surface-inverse: rgba(255, 255, 255, 0.9);
 
   /* Gradients and backgrounds */
-  --emma-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  --emma-gradient-secondary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
-  --emma-gradient-aurora: linear-gradient(135deg, #667eea20 0%, #764ba240 25%, #f093fb20 50%, #4dabf720 75%, #667eea20 100%);
+  --emma-gradient-primary: linear-gradient(135deg, #5058b4 0%, #5a3f8f 50%, #a468a5 100%);
+  --emma-gradient-secondary: linear-gradient(135deg, #3f3f7d 0%, #5a3f8a 50%, #84528f 100%);
+  --emma-gradient-aurora: linear-gradient(135deg, rgba(80, 88, 180, 0.3) 0%, rgba(90, 63, 143, 0.28) 25%, rgba(164, 104, 165, 0.25) 50%, rgba(67, 132, 187, 0.18) 75%, rgba(80, 88, 180, 0.3) 100%);
 
   /* Text */
   --emma-text-strong: #ffffff;
@@ -22,10 +22,10 @@
   --emma-neutral-inverse-rgb: 15, 15, 23;
 
   /* Accents */
-  --emma-accent-primary: #8b5cf6;
-  --emma-accent-secondary: #ec4899;
-  --emma-accent-primary-rgb: 139, 92, 246;
-  --emma-accent-secondary-rgb: 236, 72, 153;
+  --emma-accent-primary: #6f63d9;
+  --emma-accent-secondary: #d06fa8;
+  --emma-accent-primary-rgb: 111, 99, 217;
+  --emma-accent-secondary-rgb: 208, 111, 168;
   --emma-success: #4ade80;
   --emma-warning: #fbbf24;
   --emma-danger: #f87171;
@@ -33,15 +33,15 @@
   /* Utility */
   --emma-border-subtle: rgba(255, 255, 255, 0.1);
   --emma-border-strong: rgba(255, 255, 255, 0.2);
-  --emma-glow-strong: 0 0 40px rgba(134, 88, 255, 0.6);
-  --emma-shadow-raised: 0 12px 48px rgba(0, 0, 0, 0.3);
+  --emma-glow-strong: 0 0 22px rgba(111, 99, 217, 0.32);
+  --emma-shadow-raised: 0 16px 36px rgba(2, 6, 18, 0.35);
   --emma-button-secondary-bg: rgba(255, 255, 255, 0.1);
   --emma-button-secondary-border: rgba(255, 255, 255, 0.2);
   --emma-button-secondary-text: rgba(255, 255, 255, 0.85);
   --emma-button-secondary-bg-hover: rgba(255, 255, 255, 0.2);
 
   /* Chat */
-  --emma-chat-user-bubble: linear-gradient(135deg, #8b5cf6, #f093fb);
+  --emma-chat-user-bubble: linear-gradient(135deg, #6f63d9, #d06fa8);
   --emma-chat-user-text: #ffffff;
   --emma-chat-emma-bubble: rgba(37, 38, 65, 0.85);
   --emma-chat-emma-text: rgba(255, 255, 255, 0.9);
@@ -56,21 +56,21 @@
   --emma-chat-success: #10b981;
 
   /* Navigation / interactions */
-  --emma-nav-highlight: rgba(139, 92, 246, 0.2);
-  --emma-background-aurora: linear-gradient(135deg, rgba(102, 126, 234, 0.35), rgba(118, 75, 162, 0.35));
+  --emma-nav-highlight: rgba(var(--emma-accent-primary-rgb), 0.16);
+  --emma-background-aurora: linear-gradient(135deg, rgba(80, 88, 180, 0.25), rgba(90, 63, 143, 0.25));
   --emma-background-sunrise: linear-gradient(135deg, rgba(255, 176, 124, 0.35), rgba(255, 220, 186, 0.35));
   --emma-background-forest: linear-gradient(135deg, rgba(58, 149, 138, 0.4), rgba(14, 52, 54, 0.4));
   --emma-background-ocean: linear-gradient(135deg, rgba(77, 196, 255, 0.2), rgba(14, 84, 120, 0.4));
   --emma-background-ember: linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(71, 21, 27, 0.45));
   --emma-background-blossom: linear-gradient(135deg, rgba(252, 179, 255, 0.24), rgba(241, 179, 239, 0.32));
   --emma-background-zen: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(17, 94, 89, 0.24));
-  --emma-accent-surface: rgba(139, 92, 246, 0.2);
-  --emma-accent-surface-strong: rgba(139, 92, 246, 0.35);
-  --emma-accent-border: rgba(139, 92, 246, 0.4);
+  --emma-accent-surface: rgba(var(--emma-accent-primary-rgb), 0.14);
+  --emma-accent-surface-strong: rgba(var(--emma-accent-primary-rgb), 0.24);
+  --emma-accent-border: rgba(var(--emma-accent-primary-rgb), 0.3);
 
   /* Memory constellation */
-  --emma-constellation-node: rgba(134, 88, 255, 0.6);
-  --emma-constellation-glow: rgba(134, 88, 255, 0.8);
+  --emma-constellation-node: rgba(var(--emma-accent-primary-rgb), 0.45);
+  --emma-constellation-glow: rgba(var(--emma-accent-primary-rgb), 0.6);
 
   /* Orb */
   --emma-orb-hue: 265;

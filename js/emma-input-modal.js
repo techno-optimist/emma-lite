@@ -301,7 +301,7 @@ const inputModalStyles = `
   outline: none;
   border-color: var(--emma-purple);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(134, 88, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(111, 99, 217, 0.2);
 }
 
 .emma-text-input::placeholder {
@@ -345,7 +345,7 @@ const inputModalStyles = `
 
 .emma-input-btn-confirm:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(134, 88, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(111, 99, 217, 0.3);
 }
 
 .emma-input-error {

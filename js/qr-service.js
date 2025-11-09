@@ -190,7 +190,7 @@ class QRService {
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(0.5, '#764ba2');
-    gradient.addColorStop(1, '#f093fb');
+    gradient.addColorStop(1, '#deb3e4');
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);

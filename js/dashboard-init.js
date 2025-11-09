@@ -258,7 +258,7 @@
             // Draw particle
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(134, 88, 255, ${p.opacity})`;
+            ctx.fillStyle = `rgba(111, 99, 217, ${p.opacity})`;
             ctx.fill();
 
             // Draw connections
@@ -272,7 +272,7 @@
                   ctx.beginPath();
                   ctx.moveTo(p.x, p.y);
                   ctx.lineTo(p2.x, p2.y);
-                  ctx.strokeStyle = `rgba(134, 88, 255, ${(1 - dist / 100) * 0.2})`;
+                  ctx.strokeStyle = `rgba(111, 99, 217, ${(1 - dist / 100) * 0.2})`;
                   ctx.stroke();
                 }
               }
@@ -404,12 +404,18 @@
               node.vy += Math.sin(angle) * attractionStrength;
 
               // Add glow effect (stronger for memory nodes)
-              const glowStrength = this.isConstellationMode ? 60 : 40;
-              const baseOpacity = this.isConstellationMode ? 0.8 : 0.6;
-              node.element.style.boxShadow = `0 0 ${glowStrength + force * 30}px rgba(134, 88, 255, ${baseOpacity + force * 0.4})`;
+              const glowStrength = this.isConstellationMode ? 36 : 26;
+              const baseOpacity = this.isConstellationMode ? 0.6 : 0.45;
+              const glowSize = glowStrength + force * 18;
+              const glowOpacity = Math.min(baseOpacity + force * 0.25, 0.75);
+              if (node.element) {
+                node.element.style.boxShadow = `0 0 ${glowSize}px rgba(111, 99, 217, ${glowOpacity})`;
+              }
             } else {
               // Reset glow when mouse is far
-              node.element.style.boxShadow = '';
+              if (node.element) {
+                node.element.style.boxShadow = '';
+              }
             }
           });
         }
@@ -946,8 +952,8 @@
           if (!window.EmmaOrb || !this.webglOrb) {
             console.warn('🌟 EmmaOrb class not available, using fallback');
             const fallbackGradient = (computed.getPropertyValue('--emma-gradient-primary') || '').trim();
-            const fallbackGlow = (computed.getPropertyValue('--emma-glow-strong') || '0 0 40px rgba(134, 88, 255, 0.6)').trim();
-            orbContainer.style.background = fallbackGradient || 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
+            const fallbackGlow = (computed.getPropertyValue('--emma-glow-strong') || '0 0 40px rgba(111, 99, 217, 0.6)').trim();
+            orbContainer.style.background = fallbackGradient || 'radial-gradient(circle at 30% 30%, #6f63d9, #4f46e5, #deb3e4)';
             orbContainer.style.borderRadius = '50%';
             orbContainer.style.width = '100%';
             orbContainer.style.height = '100%';
@@ -964,8 +970,8 @@
           if (orbContainer) {
             const computed = getComputedStyle(document.documentElement);
             const fallbackGradient = (computed.getPropertyValue('--emma-gradient-primary') || '').trim();
-            const fallbackGlow = (computed.getPropertyValue('--emma-glow-strong') || '0 0 40px rgba(134, 88, 255, 0.6)').trim();
-            orbContainer.style.background = fallbackGradient || 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5)';
+            const fallbackGlow = (computed.getPropertyValue('--emma-glow-strong') || '0 0 40px rgba(111, 99, 217, 0.6)').trim();
+            orbContainer.style.background = fallbackGradient || 'radial-gradient(circle at 30% 30%, #6f63d9, #4f46e5)';
             orbContainer.style.borderRadius = '50%';
             orbContainer.style.width = '100%';
             orbContainer.style.height = '100%';
@@ -1049,13 +1055,13 @@
           vaultIcon.textContent = '🔓';
           vaultNode.style.background = 'rgba(74, 222, 128, 0.1)'; // Green tint when unlocked
           vaultNode.style.borderColor = 'rgba(74, 222, 128, 0.3)';
-          vaultNode.style.boxShadow = '0 0 20px rgba(74, 222, 128, 0.4)';
+          vaultNode.style.boxShadow = '0 0 14px rgba(74, 222, 128, 0.3)';
         } else {
 
           vaultIcon.textContent = '🔒';
           vaultNode.style.background = 'var(--emma-glass)'; // Default when locked
-          vaultNode.style.borderColor = 'rgba(134, 88, 255, 0.3)';
-          vaultNode.style.boxShadow = '0 0 20px rgba(134, 88, 255, 0.2)';
+          vaultNode.style.borderColor = 'rgba(111, 99, 217, 0.3)';
+          vaultNode.style.boxShadow = '0 0 12px rgba(111, 99, 217, 0.18)';
         }
       }
 
@@ -1080,12 +1086,12 @@
             if (icon.textContent) icon.textContent = '🔓';
             element.style.background = 'rgba(74, 222, 128, 0.1)';
             element.style.borderColor = 'rgba(74, 222, 128, 0.3)';
-            element.style.boxShadow = '0 0 20px rgba(74, 222, 128, 0.4)';
+            element.style.boxShadow = '0 0 14px rgba(74, 222, 128, 0.3)';
           } else {
             if (icon.textContent) icon.textContent = '🔒';
             element.style.background = 'var(--emma-glass)';
-            element.style.borderColor = 'rgba(134, 88, 255, 0.3)';
-            element.style.boxShadow = '0 0 20px rgba(134, 88, 255, 0.2)';
+            element.style.borderColor = 'rgba(111, 99, 217, 0.3)';
+            element.style.boxShadow = '0 0 12px rgba(111, 99, 217, 0.18)';
           }
         });
 
@@ -1245,7 +1251,7 @@
             ctx.clearRect(0, 0, this.neuralCanvas.width, this.neuralCanvas.height);
 
             if (!reducePhysics && (this.isMenuOpen || this.isConstellationMode)) {
-              ctx.strokeStyle = 'rgba(134, 88, 255, 0.03)';
+              ctx.strokeStyle = 'rgba(111, 99, 217, 0.03)';
               ctx.lineWidth = 1;
               const gridSize = 50;
 
@@ -1286,6 +1292,23 @@
               nodeElement.style.top = `${node.y - halfHeight}px`;
               return;
             }
+
+            const isStaticConstellationNode =
+              this.isConstellationMode &&
+              !node.orbBound &&
+              (node.type === 'memory' || node.isCreateNode);
+
+            if (isStaticConstellationNode) {
+              // Keep memory nodes and create button steady in constellation mode
+              node.vx = 0;
+              node.vy = 0;
+              node.x = node.baseX;
+              node.y = node.baseY;
+              nodeElement.style.left = `${node.x - halfWidth}px`;
+              nodeElement.style.top = `${node.y - halfHeight}px`;
+              return;
+            }
+
             // Different floating movement for radial vs constellation nodes
             let floatX, floatY;
             if (node.orbBound) {
@@ -1441,14 +1464,14 @@
                 );
 
                 if (isMemoryMode) {
-                  gradient.addColorStop(0, 'rgba(134, 88, 255, 0.2)');
-                  gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.15)');
-                  gradient.addColorStop(1, 'rgba(134, 88, 255, 0.2)');
+                  gradient.addColorStop(0, 'rgba(111, 99, 217, 0.2)');
+                  gradient.addColorStop(0.5, 'rgba(222, 179, 228, 0.15)');
+                  gradient.addColorStop(1, 'rgba(111, 99, 217, 0.2)');
                   ctx.lineWidth = 1.2 + Math.sin(time + dist * 0.01) * 0.2;
                 } else {
-                  gradient.addColorStop(0, 'rgba(134, 88, 255, 0.03)');
-                  gradient.addColorStop(0.5, 'rgba(240, 147, 251, 0.02)');
-                  gradient.addColorStop(1, 'rgba(134, 88, 255, 0.03)');
+                  gradient.addColorStop(0, 'rgba(111, 99, 217, 0.03)');
+                  gradient.addColorStop(0.5, 'rgba(222, 179, 228, 0.02)');
+                  gradient.addColorStop(1, 'rgba(111, 99, 217, 0.03)');
                   ctx.lineWidth = 0.5 + Math.sin(time + dist * 0.01) * 0.1;
                 }
 
@@ -2684,8 +2707,8 @@
 
         const nodeSize = this.getConstellationNodeSize();
         const borderWidth = Math.max(2, Math.round(nodeSize * 0.04));
-        const baseShadow = `0 ${Math.round(nodeSize * 0.1)}px ${Math.round(nodeSize * 0.4)}px rgba(139, 92, 246, 0.4)`;
-        const hoverShadow = `0 0 ${Math.round(nodeSize * 0.5)}px rgba(139, 92, 246, 0.6), 0 0 ${Math.round(nodeSize * 0.9)}px rgba(139, 92, 246, 0.4)`;
+        const baseShadow = `0 ${Math.round(nodeSize * 0.08)}px ${Math.round(nodeSize * 0.28)}px rgba(111, 99, 217, 0.3)`;
+        const hoverShadow = `0 0 ${Math.round(nodeSize * 0.4)}px rgba(111, 99, 217, 0.4), 0 0 ${Math.round(nodeSize * 0.7)}px rgba(111, 99, 217, 0.24)`;
 
         // CLEAN CIRCULAR NODE - No text labels, pure image capsule
         memoryElement.style.cssText = `
@@ -2695,7 +2718,7 @@
           width: ${nodeSize}px;
           height: ${nodeSize}px;
           border-radius: 50%;
-          border: ${borderWidth}px solid rgba(139, 92, 246, 0.6);
+          border: ${borderWidth}px solid rgba(111, 99, 217, 0.6);
           cursor: pointer;
           transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           opacity: 0;
@@ -2718,7 +2741,7 @@
 
         } else {
           // Fallback to gradient with emoji
-          memoryElement.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+          memoryElement.style.background = 'linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%)';
           const emojiDiv = document.createElement('div');
           emojiDiv.style.cssText = `font-size: ${Math.round(nodeSize * 0.3)}px; color: white;`;
           emojiDiv.textContent = '💝';
@@ -2773,14 +2796,14 @@
         const createSize = Math.max(44, Math.round(nodeSize * 0.75));
         const createBorder = Math.max(2, Math.round(createSize * 0.05));
         const baseCreateShadow = `
-            0 0 ${Math.round(createSize * 0.35)}px rgba(16, 185, 129, 0.4),
-            0 0 ${Math.round(createSize * 0.7)}px rgba(16, 185, 129, 0.2),
-            inset 0 0 ${Math.round(createSize * 0.35)}px rgba(16, 185, 129, 0.1)
+            0 0 ${Math.round(createSize * 0.28)}px rgba(16, 185, 129, 0.35),
+            0 0 ${Math.round(createSize * 0.5)}px rgba(16, 185, 129, 0.18),
+            inset 0 0 ${Math.round(createSize * 0.28)}px rgba(16, 185, 129, 0.12)
           `;
         const hoverCreateShadow = `
-            0 0 ${Math.round(createSize * 0.5)}px rgba(16, 185, 129, 0.6),
-            0 0 ${Math.round(createSize * 0.9)}px rgba(16, 185, 129, 0.4),
-            inset 0 0 ${Math.round(createSize * 0.5)}px rgba(16, 185, 129, 0.2)
+            0 0 ${Math.round(createSize * 0.4)}px rgba(16, 185, 129, 0.45),
+            0 0 ${Math.round(createSize * 0.7)}px rgba(16, 185, 129, 0.28),
+            inset 0 0 ${Math.round(createSize * 0.38)}px rgba(16, 185, 129, 0.18)
           `;
         
         // Create elegant SVG + icon
@@ -3099,7 +3122,7 @@
         const continueBtn = document.createElement('button');
         continueBtn.className = 'continue-btn';
         continueBtn.textContent = 'Migrate Vault';
-        continueBtn.style.cssText = 'padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); color: white; border: none; border-radius: 8px; cursor: pointer;';
+        continueBtn.style.cssText = 'padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); color: white; border: none; border-radius: 8px; cursor: pointer;';
 
         buttonContainer.appendChild(skipBtn);
         buttonContainer.appendChild(continueBtn);
@@ -3227,7 +3250,7 @@
           width: 70px;
           height: 70px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(134, 88, 255, 0.2));
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(111, 99, 217, 0.2));
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -3263,7 +3286,7 @@
           };
 
           memoryElement.style.transform = 'scale(1.3)';
-          memoryElement.style.boxShadow = `0 0 60px ${themeColors[theme] || 'rgba(134, 88, 255, 0.8)'}, 0 0 100px ${themeColors[theme] || 'rgba(134, 88, 255, 0.4)'}`;
+          memoryElement.style.boxShadow = `0 0 32px ${themeColors[theme] || 'rgba(111, 99, 217, 0.55)'}, 0 0 52px ${themeColors[theme] || 'rgba(111, 99, 217, 0.28)'}`;
           memoryElement.style.zIndex = '1600'; /* CRITICAL FIX: Even higher on hover to stay above everything */
         });
 
@@ -3319,13 +3342,13 @@
         const personSize = Math.max(56, Math.round(nodeSize * 1.05));
         const borderWidth = Math.max(2, Math.round(personSize * 0.045));
         const basePersonShadow = `
-            0 ${Math.round(personSize * 0.1)}px ${Math.round(personSize * 0.4)}px ${relationColor.glow},
-            0 0 ${Math.round(personSize * 0.25)}px rgba(239, 68, 68, 0.3),
-            0 0 ${Math.round(personSize * 0.45)}px rgba(239, 68, 68, 0.1)
+            0 ${Math.round(personSize * 0.08)}px ${Math.round(personSize * 0.3)}px ${relationColor.glow},
+            0 0 ${Math.round(personSize * 0.18)}px rgba(239, 68, 68, 0.26),
+            0 0 ${Math.round(personSize * 0.32)}px rgba(239, 68, 68, 0.1)
           `;
         const hoverPersonShadow = `
-            0 0 ${Math.round(personSize * 0.6)}px ${relationColor.glow},
-            0 0 ${Math.round(personSize)}px rgba(239, 68, 68, 0.35)
+            0 0 ${Math.round(personSize * 0.42)}px ${relationColor.glow},
+            0 0 ${Math.round(personSize * 0.75)}px rgba(239, 68, 68, 0.3)
           `;
 
         // Create BIGGER avatar circle with subtle heartbeat glow - NO TEXT LABELS
@@ -3648,9 +3671,9 @@
             glow: 'rgba(16, 185, 129, 0.8)'
           },
           romantic: {
-            gradient: 'linear-gradient(135deg, #ec4899, #f472b6)',
-            border: 'rgba(236, 72, 153, 0.6)',
-            glow: 'rgba(236, 72, 153, 0.8)'
+            gradient: 'linear-gradient(135deg, #d06fa8, #f472b6)',
+            border: 'rgba(208, 111, 168, 0.6)',
+            glow: 'rgba(208, 111, 168, 0.8)'
           }
         };
 
@@ -3917,20 +3940,20 @@
             align-items: center;
             gap: 4px;
             background: rgba(17, 17, 27, 0.95);
-            border: 1px solid rgba(134, 88, 255, 0.4);
+            border: 1px solid rgba(111, 99, 217, 0.4);
             border-radius: 12px;
             padding: 12px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(15px);
-            box-shadow: 0 8px 32px rgba(134, 88, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(111, 99, 217, 0.15);
           }
 
           .constellation-burger-btn:hover {
-            background: rgba(134, 88, 255, 0.1);
-            border-color: rgba(134, 88, 255, 0.6);
+            background: rgba(111, 99, 217, 0.1);
+            border-color: rgba(111, 99, 217, 0.6);
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(134, 88, 255, 0.25);
+            box-shadow: 0 12px 40px rgba(111, 99, 217, 0.25);
           }
 
           .burger-lines {
@@ -3942,13 +3965,13 @@
           .burger-lines span {
             width: 18px;
             height: 2px;
-            background: rgba(134, 88, 255, 0.8);
+            background: rgba(111, 99, 217, 0.8);
             border-radius: 1px;
             transition: all 0.3s ease;
           }
 
           .constellation-burger-btn:hover .burger-lines span {
-            background: rgba(134, 88, 255, 1);
+            background: rgba(111, 99, 217, 1);
           }
 
           .burger-label {
@@ -3965,7 +3988,7 @@
             left: 0;
             width: 320px;
             background: rgba(17, 17, 27, 0.98);
-          border: 1px solid rgba(134, 88, 255, 0.3);
+          border: 1px solid rgba(111, 99, 217, 0.3);
             border-radius: 16px;
             backdrop-filter: blur(20px);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
@@ -3987,7 +4010,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 20px 24px 16px;
-            border-bottom: 1px solid rgba(134, 88, 255, 0.2);
+            border-bottom: 1px solid rgba(111, 99, 217, 0.2);
           }
 
           .panel-header h3 {
@@ -4015,7 +4038,7 @@
 
           .filter-section {
             padding: 20px 24px;
-            border-bottom: 1px solid rgba(134, 88, 255, 0.1);
+            border-bottom: 1px solid rgba(111, 99, 217, 0.1);
           }
 
           .filter-section:last-of-type {
@@ -4047,7 +4070,7 @@
           }
 
           .filter-toggle:hover {
-            background: rgba(134, 88, 255, 0.05);
+            background: rgba(111, 99, 217, 0.05);
             border-radius: 8px;
             padding: 8px 8px;
             margin: 0 -8px;
@@ -4081,7 +4104,7 @@
           }
 
           .filter-toggle input:checked + .toggle-slider {
-            background: rgba(134, 88, 255, 0.8);
+            background: rgba(111, 99, 217, 0.8);
           }
 
           .filter-toggle input:checked + .toggle-slider:before {
@@ -4110,8 +4133,8 @@
           }
 
           .toggle-count {
-            background: rgba(134, 88, 255, 0.2);
-            color: rgba(134, 88, 255, 1);
+            background: rgba(111, 99, 217, 0.2);
+            color: rgba(111, 99, 217, 1);
             padding: 2px 8px;
           border-radius: 12px;
             font-size: 12px;
@@ -4148,12 +4171,12 @@
           }
 
           .filter-btn.primary {
-            background: rgba(134, 88, 255, 0.8);
+            background: rgba(111, 99, 217, 0.8);
             color: white;
           }
 
           .filter-btn.primary:hover {
-            background: rgba(134, 88, 255, 1);
+            background: rgba(111, 99, 217, 1);
             transform: translateY(-1px);
           }
         `;
@@ -5215,7 +5238,7 @@
           border-radius: 50%;
           border: 1px solid rgba(255, 255, 255, 0.15);
           background: linear-gradient(135deg, 
-            rgba(139, 92, 246, 0.9) 0%, 
+            rgba(111, 99, 217, 0.9) 0%, 
             rgba(124, 58, 237, 0.8) 50%,
             rgba(109, 40, 217, 0.9) 100%
           );
@@ -5225,7 +5248,7 @@
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           box-shadow: 
-            0 8px 32px rgba(139, 92, 246, 0.3),
+            0 6px 22px rgba(111, 99, 217, 0.28),
             0 0 0 1px rgba(255, 255, 255, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
           display: flex;
@@ -5284,11 +5307,11 @@
         resetBtn.innerHTML = '⌂';
         resetBtn.title = 'Show All Memories';
         resetBtn.style.cssText = buttonBaseStyle.replace(
-          'rgba(139, 92, 246, 0.9) 0%, rgba(124, 58, 237, 0.8) 50%, rgba(109, 40, 217, 0.9) 100%',
+          'rgba(111, 99, 217, 0.9) 0%, rgba(124, 58, 237, 0.8) 50%, rgba(109, 40, 217, 0.9) 100%',
           'rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.8) 50%, rgba(4, 120, 87, 0.9) 100%'
         ).replace(
-          'rgba(139, 92, 246, 0.3)',
-          'rgba(16, 185, 129, 0.3)'
+          'rgba(111, 99, 217, 0.28)',
+          'rgba(16, 185, 129, 0.28)'
         );
         
         resetBtn.addEventListener('click', () => {
@@ -5300,7 +5323,7 @@
           btn.addEventListener('mouseenter', () => {
             btn.style.transform = 'scale(1.05) translateY(-2px)';
             btn.style.boxShadow = `
-              0 12px 40px rgba(139, 92, 246, 0.4),
+              0 10px 28px rgba(111, 99, 217, 0.32),
               0 0 0 1px rgba(255, 255, 255, 0.1),
               inset 0 1px 0 rgba(255, 255, 255, 0.2)
             `;
@@ -5309,7 +5332,7 @@
           btn.addEventListener('mouseleave', () => {
             btn.style.transform = 'scale(1) translateY(0)';
             btn.style.boxShadow = `
-              0 8px 32px rgba(139, 92, 246, 0.3),
+              0 6px 22px rgba(111, 99, 217, 0.28),
               0 0 0 1px rgba(255, 255, 255, 0.05),
               inset 0 1px 0 rgba(255, 255, 255, 0.1)
             `;
@@ -5369,7 +5392,7 @@
           border-radius: 50%;
           border: 1px solid rgba(255, 255, 255, 0.15);
           background: linear-gradient(135deg, 
-            rgba(139, 92, 246, 0.85) 0%, 
+            rgba(111, 99, 217, 0.85) 0%, 
             rgba(124, 58, 237, 0.75) 50%,
             rgba(109, 40, 217, 0.85) 100%
           );
@@ -5379,7 +5402,7 @@
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           box-shadow: 
-            0 6px 24px rgba(139, 92, 246, 0.25),
+            0 6px 24px rgba(111, 99, 217, 0.25),
             0 0 0 1px rgba(255, 255, 255, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
           display: flex;
@@ -5446,7 +5469,7 @@
               `;
             } else {
               button.style.boxShadow = `
-                0 8px 32px rgba(139, 92, 246, 0.4),
+                0 8px 32px rgba(111, 99, 217, 0.4),
                 0 0 0 1px rgba(255, 255, 255, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2)
               `;
@@ -5463,7 +5486,7 @@
               `;
             } else {
               button.style.boxShadow = `
-                0 6px 24px rgba(139, 92, 246, 0.25),
+                0 6px 24px rgba(111, 99, 217, 0.25),
                 0 0 0 1px rgba(255, 255, 255, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1)
               `;
@@ -5986,7 +6009,7 @@
               border: 3px solid rgba(255, 255, 255, 0.9);
                                 overflow: hidden;
               position: relative;
-              background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+              background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
                             display: flex;
                             flex-direction: column;
                               align-items: center;
@@ -5997,13 +6020,13 @@
                     transition: all 0.3s ease;
               cursor: pointer;
               text-align: center;
-              box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+              box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
             }
             
             .memory-person-avatar:hover {
               transform: scale(1.05);
               border-color: white;
-              box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+              box-shadow: 0 6px 20px rgba(111, 99, 217, 0.5);
             }
             
             .memory-person-avatar img {
@@ -6123,7 +6146,7 @@
             
             .action-btn.primary {
               background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-              color: #8b5cf6;
+              color: #6f63d9;
               border: 2px solid rgba(255, 255, 255, 0.3);
             }
             
@@ -6493,7 +6516,7 @@
           right: 20px;
           background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 
                       type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 
-                      'linear-gradient(135deg, #8b5cf6, #7c3aed)'};
+                      'linear-gradient(135deg, #6f63d9, #7c3aed)'};
           color: white;
           padding: 16px 24px;
           border-radius: 12px;

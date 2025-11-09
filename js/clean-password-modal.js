@@ -248,7 +248,7 @@ const cleanModalStyles = `
   border-radius: 20px;
   max-width: 450px;
   width: 90%;
-  box-shadow: 0 0 40px rgba(134, 88, 255, 0.6);
+  box-shadow: 0 0 40px rgba(111, 99, 217, 0.6);
   animation: slideIn 0.3s ease;
 }
 
@@ -264,7 +264,7 @@ const cleanModalStyles = `
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -322,7 +322,7 @@ const cleanModalStyles = `
   outline: none;
   border-color: #764ba2;
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(134, 88, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(111, 99, 217, 0.2);
 }
 
 .clean-input::placeholder {
@@ -379,7 +379,7 @@ const cleanModalStyles = `
 
 .clean-btn-confirm:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(134, 88, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(111, 99, 217, 0.3);
 }
 
 @keyframes fadeIn {

@@ -65,7 +65,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.initialWelcomeTimeout = null;
     this.localWelcomeShown = false;
     this.remoteGreetingReceived = false;
-    this.voicePlaybackEnabled = true;
+    this.voicePlaybackEnabled = false;
     this.voiceToggleButton = null;
 
     // 🧠 Vectorless AI Engine Integration
@@ -2445,11 +2445,11 @@ class EmmaChatExperience extends ExperiencePopup {
           console.warn('⚠️ Emma orb fallback for message avatar');
           // High-quality fallback gradient
           orbContainer.style.cssText = `
-            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
+            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4);
             border-radius: 50%;
             width: 100%;
             height: 100%;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
           `;
         }
       }
@@ -4146,9 +4146,9 @@ RULES:
         
         // Create a photo preview message
         const photoPreview = `
-          <div style="margin: 10px 0; padding: 15px; background: rgba(134, 88, 255, 0.1); border-radius: 12px; border: 2px dashed rgba(134, 88, 255, 0.3);">
+          <div style="margin: 10px 0; padding: 15px; background: rgba(111, 99, 217, 0.1); border-radius: 12px; border: 2px dashed rgba(111, 99, 217, 0.3);">
             <img src="${imageData}" style="max-width: 200px; max-height: 200px; border-radius: 8px; object-fit: cover;">
-            <div style="margin-top: 8px; font-size: 14px; color: #8658ff;">
+            <div style="margin-top: 8px; font-size: 14px; color: #6f63d9;">
               📷 Photo with ${personName} - Ready to save!
             </div>
           </div>
@@ -5934,7 +5934,7 @@ RULES:
         }
         
         .responsive-memory-container {
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+          background: linear-gradient(135deg, rgba(111, 99, 217, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
           border-radius: clamp(16px, 3vw, 24px);
           max-width: 95vw;
           max-height: 95vh;
@@ -6115,7 +6115,7 @@ RULES:
           border: 3px solid rgba(255, 255, 255, 0.9);
           overflow: hidden;
           position: relative;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -6126,13 +6126,13 @@ RULES:
           transition: all 0.3s ease;
           cursor: pointer;
           text-align: center;
-          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
         }
         
         .memory-person-avatar:hover {
           transform: scale(1.05);
           border-color: white;
-          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+          box-shadow: 0 6px 20px rgba(111, 99, 217, 0.5);
         }
         
         .memory-person-avatar img {
@@ -6252,7 +6252,7 @@ RULES:
         
         .action-btn.primary {
           background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-          color: #8b5cf6;
+          color: #6f63d9;
           border: 2px solid rgba(255, 255, 255, 0.3);
         }
         
@@ -6562,7 +6562,7 @@ RULES:
       <style>
         .memory-person-avatar {
           width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
-          overflow: hidden; position: relative; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          overflow: hidden; position: relative; background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
           font-weight: 600; color: white; transition: all 0.3s ease; cursor: pointer;
         }
@@ -6570,12 +6570,12 @@ RULES:
         .memory-person-avatar img { width: 100%; height: 100%; object-fit: cover; }
         
         .emma-drop-zone {
-          border: 2px dashed rgba(139, 92, 246, 0.6); border-radius: 16px; padding: 40px;
-          text-align: center; background: rgba(139, 92, 246, 0.1); cursor: pointer;
+          border: 2px dashed rgba(111, 99, 217, 0.6); border-radius: 16px; padding: 40px;
+          text-align: center; background: rgba(111, 99, 217, 0.1); cursor: pointer;
           transition: all 0.3s ease; margin: 20px 0;
         }
-        .emma-drop-zone:hover { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
-        .emma-drop-zone.drag-over { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.3); transform: scale(1.02); }
+        .emma-drop-zone:hover { border-color: #6f63d9; background: rgba(111, 99, 217, 0.2); }
+        .emma-drop-zone.drag-over { border-color: #6f63d9; background: rgba(111, 99, 217, 0.3); transform: scale(1.02); }
         
         .people-selection-grid {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0;
@@ -6585,7 +6585,7 @@ RULES:
           padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease;
         }
         .person-select-card:hover { background: rgba(255, 255, 255, 0.1); }
-        .person-select-card.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
+        .person-select-card.selected { border-color: #6f63d9; background: rgba(111, 99, 217, 0.2); }
         
         .media-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
         .media-preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
@@ -6631,7 +6631,7 @@ RULES:
           <!-- Action Buttons -->
           <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <button onclick="this.closest('.memory-preview-dialog').remove()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
-            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
+            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #6f63d9, #d06fa8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
           </div>
         </div>
       </div>
@@ -6775,9 +6775,9 @@ RULES:
           avatar.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.5)';
         } else {
           // EXISTING person styling (consistent with constellation)
-          avatar.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+          avatar.style.background = 'linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%)';
           avatar.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-          avatar.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
+          avatar.style.boxShadow = '0 2px 8px rgba(111, 99, 217, 0.3)';
         }
 
         // 🎯 CTO CRITICAL: ENHANCED PHOTO LOADING WITH DEBUGGING
@@ -7666,8 +7666,8 @@ RULES:
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        background: rgba(139, 92, 246, 0.15);
-        border: 2px dashed #8b5cf6;
+        background: rgba(111, 99, 217, 0.15);
+        border: 2px dashed #6f63d9;
         position: relative;
       `;
       
@@ -7677,13 +7677,13 @@ RULES:
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: rgba(139, 92, 246, 0.2);
-        border: 3px dashed #8b5cf6;
+        background: rgba(111, 99, 217, 0.2);
+        border: 3px dashed #6f63d9;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 32px;
-        color: #8b5cf6;
+        color: #6f63d9;
         margin-bottom: 8px;
         transition: all 0.3s ease;
       `;
@@ -7695,7 +7695,7 @@ RULES:
       addLabel.style.cssText = `
         font-size: 14px;
         font-weight: 600;
-        color: #8b5cf6;
+        color: #6f63d9;
         text-align: center;
         margin-bottom: 4px;
       `;
@@ -7705,7 +7705,7 @@ RULES:
       instructionLabel.textContent = 'Click to create';
       instructionLabel.style.cssText = `
         font-size: 12px;
-        color: rgba(139, 92, 246, 0.8);
+        color: rgba(111, 99, 217, 0.8);
         text-align: center;
       `;
       
@@ -7720,16 +7720,16 @@ RULES:
       
       // Add hover effects
       addPersonItem.addEventListener('mouseenter', () => {
-        addPersonItem.style.background = 'rgba(139, 92, 246, 0.25)';
+        addPersonItem.style.background = 'rgba(111, 99, 217, 0.25)';
         addPersonItem.style.transform = 'scale(1.02)';
-        addAvatar.style.background = 'rgba(139, 92, 246, 0.3)';
+        addAvatar.style.background = 'rgba(111, 99, 217, 0.3)';
         addAvatar.style.transform = 'scale(1.1)';
       });
       
       addPersonItem.addEventListener('mouseleave', () => {
-        addPersonItem.style.background = 'rgba(139, 92, 246, 0.15)';
+        addPersonItem.style.background = 'rgba(111, 99, 217, 0.15)';
         addPersonItem.style.transform = 'scale(1)';
-        addAvatar.style.background = 'rgba(139, 92, 246, 0.2)';
+        addAvatar.style.background = 'rgba(111, 99, 217, 0.2)';
         addAvatar.style.transform = 'scale(1)';
       });
       
@@ -7763,7 +7763,7 @@ RULES:
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -7985,7 +7985,7 @@ RULES:
 
     addPersonDialog.innerHTML = `
       <div class="add-person-modal-content" style="
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(124, 58, 237, 0.95));
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.95), rgba(124, 58, 237, 0.95));
         border-radius: 20px;
         padding: 30px;
         max-width: 500px;
@@ -8060,13 +8060,13 @@ RULES:
           <button class="save-person-btn" style="
             background: linear-gradient(135deg, #ffffff, #f3f4f6);
             border: none;
-            color: #8b5cf6;
+            color: #6f63d9;
             padding: 12px 24px;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 700;
             font-size: 16px;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
           ">✨ Add Person</button>
         </div>
       </div>
@@ -10380,7 +10380,7 @@ Just the question:`;
       if (people.length === 0) {
         peopleGrid.innerHTML = `
           <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">
-            No people in vault yet. <button onclick="window.open('/pages/people-emma.html', '_blank')" style="color: #8b5cf6; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
+            No people in vault yet. <button onclick="window.open('/pages/people-emma.html', '_blank')" style="color: #6f63d9; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
           </div>
         `;
         return;
@@ -10391,7 +10391,7 @@ Just the question:`;
         const initials = person.name.charAt(0).toUpperCase();
         return `
           <div class="person-select-card" data-person-id="${person.id}" onclick="window.chatExperience.togglePersonSelection('${person.id}', '${memoryId}')">
-            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
               ${initials}
             </div>
             <div style="color: white; font-weight: 600; margin-bottom: 4px;">${person.name}</div>

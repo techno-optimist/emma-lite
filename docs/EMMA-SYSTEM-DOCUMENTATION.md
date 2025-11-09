@@ -362,11 +362,11 @@ Detailed Steps:
 
 **Emma Brand Colors**:
 ```css
---emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+--emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
 --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
 --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
 --emma-purple: #764ba2;
---emma-pink: #f093fb;
+--emma-pink: #deb3e4;
 --emma-glass: rgba(255, 255, 255, 0.1);
 ```
 
@@ -374,7 +374,7 @@ Detailed Steps:
 - Backdrop blur: `backdrop-filter: blur(20px)`
 - Transparent backgrounds: `rgba(255, 255, 255, 0.1)`
 - Subtle borders: `rgba(255, 255, 255, 0.2)`
-- Depth with shadows: `0 8px 32px rgba(139, 92, 246, 0.15)`
+- Depth with shadows: `0 8px 32px rgba(111, 99, 217, 0.15)`
 
 ### **Emma Orb Integration**
 

@@ -76,8 +76,8 @@ class EmmaVaultControlPanel {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.18);
-            color: var(--emma-accent-primary, #8b5cf6);
+            background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.18);
+            color: var(--emma-accent-primary, #6f63d9);
             cursor: pointer;
           }
         `;

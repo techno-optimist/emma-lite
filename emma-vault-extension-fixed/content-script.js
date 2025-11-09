@@ -1396,7 +1396,7 @@ function injectStyles() {
     
     .emma-sync-progress-bar {
       height: 100%;
-      background: linear-gradient(90deg, #8B5CF6, #EC4899);
+      background: linear-gradient(90deg, #6F63D9, #D06FA8);
       border-radius: 2px;
       transition: width 0.3s ease;
     }

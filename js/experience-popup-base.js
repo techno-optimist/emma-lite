@@ -140,11 +140,11 @@ class ExperiencePopup {
       top: ${finalPosition.top}px;
       width: ${finalPosition.width}px;
       height: ${finalPosition.height}px;
-      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
-      border: 2px solid rgba(139, 92, 246, 0.3);
+      background: linear-gradient(145deg, rgba(111, 99, 217, 0.15), rgba(222, 179, 228, 0.10));
+      border: 2px solid rgba(111, 99, 217, 0.3);
       border-radius: ${isMobile ? '16px' : '24px'};
       backdrop-filter: blur(20px);
-      box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
+      box-shadow: 0 24px 80px rgba(111, 99, 217, 0.4);
       z-index: 10000;
       opacity: 0;
       transform: translateY(-10px) scale(0.95);

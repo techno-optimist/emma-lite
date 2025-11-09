@@ -54,7 +54,7 @@ class VoiceCaptureExperience extends ExperiencePopup {
       } else {
         console.warn('🌟 EmmaOrb class not available, using fallback');
         // Fallback gradient
-        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb)';
+        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4)';
         orbContainer.style.borderRadius = '50%';
         orbContainer.style.width = '100%';
         orbContainer.style.height = '100%';
@@ -64,7 +64,7 @@ class VoiceCaptureExperience extends ExperiencePopup {
       // Fallback
       const orbContainer = document.getElementById('voice-emma-orb');
       if (orbContainer) {
-        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb)';
+        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4)';
         orbContainer.style.borderRadius = '50%';
         orbContainer.style.width = '100%';
         orbContainer.style.height = '100%';
@@ -355,7 +355,7 @@ class VoiceCaptureExperience extends ExperiencePopup {
     const hint = document.getElementById('emma-hint');
     if (hint) {
       hint.textContent = prompt;
-      hint.style.background = 'linear-gradient(135deg, #667eea, #764ba2, #f093fb)';
+      hint.style.background = 'linear-gradient(135deg, #667eea, #764ba2, #deb3e4)';
       hint.style.webkitBackgroundClip = 'text';
       hint.style.webkitTextFillColor = 'transparent';
     }

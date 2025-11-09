@@ -1573,7 +1573,7 @@
 }
 
 .detail-label {
-  color: rgba(139, 92, 246, 0.9);
+  color: rgba(111, 99, 217, 0.9);
   font-size: 14px;
   font-weight: 600;
   min-width: 80px;
@@ -1667,7 +1667,7 @@
 .more-count {
   font-size: 18px;
   font-weight: 700;
-  color: rgba(139, 92, 246, 0.9);
+  color: rgba(111, 99, 217, 0.9);
 }
 
 .more-text {

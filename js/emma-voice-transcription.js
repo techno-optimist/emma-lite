@@ -166,7 +166,7 @@ class EmmaVoiceTranscription {
     this.overlay.innerHTML = `
       <!-- Emma Voice Transcription - Mobile-First Design -->
       <div class="emma-voice-container" style="
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
         border: none;
         border-radius: ${window.innerWidth <= 768 ? '20px' : '28px'};
         padding: ${window.innerWidth <= 768 ? '32px 24px' : '48px 40px'};
@@ -174,7 +174,7 @@ class EmmaVoiceTranscription {
         width: ${window.innerWidth <= 768 ? '95%' : '90%'};
         text-align: center;
         backdrop-filter: blur(30px);
-        box-shadow: 0 32px 120px rgba(139, 92, 246, 0.6);
+        box-shadow: 0 32px 120px rgba(111, 99, 217, 0.6);
         position: relative;
         min-height: ${window.innerWidth <= 768 ? '70vh' : 'auto'};
         display: flex;
@@ -297,7 +297,7 @@ class EmmaVoiceTranscription {
           flex-wrap: wrap;
         ">
           <button class="emma-voice-btn emma-stop-btn" id="stop-recording-btn" style="
-            background: linear-gradient(135deg, #8B5CF6, #F093FB);
+            background: linear-gradient(135deg, #6F63D9, #DEB3E4);
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: ${window.innerWidth <= 768 ? '16px 24px' : '14px 20px'};
@@ -753,7 +753,7 @@ class EmmaVoiceTranscription {
         justify-content: center;
       ">
         <button id="send-transcription-btn" style="
-          background: linear-gradient(135deg, #8B5CF6, #F093FB);
+          background: linear-gradient(135deg, #6F63D9, #DEB3E4);
           border: none;
           color: white;
           padding: 14px 28px;

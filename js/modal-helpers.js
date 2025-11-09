@@ -26,7 +26,7 @@ async function showConfirmModal(title, message, confirmText = 'Confirm', cancelT
     content.style.cssText = `
       background: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
       padding: 30px; border-radius: 16px; max-width: 400px; text-align: center;
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      border: 1px solid rgba(111, 99, 217, 0.3);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     `;
     
@@ -52,7 +52,7 @@ async function showConfirmModal(title, message, confirmText = 'Confirm', cancelT
     const confirmBtn = document.createElement('button');
     confirmBtn.textContent = confirmText;
     confirmBtn.style.cssText = `
-      padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
       color: white; border: none; border-radius: 8px; cursor: pointer;
       transition: all 0.3s ease;
     `;
@@ -134,7 +134,7 @@ function showErrorModal(title, message) {
   const okBtn = document.createElement('button');
   okBtn.textContent = 'OK';
   okBtn.style.cssText = `
-    padding: 10px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    padding: 10px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
     color: white; border: none; border-radius: 8px; cursor: pointer;
     transition: all 0.3s ease;
   `;
@@ -187,7 +187,7 @@ async function showPasswordModal(title, label) {
     content.style.cssText = `
       background: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
       padding: 30px; border-radius: 16px; max-width: 400px; text-align: center;
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      border: 1px solid rgba(111, 99, 217, 0.3);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     `;
     
@@ -202,7 +202,7 @@ async function showPasswordModal(title, label) {
     const input = document.createElement('input');
     input.type = 'password';
     input.style.cssText = `
-      width: 100%; padding: 12px; border: 1px solid rgba(139, 92, 246, 0.3);
+      width: 100%; padding: 12px; border: 1px solid rgba(111, 99, 217, 0.3);
       border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: white;
       margin-bottom: 20px; font-size: 16px;
     `;
@@ -220,7 +220,7 @@ async function showPasswordModal(title, label) {
     const okBtn = document.createElement('button');
     okBtn.textContent = 'OK';
     okBtn.style.cssText = `
-      padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
       color: white; border: none; border-radius: 8px; cursor: pointer;
     `;
     

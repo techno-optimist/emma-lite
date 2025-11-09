@@ -2457,7 +2457,7 @@ function showResponsiveMemoryDialog(memory) {
       }
       
       .responsive-memory-container {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
         border-radius: clamp(16px, 3vw, 24px);
         max-width: 95vw;
         max-height: 95vh;
@@ -2638,7 +2638,7 @@ function showResponsiveMemoryDialog(memory) {
         border: 3px solid rgba(255, 255, 255, 0.9);
         overflow: hidden;
         position: relative;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -2649,13 +2649,13 @@ function showResponsiveMemoryDialog(memory) {
         transition: all 0.3s ease;
         cursor: pointer;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
       }
       
       .memory-person-avatar:hover {
         transform: scale(1.05);
         border-color: white;
-        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        box-shadow: 0 6px 20px rgba(111, 99, 217, 0.5);
       }
       
       .memory-person-avatar img {
@@ -2775,7 +2775,7 @@ function showResponsiveMemoryDialog(memory) {
       
       .action-btn.primary {
         background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        color: #8b5cf6;
+        color: #6f63d9;
         border: 2px solid rgba(255, 255, 255, 0.3);
       }
       
@@ -3109,7 +3109,7 @@ function shareConstellationMemory(memoryId) {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: rgba(139, 92, 246, 0.95);
+        background: rgba(111, 99, 217, 0.95);
         color: white;
         padding: 12px 20px;
         border-radius: 8px;
@@ -3493,7 +3493,7 @@ function renderPeople(list) {
     <div class="people-grid">${list.map(p => {
       const initials = (p.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
       const avatar = p.profilePicture ? `<img src="${p.profilePicture}" style="width:100%; height:100%; object-fit:cover; border-radius:50%"/>` : initials;
-      const perm = p.permission ? `<span class=\"chip\" style=\"margin-left:8px; border:1px solid rgba(134,88,255,.3); background:rgba(134,88,255,.1); color:#8658ff; border-radius:999px; padding:2px 8px; font-size:11px;\">${p.permission}</span>` : '';
+      const perm = p.permission ? `<span class=\"chip\" style=\"margin-left:8px; border:1px solid rgba(111,99,217,.3); background:rgba(111,99,217,.1); color:#6f63d9; border-radius:999px; padding:2px 8px; font-size:11px;\">${p.permission}</span>` : '';
       return `
         <div class=\"person-card clickable-person\" data-person-id=\"${p.id}\" style=\"cursor: pointer; transition: background-color 0.2s ease;\">
           <div class=\"person-avatar\">${avatar}</div>
@@ -3503,9 +3503,9 @@ function renderPeople(list) {
           </div>
         </div>`;
     }).join('')}
-      <div class=\"person-card add-more-people\" style=\"cursor: pointer; transition: background-color 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(134,88,255,0.3); background: rgba(134,88,255,0.05);\">
-        <div style=\"width:50px; height:50px; background:rgba(134,88,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#8658ff; font-size:24px; margin-bottom:8px;\">+</div>
-        <div style=\"font-weight:600; color:#8658ff; text-align:center; font-size:12px;\">Add More People</div>
+      <div class=\"person-card add-more-people\" style=\"cursor: pointer; transition: background-color 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(111,99,217,0.3); background: rgba(111,99,217,0.05);\">
+        <div style=\"width:50px; height:50px; background:rgba(111,99,217,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#6f63d9; font-size:24px; margin-bottom:8px;\">+</div>
+        <div style=\"font-weight:600; color:#6f63d9; text-align:center; font-size:12px;\">Add More People</div>
       </div>
     </div>
   `;
@@ -3585,7 +3585,7 @@ function wirePeopleActions(host) {
 
     // Add hover effect
     card.addEventListener('mouseenter', () => {
-      card.style.backgroundColor = 'rgba(134, 88, 255, 0.1)';
+      card.style.backgroundColor = 'rgba(111, 99, 217, 0.1)';
     });
     card.addEventListener('mouseleave', () => {
       card.style.backgroundColor = '';
@@ -3611,12 +3611,12 @@ function wirePeopleActions(host) {
 
     // Add hover effect
     addMorePeopleBtn.addEventListener('mouseenter', () => {
-      addMorePeopleBtn.style.backgroundColor = 'rgba(134, 88, 255, 0.1)';
-      addMorePeopleBtn.style.borderColor = 'rgba(134, 88, 255, 0.5)';
+      addMorePeopleBtn.style.backgroundColor = 'rgba(111, 99, 217, 0.1)';
+      addMorePeopleBtn.style.borderColor = 'rgba(111, 99, 217, 0.5)';
     });
     addMorePeopleBtn.addEventListener('mouseleave', () => {
-      addMorePeopleBtn.style.backgroundColor = 'rgba(134, 88, 255, 0.05)';
-      addMorePeopleBtn.style.borderColor = 'rgba(134, 88, 255, 0.3)';
+      addMorePeopleBtn.style.backgroundColor = 'rgba(111, 99, 217, 0.05)';
+      addMorePeopleBtn.style.borderColor = 'rgba(111, 99, 217, 0.3)';
     });
   }
 }
@@ -3660,7 +3660,7 @@ async function openAddPeopleModal() {
       const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
       const avatar = person.profilePicture
         ? `<img src="${person.profilePicture}" style="width:60px; height:60px; object-fit:cover; border-radius:50%;"/>`
-        : `<div style="width:60px; height:60px; background:#8658ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:600;">${initials}</div>`;
+        : `<div style="width:60px; height:60px; background:#6f63d9; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:600;">${initials}</div>`;
 
       // Show HML sync capability if person has fingerprint
       const hasFingerprint = person.keyFingerprint || person.fingerprint;
@@ -3718,8 +3718,8 @@ async function openAddPeopleModal() {
         } else {
           // Select
           selectedPeople.add(personId);
-          card.style.borderColor = '#8658ff';
-          card.style.backgroundColor = 'rgba(134,88,255,0.1)';
+          card.style.borderColor = '#6f63d9';
+          card.style.backgroundColor = 'rgba(111,99,217,0.1)';
         }
 
         // Update confirm button state
@@ -3737,7 +3737,7 @@ async function openAddPeopleModal() {
       // Add hover effect
       card.addEventListener('mouseenter', () => {
         if (!selectedPeople.has(card.dataset.personId)) {
-          card.style.backgroundColor = 'rgba(134,88,255,0.05)';
+          card.style.backgroundColor = 'rgba(111,99,217,0.05)';
         }
       });
       card.addEventListener('mouseleave', () => {
@@ -3840,7 +3840,7 @@ async function openPersonModal(personId) {
     const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
     const avatar = person.profilePicture
       ? `<img src="${person.profilePicture}" style="width:80px; height:80px; object-fit:cover; border-radius:50%; margin-bottom:16px;"/>`
-      : `<div style="width:80px; height:80px; background:#8658ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:600; margin-bottom:16px;">${initials}</div>`;
+      : `<div style="width:80px; height:80px; background:#6f63d9; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:600; margin-bottom:16px;">${initials}</div>`;
 
     modal.innerHTML = `
       <div class="memory-detail-overlay"></div>
@@ -3860,8 +3860,8 @@ async function openPersonModal(personId) {
           ${person.phone ? `<div style="margin-bottom:12px;"><strong>Phone:</strong> ${escapeHtml(person.phone)}</div>` : ''}
           ${person.notes ? `<div style="margin-bottom:12px;"><strong>Notes:</strong> ${escapeHtml(person.notes)}</div>` : ''}
           ${person.keyFingerprint ? `
-            <div style="margin-top:20px; padding:16px; background:rgba(134,88,255,0.1); border:1px solid rgba(134,88,255,0.3); border-radius:8px;">
-              <strong style="color:#8658ff;">Cryptographic Identity</strong><br/>
+            <div style="margin-top:20px; padding:16px; background:rgba(111,99,217,0.1); border:1px solid rgba(111,99,217,0.3); border-radius:8px;">
+              <strong style="color:#6f63d9;">Cryptographic Identity</strong><br/>
               <code style="font-size:12px; color:#ffffff; word-break:break-all;">${escapeHtml(person.keyFingerprint)}</code>
             </div>
           ` : ''}
@@ -4619,7 +4619,7 @@ function openCreateWizardModal() {
       .emma-wiz-body { padding: 16px 16px 8px 16px; max-height: 70vh; overflow: auto; }
       .emma-wiz-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); display:flex; justify-content: space-between; gap: 8px; }
       .emma-wiz-steps { height: 4px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 8px; }
-      .emma-wiz-progress { height: 100%; width: 33%; background: var(--emma-gradient-1, linear-gradient(135deg,#667eea,#764ba2 50%,#f093fb)); transition: width .25s ease; }
+      .emma-wiz-progress { height: 100%; width: 33%; background: var(--emma-gradient-1, linear-gradient(135deg,#667eea,#764ba2 50%,#deb3e4)); transition: width .25s ease; }
       .emma-field { display:grid; gap:6px; margin-bottom: 12px; }
       .emma-field label { font-size: 12px; color: var(--emma-text-secondary, rgba(255,255,255,0.7)); }
       .emma-input, .emma-textarea, .emma-select { border-radius: 10px; border: 1px solid var(--emma-border, rgba(255,255,255,0.12)); background: rgba(255,255,255,0.06); color: var(--emma-text, #fff); padding: 10px 12px; font: inherit; }

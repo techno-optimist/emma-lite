@@ -204,7 +204,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
 
         .visualizer-bars .bar {
           width: 4px;
-          background: linear-gradient(to top, #8B5CF6, #A78BFA);
+          background: linear-gradient(to top, #6F63D9, #A78BFA);
           border-radius: 2px;
           height: 8px;
           transition: height 0.2s ease;
@@ -274,15 +274,15 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         }
 
         .person-card.selected {
-          background: rgba(139, 92, 246, 0.3);
-          border-color: rgba(139, 92, 246, 0.5);
+          background: rgba(111, 99, 217, 0.3);
+          border-color: rgba(111, 99, 217, 0.5);
         }
 
         .person-avatar {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+          background: linear-gradient(135deg, #6F63D9, #A78BFA);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -367,9 +367,9 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         .selected-people-summary {
           margin-top: 16px;
           padding: 12px;
-          background: rgba(139, 92, 246, 0.1);
+          background: rgba(111, 99, 217, 0.1);
           border-radius: 8px;
-          border: 1px solid rgba(139, 92, 246, 0.2);
+          border: 1px solid rgba(111, 99, 217, 0.2);
         }
 
         .summary-label {
@@ -387,8 +387,8 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         }
 
         .selected-person-tag {
-          background: rgba(139, 92, 246, 0.3);
-          border: 1px solid rgba(139, 92, 246, 0.4);
+          background: rgba(111, 99, 217, 0.3);
+          border: 1px solid rgba(111, 99, 217, 0.4);
           border-radius: 16px;
           padding: 4px 12px;
           color: white;
@@ -971,7 +971,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
 
       } else {
         console.warn('🌟 EmmaOrb class not available, using fallback');
-        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb)';
+        orbContainer.style.background = 'radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4)';
       }
     } catch (error) {
       console.error('🚨 Error initializing Wizard Emma Orb:', error);

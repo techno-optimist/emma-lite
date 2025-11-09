@@ -281,7 +281,7 @@ class OrbManager {
       
       // Get color customization
       const colorTheme = this.settings[`orb.colorTheme:${this.vaultId}`] || 'default';
-      const customColor = this.settings[`orb.customColor:${this.vaultId}`] || '#8b5cf6';
+      const customColor = this.settings[`orb.customColor:${this.vaultId}`] || '#6f63d9';
       
       // Calculate hue from color
       const hue = this.getHueFromColor(orbType, colorTheme, customColor);

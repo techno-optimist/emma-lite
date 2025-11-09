@@ -242,7 +242,7 @@ class EmmaQRGenerator {
     const borderGradient = ctx.createLinearGradient(0, 0, settings.size, settings.size);
     borderGradient.addColorStop(0, '#667eea');
     borderGradient.addColorStop(0.5, '#764ba2');
-    borderGradient.addColorStop(1, '#f093fb');
+    borderGradient.addColorStop(1, '#deb3e4');
     
     ctx.strokeStyle = borderGradient;
     ctx.lineWidth = 6;
@@ -273,7 +273,7 @@ class EmmaQRGenerator {
       centerX - 60, centerY - 30, centerX + 60, centerY + 30
     );
     logoGradient.addColorStop(0, '#764ba2');
-    logoGradient.addColorStop(1, '#f093fb');
+    logoGradient.addColorStop(1, '#deb3e4');
     
     ctx.fillStyle = logoGradient;
     ctx.fillRect(centerX - 60, centerY - 30, 120, 60);

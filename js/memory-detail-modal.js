@@ -180,7 +180,7 @@ function createModalContent(memory) {
     max-height: 90vh;
     background: linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(30, 30, 40, 0.95));
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(134, 88, 255, 0.3);
+    border: 1px solid rgba(111, 99, 217, 0.3);
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     display: flex;
@@ -196,7 +196,7 @@ function createModalContent(memory) {
       display: flex;
       align-items: center;
       gap: 16px;
-      background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
+      background: linear-gradient(135deg, rgba(111, 99, 217, 0.1), rgba(222, 179, 228, 0.1));
     ">
       <div style="flex: 1;">
         <input type="text" id="memory-title-input" placeholder="Enter memory title..." style="
@@ -213,7 +213,7 @@ function createModalContent(memory) {
       </div>
       <div style="display: flex; gap: 12px;">
         <button class="modal-save-btn" style="
-          background: linear-gradient(135deg, #8658ff, #f093fb);
+          background: linear-gradient(135deg, #6f63d9, #deb3e4);
           border: none;
           color: white;
           padding: 8px 16px;
@@ -246,7 +246,7 @@ function createModalContent(memory) {
         color: white;
         padding: 16px 20px;
         cursor: pointer;
-        border-bottom: 2px solid #f093fb;
+        border-bottom: 2px solid #deb3e4;
         transition: all 0.2s ease;
       ">Overview</button>
       <button class="tab-btn" data-tab="media" style="
@@ -259,7 +259,7 @@ function createModalContent(memory) {
         transition: all 0.2s ease;
       ">Media <span style="
         background: rgba(118, 75, 162, 0.3);
-        color: #f093fb;
+        color: #deb3e4;
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 11px;
@@ -275,7 +275,7 @@ function createModalContent(memory) {
         transition: all 0.2s ease;
       ">People <span style="
         background: rgba(118, 75, 162, 0.3);
-        color: #f093fb;
+        color: #deb3e4;
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 11px;
@@ -369,7 +369,7 @@ function switchTab(modal, tabName) {
     if (btn.dataset.tab === tabName) {
       btn.classList.add('active');
       btn.style.color = 'white';
-      btn.style.borderBottom = '2px solid #f093fb';
+      btn.style.borderBottom = '2px solid #deb3e4';
     } else {
       btn.classList.remove('active');
       btn.style.color = 'rgba(255,255,255,0.6)';
@@ -579,7 +579,7 @@ async function loadPeopleContent(modal, memory) {
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8658ff, #f093fb);
+          background: linear-gradient(135deg, #6f63d9, #deb3e4);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -784,7 +784,7 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
             height: 80px;
             margin: 0 auto 16px;
             border-radius: 50%;
-            background: ${hasAvatar ? 'transparent' : 'linear-gradient(135deg, #8658ff, #f093fb)'};
+            background: ${hasAvatar ? 'transparent' : 'linear-gradient(135deg, #6f63d9, #deb3e4)'};
             display: flex;
             align-items: center;
             justify-content: center;
@@ -891,7 +891,7 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
               font-size: 16px;
             ">Cancel</button>
             <button id="connect-people-btn" onclick="connectSelectedPeople()" disabled style="
-              background: linear-gradient(135deg, #8658ff, #f093fb);
+              background: linear-gradient(135deg, #6f63d9, #deb3e4);
               border: none;
               color: white;
               padding: 12px 24px;
@@ -924,7 +924,7 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
       } else {
         // Select
         selectedPeople.add(personId);
-        card.style.border = '2px solid #8658ff';
+        card.style.border = '2px solid #6f63d9';
         indicator.style.display = 'flex';
       }
       
@@ -941,7 +941,7 @@ function setupModalEventHandlers(modal, memory, overlay, content) {
       if (!selectedPeople.has(personId)) {
         card.style.background = 'rgba(255, 255, 255, 0.05)';
       } else {
-        card.style.background = 'rgba(134, 88, 255, 0.2)';
+        card.style.background = 'rgba(111, 99, 217, 0.2)';
       }
     };
 
@@ -1148,7 +1148,7 @@ function switchTab(modal, tabName) {
     if (btn.dataset.tab === tabName) {
       btn.classList.add('active');
       btn.style.color = 'white';
-      btn.style.borderBottom = '2px solid #f093fb';
+      btn.style.borderBottom = '2px solid #deb3e4';
     } else {
       btn.classList.remove('active');
       btn.style.color = 'rgba(255,255,255,0.6)';
@@ -1209,7 +1209,7 @@ function saveMemoryChanges(modal, memory) {
       saveBtn.style.background = 'rgba(34, 197, 94, 0.8)';
       setTimeout(() => {
         saveBtn.innerHTML = originalText;
-        saveBtn.style.background = 'linear-gradient(135deg, #8658ff, #f093fb)';
+        saveBtn.style.background = 'linear-gradient(135deg, #6f63d9, #deb3e4)';
       }, 2000);
     }
 

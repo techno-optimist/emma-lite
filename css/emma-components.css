@@ -3,9 +3,9 @@
    ============================================================ */
 
 .emma-button {
-  --emma-button-gradient-start: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.92);
-  --emma-button-gradient-end: rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.72);
-  --emma-button-shadow: 0 22px 46px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.32);
+  --emma-button-gradient-start: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.92);
+  --emma-button-gradient-end: rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.72);
+  --emma-button-shadow: 0 14px 34px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.28);
   --emma-button-border: rgba(255, 255, 255, 0.14);
   --emma-button-ink: var(--emma-text-on-accent, #0f1024);
 
@@ -76,8 +76,8 @@
   outline: none;
   transform: translateY(-4px);
   box-shadow:
-    0 30px 68px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.42),
-    0 12px 24px rgba(0, 0, 0, 0.45);
+    0 18px 42px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.32),
+    0 10px 18px rgba(0, 0, 0, 0.35);
   filter: saturate(1.04);
 }
 
@@ -89,7 +89,7 @@
 
 .emma-button:active {
   transform: translateY(-1px);
-  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
 }
 
 .emma-button:disabled {
@@ -102,9 +102,9 @@
 .emma-button--primary,
 .emma-button--neutral,
 .emma-button--surface {
-  --emma-button-gradient-start: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.92);
-  --emma-button-gradient-end: rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.72);
-  --emma-button-shadow: 0 22px 46px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.32);
+  --emma-button-gradient-start: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.92);
+  --emma-button-gradient-end: rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.72);
+  --emma-button-shadow: 0 14px 34px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.28);
   --emma-button-ink: var(--emma-text-on-accent, #0f1024);
 }
 
@@ -112,7 +112,7 @@
   --emma-button-gradient-start: rgba(16, 185, 129, 0.95);
   --emma-button-gradient-end: rgba(56, 189, 248, 0.75);
   --emma-button-ink: rgba(9, 35, 35, 0.92);
-  --emma-button-shadow: 0 24px 48px rgba(16, 185, 129, 0.32);
+  --emma-button-shadow: 0 16px 36px rgba(16, 185, 129, 0.28);
 }
 
 .emma-button--affirmative,
@@ -120,14 +120,14 @@
   --emma-button-gradient-start: rgba(74, 222, 128, 0.92);
   --emma-button-gradient-end: rgba(34, 197, 94, 0.78);
   --emma-button-ink: rgba(9, 34, 25, 0.92);
-  --emma-button-shadow: 0 24px 48px rgba(52, 211, 153, 0.35);
+  --emma-button-shadow: 0 16px 36px rgba(52, 211, 153, 0.3);
 }
 
 .emma-button--danger {
   --emma-button-gradient-start: rgba(248, 113, 113, 0.92);
   --emma-button-gradient-end: rgba(239, 68, 68, 0.78);
   --emma-button-ink: rgba(62, 12, 12, 0.92);
-  --emma-button-shadow: 0 22px 48px rgba(239, 68, 68, 0.32);
+  --emma-button-shadow: 0 14px 34px rgba(239, 68, 68, 0.28);
 }
 
 .emma-button--outline,
@@ -135,7 +135,7 @@
   --emma-button-gradient-start: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.1);
   --emma-button-gradient-end: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.02);
   --emma-button-ink: rgba(232, 236, 255, 0.88);
-  --emma-button-shadow: 0 18px 36px rgba(8, 10, 24, 0.35);
+  --emma-button-shadow: 0 12px 26px rgba(8, 10, 24, 0.3);
   --emma-button-border: rgba(255, 255, 255, 0.22);
 }
 
@@ -144,7 +144,7 @@
   --emma-button-gradient-start: rgba(18, 20, 48, 0.62);
   --emma-button-gradient-end: rgba(9, 12, 32, 0.8);
   --emma-button-ink: rgba(220, 225, 255, 0.86);
-  --emma-button-shadow: 0 18px 32px rgba(0, 0, 0, 0.32);
+  --emma-button-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
   --emma-button-border: rgba(255, 255, 255, 0.12);
 }
 
@@ -158,8 +158,8 @@
   border-radius: inherit;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.35) 0%,
-    rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0) 65%
+    rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.35) 0%,
+    rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0) 65%
   );
   opacity: 0;
   transition: opacity 0.6s ease;

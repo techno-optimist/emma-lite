@@ -5,10 +5,10 @@
 
 /* CSS Variables - Emma Design System */
 :root {
-  --emma-primary: #8B5CF6;
+  --emma-primary: #6F63D9;
   --emma-primary-light: #A78BFA;
   --emma-primary-dark: #7C3AED;
-  --emma-secondary: #EC4899;
+  --emma-secondary: #D06FA8;
   --emma-success: #10B981;
   --emma-warning: #F59E0B;
   --emma-error: #EF4444;
@@ -18,13 +18,13 @@
   --emma-glass-border: rgba(255, 255, 255, 0.2);
   --emma-glass-hover: rgba(255, 255, 255, 0.15);
   --emma-backdrop: blur(20px);
-  --emma-glow: 0 8px 32px rgba(139, 92, 246, 0.15);
-  --emma-glow-hover: 0 12px 48px rgba(139, 92, 246, 0.25);
+  --emma-glow: 0 8px 32px rgba(111, 99, 217, 0.15);
+  --emma-glow-hover: 0 12px 48px rgba(111, 99, 217, 0.25);
   
   /* Emma Gradients */
-  --emma-gradient-1: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  --emma-gradient-1: linear-gradient(135deg, #6F63D9 0%, #D06FA8 100%);
   --emma-gradient-2: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --emma-gradient-orb: linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B, #10B981);
+  --emma-gradient-orb: linear-gradient(135deg, #6F63D9, #D06FA8, #F59E0B, #10B981);
   
   /* Text Colors */
   --emma-text: #FFFFFF;
@@ -86,7 +86,7 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 8px;
-  filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.3));
+  filter: drop-shadow(0 2px 8px rgba(111, 99, 217, 0.3));
 }
 
 .emma-tagline {
@@ -151,7 +151,7 @@ body {
   position: relative;
   /* Removed animation temporarily to fix shaking */
   box-shadow: 
-    0 0 30px rgba(139, 92, 246, 0.4),
+    0 0 30px rgba(111, 99, 217, 0.4),
     inset 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
@@ -536,7 +536,7 @@ body {
 .form-group select:focus {
   outline: none;
   border-color: var(--emma-primary);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(111, 99, 217, 0.2);
 }
 
 .form-group input::placeholder,
@@ -563,7 +563,7 @@ body {
   background: var(--emma-gradient-1);
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(111, 99, 217, 0.3);
 }
 
 .form-actions {

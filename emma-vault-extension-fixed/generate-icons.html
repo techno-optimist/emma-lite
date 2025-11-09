@@ -23,8 +23,8 @@
       
       // Background - gradient
       const gradient = ctx.createLinearGradient(0, 0, size, size);
-      gradient.addColorStop(0, '#8B5CF6');
-      gradient.addColorStop(1, '#EC4899');
+      gradient.addColorStop(0, '#6F63D9');
+      gradient.addColorStop(1, '#D06FA8');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, size, size);
       
@@ -47,7 +47,7 @@
       ctx.stroke();
       
       // Keyhole
-      ctx.fillStyle = '#8B5CF6';
+      ctx.fillStyle = '#6F63D9';
       ctx.beginPath();
       ctx.arc(size / 2, bodyY + bodySize * 0.35, size * 0.06, 0, Math.PI * 2);
       ctx.fill();

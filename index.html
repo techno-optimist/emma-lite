@@ -59,10 +59,10 @@
   <style>
     /* Emma Brand Variables */
     :root {
-            --emma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            --emma-purple: #8B5CF6;
-            --emma-pink: #F093FB;
-      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+            --emma-gradient: linear-gradient(135deg, #5058b4 0%, #5a3f8f 50%, #a468a5 100%);
+            --emma-purple: #6F63D9;
+            --emma-pink: #DEB3E4;
+      --emma-glow: 0 0 20px rgba(111, 99, 217, 0.35);
     }
 
     * {
@@ -137,11 +137,11 @@
     @keyframes orb-pulse {
       0%, 100% {
         transform: scale(1);
-                box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
+                box-shadow: var(--emma-glow), inset 0 0 32px rgba(255, 255, 255, 0.1);
       }
       50% {
-                transform: scale(1.02);
-                box-shadow: 0 0 60px rgba(134, 88, 255, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.2);
+                transform: scale(1.015);
+                box-shadow: 0 0 40px rgba(111, 99, 217, 0.55), inset 0 0 28px rgba(255, 255, 255, 0.16);
             }
         }
 
@@ -184,12 +184,12 @@
         }
 
         .vault-btn.primary {
-            background: rgba(139, 92, 246, 0.3);
+            background: rgba(111, 99, 217, 0.3);
       border-color: var(--emma-purple);
         }
 
         .vault-btn.primary:hover {
-            background: rgba(139, 92, 246, 0.5);
+            background: rgba(111, 99, 217, 0.5);
         }
 
         .vault-btn.success {
@@ -208,8 +208,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-            background: rgba(139, 92, 246, 0.1);
-            border: 4px dashed rgba(139, 92, 246, 0.5);
+            background: rgba(111, 99, 217, 0.1);
+            border: 4px dashed rgba(111, 99, 217, 0.5);
             display: none;
       align-items: center;
       justify-content: center;
@@ -229,16 +229,85 @@
 
         /* Vault Status */
         .vault-status {
-            margin-top: 20px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-            backdrop-filter: blur(10px);
+            margin-top: 24px;
+            padding: 24px;
+            background: var(--landing-card, rgba(255, 255, 255, 0.08));
+            border: 1px solid var(--landing-border, rgba(255, 255, 255, 0.12));
+            border-radius: 24px;
+            backdrop-filter: blur(18px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            flex-wrap: wrap;
+            box-shadow: 0 18px 38px rgba(3, 10, 24, 0.35);
         }
 
         .vault-status.unlocked {
-            background: rgba(16, 185, 129, 0.2);
-            border: 2px solid rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.24), rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.2));
+            border-color: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.45);
+            box-shadow: 0 22px 44px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.35);
+        }
+
+        .vault-status .status-main {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            text-align: left;
+            flex: 1 1 280px;
+        }
+
+        .vault-status .status-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.1);
+            color: var(--emma-text-strong, #ffffff);
+        }
+
+        .vault-status.unlocked .status-icon {
+            background: rgba(16, 185, 129, 0.22);
+            color: #10b981;
+        }
+
+        .vault-status .status-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .vault-status .status-headline {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            font-weight: 600;
+            color: var(--emma-text-strong, #ffffff);
+        }
+
+        .vault-status .status-subtext {
+            font-size: 0.92rem;
+            color: var(--emma-text-muted, rgba(255, 255, 255, 0.65));
+        }
+
+        .sync-status {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.15);
+            border: 1px solid rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.35);
+            color: var(--emma-text-strong, #ffffff);
+            box-shadow: 0 12px 26px rgba(2, 6, 23, 0.4);
+        }
+
+        .sync-status-icon {
+            font-size: 1.2rem;
         }
 
         /* Hidden file input */
@@ -274,52 +343,130 @@
     }
 
     #vaultStatus {
-      background: var(--landing-card);
-      border: 1px solid var(--landing-border);
-      border-radius: 18px;
-      padding: 16px;
+      /* Styling handled by .vault-status to keep branding consistent */
     }
 
     .vault-controls {
-      gap: 16px;
-      flex-wrap: wrap;
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      width: 100%;
     }
 
     .vault-btn {
-      background: var(--landing-card);
+      appearance: none;
       border: 1px solid var(--landing-border);
+      background: var(--landing-card);
       color: var(--emma-text-strong, #ffffff);
-      padding: 14px 28px;
-      border-radius: 14px;
-      backdrop-filter: blur(12px);
+      padding: 20px;
+      border-radius: 24px;
+      backdrop-filter: blur(18px);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+      min-height: 110px;
+      box-shadow: 0 16px 36px rgba(5, 6, 20, 0.35);
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .vault-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.12), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.25s ease;
     }
 
     .vault-btn:hover {
-      background: var(--landing-card-strong);
-      border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.35);
+      transform: translateY(-4px);
+      border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.45);
+    }
+
+    .vault-btn:hover::after {
+      opacity: 1;
+    }
+
+    .vault-btn .btn-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.45rem;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+    }
+
+    .vault-btn .btn-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .vault-btn .btn-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .vault-btn .btn-desc {
+      font-size: 0.88rem;
+      color: var(--emma-text-muted, rgba(255, 255, 255, 0.65));
     }
 
     .vault-btn.primary {
-      background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.9), rgba(var(--emma-accent-secondary-rgb, 236, 72, 153), 0.85));
+      background: linear-gradient(135deg, rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.95), rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.85));
       border-color: transparent;
-      box-shadow: 0 12px 36px rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.45);
+      box-shadow: 15pxrgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.38);
+      color: #ffffff;
+    }
+
+    .vault-btn.primary .btn-icon {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .vault-btn.primary .btn-desc {
+      color: rgba(255, 255, 255, 0.85);
     }
 
     .vault-btn.warning {
+      background: rgba(251, 191, 36, 0.12);
+      border-color: rgba(251, 191, 36, 0.45);
+      color: #fcd34d;
+      box-shadow: 15pxrgba(251, 191, 36, 0.22);
+    }
+
+    .vault-btn.warning .btn-icon {
       background: rgba(251, 191, 36, 0.2);
-      border-color: rgba(251, 191, 36, 0.5);
       color: #fbbf24;
     }
 
     .vault-btn.success {
-      background: rgba(16, 185, 129, 0.25);
-      border-color: rgba(16, 185, 129, 0.55);
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: #d1fae5;
+      box-shadow: 15pxrgba(16, 185, 129, 0.22);
+    }
+
+    .vault-btn.success .btn-icon {
+      background: rgba(16, 185, 129, 0.2);
       color: #10b981;
     }
 
     .drag-drop-zone {
-      background: rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.15);
-      border: 3px dashed rgba(var(--emma-accent-primary-rgb, 139, 92, 246), 0.5);
+      background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.15);
+      border: 3px dashed rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.5);
     }
 
     .drag-drop-message {
@@ -339,36 +486,49 @@
 
                 <!-- Vault Status -->
         <div class="vault-status" id="vaultStatus">
-            <div id="vaultStatusText">🔒 No vault loaded</div>
+            <div class="status-main">
+                <div class="status-icon" id="vaultStatusIcon" aria-hidden="true">🔒</div>
+                <div class="status-copy">
+                    <div id="vaultStatusText" class="status-headline">No vault loaded</div>
+                    <div id="vaultStatusHelper" class="status-subtext">Connect your .emma vault to get started.</div>
+                </div>
+            </div>
             <!-- 🔥 CRITICAL: .emma File Sync Status Indicator -->
-            <div id="syncStatus" style="
-                margin-top: 10px;
-                padding: 8px 12px;
-                border-radius: 8px;
-                font-size: 14px;
-                text-align: center;
-                background: rgba(59, 130, 246, 0.2);
-                border: 1px solid rgba(59, 130, 246, 0.5);
-                display: none;
-            ">
-                <span id="syncStatusIcon">💾</span>
-                <span id="syncStatusText">Sync Status</span>
+            <div class="sync-status" id="syncStatus" aria-live="polite">
+                <span class="sync-status-icon" id="syncStatusIcon">💾</span>
+                <span id="syncStatusText" class="sync-status-text">Sync Status</span>
             </div>
         </div>
 
         <!-- Clean Vault Controls -->
         <div class="vault-controls">
             <button class="vault-btn primary" id="openVaultBtn">
-                &#128275; Open Vault
+                <span class="btn-icon" aria-hidden="true">🔓</span>
+                <span class="btn-text">
+                    <span class="btn-title">Open Vault</span>
+                    <span class="btn-desc">Load an existing .emma vault file and continue where you left off.</span>
+                </span>
             </button>
             <button class="vault-btn" id="createVaultBtn">
-                &#10024; Create New Vault
+                <span class="btn-icon" aria-hidden="true">✨</span>
+                <span class="btn-text">
+                    <span class="btn-title">Create New Vault</span>
+                    <span class="btn-desc">Start a pristine, encrypted memory vault on this browser.</span>
+                </span>
             </button>
             <button class="vault-btn warning" id="recoverVaultBtn">
-                &#128257; Recover Browser Backup
+                <span class="btn-icon" aria-hidden="true">🌀</span>
+                <span class="btn-text">
+                    <span class="btn-title">Recover Browser Backup</span>
+                    <span class="btn-desc">Restore the automatic local backup Emma keeps for safety.</span>
+                </span>
             </button>
             <button class="vault-btn success" id="goToDashboardBtn" style="display: none;">
-                &#10145; Go to Dashboard
+                <span class="btn-icon" aria-hidden="true">➡️</span>
+                <span class="btn-text">
+                    <span class="btn-title">Go to Dashboard</span>
+                    <span class="btn-desc">Jump back into your living desktop once your vault unlocks.</span>
+                </span>
               </button>
         </div>
 
@@ -428,6 +588,8 @@
                 this.orb = document.getElementById('emmaOrb');
                 this.vaultStatusDiv = document.getElementById('vaultStatus');
                 this.vaultStatusText = document.getElementById('vaultStatusText');
+                this.vaultStatusIcon = document.getElementById('vaultStatusIcon');
+                this.vaultStatusHelper = document.getElementById('vaultStatusHelper');
                 this.openVaultBtn = document.getElementById('openVaultBtn');
                 this.createVaultBtn = document.getElementById('createVaultBtn');
                 this.recoverVaultBtn = document.getElementById('recoverVaultBtn');
@@ -448,7 +610,7 @@
 
           } else {
                         console.warn('⚠️ Emma orb class not available, using CSS fallback');
-                        this.orb.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
+                        this.orb.style.background = 'radial-gradient(circle at 30% 30%, #6f63d9, #4f46e5, #deb3e4)';
                         this.orb.style.animation = 'orb-pulse 4s ease-in-out infinite';
           }
         } catch (error) {
@@ -698,14 +860,28 @@
                 if (this.vaultStatus === 'unlocked') {
                     this.orbContainer.classList.remove('vault-locked');
                     this.vaultStatusDiv.classList.add('unlocked');
-                    this.vaultStatusText.textContent = `🔓 ${this.currentVault.name} (${this.currentVault.stats?.memoryCount || 0} memories)`;
+                    const vaultName = this.currentVault?.name || 'Vault unlocked';
+                    const memoryCount = this.currentVault?.stats?.memoryCount || 0;
+                    this.vaultStatusText.textContent = `${vaultName} (${memoryCount} memories)`;
+                    if (this.vaultStatusIcon) {
+                        this.vaultStatusIcon.textContent = '🔓';
+                    }
+                    if (this.vaultStatusHelper) {
+                        this.vaultStatusHelper.textContent = 'Unlocked • Secure session active in this browser';
+                    }
 
                     // Show dashboard button for mobile users
                     this.goToDashboardBtn.style.display = 'block';
         } else {
                     this.orbContainer.classList.add('vault-locked');
                     this.vaultStatusDiv.classList.remove('unlocked');
-                    this.vaultStatusText.textContent = '🔒 No vault loaded';
+                    this.vaultStatusText.textContent = 'No vault loaded';
+                    if (this.vaultStatusIcon) {
+                        this.vaultStatusIcon.textContent = '🔒';
+                    }
+                    if (this.vaultStatusHelper) {
+                        this.vaultStatusHelper.textContent = 'Connect your .emma vault to continue.';
+                    }
 
                     // Hide dashboard button when locked
                     this.goToDashboardBtn.style.display = 'none';
@@ -807,8 +983,8 @@
                         padding: 30px;
                         max-width: 400px;
             width: 90%;
-                        border: 2px solid rgba(134, 88, 255, 0.3);
-                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                        border: 2px solid rgba(111, 99, 217, 0.3);
+                        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
                     `;
 
                     // SECURITY: Create DOM elements safely without innerHTML injection
@@ -835,7 +1011,7 @@
                                 <input type="password" id="emmaPassphrase" placeholder="Enter passphrase" required autofocus style="
                                     width: 100%;
                                     padding: 12px 16px;
-                                    border: 2px solid rgba(134, 88, 255, 0.3);
+                                    border: 2px solid rgba(111, 99, 217, 0.3);
                                     border-radius: 10px;
                                     background: rgba(255, 255, 255, 0.1);
                                     color: white;
@@ -847,7 +1023,7 @@
                                 <input type="password" id="emmaPassphraseConfirm" placeholder="Confirm passphrase" required style="
                                     width: 100%;
                                     padding: 12px 16px;
-                                    border: 2px solid rgba(134, 88, 255, 0.3);
+                                    border: 2px solid rgba(111, 99, 217, 0.3);
                                     border-radius: 10px;
                                     background: rgba(255, 255, 255, 0.1);
                                 color: white;
@@ -871,7 +1047,7 @@
                     cursor: pointer;
                                 ">Cancel</button>
                                 <button type="submit" style="
-                                    background: linear-gradient(135deg, #8B5CF6, #F093FB);
+                                    background: linear-gradient(135deg, #6F63D9, #DEB3E4);
                 border: none;
                 color: white;
                                     padding: 10px 20px;
@@ -1006,7 +1182,7 @@
                         
                         if (!syncStatusEl) return;
                         
-                        syncStatusEl.style.display = 'block';
+                        syncStatusEl.style.display = 'flex';
                         
                         switch(status) {
                             case 'syncing':

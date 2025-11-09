@@ -275,10 +275,10 @@
         const truncatedFingerprint = rawFingerprint ? `${sanitize(rawFingerprint.substring(0, 20))}${rawFingerprint.length > 20 ? '...' : ''}` : 'N/A';
         const identityDetails = newPerson.relationship === 'self'
           ? `
-            <div style="margin-top: 10px; padding: 10px; background: rgba(134, 88, 255, 0.1); border-radius: 8px;">
+            <div style="margin-top: 10px; padding: 10px; background: rgba(111, 99, 217, 0.1); border-radius: 8px;">
               <p style="margin: 0 0 5px 0;"><strong>Cryptographic Identity Created</strong></p>
               <p style="margin: 0; font-size: 12px;">Fingerprint: <code>${truncatedFingerprint}</code></p>
-              <button onclick="window.open('pages/people-emma.html', '_self')" style="margin-top: 10px; padding: 5px 10px; background: #8658ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              <button onclick="window.open('pages/people-emma.html', '_self')" style="margin-top: 10px; padding: 5px 10px; background: #6f63d9; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 View in People List
               </button>
             </div>

@@ -1275,7 +1275,7 @@ if (window.emmaUniversalInjected) {
             right: 24px !important;
             width: 56px !important;
             height: 56px !important;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%) !important;
             border: 2px solid white !important;
             border-radius: 50% !important;
             cursor: pointer !important;
@@ -1924,7 +1924,7 @@ if (window.emmaUniversalInjected) {
     createShader(type, source) { const shader = this.gl.createShader(type); this.gl.shaderSource(shader, source); this.gl.compileShader(shader); if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) { console.error('Shader compile error:', this.gl.getShaderInfoLog(shader)); this.gl.deleteShader(shader); return null; } return shader; }
     createProgram(vertexSource, fragmentSource) { const vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexSource); const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentSource); if (!vertexShader || !fragmentShader) return null; const program = this.gl.createProgram(); this.gl.attachShader(program, vertexShader); this.gl.attachShader(program, fragmentShader); this.gl.linkProgram(program); if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) { console.error('Program link error:', this.gl.getProgramInfoLog(program)); this.gl.deleteProgram(program); return null; } return program; }
     useFallback() {
-      this.container.innerHTML = '<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; animation: float 3s ease-in-out infinite;"></div>';
+      this.container.innerHTML = '<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; animation: float 3s ease-in-out infinite;"></div>';
     }
   }
 
@@ -2077,9 +2077,9 @@ if (window.emmaUniversalInjected) {
     style.textContent = `
       /* Emma CSS Variables (same as dashboard) */
       :root {
-        --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
         --emma-purple: #764ba2;
-        --emma-pink: #f093fb;
+        --emma-pink: #deb3e4;
         --emma-blue: #667eea;
       }
 
@@ -2167,7 +2167,7 @@ if (window.emmaUniversalInjected) {
       /* Header with Orb */
       .emma-panel-header {
         padding: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
         border-radius: 20px 20px 0 0;
         display: flex;
         justify-content: space-between;
@@ -2283,7 +2283,7 @@ if (window.emmaUniversalInjected) {
       .emma-action-card:hover {
         transform: translateY(-2px);
         background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(240, 147, 251, 0.3);
+        border-color: rgba(222, 179, 228, 0.3);
         box-shadow: 0 8px 24px rgba(118, 75, 162, 0.2);
       }
 
@@ -2364,9 +2364,9 @@ if (window.emmaUniversalInjected) {
 
       .analysis-value {
         font-size: 12px;
-        color: rgba(240, 147, 251, 0.9);
+        color: rgba(222, 179, 228, 0.9);
         font-weight: 600;
-        background: rgba(240, 147, 251, 0.1);
+        background: rgba(222, 179, 228, 0.1);
         padding: 4px 8px;
         border-radius: 6px;
       }
@@ -2854,11 +2854,11 @@ if (window.emmaUniversalInjected) {
     const panelOrb = document.getElementById('emma-panel-orb');
 
     if (floatingOrb) {
-      floatingOrb.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
+      floatingOrb.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
     }
 
     if (panelOrb) {
-      panelOrb.innerHTML = '<div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
+      panelOrb.innerHTML = '<div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
     }
 
   }
@@ -2875,7 +2875,7 @@ if (window.emmaUniversalInjected) {
 
     if (!window.EmmaOrb) {
       console.error('❌ NO EMMA ORB CLASS FOUND! Using fallback.');
-      orbContainer.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
+      orbContainer.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
       return;
     }
 
@@ -2892,7 +2892,7 @@ if (window.emmaUniversalInjected) {
       console.error('💥 FAILED TO CREATE YOUR ORB:', error);
       console.error('Error stack:', error.stack);
       // Beautiful gradient fallback
-      orbContainer.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
+      orbContainer.innerHTML = '<div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
     }
   }
 
@@ -2918,11 +2918,11 @@ if (window.emmaUniversalInjected) {
       } catch (error) {
         console.warn('Failed to initialize panel orb:', error);
         // Beautiful gradient fallback (NO BRAIN EMOJI!)
-        orbContainer.innerHTML = '<div style="width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
+        orbContainer.innerHTML = '<div style="width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
       }
     } else if (orbContainer) {
       // Beautiful gradient fallback (NO BRAIN EMOJI!)
-      orbContainer.innerHTML = '<div style="width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
+      orbContainer.innerHTML = '<div style="width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%); border-radius: 50%; box-shadow: 0 4px 16px rgba(118, 75, 162, 0.4); animation: float 3s ease-in-out infinite;"></div>';
     }
   }
 
@@ -3275,7 +3275,7 @@ if (window.emmaUniversalInjected) {
     try {
       const analysis = await emmaEngine.analyze();
       analysisDiv.innerHTML = `
-      <div style="padding: 12px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; font-size: 13px; color: white;">
+      <div style="padding: 12px; background: rgba(111, 99, 217, 0.1); border: 1px solid rgba(111, 99, 217, 0.3); border-radius: 12px; font-size: 13px; color: white;">
         <strong style="color: #a78bfa;">Page Analysis:</strong><br>
         <div style="margin-top: 8px; line-height: 1.4;">
           Type: <span style="color: #c4b5fd;">${context.type}</span> (${context.platform})<br>
@@ -3287,7 +3287,7 @@ if (window.emmaUniversalInjected) {
     } catch (error) {
       console.warn('Emma: Error updating analysis panel:', error);
       analysisDiv.innerHTML = `
-      <div style="padding: 12px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; font-size: 13px; color: white;">
+      <div style="padding: 12px; background: rgba(111, 99, 217, 0.1); border: 1px solid rgba(111, 99, 217, 0.3); border-radius: 12px; font-size: 13px; color: white;">
         <strong style="color: #a78bfa;">Page Analysis:</strong><br>
         <div style="margin-top: 8px; line-height: 1.4;">
           Type: <span style="color: #c4b5fd;">${context.type}</span> (${context.platform})<br>
@@ -4015,8 +4015,8 @@ if (window.emmaUniversalInjected) {
         }
         .emma-photo-selectable:hover {
           transform: scale(1.05) !important;
-          box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3) !important;
-          border: 3px solid #8b5cf6 !important;
+          box-shadow: 0 8px 25px rgba(111, 99, 217, 0.3) !important;
+          border: 3px solid #6f63d9 !important;
         }
         .emma-photo-selected {
           border: 3px solid #10b981 !important;
@@ -4045,7 +4045,7 @@ if (window.emmaUniversalInjected) {
           right: 20px !important;
           background: rgba(20, 20, 30, 0.95) !important;
           backdrop-filter: blur(20px) !important;
-          border: 1px solid rgba(139, 92, 246, 0.3) !important;
+          border: 1px solid rgba(111, 99, 217, 0.3) !important;
           border-radius: 16px !important;
           padding: 20px !important;
           color: white !important;
@@ -4952,7 +4952,7 @@ window.forceEmmaUI = function() {
           right: 24px !important;
           width: 56px !important;
           height: 56px !important;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%) !important;
           border: 2px solid white !important;
           border-radius: 50% !important;
           cursor: pointer !important;

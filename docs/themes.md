@@ -50,7 +50,7 @@ export const EMMA_THEMES = [
     description: 'Signature purple gradient with deep-space background.',
     preview: {
       primary: '#7c3aed',
-      secondary: '#f093fb',
+      secondary: '#deb3e4',
       surface: '#0f0c29'
     },
     cssVars: {
