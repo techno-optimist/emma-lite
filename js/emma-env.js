@@ -78,7 +78,14 @@
 			return (protocol || 'https:') + '//' + loc.hostname + backendPortSegment;
 		}
 
-		return PROD_BACKEND_ORIGIN;
+		if (loc.origin) {
+			return normalizeOrigin(loc.origin);
+		}
+
+		var fallbackHost = hostname || 'emma-voice-backend.onrender.com';
+		var fallbackScheme = protocol || 'https:';
+		var fallbackPort = port ? (':' + port) : '';
+		return normalizeOrigin(fallbackScheme + '//' + fallbackHost + fallbackPort) || PROD_BACKEND_ORIGIN;
 	}
 
 	if (typeof window !== 'undefined') {
