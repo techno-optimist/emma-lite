@@ -216,7 +216,7 @@ class EmmaBrowserClient {
     try {
       const wsUrl = (typeof window.getEmmaBackendWsUrl === 'function')
         ? window.getEmmaBackendWsUrl()
-        : 'wss://emma-voice-backend.onrender.com/voice';
+        : 'wss://emma-lite-optimized.onrender.com/voice';
       
       console.log('🔗 Connecting to Emma agent...', wsUrl);
       

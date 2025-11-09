@@ -17,7 +17,7 @@ const VaultService = require('./lib/vault-service');
 const { getEmmaAppManifest, APP_NAME, APP_DEFAULT_MODEL } = require('./apps/emma-openai-app');
 
 const DEFAULT_DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
-const DEFAULT_PROD_ORIGINS = ['https://emma-hjc.onrender.com', 'https://emma-voice-backend.onrender.com','https://emma-lite-optimized.onrender.com'];
+const DEFAULT_PROD_ORIGINS = ['https://emma-lite-optimized.onrender.com'];
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') return null;
@@ -70,7 +70,7 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com", "https://emma-voice-backend.onrender.com", "https://cdn.jsdelivr.net"],
+      connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com", "https://cdn.jsdelivr.net", "https://emma-lite-optimized.onrender.com", "wss://emma-lite-optimized.onrender.com"],
       mediaSrc: ["'self'", "blob:", "data:"],
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:"]

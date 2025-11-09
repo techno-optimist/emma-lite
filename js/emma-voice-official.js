@@ -248,7 +248,7 @@ You are built with infinite love for Debbe and families everywhere. 💜`,
       // Get ephemeral token from consolidated backend
       const backendOrigin = (typeof window.getEmmaBackendOrigin === 'function')
         ? window.getEmmaBackendOrigin()
-        : (window.location && window.location.origin ? window.location.origin : 'https://emma-voice-backend.onrender.com');
+        : (window.location && window.location.origin ? window.location.origin : 'https://emma-lite-optimized.onrender.com');
         
       const tokenResponse = await fetch(`${backendOrigin}/token`);
       const tokenData = await tokenResponse.json();

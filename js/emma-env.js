@@ -25,7 +25,7 @@
 		try { window.EMMA_ENV = 'production'; window.EMMA_DEBUG = false; } catch (_) {}
 	}
 
-	var PROD_BACKEND_ORIGIN = 'https://emma-voice-backend.onrender.com';
+	var PROD_BACKEND_ORIGIN = 'https://emma-lite-optimized.onrender.com';
 
 	function isPrivateNetworkHost(host) {
 		if (!host) return false;
@@ -73,7 +73,7 @@
 			return scheme + '//' + resolvedHost + portSegment;
 		}
 
-		if (hostname === 'emma-voice-backend.onrender.com') {
+		if (hostname === 'emma-lite-optimized.onrender.com') {
 			var backendPortSegment = port ? (':' + port) : '';
 			return (protocol || 'https:') + '//' + loc.hostname + backendPortSegment;
 		}
@@ -82,7 +82,7 @@
 			return normalizeOrigin(loc.origin);
 		}
 
-		var fallbackHost = hostname || 'emma-voice-backend.onrender.com';
+		var fallbackHost = hostname || 'emma-lite-optimized.onrender.com';
 		var fallbackScheme = protocol || 'https:';
 		var fallbackPort = port ? (':' + port) : '';
 		return normalizeOrigin(fallbackScheme + '//' + fallbackHost + fallbackPort) || PROD_BACKEND_ORIGIN;

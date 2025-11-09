@@ -118,7 +118,7 @@ class EmmaRealtimeVoice {
       // Get ephemeral token (privacy-first)
       const backendOrigin = (typeof window.getEmmaBackendOrigin === 'function')
         ? window.getEmmaBackendOrigin()
-        : 'https://emma-voice-backend.onrender.com';
+        : 'https://emma-lite-optimized.onrender.com';
         
       const tokenResponse = await fetch(`${backendOrigin}/token`);
 
