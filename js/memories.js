@@ -4324,6 +4324,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  window.addEventListener('emmaMemoryDeleted', (event) => {
+    console.log('🗑️ CONSTELLATION: Memory deleted event received, refreshing...');
+    if (isConstellation || window.location.search.includes('constellation')) {
+      setTimeout(() => loadConstellationView(), 500);
+    } else {
+      refreshMemories();
+    }
+  });
+
   // Set up event listeners
   const searchInput = document.getElementById('search-input');
   if (searchInput) searchInput.addEventListener('input', filterMemories);

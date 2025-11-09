@@ -561,6 +561,16 @@
             }, 300); // Increased delay for better data consistency
           }
         });
+        window.addEventListener('emmaMemoryDeleted', (event) => {
+          console.log('🗋 DASHBOARD: Memory deleted event received, refreshing constellation');
+          
+          if (this.isConstellationMode) {
+            setTimeout(() => {
+              this.enterMemoryConstellation();
+              console.log('🗋 DASHBOARD: Constellation refreshed after memory deletion');
+            }, 300);
+          }
+        });
       }
 
       // Refresh UI elements that depend on vault status

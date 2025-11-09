@@ -7103,25 +7103,40 @@ RULES:
           <input type="file" class="media-file-input" multiple accept="image/*,video/*" style="display: none;">
         </div>
 
-        <div style="display: flex; gap: 15px; justify-content: flex-end;">
-          <button class="cancel-edit-btn" style="
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 24px;
+        <div style="display: flex; gap: 15px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+          <button class="delete-memory-btn" style="
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fee2e2;
+            padding: 12px 18px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-          ">Cancel</button>
-          <button class="save-edit-btn" style="
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-          ">💾 Save Changes</button>
+            margin-right: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          ">🗑️ Delete Memory</button>
+          <div style="display: flex; gap: 15px;">
+            <button class="cancel-edit-btn" style="
+              background: rgba(255, 255, 255, 0.2);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              color: white;
+              padding: 12px 24px;
+              border-radius: 8px;
+              cursor: pointer;
+              font-weight: 600;
+            ">Cancel</button>
+            <button class="save-edit-btn" style="
+              background: linear-gradient(135deg, #10b981, #059669);
+              border: none;
+              color: white;
+              padding: 12px 24px;
+              border-radius: 8px;
+              cursor: pointer;
+              font-weight: 600;
+            ">💾 Save Changes</button>
+          </div>
         </div>
       </div>
     `;
@@ -7226,6 +7241,7 @@ RULES:
     const closeBtn = editModal.querySelector('.close-edit-btn');
     const addMediaBtn = editModal.querySelector('.add-media-btn');
     const fileInput = editModal.querySelector('.media-file-input');
+    const deleteBtn = editModal.querySelector('.delete-memory-btn');
 
     // Close handlers (use the enhanced closeModal from above)
     closeBtn.addEventListener('click', closeModal);
@@ -7275,6 +7291,31 @@ RULES:
         this.showToast('❌ Failed to process files', 'error');
       }
     });
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        const confirmed = window.confirm('Are you sure you want to delete this memory from your vault?');
+        if (!confirmed) {
+          return;
+        }
+
+        const originalText = deleteBtn.textContent;
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+          await this.deleteMemoryRecord(memoryId, { memory });
+          closeModal();
+          this.showToast('🗑️ Memory deleted from your vault.', 'success');
+        } catch (error) {
+          console.error('🗑️ DELETE MEMORY ERROR:', error);
+          this.showToast('❌ Failed to delete memory', 'error');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = originalText;
+          return;
+        }
+      });
+    }
 
     // Remove attachment handlers
     editModal.querySelectorAll('.remove-attachment-btn').forEach(btn => {
@@ -7428,6 +7469,69 @@ RULES:
 
     // Focus title input
     setTimeout(() => titleInput.focus(), 100);
+  }
+
+  async deleteMemoryRecord(memoryId, { memory } = {}) {
+    const targetId = memoryId || memory?.id;
+    if (!targetId) {
+      throw new Error('Memory id required for deletion');
+    }
+
+    const webVault = window.emmaWebVault;
+    let deletedFromVault = false;
+
+    if (webVault && typeof webVault.deleteMemory === 'function' && webVault.isOpen && webVault.vaultData?.content?.memories?.[targetId]) {
+      await webVault.deleteMemory(targetId);
+      deletedFromVault = true;
+    } else if (webVault && webVault.vaultData?.content?.memories?.[targetId]) {
+      delete webVault.vaultData.content.memories[targetId];
+      deletedFromVault = true;
+    } else if (this.temporaryMemories.has(targetId)) {
+      this.temporaryMemories.delete(targetId);
+    }
+
+    this.temporaryMemories.delete(targetId);
+    this.enrichmentState.delete(targetId);
+
+    window.dispatchEvent(new CustomEvent('emmaMemoryDeleted', {
+      detail: {
+        memoryId: targetId,
+        source: 'emma-chat-edit',
+        timestamp: Date.now(),
+        deletedFromVault
+      }
+    }));
+
+    window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+      detail: {
+        memoryId: targetId,
+        source: 'emma-chat-edit',
+        timestamp: Date.now(),
+        action: 'delete'
+      }
+    }));
+
+    if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+      if (window.emmaDashboard.isConstellationMode) {
+        setTimeout(() => {
+          try {
+            window.emmaDashboard.enterMemoryConstellation();
+          } catch (error) {
+            console.warn('emmaDashboard constellation refresh failed:', error);
+          }
+        }, 250);
+      }
+    } else if (typeof window.loadConstellationView === 'function') {
+      setTimeout(() => {
+        try {
+          window.loadConstellationView();
+        } catch (error) {
+          console.warn('Constellation refresh failed:', error);
+        }
+      }, 250);
+    }
+
+    return { deletedFromVault };
   }
 
   /**
