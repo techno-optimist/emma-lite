@@ -28,6 +28,7 @@ class EmmaBrowserClient {
       ? this.options.apiKey.trim()
       : null;
     this._lastSentApiKey = undefined;
+    this.voicePlaybackEnabled = true;
     
     console.log('🎙️ Emma Browser Client initialized');
 
@@ -360,7 +361,7 @@ class EmmaBrowserClient {
    */
   speak(text) {
     try {
-      if (!this.synth) return;
+      if (!this.synth || !this.voicePlaybackEnabled) return;
       // Stop any queued utterances for snappy response
       this.synth.cancel();
       const utter = new SpeechSynthesisUtterance(text);
@@ -418,6 +419,10 @@ class EmmaBrowserClient {
           case 'emma_audio':
             // High-quality server-synthesized audio (mp3 base64) - PRIORITY PLAYBACK
             if (message.audio && message.encoding === 'base64/mp3') {
+              if (!this.voicePlaybackEnabled) {
+                console.log('🔇 Voice playback muted - skipping server audio');
+                return;
+              }
               try {
                 console.log('🎤 Playing OpenAI TTS audio (Alloy voice)');
                 
@@ -981,6 +986,9 @@ class EmmaBrowserClient {
   }
 
   playAudioFallback(base64Audio) {
+    if (!this.voicePlaybackEnabled) {
+      return;
+    }
     try {
       console.log('🎤 Trying Blob URL fallback for audio playback');
       
@@ -1016,6 +1024,22 @@ class EmmaBrowserClient {
       // Final fallback to browser TTS
       this.speak(this.lastEmmaText || 'I\'m having trouble with my voice right now.');
     }
+  }
+
+  setVoicePlaybackEnabled(enabled) {
+    const normalized = Boolean(enabled);
+    if (this.voicePlaybackEnabled === normalized) {
+      return;
+    }
+    this.voicePlaybackEnabled = normalized;
+    if (!this.voicePlaybackEnabled && this.synth) {
+      try {
+        this.synth.cancel();
+      } catch (_) {
+        // ignore cancellation errors
+      }
+    }
+    console.log(`🔊 Emma voice playback ${this.voicePlaybackEnabled ? 'enabled' : 'muted'}`);
   }
 }
 

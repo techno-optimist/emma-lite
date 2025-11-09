@@ -161,45 +161,61 @@ class EmmaServerAgent {
   }
 
   /**
-   * Request a tool execution from the browser client.
+   * Execute an Emma tool, preferring the server-side vault when available.
    */
-  requestBrowserTool(toolName, params) {
-    const canUseBrowser = this.browserWs && this.browserWs.readyState === WebSocket.OPEN;
+  async requestBrowserTool(toolName, params) {
+    const canUseVault = this.vaultService && this.vaultService.canExecute(toolName);
 
-    if (canUseBrowser) {
-      return new Promise((resolve, reject) => {
-        const callId = `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-
-        const timeout = setTimeout(() => {
-          this.pendingToolCalls.delete(callId);
-          reject(new Error(`Tool execution timeout for ${toolName}`));
-        }, 30000);
-
-        this.pendingToolCalls.set(callId, {
-          resolve: (value) => {
-            clearTimeout(timeout);
-            resolve(value);
-          },
-          reject: (error) => {
-            clearTimeout(timeout);
-            reject(error);
-          }
-        });
-
-        this.sendToBrowser({
-          type: 'tool_request',
-          call_id: callId,
-          tool_name: toolName,
-          parameters: params
-        });
-      });
+    if (canUseVault) {
+      try {
+        return await this.vaultService.execute(toolName, params);
+      } catch (error) {
+        console.warn(`Vault tool execution failed for ${toolName}:`, error?.message || error);
+        if (!this.canUseBrowserTools()) {
+          throw error;
+        }
+        console.warn(`Falling back to browser execution for ${toolName}`);
+      }
     }
 
-    if (this.vaultService && this.vaultService.canExecute(toolName)) {
-      return this.vaultService.execute(toolName, params);
+    if (this.canUseBrowserTools()) {
+      return this.executeToolViaBrowser(toolName, params);
     }
 
     throw new Error('No available execution path for requested tool');
+  }
+
+  canUseBrowserTools() {
+    return this.browserWs && this.browserWs.readyState === WebSocket.OPEN;
+  }
+
+  executeToolViaBrowser(toolName, params) {
+    return new Promise((resolve, reject) => {
+      const callId = `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+      const timeout = setTimeout(() => {
+        this.pendingToolCalls.delete(callId);
+        reject(new Error(`Tool execution timeout for ${toolName}`));
+      }, 30000);
+
+      this.pendingToolCalls.set(callId, {
+        resolve: (value) => {
+          clearTimeout(timeout);
+          resolve(value);
+        },
+        reject: (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+
+      this.sendToBrowser({
+        type: 'tool_request',
+        call_id: callId,
+        tool_name: toolName,
+        parameters: params
+      });
+    });
   }
 
   /**
@@ -211,14 +227,8 @@ class EmmaServerAgent {
     }
 
     const input = [
-      {
-        role: 'system',
-        content: [{ type: 'text', text: this.buildSystemPrompt() }]
-      },
-      ...this.chatHistory.map((entry) => ({
-        role: entry.role,
-        content: [{ type: 'text', text: entry.content }]
-      }))
+      this.buildInputMessage('system', this.buildSystemPrompt()),
+      ...this.chatHistory.map((entry) => this.buildInputMessage(entry.role, entry.content))
     ];
 
     let response = await this.postToOpenAI('/v1/responses', {
@@ -254,6 +264,15 @@ class EmmaServerAgent {
     }
 
     return this.extractResponseText(response);
+  }
+
+  buildInputMessage(role, text) {
+    const normalized = typeof text === 'string' ? text : '';
+    const contentType = role === 'assistant' ? 'output_text' : 'input_text';
+    return {
+      role,
+      content: [{ type: contentType, text: normalized }]
+    };
   }
 
   /**

@@ -65,6 +65,8 @@ class EmmaChatExperience extends ExperiencePopup {
     this.initialWelcomeTimeout = null;
     this.localWelcomeShown = false;
     this.remoteGreetingReceived = false;
+    this.voicePlaybackEnabled = true;
+    this.voiceToggleButton = null;
 
     // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
@@ -246,6 +248,9 @@ class EmmaChatExperience extends ExperiencePopup {
       if (this.emmaVoice) {
         // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
+        if (typeof this.emmaVoice.setVoicePlaybackEnabled === 'function') {
+          this.emmaVoice.setVoicePlaybackEnabled(this.voicePlaybackEnabled);
+        }
         this.syncVoiceApiKey(true);
 
         // Connect voice button to Emma's voice system
@@ -545,6 +550,13 @@ class EmmaChatExperience extends ExperiencePopup {
     `;
 
     contentElement.innerHTML = `
+      <div class="emma-chat-toolbar">
+        <button class="voice-toggle is-on" id="voice-tts-toggle" aria-pressed="true">
+          <span class="voice-toggle-icon">🔊</span>
+          <span class="voice-toggle-label">Voice On</span>
+        </button>
+      </div>
+
       <!-- Settings button removed - clean chat interface -->
 
       <!-- Chat Messages -->
@@ -604,6 +616,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = document.getElementById('send-btn');
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
+    this.voiceToggleButton = document.getElementById('voice-tts-toggle');
     // Settings button removed - clean chat interface
 
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
@@ -619,6 +632,10 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
+    if (this.voiceToggleButton) {
+      this.voiceToggleButton.addEventListener('click', () => this.toggleVoicePlayback());
+      this.updateVoiceToggleUI();
+    }
 
     // Settings removed from chat - access via main settings panel
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
@@ -634,6 +651,34 @@ class EmmaChatExperience extends ExperiencePopup {
     
     // 🎯 Setup dynamic quick start prompts
     this.setupQuickStartPrompts();
+  }
+
+  toggleVoicePlayback() {
+    this.voicePlaybackEnabled = !this.voicePlaybackEnabled;
+    if (this.emmaVoice && typeof this.emmaVoice.setVoicePlaybackEnabled === 'function') {
+      this.emmaVoice.setVoicePlaybackEnabled(this.voicePlaybackEnabled);
+    }
+    this.updateVoiceToggleUI();
+    console.log(`🔊 Emma TTS ${this.voicePlaybackEnabled ? 'enabled' : 'muted'}`);
+  }
+
+  updateVoiceToggleUI() {
+    if (!this.voiceToggleButton) {
+      return;
+    }
+
+    const label = this.voiceToggleButton.querySelector('.voice-toggle-label');
+    const icon = this.voiceToggleButton.querySelector('.voice-toggle-icon');
+    this.voiceToggleButton.classList.toggle('is-on', this.voicePlaybackEnabled);
+    this.voiceToggleButton.classList.toggle('is-muted', !this.voicePlaybackEnabled);
+    this.voiceToggleButton.setAttribute('aria-pressed', this.voicePlaybackEnabled ? 'true' : 'false');
+    this.voiceToggleButton.setAttribute('title', this.voicePlaybackEnabled ? 'Emma will speak responses' : 'Emma voice muted');
+    if (label) {
+      label.textContent = this.voicePlaybackEnabled ? 'Voice On' : 'Voice Off';
+    }
+    if (icon) {
+      icon.textContent = this.voicePlaybackEnabled ? '🔊' : '🔇';
+    }
   }
 
   /**
