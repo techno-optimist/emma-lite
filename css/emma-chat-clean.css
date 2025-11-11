@@ -1948,3 +1948,320 @@
   position: relative;
   z-index: 1;
 }
+
+:root {
+  --memory-modal-background: var(--emma-bg-gradient);
+}
+
+:root[data-background="aurora"] {
+  --memory-modal-background: var(--emma-background-aurora);
+}
+
+:root[data-background="sunrise"] {
+  --memory-modal-background: var(--emma-background-sunrise);
+}
+
+:root[data-background="forest"] {
+  --memory-modal-background: var(--emma-background-forest);
+}
+
+:root[data-background="ocean"] {
+  --memory-modal-background: var(--emma-background-ocean);
+}
+
+:root[data-background="ember"] {
+  --memory-modal-background: var(--emma-background-ember);
+}
+
+:root[data-background="blossom"] {
+  --memory-modal-background: var(--emma-background-blossom);
+}
+
+:root[data-background="zen"] {
+  --memory-modal-background: var(--emma-background-zen);
+}
+
+/* Edit Memory Modal */
+.memory-edit-modal {
+  isolation: isolate;
+}
+
+.memory-edit-modal .edit-modal-content {
+  position: relative;
+  border-radius: 28px;
+  padding: clamp(28px, 5vw, 40px);
+  width: min(640px, 92vw);
+  max-height: min(820px, 85vh);
+  overflow-y: auto;
+  color: var(--emma-text-strong, #ffffff);
+  border: 1px solid rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.22);
+  background: linear-gradient(155deg, rgba(8, 10, 26, 0.78), rgba(5, 6, 18, 0.94)), var(--memory-modal-background);
+  background-blend-mode: overlay;
+  box-shadow:
+    0 32px 90px rgba(3, 2, 12, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(28px);
+  scroll-behavior: smooth;
+}
+
+.memory-edit-modal .edit-modal-content::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 18% 15%, rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.25), transparent 55%),
+    radial-gradient(circle at 75% 12%, rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.2), transparent 60%);
+  filter: blur(55px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.memory-edit-modal .edit-modal-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.memory-edit-modal .edit-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.memory-edit-modal .edit-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.35);
+  border-radius: 999px;
+}
+
+.memory-edit-modal .edit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.memory-edit-modal .edit-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--emma-text-strong, #ffffff);
+}
+
+.memory-edit-modal .close-edit-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--edit-modal-border);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.12);
+  color: var(--emma-text-strong, #ffffff);
+  cursor: pointer;
+  font-size: 22px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.memory-edit-modal .close-edit-btn:hover {
+  transform: scale(1.05);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.2);
+}
+
+.memory-edit-modal .edit-modal-field,
+.memory-edit-modal .edit-modal-section {
+  margin-bottom: 22px;
+}
+
+.memory-edit-modal .edit-modal-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--emma-text-standard, rgba(255, 255, 255, 0.85));
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.memory-edit-modal .edit-title-input,
+.memory-edit-modal .edit-content-textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.28);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.08);
+  color: var(--emma-text-strong, #ffffff);
+  font-size: 15px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.memory-edit-modal .edit-content-textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.memory-edit-modal .edit-title-input:focus,
+.memory-edit-modal .edit-content-textarea:focus {
+  outline: none;
+  border-color: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.85);
+  box-shadow: 0 0 0 3px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.25);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.15);
+}
+
+.memory-edit-modal .people-picker-container {
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.06);
+  border: 1px solid rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.12);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.memory-edit-modal .people-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.memory-edit-modal .people-picker-loading {
+  text-align: center;
+  font-size: 13px;
+  color: var(--emma-text-muted, rgba(255, 255, 255, 0.65));
+}
+
+.memory-edit-modal .edit-attachments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 14px;
+}
+
+.memory-edit-modal .attachment-card {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.08);
+  border: 1px dashed rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.memory-edit-modal .attachment-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.memory-edit-modal .attachment-fallback {
+  font-size: 28px;
+  color: var(--emma-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+.memory-edit-modal .remove-attachment-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--emma-danger, #f87171);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.memory-edit-modal .remove-attachment-btn:hover {
+  transform: scale(1.05);
+}
+
+.memory-edit-modal .add-media-btn {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  border: 2px dashed rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.6);
+  background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  color: var(--emma-text-strong, #ffffff);
+  font-weight: 600;
+}
+
+.memory-edit-modal .add-media-btn:hover,
+.memory-edit-modal .add-media-btn:focus-visible {
+  outline: none;
+  transform: translateY(-2px);
+  border-color: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.9);
+  background: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.25);
+}
+
+.memory-edit-modal .add-media-icon {
+  font-size: 28px;
+}
+
+.memory-edit-modal .add-media-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.memory-edit-modal .edit-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.memory-edit-modal .edit-modal-actions-right {
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.memory-edit-modal .delete-memory-btn,
+.memory-edit-modal .cancel-edit-btn,
+.memory-edit-modal .save-edit-btn {
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.memory-edit-modal .delete-memory-btn {
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.18);
+  color: var(--emma-danger, #f87171);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.memory-edit-modal .cancel-edit-btn {
+  border-color: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.25);
+  background: rgba(var(--emma-neutral-rgb, 255, 255, 255), 0.12);
+  color: var(--emma-text-strong, #ffffff);
+}
+
+.memory-edit-modal .save-edit-btn {
+  background: linear-gradient(120deg,
+      var(--emma-accent-primary, #6f63d9),
+      var(--emma-accent-secondary, #d06fa8));
+  color: var(--emma-text-on-accent, #ffffff);
+  box-shadow: 0 18px 40px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.4);
+}
+
+.memory-edit-modal .delete-memory-btn:hover,
+.memory-edit-modal .cancel-edit-btn:hover,
+.memory-edit-modal .save-edit-btn:hover {
+  transform: translateY(-1px);
+}
+
+.memory-edit-modal .save-edit-btn:active {
+  transform: translateY(0);
+}

@@ -6971,175 +6971,86 @@ RULES:
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: rgba(0, 0, 0, 0.95) !important;
+      background: rgba(var(--emma-neutral-inverse-rgb, 15, 15, 23), 0.94) !important;
       backdrop-filter: blur(20px) !important;
       overflow: hidden !important;
       overscroll-behavior: contain !important;
       touch-action: none !important;
     `;
 
+    const titleInputId = `edit-title-${memory.id}`;
+    const contentInputId = `edit-content-${memory.id}`;
+
     editModal.innerHTML = `
-      <div class="edit-modal-content" style="
-        background: linear-gradient(135deg, rgba(147, 112, 219, 0.95), rgba(123, 104, 238, 0.95));
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        overscroll-behavior: contain !important;
-        -webkit-overflow-scrolling: touch !important;
-        color: white;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        position: relative !important;
-        z-index: 15001 !important;
-        pointer-events: auto !important;
-        touch-action: pan-y !important;
-        scroll-behavior: smooth !important;
-      ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">Edit Memory</h2>
-          <button class="close-edit-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
+      <div class="edit-modal-content">
+        <div class="edit-modal-header">
+          <h2>Edit Memory</h2>
+          <button class="close-edit-btn" type="button" aria-label="Close edit memory modal">&times;</button>
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Title:</label>
-          <input type="text" class="edit-title-input" value="${memory.metadata?.title || memory.title || ''}" style="
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-          " placeholder="Enter memory title...">
+        <div class="edit-modal-field">
+          <label class="edit-modal-label" for="${titleInputId}">Title:</label>
+          <input
+            type="text"
+            id="${titleInputId}"
+            class="edit-title-input"
+            value="${memory.metadata?.title || memory.title || ''}"
+            placeholder="Enter memory title..."
+          >
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Content:</label>
-          <textarea class="edit-content-textarea" style="
-            width: 100%;
-            min-height: 120px;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: vertical;
-            box-sizing: border-box;
-          " placeholder="Describe this memory...">${memory.content || ''}</textarea>
+        <div class="edit-modal-field">
+          <label class="edit-modal-label" for="${contentInputId}">Content:</label>
+          <textarea
+            id="${contentInputId}"
+            class="edit-content-textarea"
+            placeholder="Describe this memory..."
+          >${memory.content || ''}</textarea>
         </div>
 
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">👥 Who is in this memory?</label>
-          <div class="people-picker-container" style="
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-          ">
-            <div class="people-picker-grid" style="
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-              gap: 15px;
-              margin-bottom: 15px;
-            ">
+        <div class="edit-modal-section">
+          <label class="edit-modal-label">&#128101; Who is in this memory?</label>
+          <div class="people-picker-container">
+            <div class="people-picker-grid">
               <!-- People will be loaded here -->
             </div>
-            <div style="text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+            <div class="people-picker-loading">
               Loading people from vault...
             </div>
           </div>
         </div>
 
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">📎 Attachments (${memory.attachments?.length || 0}):</label>
-          <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
+        <div class="edit-modal-section">
+          <label class="edit-modal-label">&#128206; Attachments (${memory.attachments?.length || 0}):</label>
+          <div class="edit-attachments-grid">
             ${(memory.attachments || []).map((attachment, index) => `
-              <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
+              <div class="attachment-card">
                 ${(attachment.data || attachment.dataUrl || attachment.url) ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;\\'>📷</div>'">
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div class=&quot;attachment-fallback&quot;>&#128247;</div>'">
                 ` : `
-                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;">📷</div>
+                  <div class="attachment-fallback">&#128247;</div>
                 `}
-                <button class="remove-attachment-btn" data-index="${index}" style="
-                  position: absolute;
-                  top: 4px;
-                  right: 4px;
-                  background: rgba(255, 0, 0, 0.8);
-                  border: none;
-                  color: white;
-                  width: 20px;
-                  height: 20px;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  font-size: 12px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                ">&times;</button>
+                <button class="remove-attachment-btn" type="button" data-index="${index}">&times;</button>
               </div>
             `).join('')}
-            <div style="
-              aspect-ratio: 1;
-              border: 2px dashed rgba(255, 255, 255, 0.4);
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              background: rgba(255, 255, 255, 0.05);
-              transition: all 0.3s ease;
-            " class="add-media-btn">
-              <span style="font-size: 24px; color: rgba(255, 255, 255, 0.6);">+</span>
+            <div class="add-media-btn" role="button" tabindex="0">
+              <span class="add-media-icon">+</span>
+              <span class="add-media-label">Add media</span>
             </div>
           </div>
-          <input type="file" class="media-file-input" multiple accept="image/*,video/*" style="display: none;">
+          <input type="file" class="media-file-input" multiple accept="image/*,video/*" hidden>
         </div>
 
-        <div style="display: flex; gap: 15px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
-          <button class="delete-memory-btn" style="
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.5);
-            color: #fee2e2;
-            padding: 12px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            margin-right: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          ">🗑️ Delete Memory</button>
-          <div style="display: flex; gap: 15px;">
-            <button class="cancel-edit-btn" style="
-              background: rgba(255, 255, 255, 0.2);
-              border: 1px solid rgba(255, 255, 255, 0.3);
-              color: white;
-              padding: 12px 24px;
-              border-radius: 8px;
-              cursor: pointer;
-              font-weight: 600;
-            ">Cancel</button>
-            <button class="save-edit-btn" style="
-              background: linear-gradient(135deg, #10b981, #059669);
-              border: none;
-              color: white;
-              padding: 12px 24px;
-              border-radius: 8px;
-              cursor: pointer;
-              font-weight: 600;
-            ">💾 Save Changes</button>
+        <div class="edit-modal-actions">
+          <button class="delete-memory-btn" type="button">&#128465; Delete Memory</button>
+          <div class="edit-modal-actions-right">
+            <button class="cancel-edit-btn" type="button">Cancel</button>
+            <button class="save-edit-btn" type="button">&#128190; Save Changes</button>
           </div>
         </div>
       </div>
     `;
+
 
     document.body.appendChild(editModal);
     

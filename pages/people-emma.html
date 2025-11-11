@@ -72,6 +72,38 @@
       height: 100%;
     }
 
+    :root {
+      --people-modal-background: var(--emma-bg-gradient);
+    }
+
+    :root[data-background="aurora"] {
+      --people-modal-background: var(--emma-background-aurora);
+    }
+
+    :root[data-background="sunrise"] {
+      --people-modal-background: var(--emma-background-sunrise);
+    }
+
+    :root[data-background="forest"] {
+      --people-modal-background: var(--emma-background-forest);
+    }
+
+    :root[data-background="ocean"] {
+      --people-modal-background: var(--emma-background-ocean);
+    }
+
+    :root[data-background="ember"] {
+      --people-modal-background: var(--emma-background-ember);
+    }
+
+    :root[data-background="blossom"] {
+      --people-modal-background: var(--emma-background-blossom);
+    }
+
+    :root[data-background="zen"] {
+      --people-modal-background: var(--emma-background-zen);
+    }
+
     /* Main Container */
     .people-container {
       position: relative;
@@ -433,9 +465,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      padding: clamp(24px, 6vh, 48px) clamp(18px, 4vw, 48px);
+      background: linear-gradient(140deg, rgba(4, 5, 16, 0.85), rgba(5, 6, 18, 0.92)), var(--people-modal-background);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      background-blend-mode: overlay;
       z-index: 1000;
       display: flex;
       align-items: center;
@@ -443,6 +477,7 @@
       opacity: 0;
       visibility: hidden;
       transition: all 0.3s ease;
+      isolation: isolate;
     }
 
     .modal-overlay.active {
@@ -450,24 +485,63 @@
       visibility: visible;
     }
 
+    .modal-overlay::before {
+      content: '';
+      position: absolute;
+      inset: clamp(16px, 3vw, 36px);
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at 22% 20%, rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.25), transparent 55%),
+        radial-gradient(circle at 78% 15%, rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.2), transparent 60%);
+      filter: blur(65px);
+      opacity: 0.65;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 0;
+    }
+
     .modal {
-      background: rgba(var(--emma-neutral-rgb), 0.1);
-      backdrop-filter: blur(30px);
-      -webkit-backdrop-filter: blur(30px);
-      border: 1px solid rgba(var(--emma-neutral-rgb), 0.2);
-      border-radius: 20px;
-      padding: 24px;
-      width: 90%;
-      max-width: 420px;
+      position: relative;
+      width: min(480px, 92vw);
       max-height: 85vh;
       overflow-y: auto;
+      padding: clamp(24px, 4vw, 36px);
+      border-radius: 26px;
+      border: 1px solid rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.2);
+      background: linear-gradient(150deg, rgba(10, 12, 28, 0.8), rgba(5, 6, 18, 0.95)), var(--people-modal-background);
+      background-blend-mode: overlay;
+      box-shadow:
+        0 28px 80px rgba(3, 2, 12, 0.65),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
       transform: scale(0.9) translateY(20px);
       transition: transform 0.3s ease;
-      position: relative;
+      color: var(--emma-text-strong, #ffffff);
+      isolation: isolate;
+      backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      z-index: 1;
     }
 
     .modal-overlay.active .modal {
       transform: scale(1) translateY(0);
+    }
+
+    .modal::before {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 15% 35%, rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.3), transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.25), transparent 60%);
+      filter: blur(50px);
+      opacity: 0.65;
+      pointer-events: none;
+    }
+
+    .modal > * {
+      position: relative;
+      z-index: 1;
     }
 
     .modal-header {
@@ -491,9 +565,9 @@
       position: absolute;
       top: 16px;
       right: 16px;
-      background: none;
-      border: none;
-      color: var(--emma-text-muted);
+      background: rgba(var(--emma-neutral-rgb), 0.12);
+      border: 1px solid rgba(var(--emma-neutral-rgb), 0.25);
+      color: var(--emma-text-strong, #ffffff);
       font-size: 20px;
       cursor: pointer;
       width: 32px;
@@ -506,8 +580,9 @@
     }
 
     .modal-close:hover {
-      background: rgba(var(--emma-neutral-rgb), 0.1);
-      color: white;
+      background: rgba(var(--emma-neutral-rgb), 0.2);
+      border-color: rgba(var(--emma-neutral-rgb), 0.35);
+      color: var(--emma-text-strong, #ffffff);
     }
 
     /* Form Styles */
