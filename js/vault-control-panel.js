@@ -139,8 +139,12 @@ class EmmaVaultControlPanel {
     modal.tabIndex = -1;
     
     modal.innerHTML = this.generateModalContent();
+    const dismissButton = this.createDismissButton();
     modalOverlay.appendChild(modal);
+    modalOverlay.appendChild(dismissButton);
     document.body.appendChild(modalOverlay);
+    document.documentElement.classList.add('vault-control-locked');
+    document.body.classList.add('vault-control-locked');
     this.triggerElement = document.getElementById('vaultControlShield');
     if (this.triggerElement) {
       this.triggerElement.setAttribute('aria-expanded', 'true');
@@ -178,11 +182,6 @@ class EmmaVaultControlPanel {
     const heroSignalText = (syncHeadline || 'Sync Status').replace(/[<>]/g, '').trim();
     
     return `
-      <button type="button" class="vault-control__dismiss" id="closeControlPanelIcon" aria-label="Close vault control panel">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
-        </svg>
-      </button>
       <div class="vault-control">
         <header class="vault-control__hero" aria-label="Vault overview">
           <div class="vault-hero">
@@ -191,30 +190,31 @@ class EmmaVaultControlPanel {
               <span class="vault-hero__signal-dot" data-state="${syncState}" aria-hidden="true"></span>
               <span class="vault-hero__signal-text">${heroSignalText || 'Sync Status'}</span>
             </div>
-            <div class="vault-hero__core">
-              <div class="vault-hero__icon" aria-hidden="true">\u{1F6E1}\uFE0F</div>
-              <div class="vault-hero__copy">
-                <span class="vault-hero__eyebrow">Emma Vault System</span>
-                <h2 id="vaultControlTitle" class="vault-hero__title">Vault Control Hub</h2>
-                <p class="vault-hero__subtitle">Curate, lock, and share your memory constellation with total confidence.</p>
+            <div class="vault-hero__grid">
+              <div class="vault-hero__core">
+                <div class="vault-hero__icon" aria-hidden="true">\u{1F6E1}\uFE0F</div>
+                <div class="vault-hero__copy">
+                  <h2 id="vaultControlTitle" class="vault-hero__title">Vault Control Hub</h2>
+                  <p class="vault-hero__subtitle">Curate, lock, and share your memory constellation with total confidence.</p>
+                </div>
               </div>
-            </div>
-            <div class="vault-hero__quickstats" aria-label="Vault at a glance">
-              <div class="vault-hero__stat">
-                <span>Memories</span>
-                <strong>${vaultInfo.memoryCount}</strong>
-              </div>
-              <div class="vault-hero__stat">
-                <span>People</span>
-                <strong>${vaultInfo.peopleCount}</strong>
-              </div>
-              <div class="vault-hero__stat">
-                <span>Media</span>
-                <strong>${vaultInfo.mediaCount}</strong>
-              </div>
-              <div class="vault-hero__stat">
-                <span>Last Sync</span>
-                <strong>${syncStatus.webAppLastSaved || 'Never'}</strong>
+              <div class="vault-hero__quickstats" aria-label="Vault at a glance">
+                <div class="vault-hero__stat">
+                  <span>Memories</span>
+                  <strong>${vaultInfo.memoryCount}</strong>
+                </div>
+                <div class="vault-hero__stat">
+                  <span>People</span>
+                  <strong>${vaultInfo.peopleCount}</strong>
+                </div>
+                <div class="vault-hero__stat">
+                  <span>Media</span>
+                  <strong>${vaultInfo.mediaCount}</strong>
+                </div>
+                <div class="vault-hero__stat">
+                  <span>Last Sync</span>
+                  <strong>${syncStatus.webAppLastSaved || 'Never'}</strong>
+                </div>
               </div>
             </div>
             <div class="vault-hero__meta" aria-label="Active vault">
@@ -224,10 +224,10 @@ class EmmaVaultControlPanel {
           </div>
         </header>
         
-        <!-- Vault Information -->
-        <section class="vault-section vault-section--info">
+        <div class="vault-control__sections">
+          <!-- Vault Information -->
+          <section class="vault-section vault-section--info">
           <div class="vault-section__header">
-            <span class="vault-section__eyebrow">Vault Overview</span>
             <div class="vault-section__headline">
               <span class="vault-section__icon" aria-hidden="true">\u{1F4C1}</span>
               <h3 class="vault-section__title">${vaultInfo.name}</h3>
@@ -253,10 +253,9 @@ class EmmaVaultControlPanel {
           </dl>
         </section>
         
-        <!-- Sync Status -->
-        <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};">
+          <!-- Sync Status -->
+          <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};">
           <div class="vault-section__header">
-            <span class="vault-section__eyebrow">Sync Intelligence</span>
             <div class="vault-section__headline">
               <span class="vault-section__icon" aria-hidden="true">\u{1F504}</span>
               <h3 class="vault-section__title">Sync Status</h3>
@@ -280,12 +279,12 @@ class EmmaVaultControlPanel {
             <strong>${syncHeadline}</strong>
             <span>${syncDescription}</span>
           </div>
-        </section>
+          </section>
+        </div>
         
         <!-- Vault Controls -->
         <section class="vault-section vault-section--controls">
           <div class="vault-section__header">
-            <span class="vault-section__eyebrow">Command Center</span>
             <div class="vault-section__headline">
               <span class="vault-section__icon" aria-hidden="true">\u2699\uFE0F</span>
               <h3 class="vault-section__title">Vault Controls</h3>
@@ -314,6 +313,23 @@ class EmmaVaultControlPanel {
         
       </div>
     `;
+  }
+
+  /**
+   * Create floating dismiss button
+   */
+  createDismissButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'closeControlPanelIcon';
+    button.className = 'vault-control__dismiss';
+    button.setAttribute('aria-label', 'Close vault control panel');
+    button.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    `;
+    return button;
   }
 
   /**
@@ -346,6 +362,14 @@ class EmmaVaultControlPanel {
     if (closeIcon) {
       closeIcon.addEventListener('click', () => this.closeControlPanel());
     }
+
+    modalOverlay.addEventListener('wheel', (event) => {
+      event.stopPropagation();
+    }, { passive: true });
+
+    modalOverlay.addEventListener('touchmove', (event) => {
+      event.stopPropagation();
+    }, { passive: true });
 
     modalOverlay.addEventListener('click', (event) => {
       if (event.target === modalOverlay) {
@@ -766,6 +790,9 @@ class EmmaVaultControlPanel {
         document.removeEventListener('keydown', this.boundEscapeHandler);
         this.boundEscapeHandler = null;
       }
+
+      document.documentElement.classList.remove('vault-control-locked');
+      document.body.classList.remove('vault-control-locked');
 
       if (overlay.parentNode) {
         overlay.parentNode.removeChild(overlay);

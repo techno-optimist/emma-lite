@@ -5,7 +5,6 @@
 .emma-button {
   --emma-button-gradient-start: rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.92);
   --emma-button-gradient-end: rgba(var(--emma-accent-secondary-rgb, 208, 111, 168), 0.72);
-  --emma-button-shadow: 0 14px 34px rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.28);
   --emma-button-border: rgba(255, 255, 255, 0.14);
   --emma-button-ink: var(--emma-text-on-accent, #0f1024);
 
@@ -23,7 +22,6 @@
   background: linear-gradient(135deg, var(--emma-button-gradient-start), var(--emma-button-gradient-end));
   border-radius: 999px;
   border: 1px solid var(--emma-button-border);
-  box-shadow: var(--emma-button-shadow);
   cursor: pointer;
   text-decoration: none;
   transition: transform 320ms cubic-bezier(0.18, 0.88, 0.26, 1),

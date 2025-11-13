@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -37,6 +37,10 @@
       box-sizing: border-box;
     }
 
+    html, body {
+      overflow-x: hidden;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--emma-gradient);
@@ -45,38 +49,44 @@
       padding: clamp(24px, 4vw, 48px);
     }
 
+    html.nav-drawer-open,
+    body.nav-drawer-open {
+      overflow: hidden;
+    }
+
     .settings-container {
-      max-width: 1180px;
+      width: 100%;
+      max-width: min(1180px, 100%);
       margin: 0 auto;
     }
 
     .settings-exit-fab {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 56px;
-      height: 56px;
+      top: clamp(20px, 4.5vh, 30px);
+      right: clamp(18px, 5vw, 28px);
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
-      border: 1px solid rgba(111, 99, 217, 0.4);
-      background: linear-gradient(135deg, rgba(111, 99, 217, 0.9), rgba(208, 111, 168, 0.85));
+      border: 1px solid rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.4);
+      background: linear-gradient(145deg, rgba(28, 32, 76, 0.96), rgba(111, 99, 217, 0.88));
       color: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       box-shadow:
-        0 12px 28px rgba(111, 99, 217, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.16);
-      backdrop-filter: blur(18px);
+        0 12px 24px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(16px);
       transition: transform 0.25s ease, box-shadow 0.25s ease;
-      z-index: 140;
+      z-index: 170;
       cursor: pointer;
     }
 
     .settings-exit-fab:hover {
-      transform: translateY(-4px);
+      transform: translateY(-3px);
       box-shadow:
-        15pxrgba(111, 99, 217, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        0 16px 36px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
     .settings-exit-fab svg {
@@ -88,19 +98,17 @@
 
     @media (max-width: 720px) {
       .settings-exit-fab {
-        width: 52px;
-        height: 52px;
-        bottom: 18px;
-        right: 18px;
+        width: 42px;
+        height: 42px;
+        top: clamp(20px, 4.5vh, 28px);
+        right: clamp(12px, 4vw, 20px);
       }
     }
 
     @media (max-width: 540px) {
       .settings-exit-fab {
-        width: 48px;
-        height: 48px;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 14px);
-        right: 16px;
+        top: clamp(18px, 4.5vh, 24px);
+        right: clamp(10px, 4vw, 16px);
       }
     }
 
@@ -109,6 +117,59 @@
       grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
       gap: clamp(28px, 4vw, 48px);
       align-items: start;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .settings-nav-toggle {
+      display: none;
+      position: fixed;
+      top: clamp(12px, 3vh, 20px);
+      left: clamp(14px, 5vw, 24px);
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(var(--emma-accent-primary-rgb), 0.6);
+      background: linear-gradient(145deg, rgba(24, 26, 60, 0.95), rgba(111, 99, 217, 0.85));
+      color: #fff;
+      cursor: pointer;
+      z-index: 210;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .settings-nav-toggle svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 1.6;
+    }
+
+    .settings-nav-toggle__label {
+      display: none;
+    }
+
+    .settings-nav-toggle:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(5, 6, 18, 0.4);
+    }
+
+    .settings-nav-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 3, 10, 0.75);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 180;
+    }
+
+    .settings-nav-scrim.is-active {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .settings-sidebar {
@@ -119,10 +180,13 @@
       border: 1px solid rgba(255, 255, 255, 0.14);
       background: linear-gradient(165deg, rgba(26, 26, 56, 0.82), rgba(10, 10, 32, 0.9));
       box-shadow:
-        15pxrgba(6, 4, 20, 0.5),
+        0 20px 48px rgba(6, 4, 20, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
       position: sticky;
       top: clamp(24px, 4vw, 48px);
+      max-height: calc(100vh - clamp(48px, 12vh, 120px));
+      overflow-y: auto;
+      scrollbar-gutter: stable;
     }
 
     .settings-sidebar__header {
@@ -189,7 +253,7 @@
 
     .settings-nav {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .settings-nav__item {
@@ -211,9 +275,7 @@
     }
 
     .settings-nav__item::after {
-      content: "\2192";
-      font-size: 0.8rem;
-      opacity: 0.6;
+      display: none;
     }
 
     .settings-nav__item.is-active,
@@ -244,14 +306,21 @@
       gap: clamp(24px, 3vw, 36px);
       position: relative;
       z-index: 1;
+      min-width: 0;
+      padding-top: clamp(72px, 9vw, 128px);
+      padding-bottom: clamp(140px, 12vw, 190px);
     }
 
     .settings-actions {
-      display: flex;
-      justify-content: flex-end;
+      position: fixed;
+      right: clamp(16px, 5vw, 32px);
+      bottom: clamp(28px, 8vw, 64px);
+      display: inline-flex;
       align-items: center;
-      margin-top: 8px;
-      padding-top: 12px;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 999px;
+      z-index: 160;
     }
 
     .settings-section {
@@ -268,17 +337,12 @@
       gap: 18px;
       overflow: hidden;
       scroll-margin-top: clamp(80px, 12vh, 120px);
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .settings-section::before {
-      content: attr(data-section-title);
-      position: absolute;
-      top: 22px;
-      left: 24px;
-      font-size: 0.72rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(198, 205, 250, 0.3);
+      content: none;
     }
 
     .settings-section::after {
@@ -647,10 +711,11 @@
     }
 
     .setting-item {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 18px;
-      align-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+      width: 100%;
       padding: 20px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -674,12 +739,19 @@
       line-height: 1.4;
     }
 
+    .setting-label {
+      max-width: none;
+      width: 100%;
+    }
+
     .toggle-switch {
       position: relative;
       display: inline-flex;
       align-items: center;
+      justify-content: flex-end;
       width: 64px;
       height: 32px;
+      flex-shrink: 0;
     }
 
     .toggle-switch input {
@@ -692,13 +764,18 @@
 
     .toggle-slider {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       display: block;
-      background: linear-gradient(125deg, rgba(24, 24, 52, 0.9), rgba(18, 20, 46, 0.78));
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(180, 188, 255, 0.12));
       border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       transition: all 0.35s cubic-bezier(0.3, 0.7, 0.4, 1.1);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
 
     .toggle-slider::before {
@@ -758,6 +835,52 @@
     .api-key-input:focus {
       border-color: var(--emma-purple);
       box-shadow: 0 0 0 2px rgba(111, 99, 217, 0.2);
+    }
+
+    .toggle-switch,
+    .status-indicator,
+    .api-key-button,
+    .emma-button {
+      align-self: flex-start;
+    }
+
+    .setting-label {
+      width: 100%;
+    }
+
+    .settings-section--ai .setting-item {
+      padding: 22px 0;
+    }
+
+    @media (max-width: 900px) {
+      .settings-section__header {
+        grid-template-columns: 1fr;
+        text-align: left;
+      }
+
+      .settings-section__headline .section-description {
+        max-width: none;
+      }
+
+      .settings-section--ai {
+        padding: clamp(24px, 6vw, 32px);
+      }
+
+      .settings-section--ai .setting-item > .emma-button,
+      .settings-section--ai .setting-item > .api-key-button,
+      .settings-section--ai .setting-item > .status-indicator,
+      .settings-section--ai .setting-item > .toggle-switch {
+        justify-self: flex-start;
+      }
+    }
+
+    @media (min-width: 1100px) {
+      .setting-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 18px;
+      }
     }
 
     .api-key-input::placeholder {
@@ -1122,44 +1245,76 @@
       }
     }
 
-      @media (max-width: 1100px) {
-        body {
-          padding-bottom: 120px;
-        }
+    @media (max-width: 1100px) {
+      body {
+        padding-bottom: 120px;
+        padding-left: clamp(20px, 5vw, 32px);
+        padding-right: clamp(20px, 5vw, 32px);
+      }
 
-        .settings-shell {
-          grid-template-columns: 1fr;
-        }
+      .settings-shell {
+        grid-template-columns: 1fr;
+        gap: clamp(20px, 5vw, 36px);
+      }
 
-        .settings-sidebar {
-        position: static;
-        order: -1;
+      .settings-sidebar {
+        position: fixed;
+        top: clamp(80px, 10vw, 140px);
+        left: clamp(18px, 6vw, 32px);
+        right: clamp(18px, 6vw, 32px);
+        bottom: clamp(16px, 6vh, 32px);
+        width: auto;
+        max-width: 90vw;
+        overflow-y: auto;
+        transform: translateX(-120%);
+        transition: transform 260ms ease;
+        z-index: 200;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      }
+
+      .settings-sidebar.is-open {
+        transform: translateX(0);
+      }
+
+      .settings-main {
+        order: 1;
+      }
+
+      .settings-nav-toggle {
+        display: inline-flex;
       }
     }
 
-      @media (max-width: 768px) {
-        body {
-          padding: 20px;
-          padding-bottom: calc(20px + 108px);
-        }
+    @media (max-width: 768px) {
+      body {
+        padding: var(--emma-page-gutter-mobile);
+        padding-bottom: calc(var(--emma-page-gutter-mobile) + 96px);
+      }
 
-        .settings-sidebar {
-          padding: 18px;
-        }
+      .settings-sidebar {
+        padding: 18px;
+        border-radius: 22px;
+      }
 
       .settings-nav__item {
-        font-size: 0.78rem;
+        font-size: 0.85rem;
       }
 
       .settings-section {
-        padding: 22px 20px;
+        padding: clamp(20px, 6vw, 28px);
+        border-radius: 22px;
       }
 
       .settings-section__header {
-        gap: 10px;
+        gap: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
       }
 
       .settings-section__glyph {
+        align-self: flex-start;
         width: 54px;
         height: 54px;
       }
@@ -1169,20 +1324,30 @@
       }
 
       .setting-item {
-        grid-template-columns: 1fr;
-        align-items: start;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
         gap: 12px;
+        padding: 16px 0;
+      }
+
+      .setting-item > *:last-child {
+        justify-self: end;
       }
 
       .settings-section--ai .setting-item {
-        padding: 20px;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: flex-start;
+        padding: 18px;
+        gap: 14px;
       }
 
-      .settings-section--ai .setting-item > .emma-button,
-      .settings-section--ai .setting-item > .api-key-button,
-      .settings-section--ai .setting-item > .status-indicator,
-      .settings-section--ai .setting-item > .toggle-switch {
-        justify-self: start;
+      .settings-section--ai .setting-item > *:last-child {
+        justify-self: flex-start;
+      }
+
+      .theme-gallery {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
 
       .settings-actions {
@@ -1193,34 +1358,74 @@
         width: 100%;
         justify-content: center;
       }
+    }
 
-      .status-indicator {
-        justify-self: stretch;
+    @media (max-width: 540px) {
+      .settings-actions {
+        width: calc(100% - clamp(32px, 10vw, 56px));
+        right: clamp(16px, 5vw, 28px);
+        left: clamp(16px, 5vw, 28px);
+        bottom: clamp(18px, 0vw, 48px);
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .settings-actions .btn {
+        flex: 1 1 100%;
+        justify-content: center;
+      }
+
+      .setting-label strong {
+        font-size: 15px;
+      }
+
+      .setting-label span {
+        font-size: 13px;
+      }
+
+      .theme-card {
+        min-height: 130px;
+      }
+
+      .background-options {
+        flex-direction: column;
+      }
+
+      .background-option {
+        min-width: 0;
+        width: 100%;
       }
     }
   </style>
 </head>
 <body>
   <div class="settings-container">
+    <button class="settings-nav-toggle" type="button" data-nav-toggle aria-expanded="false">
+      <span class="settings-nav-toggle__label">Settings Sections</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 6h16M4 12h16M4 18h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="settings-nav-scrim" data-nav-scrim></div>
     <div class="settings-shell">
       <aside class="settings-sidebar" aria-label="Settings navigation">
-        <a href="../dashboard.html" class="back-button">
+        <!-- <a href="../dashboard.html" class="back-button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m12 19-7-7 7-7"/>
             <path d="m19 12H5"/>
           </svg>
           Back to Emma
-        </a>
+        </a> -->
 
         <div class="settings-sidebar__header">
           <h1 class="emma-logo">emma</h1>
           <p class="settings-sidebar__subtitle">Configure your intelligent memory companion with a space that feels distinctly yours.</p>
         </div>
 
-        <div class="settings-sidebar__card">
+        <!-- <div class="settings-sidebar__card">
           <strong>Experience Tip</strong>
           <p>Backgrounds you choose now ripple through the vault and modal surfaces so every interaction stays on-theme.</p>
-        </div>
+        </div> -->
 
         <nav class="settings-nav" id="settings-nav" aria-label="Settings sections">
           <button type="button" class="settings-nav__item is-active" data-target="#section-visual">Visual Themes</button>
@@ -1427,7 +1632,6 @@
         <section id="section-ai" class="settings-section settings-section--ai" data-section-title="Intelligence">
           <div class="settings-section__halo" aria-hidden="true"></div>
           <div class="settings-section__header">
-            <span class="settings-section__glyph" aria-hidden="true">AI</span>
             <div class="settings-section__headline">
               <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">AI</span> Artificial Intelligence</h2>
               <p class="section-description">
@@ -1585,7 +1789,7 @@
                 <span>Adjust text size throughout Emma for better readability. Larger fonts reduce eye strain and improve accessibility.</span>
               </div>
               <div class="font-size-controls">
-                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">A−</button>
+                <button id="decrease-font" class="font-btn" title="Decrease font size (Ctrl + -)">Aâˆ’</button>
                 <span id="font-size-display" class="font-size-value">100%</span>
                 <button id="increase-font" class="font-btn" title="Increase font size (Ctrl + +)">A+</button>
                 <button id="reset-font" class="font-btn font-reset" title="Reset to default size (Ctrl + 0)">Reset</button>
@@ -2240,8 +2444,56 @@
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.querySelector('[data-nav-toggle]');
+      const sidebar = document.querySelector('.settings-sidebar');
+      const scrim = document.querySelector('[data-nav-scrim]');
+      const navButtons = document.querySelectorAll('.settings-nav__item');
+      const body = document.body;
+      const docEl = document.documentElement;
+
+      const closeNav = () => {
+        sidebar?.classList.remove('is-open');
+        scrim?.classList.remove('is-active');
+        toggle?.setAttribute('aria-expanded', 'false');
+        body.classList.remove('nav-drawer-open');
+        docEl.classList.remove('nav-drawer-open');
+      };
+
+      toggle?.addEventListener('click', () => {
+        const nowOpen = !sidebar?.classList.contains('is-open');
+        sidebar?.classList.toggle('is-open', nowOpen);
+        scrim?.classList.toggle('is-active', nowOpen);
+        toggle?.setAttribute('aria-expanded', String(nowOpen));
+        body.classList.toggle('nav-drawer-open', nowOpen);
+        docEl.classList.toggle('nav-drawer-open', nowOpen);
+      });
+
+      scrim?.addEventListener('click', closeNav);
+      navButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          closeNav();
+        });
+      });
+      const mq = window.matchMedia('(max-width: 1100px)');
+      const handleBreakpointChange = () => {
+        if (!mq.matches) {
+          closeNav();
+        }
+      };
+      mq.addEventListener?.('change', handleBreakpointChange);
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeNav();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
+
 
 
 
