@@ -351,15 +351,6 @@
       content: none;
     }
 
-    .settings-section::after {
-      content: '';
-      position: absolute;
-      inset: -48% -10% 72% -45%;
-      background: radial-gradient(circle at 0% 50%, rgba(var(--emma-accent-primary-rgb), 0.22), transparent 58%);
-      opacity: 0.55;
-      pointer-events: none;
-      z-index: 0;
-    }
 
     .settings-section__header {
       display: grid;
@@ -865,6 +856,16 @@
       .settings-section--ai .setting-item > .status-indicator,
       .settings-section--ai .setting-item > .toggle-switch {
         justify-self: flex-start;
+      }
+    }
+
+    @media (min-width: 901px) {
+      .settings-section__header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 16px;
       }
     }
 
@@ -1624,7 +1625,6 @@
 
         <!-- AI Configuration -->
         <section id="section-ai" class="settings-section settings-section--ai" data-section-title="Intelligence">
-          <div class="settings-section__halo" aria-hidden="true"></div>
           <div class="settings-section__header">
             <div class="settings-section__headline">
               <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">AI</span> Artificial Intelligence</h2>

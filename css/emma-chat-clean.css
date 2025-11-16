@@ -724,15 +724,6 @@
   z-index: 0;
 }
 
-.settings-section::after {
-  content: '';
-  position: absolute;
-  inset: -48% -10% 72% -45%;
-  background: radial-gradient(circle at 0% 50%, rgba(var(--emma-accent-primary-rgb), 0.22), transparent 58%);
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 0;
-}
 
 .settings-section h4 {
   margin: 28px 0 12px 0;
