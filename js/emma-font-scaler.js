@@ -399,7 +399,7 @@ class EmmaFontScaler {
           /* Ensure buttons remain tappable */
           button, .btn, .emma-btn {
             min-height: calc(44px * var(--emma-font-scale)) !important;
-            padding: calc(12px * var(--emma-font-scale)) calc(16px * var(--emma-font-scale)) !important;
+            padding: calc(12px * var(--emma-font-scale)) calc(10px * var(--emma-font-scale)) !important;
           }
         }
 

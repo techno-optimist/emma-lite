@@ -1523,6 +1523,38 @@
               this.startVoiceCapture();
             }, 2000); // Wait for dashboard to fully load
           }
+
+          if (urlParams.get('createMemory') === 'true') {
+            const personIdParam = urlParams.get('person');
+            const personNameParam = urlParams.get('personName');
+            const chatPrompt = personNameParam
+              ? `I'd love to help you capture a memory about ${personNameParam}. What moment would you like me to remember?`
+              : "I'd love to help you capture a new memory. What would you like me to remember?";
+
+            setTimeout(() => {
+              console.log('💬 AUTO-TRIGGERING: Emma Chat memory capture flow', {
+                personId: personIdParam,
+                personName: personNameParam
+              });
+              this.startEmmaChatExperience({
+                personId: personIdParam,
+                personName: personNameParam,
+                autoPrompt: chatPrompt,
+                focusInput: true
+              });
+            }, 2000);
+
+            // Remove params so chat doesn't auto-open again on refresh/navigation
+            urlParams.delete('createMemory');
+            urlParams.delete('person');
+            urlParams.delete('personName');
+
+            const remaining = urlParams.toString();
+            if (window.history && typeof window.history.replaceState === 'function') {
+              const newUrl = remaining ? `${window.location.pathname}?${remaining}` : window.location.pathname;
+              window.history.replaceState({}, '', newUrl);
+            }
+          }
         } catch (error) {
           console.warn('🔧 URL param handling failed (non-critical):', error);
           // Safe fallback - do nothing if URL parsing fails
@@ -1666,7 +1698,14 @@
         }
       }
 
-      async startEmmaChatExperience() {
+      async startEmmaChatExperience(options = {}) {
+
+        const {
+          autoPrompt = null,
+          personName = '',
+          personId = '',
+          focusInput = false
+        } = options || {};
 
         // Center chat in the middle of the page
         const viewportWidth = window.innerWidth;
@@ -1702,6 +1741,19 @@
 
         try {
           await this.emmaChatExperience.show();
+
+          if (personId) {
+            this.emmaChatExperience.pendingPersonId = personId;
+          }
+
+          const promptText = autoPrompt || (personName ? `I'd love to help you capture a memory about ${personName}. What moment would you like me to remember?` : null);
+          if (promptText && typeof this.emmaChatExperience.addMessage === 'function') {
+            this.emmaChatExperience.addMessage(promptText, 'emma');
+          }
+
+          if ((focusInput || promptText) && this.emmaChatExperience.inputField) {
+            this.emmaChatExperience.inputField.focus();
+          }
 
         } catch (error) {
           console.error('💬 Failed to open Emma Chat:', error);

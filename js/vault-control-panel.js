@@ -141,7 +141,12 @@ class EmmaVaultControlPanel {
     modal.innerHTML = this.generateModalContent();
     const dismissButton = this.createDismissButton();
     modalOverlay.appendChild(modal);
-    modalOverlay.appendChild(dismissButton);
+    const controlRoot = modal.querySelector('.vault-control');
+    if (controlRoot) {
+      controlRoot.insertAdjacentElement('afterbegin', dismissButton);
+    } else {
+      modal.appendChild(dismissButton);
+    }
     document.body.appendChild(modalOverlay);
     document.documentElement.classList.add('vault-control-locked');
     document.body.classList.add('vault-control-locked');
@@ -185,128 +190,134 @@ class EmmaVaultControlPanel {
       <div class="vault-control">
         <header class="vault-control__hero" aria-label="Vault overview">
           <div class="vault-hero">
-            <span class="vault-hero__glow" aria-hidden="true"></span>
-            <div class="vault-hero__signal" role="status">
-              <span class="vault-hero__signal-dot" data-state="${syncState}" aria-hidden="true"></span>
-              <span class="vault-hero__signal-text">${heroSignalText || 'Sync Status'}</span>
-            </div>
-            <div class="vault-hero__grid">
-              <div class="vault-hero__core">
-                <div class="vault-hero__icon" aria-hidden="true">\u{1F6E1}\uFE0F</div>
-                <div class="vault-hero__copy">
-                  <h2 id="vaultControlTitle" class="vault-hero__title">Vault Control Hub</h2>
-                  <p class="vault-hero__subtitle">Curate, lock, and share your memory constellation with total confidence.</p>
+            <div class="vault-hero__surface">
+              <span class="vault-hero__glow" aria-hidden="true"></span>
+              <div class="vault-hero__signal" role="status">
+                <span class="vault-hero__signal-dot" data-state="${syncState}" aria-hidden="true"></span>
+                <span class="vault-hero__signal-text">${heroSignalText || 'Sync Status'}</span>
+              </div>
+              <div class="vault-hero__grid">
+                <div class="vault-hero__core">
+                  <div class="vault-hero__icon" aria-hidden="true">\u{1F6E1}\uFE0F</div>
+                  <div class="vault-hero__copy">
+                    <h2 id="vaultControlTitle" class="vault-hero__title">Vault Control Hub</h2>
+                    <p class="vault-hero__subtitle">Curate, lock, and share your memory constellation with total confidence.</p>
+                  </div>
+                </div>
+                <div class="vault-hero__quickstats" aria-label="Vault at a glance">
+                  <div class="vault-hero__stat">
+                    <span>Memories</span>
+                    <strong>${vaultInfo.memoryCount}</strong>
+                  </div>
+                  <div class="vault-hero__stat">
+                    <span>People</span>
+                    <strong>${vaultInfo.peopleCount}</strong>
+                  </div>
+                  <div class="vault-hero__stat">
+                    <span>Media</span>
+                    <strong>${vaultInfo.mediaCount}</strong>
+                  </div>
+                  <div class="vault-hero__stat">
+                    <span>Last Sync</span>
+                    <strong>${syncStatus.webAppLastSaved || 'Never'}</strong>
+                  </div>
                 </div>
               </div>
-              <div class="vault-hero__quickstats" aria-label="Vault at a glance">
-                <div class="vault-hero__stat">
-                  <span>Memories</span>
-                  <strong>${vaultInfo.memoryCount}</strong>
-                </div>
-                <div class="vault-hero__stat">
-                  <span>People</span>
-                  <strong>${vaultInfo.peopleCount}</strong>
-                </div>
-                <div class="vault-hero__stat">
-                  <span>Media</span>
-                  <strong>${vaultInfo.mediaCount}</strong>
-                </div>
-                <div class="vault-hero__stat">
-                  <span>Last Sync</span>
-                  <strong>${syncStatus.webAppLastSaved || 'Never'}</strong>
-                </div>
+              <div class="vault-hero__meta" aria-label="Active vault">
+                <span class="vault-hero__chip">Active Vault</span>
+                <span class="vault-hero__name">${vaultInfo.name}</span>
               </div>
-            </div>
-            <div class="vault-hero__meta" aria-label="Active vault">
-              <span class="vault-hero__chip">Active Vault</span>
-              <span class="vault-hero__name">${vaultInfo.name}</span>
             </div>
           </div>
         </header>
         
-        <div class="vault-control__sections">
-          <!-- Vault Information -->
-          <section class="vault-section vault-section--info">
-          <div class="vault-section__header">
-            <div class="vault-section__headline">
-              <span class="vault-section__icon" aria-hidden="true">\u{1F4C1}</span>
-              <h3 class="vault-section__title">${vaultInfo.name}</h3>
+        <!-- Vault Information -->
+        <section class="vault-section vault-section--info">
+          <div class="vault-section__surface">
+            <div class="vault-section__header">
+              <div class="vault-section__headline">
+                <span class="vault-section__icon" aria-hidden="true">\u{1F4C1}</span>
+                <h3 class="vault-section__title">${vaultInfo.name}</h3>
+              </div>
             </div>
+            <dl class="vault-stats">
+              <div class="vault-stats__item">
+                <dt>\u{1F49D} Memories</dt>
+                <dd>${vaultInfo.memoryCount}</dd>
+              </div>
+              <div class="vault-stats__item">
+                <dt>\u{1F465} People</dt>
+                <dd>${vaultInfo.peopleCount}</dd>
+              </div>
+              <div class="vault-stats__item">
+                <dt>\u{1F4F7} Media</dt>
+                <dd>${vaultInfo.mediaCount}</dd>
+              </div>
+              <div class="vault-stats__item">
+                <dt>\u{1F4CA} Size</dt>
+                <dd>${vaultInfo.size}</dd>
+              </div>
+            </dl>
           </div>
-          <dl class="vault-stats">
-            <div class="vault-stats__item">
-              <dt>\u{1F49D} Memories</dt>
-              <dd>${vaultInfo.memoryCount}</dd>
-            </div>
-            <div class="vault-stats__item">
-              <dt>\u{1F465} People</dt>
-              <dd>${vaultInfo.peopleCount}</dd>
-            </div>
-            <div class="vault-stats__item">
-              <dt>\u{1F4F7} Media</dt>
-              <dd>${vaultInfo.mediaCount}</dd>
-            </div>
-            <div class="vault-stats__item">
-              <dt>\u{1F4CA} Size</dt>
-              <dd>${vaultInfo.size}</dd>
-            </div>
-          </dl>
         </section>
         
-          <!-- Sync Status -->
-          <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};">
-          <div class="vault-section__header">
-            <div class="vault-section__headline">
-              <span class="vault-section__icon" aria-hidden="true">\u{1F504}</span>
-              <h3 class="vault-section__title">Sync Status</h3>
+        <!-- Sync Status -->
+        <section class="vault-section vault-section--sync" data-sync-state="${syncState}" style="--vault-sync-accent: ${syncAccent};">
+          <div class="vault-section__surface">
+            <div class="vault-section__header">
+              <div class="vault-section__headline">
+                <span class="vault-section__icon" aria-hidden="true">\u{1F504}</span>
+                <h3 class="vault-section__title">Sync Status</h3>
+              </div>
+            </div>
+            <div class="vault-sync">
+              <div class="vault-sync__row">
+                <span class="vault-sync__label">\u{1F4BE} Web App</span>
+                <span class="vault-sync__value">${syncStatus.webAppLastSaved || 'Never saved'}</span>
+              </div>
+              <div class="vault-sync__row">
+                <span class="vault-sync__label">\u{1F4C1} Local File</span>
+                <span class="vault-sync__value">${syncStatus.localFileLastSaved || 'Never saved'}</span>
+              </div>
+              <div class="vault-sync__row">
+                <span class="vault-sync__label">\u2699\uFE0F Auto Save</span>
+                <span class="vault-sync__value">${syncStatus.autoSaveEnabled ? 'Enabled' : 'Disabled'}</span>
+              </div>
+            </div>
+            <div class="vault-sync__badge" aria-live="polite">
+              <strong>${syncHeadline}</strong>
+              <span>${syncDescription}</span>
             </div>
           </div>
-          <div class="vault-sync">
-            <div class="vault-sync__row">
-              <span class="vault-sync__label">\u{1F4BE} Web App</span>
-              <span class="vault-sync__value">${syncStatus.webAppLastSaved || 'Never saved'}</span>
-            </div>
-            <div class="vault-sync__row">
-              <span class="vault-sync__label">\u{1F4C1} Local File</span>
-              <span class="vault-sync__value">${syncStatus.localFileLastSaved || 'Never saved'}</span>
-            </div>
-            <div class="vault-sync__row">
-              <span class="vault-sync__label">\u2699\uFE0F Auto Save</span>
-              <span class="vault-sync__value">${syncStatus.autoSaveEnabled ? 'Enabled' : 'Disabled'}</span>
-            </div>
-          </div>
-          <div class="vault-sync__badge" aria-live="polite">
-            <strong>${syncHeadline}</strong>
-            <span>${syncDescription}</span>
-          </div>
-          </section>
-        </div>
-        
+        </section>
+      
         <!-- Vault Controls -->
         <section class="vault-section vault-section--controls">
-          <div class="vault-section__header">
-            <div class="vault-section__headline">
-              <span class="vault-section__icon" aria-hidden="true">\u2699\uFE0F</span>
-              <h3 class="vault-section__title">Vault Controls</h3>
+          <div class="vault-section__surface">
+            <div class="vault-section__header">
+              <div class="vault-section__headline">
+                <span class="vault-section__icon" aria-hidden="true">\u2699\uFE0F</span>
+                <h3 class="vault-section__title">Vault Controls</h3>
+              </div>
             </div>
-          </div>
-          <div class="vault-actions">
-            <button id="openVaultBtn" class="vault-button emma-button emma-button--neutral">
-              <span class="vault-button__icon" aria-hidden="true">\u{1F4C1}</span>
-              <span class="vault-button__label">Open Different Vault</span>
-            </button>
-            <button id="downloadVaultBtn" class="vault-button emma-button emma-button--affirmative">
-              <span class="vault-button__icon" aria-hidden="true">\u{1F4BE}</span>
-              <span class="vault-button__label">Download Updated Vault</span>
-            </button>
-            <button id="lockVaultBtn" class="vault-button emma-button emma-button--danger">
-              <span class="vault-button__icon" aria-hidden="true">\u{1F512}</span>
-              <span class="vault-button__label">Lock Vault</span>
-            </button>
-            <button id="vaultStatsBtn" class="vault-button emma-button emma-button--outline">
-              <span class="vault-button__icon" aria-hidden="true">\u{1F4CA}</span>
-              <span class="vault-button__label">Vault Statistics</span>
-            </button>
+            <div class="vault-actions">
+              <button id="openVaultBtn" class="vault-button emma-button emma-button--neutral">
+                <span class="vault-button__icon" aria-hidden="true">\u{1F4C1}</span>
+                <span class="vault-button__label">Open Different Vault</span>
+              </button>
+              <button id="downloadVaultBtn" class="vault-button emma-button emma-button--affirmative">
+                <span class="vault-button__icon" aria-hidden="true">\u{1F4BE}</span>
+                <span class="vault-button__label">Download Updated Vault</span>
+              </button>
+              <button id="lockVaultBtn" class="vault-button emma-button emma-button--danger">
+                <span class="vault-button__icon" aria-hidden="true">\u{1F512}</span>
+                <span class="vault-button__label">Lock Vault</span>
+              </button>
+              <button id="vaultStatsBtn" class="vault-button emma-button emma-button--outline">
+                <span class="vault-button__icon" aria-hidden="true">\u{1F4CA}</span>
+                <span class="vault-button__label">Vault Statistics</span>
+              </button>
+            </div>
           </div>
           <input type="file" id="vaultControlFileInput" accept=".emma" hidden>
         </section>

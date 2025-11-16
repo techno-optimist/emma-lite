@@ -565,16 +565,19 @@ class EmmaChatExperience extends ExperiencePopup {
     contentElement.style.cssText = `
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 8px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: white;
       position: relative;
       width: 100%;
       height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
       box-sizing: border-box;
       padding: 0;
       background: transparent;
       border: none;
+      overflow: hidden;
     `;
 
     contentElement.innerHTML = `
@@ -588,7 +591,7 @@ class EmmaChatExperience extends ExperiencePopup {
       <!-- Chat Input -->
       <div class="emma-chat-input">
         <div class="input-wrapper">
-          <button class="voice-btn" id="voice-input-btn" title="Voice input">
+          <button class="voice-btn" id="voice-input-btn" title="Voice input" aria-label="Start voice input" type="button">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -596,25 +599,20 @@ class EmmaChatExperience extends ExperiencePopup {
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <textarea
+          <input
+            type="text"
             id="chat-input"
             class="chat-textarea"
             placeholder="Ask Emma about your memories..."
-            rows="1"
             maxlength="2000"
-          ></textarea>
+          />
 
-          <button class="send-btn" id="send-btn" title="Send message">
+          <button class="send-btn" id="send-btn" title="Send message" aria-label="Send message" type="button">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
             </svg>
           </button>
         </div>
-
-
-
-        <!-- Add bottom spacing for input area - match top padding exactly -->
-        <div style="height: 32px;"></div>
       </div>
 
       <!-- Typing Indicator -->
@@ -658,6 +656,8 @@ class EmmaChatExperience extends ExperiencePopup {
       this.voiceToggleButton.dataset.toggleBound = 'true';
     }
     this.updateVoiceToggleUI();
+    this.autoResizeTextarea();
+    this.ensureResponsivePlaceholder();
 
     // Settings removed from chat - access via main settings panel
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
@@ -760,6 +760,10 @@ class EmmaChatExperience extends ExperiencePopup {
     if (promptMessage) {
       promptMessage.classList.add('emma-quick-start-prompts');
       promptMessage.id = 'quick-start-prompts-message';
+      const contentEl = promptMessage.querySelector('.message-content');
+      if (contentEl) {
+        contentEl.classList.add('quick-prompts-wrapper');
+      }
     }
 
     // Apply beautiful Emma-branded styling
@@ -783,6 +787,11 @@ class EmmaChatExperience extends ExperiencePopup {
       <style id="emma-quick-prompt-styles">
         .emma-quick-start-prompts {
           animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .quick-prompts-wrapper {
+          width: 100%;
+          max-width: none;
         }
         
         .quick-prompts-text {
@@ -906,6 +915,11 @@ class EmmaChatExperience extends ExperiencePopup {
             justify-content: center;
             min-height: 48px;
             font-size: 15px;
+          }
+
+          .emma-quick-prompt .prompt-text {
+            white-space: normal;
+            text-align: center;
           }
         }
 
@@ -2065,9 +2079,39 @@ class EmmaChatExperience extends ExperiencePopup {
 
   autoResizeTextarea() {
     const textarea = this.inputField;
+    if (!textarea) return;
+
+    if (textarea.tagName === 'INPUT') {
+      const computed = window.getComputedStyle(textarea);
+      const baseHeight = parseFloat(computed.lineHeight) || 34;
+      textarea.style.height = `${baseHeight}px`;
+      textarea.style.overflow = 'hidden';
+      return;
+    }
+
     textarea.style.height = 'auto';
+    const needsScroll = textarea.scrollHeight > 120;
     const scrollHeight = Math.min(textarea.scrollHeight, 120); // Max 5 lines
     textarea.style.height = scrollHeight + 'px';
+    textarea.style.overflowY = needsScroll ? 'auto' : 'hidden';
+  }
+
+  ensureResponsivePlaceholder() {
+    if (!this.inputField) return;
+    if (!this.placeholderUpdateHandler) {
+      this.placeholderUpdateHandler = () => {
+        if (!this.inputField) return;
+        const isMobile = window.innerWidth <= 480;
+        const desiredPlaceholder = isMobile
+          ? 'Chat with Emma...'
+          : 'Ask Emma about your memories...';
+        if (this.inputField.placeholder !== desiredPlaceholder) {
+          this.inputField.placeholder = desiredPlaceholder;
+        }
+      };
+      window.addEventListener('resize', this.placeholderUpdateHandler);
+    }
+    this.placeholderUpdateHandler();
   }
 
   initializeVoiceRecognition() {

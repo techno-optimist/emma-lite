@@ -253,13 +253,6 @@
       z-index: 1;
     }
 
-        @media (max-width: 600px) {
-      .home-button {
-        bottom: 16px;
-        left: 16px;
-      }
-    }
-
 @media (max-width: 768px) {
       .people-container {
         padding: 24px 16px;
@@ -577,6 +570,9 @@
       align-items: center;
       justify-content: center;
       transition: all 0.3s ease;
+      z-index: 2;
+      pointer-events: auto;
+      touch-action: manipulation;
     }
 
     .modal-close:hover {
@@ -724,6 +720,7 @@
       display: flex;
       gap: 12px;
       margin-top: 24px;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -735,6 +732,10 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      display: inline-flex;
     }
 
     .btn-primary {
@@ -758,33 +759,37 @@
       color: white;
     }
 
-    /* Home Button */
-    .home-button {
+    /* Page Exit Button */
+    .page-exit-fab {
       position: fixed;
-      bottom: 24px;
-      left: 24px;
-      width: 56px;
-      height: 56px;
+      top: clamp(20px, 4.5vh, 30px);
+      left: clamp(18px, 5vw, 28px);
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: 1px solid rgba(111, 99, 217, 0.4);
-      background: linear-gradient(135deg, rgba(111, 99, 217, 0.9), rgba(208, 111, 168, 0.85));
+      background: linear-gradient(145deg, rgba(28, 32, 76, 0.96), rgba(111, 99, 217, 0.88));
       color: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 18px 36px rgba(111, 99, 217, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-      backdrop-filter: blur(18px);
+      box-shadow:
+        0 12px 24px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(16px);
       transition: transform 0.25s ease, box-shadow 0.25s ease;
-      z-index: 120;
+      z-index: 170;
       cursor: pointer;
     }
 
-    .home-button:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 24px 44px rgba(111, 99, 217, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    .page-exit-fab:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        0 16px 36px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
-    .home-button svg {
+    .page-exit-fab svg {
       width: 24px;
       height: 24px;
       stroke: currentColor;
@@ -792,20 +797,18 @@
     }
 
     @media (max-width: 720px) {
-      .home-button {
-        width: 52px;
-        height: 52px;
-        bottom: 18px;
-        left: 18px;
+      .page-exit-fab {
+        width: 42px;
+        height: 42px;
+        top: clamp(18px, 4.5vh, 28px);
+        left: clamp(12px, 4vw, 20px);
       }
     }
 
     @media (max-width: 540px) {
-      .home-button {
-        width: 48px;
-        height: 48px;
-        bottom: calc(env(safe-area-inset-bottom, 0) + 14px);
-        left: 16px;
+      .page-exit-fab {
+        top: clamp(16px, 4.5vh, 24px);
+        left: clamp(10px, 4vw, 16px);
       }
     }
 
@@ -939,12 +942,11 @@
     .person-detail-actions {
       display: flex;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     .person-detail-actions .btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: inline-flex;
     }
 
     /* Edit Modal Specific Styles */
@@ -974,17 +976,11 @@
     .btn-danger {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
-      flex: 0 0 auto;
-      min-width: 100px;
     }
 
     .btn-danger:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);
-    }
-
-    .form-actions .btn-danger {
-      margin-right: auto;
     }
 
     /* Responsive - iPad and smaller */
@@ -1048,13 +1044,24 @@
       }
 
       .form-actions {
+        flex-direction: column;
+        gap: 10px;
         margin-top: 20px;
+      }
+
+      .person-detail-actions {
+        flex-direction: column;
         gap: 10px;
       }
 
       .btn {
         padding: 10px;
         font-size: 0.85rem;
+        width: 100%;
+      }
+
+      .avatar-text {
+        font-size: 0.6rem;
       }
     }
   </style>
@@ -1069,6 +1076,12 @@
   <div class="neural-network">
     <canvas id="neural-canvas" class="neural-canvas"></canvas>
   </div>
+
+  <button class="page-exit-fab" type="button" onclick="window.location.href='../dashboard.html'" aria-label="Back to dashboard">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M19 12H5m7 7-7-7 7-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
   <!-- Main Container -->
   <div class="people-container">
@@ -1099,7 +1112,7 @@
   <!-- Add Person Modal -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
-      <button class="modal-close" onclick="closeAddPersonModal()">&times;</button>
+      <button class="modal-close" type="button" aria-label="Close add person modal" onclick="closeAddPersonModal()">&times;</button>
 
       <div class="modal-header">
         <h2 class="modal-title">Add New Person</h2>
@@ -1151,7 +1164,6 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeAddPersonModal()">Cancel</button>
           <button type="submit" class="btn btn-primary">Add Person</button>
         </div>
       </form>
@@ -1161,7 +1173,7 @@
   <!-- Person Detail Modal -->
   <div class="modal-overlay" id="person-detail-modal">
     <div class="modal person-detail-modal">
-      <button class="modal-close" onclick="closePersonDetailModal()">&times;</button>
+      <button class="modal-close" type="button" aria-label="Close person details" onclick="closePersonDetailModal()">&times;</button>
 
       <div class="person-detail-header">
         <div class="person-detail-avatar" id="person-detail-avatar">
@@ -1198,14 +1210,8 @@
       </div>
 
       <div class="person-detail-actions">
-        <button class="btn btn-secondary" onclick="editPerson()">
-          <span>&#x1F4AC;</span>
-          Edit Person
-        </button>
-        <button class="btn btn-primary" onclick="createMemoryWithPerson()">
-          <span>?</span>
-          Create Memory
-        </button>
+        <button class="btn btn-secondary" onclick="editPerson()">Edit Person</button>
+        <button class="btn btn-primary" onclick="createMemoryWithPerson()">Create Memory</button>
       </div>
     </div>
   </div>
@@ -1213,7 +1219,7 @@
   <!-- Edit Person Modal -->
   <div class="modal-overlay" id="edit-person-modal">
     <div class="modal">
-      <button class="modal-close" onclick="closeEditPersonModal()">&times;</button>
+      <button class="modal-close" type="button" aria-label="Close edit person modal" onclick="closeEditPersonModal()">&times;</button>
 
       <div class="modal-header">
         <h2 class="modal-title">Edit Person</h2>
@@ -1270,24 +1276,12 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="btn btn-danger" onclick="deletePerson()">
-            <span>&#x1F5D1;</span>
-            Delete
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="closeEditPersonModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">
-            <span>&#x1F4AC;</span>
-            Save Changes
-          </button>
+          <button type="button" class="btn btn-danger" onclick="deletePerson()">Delete</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
         </div>
       </form>
     </div>
   </div>
-
-  <!-- Home Button -->
-  <button class="home-button" type="button" onclick="window.location.href='../dashboard.html'" aria-label="Back to dashboard">
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5.5a1 1 0 0 1-1-1v-5.5h-4V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
 
   <!-- Universal Vault Modal -->
   <!-- Web Vault System Scripts -->
@@ -2316,8 +2310,17 @@
     function createMemoryWithPerson() {
       if (!currentPerson) return;
 
-      // Navigate to memory creation with person pre-selected
-      window.location.href = `../dashboard.html?createMemory=true&person=${currentPerson.id}`;
+      const params = new URLSearchParams();
+      params.set('createMemory', 'true');
+      if (currentPerson.id) {
+        params.set('person', String(currentPerson.id));
+      }
+      if (currentPerson.name) {
+        params.set('personName', currentPerson.name.trim());
+      }
+
+      // Navigate to dashboard so Emma Chat can open with context
+      window.location.href = `../dashboard.html?${params.toString()}`;
     }
 
     // Close modal on overlay click

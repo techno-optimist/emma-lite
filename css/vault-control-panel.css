@@ -43,7 +43,6 @@
 }
 
 :root {
-:root {
   --vault-modal-background: var(--emma-bg-gradient);
 }
 
@@ -161,9 +160,9 @@ body.vault-control-locked {
 }
 
 .vault-control__dismiss {
-  position: fixed;
-  top: clamp(20px, 4vh, 32px);
-  right: clamp(20px, 4vw, 32px);
+  position: absolute;
+  top: clamp(18px, 3vw, 28px);
+  right: clamp(18px, 3vw, 28px);
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -174,7 +173,7 @@ body.vault-control-locked {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 11002;
+  z-index: 5;
   box-shadow:
     0 12px 24px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -207,16 +206,16 @@ body.vault-control-locked {
   .vault-control__dismiss {
     width: 44px;
     height: 44px;
-    top: clamp(18px, 4vh, 28px);
-    right: clamp(16px, 4vw, 24px);
+    top: clamp(16px, 4vh, 26px);
+    right: clamp(14px, 4vw, 22px);
   }
 }
 
 @media (max-width: 540px) {
   .vault-control__dismiss {
     height: 40px;
-    top: clamp(16px, 4vh, 24px);
-    right: clamp(12px, 4vw, 20px);
+    top: clamp(14px, 4vh, 22px);
+    right: clamp(10px, 4vw, 18px);
   }
 }
 
@@ -254,20 +253,16 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
   scrollbar-gutter: stable both-edges;
 }
 
-.vault-control__sections {
-  display: grid;
-  gap: clamp(20px, 2vw, 28px);
-}
-
 .vault-control::after {
   content: '';
   position: absolute;
-  inset: -18% -12% 35% -12%;
+  inset: -22% -16% -18% -16%;
   background:
     radial-gradient(circle at 12% 12%, rgba(var(--emma-accent-primary-rgb, 111, 99, 217), 0.32), transparent 50%),
-    radial-gradient(circle at 78% 0%, rgba(110, 211, 255, 0.22), transparent 58%);
-  opacity: 0.7;
-  filter: blur(50px);
+    radial-gradient(circle at 78% 0%, rgba(110, 211, 255, 0.22), transparent 58%),
+    radial-gradient(circle at 50% 85%, rgba(46, 82, 162, 0.2), transparent 62%);
+  opacity: 0.75;
+  filter: blur(70px);
   z-index: -1;
   pointer-events: none;
 }
@@ -278,6 +273,11 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
 }
 
 .vault-hero {
+  position: relative;
+  overflow: visible;
+}
+
+.vault-hero__surface {
   position: relative;
   display: grid;
   gap: 20px;
@@ -456,6 +456,11 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
 
 .vault-section {
   position: relative;
+  overflow: visible;
+}
+
+.vault-section__surface {
+  position: relative;
   border-radius: 24px;
   padding: 28px 28px 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -470,7 +475,7 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
   isolation: isolate;
 }
 
-.vault-section::after {
+.vault-section__surface::after {
   content: '';
   position: absolute;
   inset: -55% -10% 70% -35%;
@@ -568,24 +573,24 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
   letter-spacing: 0.01em;
 }
 
-.vault-section--sync {
+.vault-section--sync .vault-section__surface {
   --vault-sync-accent: var(--emma-accent-primary, #6f63d9);
   background: linear-gradient(160deg, rgba(24, 26, 56, 0.92) 0%, rgba(18, 19, 46, 0.88) 62%, rgba(12, 13, 38, 0.94) 100%);
 }
 
-.vault-section--sync[data-sync-state="clean"] {
+.vault-section--sync[data-sync-state="clean"] .vault-section__surface {
   --vault-sync-accent: var(--emma-success, #34d399);
 }
 
-.vault-section--sync[data-sync-state="dirty"] {
+.vault-section--sync[data-sync-state="dirty"] .vault-section__surface {
   --vault-sync-accent: var(--emma-warning, #f59e0b);
 }
 
-.vault-section--info {
+.vault-section--info .vault-section__surface {
   background: linear-gradient(150deg, rgba(28, 28, 64, 0.78), rgba(18, 18, 44, 0.9));
 }
 
-.vault-section--controls {
+.vault-section--controls .vault-section__surface {
   background: linear-gradient(150deg, rgba(22, 24, 52, 0.85), rgba(16, 18, 42, 0.9));
   border-color: rgba(255, 255, 255, 0.06);
   overflow: visible;
@@ -768,11 +773,7 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
     gap: 18px;
   }
 
-  .vault-hero__grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .vault-section {
+  .vault-section__surface {
     padding: 24px 22px 20px;
     border-radius: 22px;
     gap: 16px;
@@ -799,7 +800,7 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
     gap: 14px 16px;
   }
 
-  .vault-hero {
+  .vault-hero__surface {
     padding: clamp(22px, 7vw, 28px);
   }
 
@@ -870,7 +871,7 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
     right: 18px;
   }
 
-  .vault-section--controls {
+  .vault-section--controls .vault-section__surface {
     padding-bottom: 0;
   }
 
@@ -900,7 +901,7 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
 }
 
 @media (max-width: 480px) {
-  .vault-section {
+  .vault-section__surface {
     padding: 20px 18px;
   }
 
@@ -947,8 +948,7 @@ body[data-theme="light"] .vault-control__dismiss:focus-visible {
   }
 
   .vault-hero__grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
   }
 
 }
