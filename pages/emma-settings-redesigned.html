@@ -705,6 +705,16 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
+    .setting-item.is-disabled {
+      opacity: 0.4;
+      filter: grayscale(0.3);
+      pointer-events: none;
+    }
+
+    .setting-item.is-disabled .toggle-slider {
+      opacity: 0.5;
+    }
+
     .setting-item:last-child {
       border-bottom: none;
       padding-bottom: 0;
@@ -1755,10 +1765,11 @@
               </div>
             </div>
 
-            <div class="setting-item">
+            <div class="setting-item" id="auto-save-setting">
               <div class="setting-label">
                 <strong>Vault Auto-Save</strong>
                 <span>Automatically write updates to your .emma vault whenever memories or people change.</span>
+                <span id="auto-save-disabled-reason" class="setting-help" style="display:none;"></span>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="auto-save-toggle" checked>
@@ -1912,6 +1923,9 @@
           };
           
           console.log('[Settings] Settings loaded:', this.settings);
+          if (!this.supportsDirectAutoSave()) {
+            this.settings.autoSaveEnabled = false;
+          }
         } catch (error) {
           console.error('[Settings] Failed to load settings:', error);
           this.settings = {
@@ -1923,6 +1937,9 @@
             highContrast: false,
             autoSaveEnabled: true
           };
+          if (!this.supportsDirectAutoSave()) {
+            this.settings.autoSaveEnabled = false;
+          }
         }
       }
 
@@ -1944,6 +1961,51 @@
           console.warn('[Settings] Unable to read auto-save preference:', error);
         }
         return true;
+      }
+
+            supportsDirectAutoSave() {
+        try {
+          if (window.emmaWebVault && typeof window.emmaWebVault.hasNativeFileSystemAccess === 'function') {
+            return window.emmaWebVault.hasNativeFileSystemAccess();
+          }
+        } catch (error) {
+          console.warn('[Settings] Unable to query vault capability:', error);
+        }
+        return typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function';
+      }
+
+      updateAutoSaveAvailability() {
+        const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const helper = document.getElementById('auto-save-disabled-reason');
+        const supported = this.supportsDirectAutoSave();
+
+        const wrapper = document.getElementById('auto-save-setting');
+
+        if (!supported) {
+          if (autoSaveToggle) {
+            autoSaveToggle.checked = false;
+            autoSaveToggle.disabled = true;
+          }
+          if (wrapper) {
+            wrapper.classList.add('is-disabled');
+          }
+          this.settings.autoSaveEnabled = false;
+          if (helper) {
+            helper.style.display = 'block';
+            helper.textContent = 'Your browser does not allow access to write to files directly. Emma will keep everything in this browser until you download the vault.';
+          }
+        } else {
+          if (autoSaveToggle) {
+            autoSaveToggle.disabled = false;
+          }
+          if (wrapper) {
+            wrapper.classList.remove('is-disabled');
+          }
+          if (helper) {
+            helper.style.display = 'none';
+            helper.textContent = '';
+          }
+        }
       }
 
       applyAutoSavePreference(enabled) {
@@ -1974,7 +2036,9 @@
       saveSettings() {
         try {
           localStorage.setItem('emmaSettings', JSON.stringify(this.settings));
-          this.applyAutoSavePreference(this.settings.autoSaveEnabled !== false);
+          const directSaveAllowed = this.supportsDirectAutoSave();
+          const autoSaveEnabled = directSaveAllowed && this.settings.autoSaveEnabled !== false;
+          this.applyAutoSavePreference(autoSaveEnabled);
           console.log('[Settings] Settings saved:', this.settings);
           this.showToast('Settings saved successfully!', 'success');
         } catch (error) {
@@ -1999,6 +2063,8 @@
         if (reducedMotionToggle) reducedMotionToggle.checked = this.settings.reducedMotion || false;
         if (highContrastToggle) highContrastToggle.checked = this.settings.highContrast || false;
         if (autoSaveToggle) autoSaveToggle.checked = this.settings.autoSaveEnabled !== false;
+
+        this.updateAutoSaveAvailability();
         
         // Update font size
         this.updateFontSize();
@@ -2076,6 +2142,8 @@
             this.applyAutoSavePreference(enabled);
           });
         }
+
+        this.updateAutoSaveAvailability();
 
         // Font size controls
         const decreaseFont = document.getElementById('decrease-font');
