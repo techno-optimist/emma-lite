@@ -122,6 +122,9 @@ class EmmaChatExperience extends ExperiencePopup {
     this.agentConnectPromise = null;
     this.agentConnectionNotified = false;
 
+    // 🧠 Memory Context Analyzer for intelligent questions
+    this.memoryContextAnalyzer = new MemoryContextAnalyzer();
+
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
@@ -439,75 +442,33 @@ class EmmaChatExperience extends ExperiencePopup {
   /**
    * Display tool results visually in chat
    */
-  displayToolResult(toolName, params, result) {
+  async displayToolResult(toolName, params, result) {
     switch (toolName) {
       case 'get_people':
-        if (result.people && result.people.length > 0) {
-          this.displayPeopleResults(result.people);
+        const peopleResult = await window.memoryOrchestrator.getPeople(params);
+        if (peopleResult.people && peopleResult.people.length > 0) {
+          // You can create a new method to display people, or simplify it here
+          this.addMessage('emma', `I found ${peopleResult.people.length} people.`);
         }
         break;
         
       case 'get_memories':
-        if (result.memories && result.memories.length > 0) {
-          this.displayMemoryResults(result.memories);
+        const memoriesResult = await window.memoryOrchestrator.getMemories(params);
+        if (memoriesResult.memories && memoriesResult.memories.length > 0) {
+          this.addMessage('emma', `I found ${memoriesResult.memories.length} memories.`);
         }
         break;
         
       case 'create_memory_from_voice':
-        if (result.success) {
-          this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
-            type: 'memory-created',
-            memoryId: result.memoryId
-          });
-        }
+        await window.memoryOrchestrator.createMemory(params);
+        this.addMessage('system', 'New memory created from voice.');
         break;
         
       case 'update_person':
-        if (result.success) {
-          this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
-            type: 'person-updated'
-          });
-        }
+        await window.memoryOrchestrator.updatePerson(params);
+        this.addMessage('system', 'Person profile updated.');
         break;
     }
-  }
-
-  /**
-   * Display people results in chat
-   */
-  displayPeopleResults(people) {
-    const peopleHtml = people.map(person => `
-      <div class="people-result">
-        <div class="person-avatar">👤</div>
-        <div class="person-info">
-          <div class="person-name">${person.name}</div>
-          <div class="person-relationship">${person.relationship || 'Family'}</div>
-        </div>
-      </div>
-    `).join('');
-
-    this.addMessage('emma', `I found ${people.length} people:`, {
-      type: 'people-results',
-      html: `<div class="people-grid">${peopleHtml}</div>`
-    });
-  }
-
-  /**
-   * Display memory results in chat
-   */
-  displayMemoryResults(memories) {
-    const memoriesHtml = memories.map(memory => `
-      <div class="memory-result" onclick="window.chatExperience?.viewMemoryDetail('${memory.id}')">
-        <div class="memory-date">${new Date(memory.created).toLocaleDateString()}</div>
-        <div class="memory-title">${memory.title}</div>
-        <div class="memory-people">${memory.people.length > 0 ? '👥 ' + memory.people.length + ' people' : ''}</div>
-      </div>
-    `).join('');
-
-    this.addMessage('emma', `I found ${memories.length} memories:`, {
-      type: 'memory-results', 
-      html: `<div class="memories-grid">${memoriesHtml}</div>`
-    });
   }
 
   /**
@@ -1012,20 +973,8 @@ class EmmaChatExperience extends ExperiencePopup {
    * 💝 Handle new memory prompt - start memory creation conversation  
    */
   async handleNewMemoryPrompt() {
-    const responses = [
-      "Wonderful! I'd love to help you create a new memory. What would you like to remember?",
-      "That's beautiful! Tell me about this memory you'd like to save forever.",
-      "Perfect! What special moment would you like to capture in your memory vault?",
-      "I'm here to help! What's the story you'd like to preserve?"
-    ];
-    
-    const response = responses[Math.floor(Math.random() * responses.length)];
-    this.addMessage(response, 'emma');
-    
-    // Focus on the input for immediate typing
-    if (this.inputField) {
-      this.inputField.focus();
-    }
+    this.addMessage("Wonderful! I'd love to help you create a new memory.", 'emma');
+    window.memoryOrchestrator.startMemoryCreation();
   }
 
   /**
@@ -1187,41 +1136,25 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async findPersonInVault(searchName) {
     try {
-      if (!window.emmaWebVault?.vaultData?.content?.people) {
-        console.warn('👤 CHAT: No people data in vault');
-        return null;
+      const result = await window.memoryOrchestrator.getPeople({ query: searchName });
+      if (result && result.people && result.people.length > 0) {
+        // Find the best match
+        const searchLower = searchName.toLowerCase().trim();
+        // Look for exact match first
+        let person = result.people.find(p => p.name.toLowerCase() === searchLower);
+        if (person) return person;
+        // Then partial
+        person = result.people.find(p => p.name.toLowerCase().includes(searchLower));
+        if (person) return person;
+        // Then first name
+        person = result.people.find(p => p.name.split(' ')[0].toLowerCase() === searchLower);
+        if (person) return person;
+        // Otherwise return first result
+        return result.people[0];
       }
-
-      const vaultPeople = window.emmaWebVault.vaultData.content.people;
-      const searchLower = searchName.toLowerCase().trim();
-
-      // Try exact match first
-      for (const [personId, person] of Object.entries(vaultPeople)) {
-        if (person.name && person.name.toLowerCase() === searchLower) {
-          return { ...person, id: personId };
-        }
-      }
-
-      // Try partial match (contains)
-      for (const [personId, person] of Object.entries(vaultPeople)) {
-        if (person.name && person.name.toLowerCase().includes(searchLower)) {
-          return { ...person, id: personId };
-        }
-      }
-
-      // Try first name match
-      for (const [personId, person] of Object.entries(vaultPeople)) {
-        if (person.name) {
-          const firstName = person.name.split(' ')[0].toLowerCase();
-          if (firstName === searchLower) {
-            return { ...person, id: personId };
-          }
-        }
-      }
-
       return null;
     } catch (error) {
-      console.error('👤 CHAT: Error finding person:', error);
+      console.error('👤 CHAT: Error finding person via orchestrator:', error);
       return null;
     }
   }
@@ -1433,24 +1366,8 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       console.log('📚 CHAT: Finding memories for person:', person.name);
       
-      // Find connected memories using same logic as people page
-      let connectedMemories = [];
-      
-      if (window.emmaWebVault?.vaultData?.content?.memories) {
-        const vaultMemories = window.emmaWebVault.vaultData.content.memories;
-        const personForMatching = { id: person.id, name: person.name };
-        
-        for (const [memoryId, memory] of Object.entries(vaultMemories)) {
-          const normalizedMemory = { ...memory, id: memory.id || memoryId };
-
-          if (window.metadataIncludesPerson(memory.metadata?.people, personForMatching)) {
-            connectedMemories.push(normalizedMemory);
-            continue;
-          }
-          
-          // Content-based inference removed; rely on explicit metadata associations only
-        }
-      }
+      const result = await window.memoryOrchestrator.getMemories({ personId: person.id, limit: 5 });
+      const connectedMemories = result.memories || [];
 
       console.log(`📚 CHAT: Found ${connectedMemories.length} memories for ${person.name}`);
 
@@ -2541,118 +2458,53 @@ class EmmaChatExperience extends ExperiencePopup {
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
 
-    // 🚨 CTO EMERGENCY ROLLBACK: Unified system broken, using working legacy system
-    console.log('🚨 CTO: Using proven legacy system (unified intelligence disabled for emergency)');
-
-    // 🤔 CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
-    if (this.currentPersonEnrichment && 
-        this.currentPersonEnrichment.stage !== 'complete' &&
-        Date.now() - this.currentPersonEnrichment.startedAt < 300000) { // 5 minute timeout
-      
-      console.log('🤔 Active person enrichment detected, handling response');
-      const handled = await this.handlePersonEnrichmentResponse(userMessage, this.currentPersonEnrichment.personName);
-      
-      if (handled) {
-        // If this completed the enrichment, clear it
-        if (this.currentPersonEnrichment.stage === 'complete') {
-          this.currentPersonEnrichment = null;
-        }
-        return;
-      }
-    }
-
-    // 🎯 INTELLIGENT INTENT CLASSIFICATION
     const intent = this.classifyUserIntent(userMessage);
     console.log('🧠 CHAT: Intent classified as:', intent);
 
-    // 👥 PEOPLE LIST REQUEST: Show all people in vault
-    if (intent.type === 'people_list') {
-      console.log('👥 CHAT: People list request detected');
-      await this.handlePeopleListRequest(userMessage);
-      return;
-    }
+    try {
+      switch (intent.type) {
+        case 'people_list':
+          const peopleResult = await window.memoryOrchestrator.getPeople();
+          this.addMessage(`I found ${peopleResult.people.length} people in your vault.`);
+          // Here you could add more detailed display logic
+          break;
 
-    // 👤 PERSON REQUEST DETECTION: Only for specific person inquiries
-    if (intent.type === 'person_inquiry') {
-      const personRequest = this.detectPersonRequest(userMessage);
-      if (personRequest) {
-        console.log('👤 CHAT: Person request detected:', personRequest);
-        
-        // 🎯 CTO CRITICAL: Track the person being queried for context continuity
-        this.conversationContext.lastQueriedPerson = personRequest.personName;
-        console.log(`🎯 CTO: Set lastQueriedPerson to: ${personRequest.personName}`);
-        
-        await this.handlePersonRequest(personRequest);
-        return;
-      }
-    }
-
-    // 💝 Memory capture detection for ongoing conversations
-    const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
-      analysis.memory && analysis.memory.originalContent &&
-      analysis.memory.originalContent.includes(userMessage.substring(0, 50))
-    );
-
-    if (hasDetectedMemory) {
-      const captureResponse = await this.generateMemoryCaptureResponse(userMessage);
-      this.addMessage(captureResponse, 'emma');
-      return;
-    }
-
-    // 🏛️ CORE VAULT OPERATIONS: Emma's primary job (always works!)
-    if (intent.type === 'vault_operation') {
-      console.log('🏛️ CORE VAULT OPERATION: Handling directly');
-      await this.handleVaultOperation(userMessage, intent);
-      return;
-    }
-
-    // 🔍 MEMORY SEARCH: Handle memory queries intelligently
-    if (intent.type === 'memory_search') {
-      // Check if this is a simple "what are my memories" type query
-      if (/\b(what are|show me|list|tell me)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(userMessage)) {
-        console.log('🔍 MEMORY SEARCH: Handling simple memory list request');
-        await this.handleMemoryListRequest(userMessage);
-        return;
-      }
-      
-      // For complex memory search queries, use vectorless if available
-      if (this.isVectorlessEnabled && this.vectorlessEngine) {
-        try {
-          const result = await this.vectorlessEngine.processQuestion(userMessage);
-          if (result.success) {
-            this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
-            return;
-          } else {
-            console.warn('💬 Vectorless processing failed, using fallback:', result.error);
+        case 'person_inquiry':
+          const personRequest = this.detectPersonRequest(userMessage);
+          if (personRequest) {
+            const person = await this.findPersonInVault(personRequest.personName);
+            if (person) {
+              this.addMessage(`Here's what I know about ${person.name}.`);
+              // Display person card, memories, etc.
+            } else {
+              this.addMessage(`I couldn't find anyone named ${personRequest.personName}.`);
+            }
           }
-        } catch (error) {
-          console.error('💬 Vectorless AI error:', error);
-        }
-      }
-      
-      // Fallback for memory search without vectorless
-      await this.handleMemoryListRequest(userMessage);
-      return;
-    }
+          break;
 
-    // 🚀 ADVANCED AI MODE: Use OpenAI for conversation and questions
-    if (this.apiKey && intent.type === 'conversation') {
-      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent conversation');
-      console.log('🎯 Intent:', intent);
-      try {
-        const response = await this.generateIntelligentEmmaResponse(userMessage, intent);
-        this.addMessage(response, 'emma');
-        this.addAIModeIndicator(); // Show that AI was used
-        return;
-      } catch (error) {
-        console.warn('🤖 AI response failed, using fallback:', error);
-        // Don't show error for conversation - just fall through to dynamic response
-      }
-    }
+        case 'memory_search':
+          const memoriesResult = await window.memoryOrchestrator.getMemories({ keyword: userMessage });
+          if (memoriesResult.memories && memoriesResult.memories.length > 0) {
+            this.addMessage(`I found ${memoriesResult.memories.length} memories related to your search.`);
+            // Display memory results
+          } else {
+            this.addMessage("I couldn't find any memories matching that. Try another search.");
+          }
+          break;
 
-    // 💜 FALLBACK: Dynamic responses for basic interactions
-    const response = await this.generateDynamicEmmaResponse(userMessage);
-    this.addMessage(response, 'emma');
+        case 'vault_operation':
+          this.addMessage("Let's manage your vault. What would you like to do? (add person, create memory, etc.)");
+          // Here you can trigger more specific flows, e.g., opening the memory wizard
+          break;
+
+        default: // 'conversation' and other fallbacks
+          this.addMessage(await this.generateDynamicEmmaResponse(userMessage), 'emma');
+          break;
+      }
+    } catch (error) {
+      console.error('An error occurred while responding as Emma:', error);
+      this.addMessage("I'm having a little trouble right now. Please try again in a moment.", 'emma');
+    }
   }
 
   /**
@@ -5019,6 +4871,19 @@ RULES:
 
     this.addMessage(welcomeMessage, 'emma');
     console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
+
+    // Ask a contextual follow-up question
+    setTimeout(async () => {
+      try {
+        const analysis = await this.memoryContextAnalyzer.getAnalysis();
+        if (analysis && analysis.suggestedQuestions && analysis.suggestedQuestions.length > 0) {
+          const question = analysis.suggestedQuestions[0]; // Ask the top question
+          this.addMessage(question.text, 'emma');
+        }
+      } catch (error) {
+        console.error('🧠 Error getting contextual question:', error);
+      }
+    }, 1500);
   }
 
   scheduleInitialWelcome() {
@@ -10038,6 +9903,20 @@ Just the response:`;
   async generateDynamicSharingResponse() {
     if (!this.vectorlessEngine || !this.apiKey) {
       return "I'm all ears. Take your time and share whatever feels important to you right now.";
+    }
+  }
+
+  async getRelatedMemories(memoryId) {
+    if (!this.agentChatEnabled || !this.emmaVoice) {
+      console.warn('Cannot get related memories, agent not connected.');
+      return null;
+    }
+    try {
+      const result = await this.emmaVoice.tools.execute('get_related_memories', { memoryId });
+      return result;
+    } catch (error) {
+      console.error('Error getting related memories:', error);
+      return null;
     }
 
     try {
