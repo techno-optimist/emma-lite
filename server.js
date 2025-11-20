@@ -17,7 +17,10 @@ const VaultService = require('./lib/vault-service');
 const { getEmmaAppManifest, APP_NAME, APP_DEFAULT_MODEL } = require('./apps/emma-openai-app');
 
 const DEFAULT_DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
-const DEFAULT_PROD_ORIGINS = ['https://emma-lite-optimized.onrender.com'];
+const DEFAULT_PROD_ORIGINS = [
+  'https://emma-lite-optimized.onrender.com',
+  'https://emma-hjjc.onrender.com'
+];
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') return null;
@@ -61,6 +64,29 @@ const vaultService = new VaultService();
 // Security hardening
 app.disable('x-powered-by');
 
+// Build dynamic CSP connectSrc based on allowed origins
+const cspConnectSrc = [
+  "'self'",
+  "wss://api.openai.com",
+  "https://api.openai.com",
+  "https://cdn.jsdelivr.net"
+];
+
+// Add all allowed origins and their WebSocket variants
+allowedOrigins.forEach(origin => {
+  if (origin) {
+    cspConnectSrc.push(origin);
+    // Add WebSocket variant (wss:// for https://, ws:// for http://)
+    if (origin.startsWith('https://')) {
+      cspConnectSrc.push(origin.replace('https://', 'wss://'));
+    } else if (origin.startsWith('http://')) {
+      cspConnectSrc.push(origin.replace('http://', 'ws://'));
+    }
+  }
+});
+
+console.log('Emma CSP connectSrc:', cspConnectSrc.join(', '));
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -70,7 +96,7 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com", "https://cdn.jsdelivr.net", "https://emma-lite-optimized.onrender.com", "wss://emma-lite-optimized.onrender.com"],
+      connectSrc: cspConnectSrc,
       mediaSrc: ["'self'", "blob:", "data:"],
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:"]
