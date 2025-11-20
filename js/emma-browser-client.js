@@ -232,6 +232,16 @@ class EmmaBrowserClient {
     // Preferred runtime override
     pushCandidate(options.wsUrl);
 
+    // Same-origin default (honors current protocol/host)
+    try {
+      if (window?.location?.host) {
+        const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        pushCandidate(`${proto}://${window.location.host}/voice`);
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to resolve same-origin WebSocket', e);
+    }
+
     // Primary resolution from environment helper
     try {
       if (typeof window.getEmmaBackendWsUrl === 'function') {

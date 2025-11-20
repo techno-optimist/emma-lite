@@ -2307,7 +2307,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
     const localHandled = await this.processLocalChatMessage(message, messageId, {
-      allowDefaultResponse: !canUseAgent
+      allowDefaultResponse: !canUseAgent,
+      preferRemote: canUseAgent
     });
 
     if (localHandled) {
@@ -2328,16 +2329,30 @@ class EmmaChatExperience extends ExperiencePopup {
 
 
 
-  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true } = {}) {
+  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true, preferRemote = false } = {}) {
     const activeEnrichment = this.findActiveEnrichmentForResponse();
     if (activeEnrichment) {
       await this.processEnrichmentResponse(activeEnrichment, message);
       return true;
     }
 
+    // If the remote agent is available, prioritize tool-handled responses there
+    if (preferRemote) {
+      return false;
+    }
+
     const intent = this.classifyUserIntent(message);
     if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
-      console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
+      console.log('🎯 CTO: VAULT OPERATION DETECTED - Routing to local vault tools:', intent.type, message);
+      const handled = await this.handleLocalVaultIntent(intent, message);
+      if (handled) {
+        return true;
+      }
+
+      if (!allowDefaultResponse) {
+        return false;
+      }
+
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
@@ -2361,6 +2376,62 @@ class EmmaChatExperience extends ExperiencePopup {
       this.respondAsEmma(message);
     }, 1000 + Math.random() * 1500);
     return true;
+  }
+
+  /**
+   * Route vault intents to local Emma tools when the remote agent is unavailable
+   */
+  async handleLocalVaultIntent(intent, message) {
+    try {
+      if (!this.emmaVoice || !this.emmaVoice.tools) {
+        return false;
+      }
+
+      switch (intent.type) {
+        case 'people_list': {
+          const peopleResult = await this.emmaVoice.tools.execute('get_people', { query: message });
+          if (peopleResult?.people?.length) {
+            this.displayPeopleResults(peopleResult.people);
+            return true;
+          }
+          this.addMessage('emma', "I couldn't find anyone yet. Try adding a person first.");
+          return true;
+        }
+
+        case 'memory_search': {
+          const memoriesResult = await this.emmaVoice.tools.execute('get_memories', { query: message, limit: 5 });
+          if (memoriesResult?.memories?.length) {
+            this.displayMemoryResults(memoriesResult.memories);
+            return true;
+          }
+          this.addMessage('emma', "I don't see any matching memories yet. Want me to save this one?");
+          return true;
+        }
+
+        case 'person_inquiry': {
+          const peopleLookup = await this.emmaVoice.tools.execute('get_people', { query: message });
+          const firstMatch = peopleLookup?.people?.[0];
+          if (firstMatch?.id) {
+            const memories = await this.emmaVoice.tools.execute('get_memories', { personId: firstMatch.id, limit: 3 });
+            if (memories?.memories?.length) {
+              this.addMessage('emma', `Here are some memories about ${firstMatch.name}:`);
+              this.displayMemoryResults(memories.memories);
+              return true;
+            }
+            this.addMessage('emma', `I know ${firstMatch.name}, but I don't have memories yet. Want to add one?`);
+            return true;
+          }
+          this.addMessage('emma', "I don't recognize that person yet. Would you like to add them?");
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('❌ Local vault intent failed:', error);
+      this.addMessage('system', '⚠️ I had trouble accessing the vault locally.');
+      return true;
+    }
+
+    return false;
   }
 
 
