@@ -72,29 +72,15 @@ class EmmaChatExperience extends ExperiencePopup {
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
-    
+
     // 🧠 CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
     this.unifiedIntelligence = new EmmaUnifiedIntelligence({
       dementiaMode: true,
       validationTherapy: true,
       vaultAccess: () => window.emmaWebVault?.vaultData?.content,
-      apiKey: null // Will be set when available
+      apiKey: this.apiKey // Will be set when available
     });
     
-    // Legacy context for transition period
-    this.conversationContext = {
-      currentTopic: null,
-      recentPeople: new Set(),
-      emotionalState: 'positive',
-      lastMemoryMentioned: null,
-      conversationFlow: [],
-      dementiaMode: true,
-      validationMode: true,
-      personalContext: {
-        recentActivities: [],
-        emotionalTone: 'warm and loving'
-      }
-    };
 
     // 💝 Intelligent Memory Capture Integration
     this.intelligentCapture = null;
@@ -188,7 +174,7 @@ class EmmaChatExperience extends ExperiencePopup {
   async initialize() {
     this.initializeEmmaOrb();
     this.setupChatInterface();
-    
+
     // 🎙️ PHASE 3: Initialize voice integration after chat setup
     setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
@@ -446,13 +432,13 @@ class EmmaChatExperience extends ExperiencePopup {
           this.displayPeopleResults(result.people);
         }
         break;
-        
+
       case 'get_memories':
         if (result.memories && result.memories.length > 0) {
           this.displayMemoryResults(result.memories);
         }
         break;
-        
+
       case 'create_memory_from_voice':
         if (result.success) {
           this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
@@ -461,7 +447,7 @@ class EmmaChatExperience extends ExperiencePopup {
           });
         }
         break;
-        
+
       case 'update_person':
         if (result.success) {
           this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
@@ -505,7 +491,7 @@ class EmmaChatExperience extends ExperiencePopup {
     `).join('');
 
     this.addMessage('emma', `I found ${memories.length} memories:`, {
-      type: 'memory-results', 
+      type: 'memory-results',
       html: `<div class="memories-grid">${memoriesHtml}</div>`
     });
   }
@@ -670,7 +656,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Setup settings modal
     this.setupSettingsModal();
-    
+
     // 🎯 Setup dynamic quick start prompts
     this.setupQuickStartPrompts();
   }
@@ -1018,10 +1004,10 @@ class EmmaChatExperience extends ExperiencePopup {
       "Perfect! What special moment would you like to capture in your memory vault?",
       "I'm here to help! What's the story you'd like to preserve?"
     ];
-    
+
     const response = responses[Math.floor(Math.random() * responses.length)];
     this.addMessage(response, 'emma');
-    
+
     // Focus on the input for immediate typing
     if (this.inputField) {
       this.inputField.focus();
@@ -1066,7 +1052,7 @@ class EmmaChatExperience extends ExperiencePopup {
     for (const pattern of pronounPatterns) {
       const pronounMatch = message.match(pattern);
       if (pronounMatch) {
-        const recentPeople = Array.from(this.conversationContext.recentPeople);
+        const recentPeople = Array.from(this.unifiedIntelligence.conversationContext.recentPeople);
         if (recentPeople.length > 0) {
           const resolvedPerson = recentPeople[recentPeople.length - 1]; // Most recent
           console.log(`🎯 CTO: Resolved pronoun "${pronounMatch[1]}" to "${resolvedPerson}" from context`);
@@ -1435,11 +1421,11 @@ class EmmaChatExperience extends ExperiencePopup {
       
       // Find connected memories using same logic as people page
       let connectedMemories = [];
-      
+
       if (window.emmaWebVault?.vaultData?.content?.memories) {
         const vaultMemories = window.emmaWebVault.vaultData.content.memories;
         const personForMatching = { id: person.id, name: person.name };
-        
+
         for (const [memoryId, memory] of Object.entries(vaultMemories)) {
           const normalizedMemory = { ...memory, id: memory.id || memoryId };
 
@@ -1447,7 +1433,7 @@ class EmmaChatExperience extends ExperiencePopup {
             connectedMemories.push(normalizedMemory);
             continue;
           }
-          
+
           // Content-based inference removed; rely on explicit metadata associations only
         }
       }
@@ -2355,21 +2341,21 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
-    
+
     // 🎙️ VOICE: Add voice indicators for transcribed messages
     if (options.isVoice) {
       messageDiv.setAttribute('data-voice', 'true');
     }
-    
+
     // 💝 CRITICAL: Track people mentioned in Emma's responses too
     if (sender === 'emma' && content) {
       const emmaPeople = this.extractPeople(content);
-      emmaPeople.forEach(person => this.conversationContext.recentPeople.add(person));
-      
+      emmaPeople.forEach(person => this.unifiedIntelligence.conversationContext.recentPeople.add(person));
+
       console.log('💝 EMMA RESPONSE TRACKING:', {
         content: content.substring(0, 50) + '...',
         extractedPeople: emmaPeople,
-        recentPeople: Array.from(this.conversationContext.recentPeople)
+        recentPeople: Array.from(this.unifiedIntelligence.conversationContext.recentPeople)
       });
     }
 
@@ -2378,7 +2364,7 @@ class EmmaChatExperience extends ExperiencePopup {
     if (sender === 'emma') {
       // SAFETY: Ensure options exists
       const safeOptions = options || {};
-      
+
       // Handle HTML content vs regular text
       const messageContent = safeOptions.isHtml ? content : `<p>${this.formatMessageContent(content || '')}</p>`;
 
@@ -2540,361 +2526,13 @@ class EmmaChatExperience extends ExperiencePopup {
 
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
-
-    // 🚨 CTO EMERGENCY ROLLBACK: Unified system broken, using working legacy system
-    console.log('🚨 CTO: Using proven legacy system (unified intelligence disabled for emergency)');
-
-    // 🤔 CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
-    if (this.currentPersonEnrichment && 
-        this.currentPersonEnrichment.stage !== 'complete' &&
-        Date.now() - this.currentPersonEnrichment.startedAt < 300000) { // 5 minute timeout
-      
-      console.log('🤔 Active person enrichment detected, handling response');
-      const handled = await this.handlePersonEnrichmentResponse(userMessage, this.currentPersonEnrichment.personName);
-      
-      if (handled) {
-        // If this completed the enrichment, clear it
-        if (this.currentPersonEnrichment.stage === 'complete') {
-          this.currentPersonEnrichment = null;
-        }
-        return;
-      }
-    }
-
-    // 🎯 INTELLIGENT INTENT CLASSIFICATION
-    const intent = this.classifyUserIntent(userMessage);
-    console.log('🧠 CHAT: Intent classified as:', intent);
-
-    // 👥 PEOPLE LIST REQUEST: Show all people in vault
-    if (intent.type === 'people_list') {
-      console.log('👥 CHAT: People list request detected');
-      await this.handlePeopleListRequest(userMessage);
-      return;
-    }
-
-    // 👤 PERSON REQUEST DETECTION: Only for specific person inquiries
-    if (intent.type === 'person_inquiry') {
-      const personRequest = this.detectPersonRequest(userMessage);
-      if (personRequest) {
-        console.log('👤 CHAT: Person request detected:', personRequest);
-        
-        // 🎯 CTO CRITICAL: Track the person being queried for context continuity
-        this.conversationContext.lastQueriedPerson = personRequest.personName;
-        console.log(`🎯 CTO: Set lastQueriedPerson to: ${personRequest.personName}`);
-        
-        await this.handlePersonRequest(personRequest);
-        return;
-      }
-    }
-
-    // 💝 Memory capture detection for ongoing conversations
-    const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
-      analysis.memory && analysis.memory.originalContent &&
-      analysis.memory.originalContent.includes(userMessage.substring(0, 50))
-    );
-
-    if (hasDetectedMemory) {
-      const captureResponse = await this.generateMemoryCaptureResponse(userMessage);
-      this.addMessage(captureResponse, 'emma');
-      return;
-    }
-
-    // 🏛️ CORE VAULT OPERATIONS: Emma's primary job (always works!)
-    if (intent.type === 'vault_operation') {
-      console.log('🏛️ CORE VAULT OPERATION: Handling directly');
-      await this.handleVaultOperation(userMessage, intent);
-      return;
-    }
-
-    // 🔍 MEMORY SEARCH: Handle memory queries intelligently
-    if (intent.type === 'memory_search') {
-      // Check if this is a simple "what are my memories" type query
-      if (/\b(what are|show me|list|tell me)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(userMessage)) {
-        console.log('🔍 MEMORY SEARCH: Handling simple memory list request');
-        await this.handleMemoryListRequest(userMessage);
-        return;
-      }
-      
-      // For complex memory search queries, use vectorless if available
-      if (this.isVectorlessEnabled && this.vectorlessEngine) {
-        try {
-          const result = await this.vectorlessEngine.processQuestion(userMessage);
-          if (result.success) {
-            this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
-            return;
-          } else {
-            console.warn('💬 Vectorless processing failed, using fallback:', result.error);
-          }
-        } catch (error) {
-          console.error('💬 Vectorless AI error:', error);
-        }
-      }
-      
-      // Fallback for memory search without vectorless
-      await this.handleMemoryListRequest(userMessage);
-      return;
-    }
-
-    // 🚀 ADVANCED AI MODE: Use OpenAI for conversation and questions
-    if (this.apiKey && intent.type === 'conversation') {
-      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent conversation');
-      console.log('🎯 Intent:', intent);
-      try {
-        const response = await this.generateIntelligentEmmaResponse(userMessage, intent);
-        this.addMessage(response, 'emma');
-        this.addAIModeIndicator(); // Show that AI was used
-        return;
-      } catch (error) {
-        console.warn('🤖 AI response failed, using fallback:', error);
-        // Don't show error for conversation - just fall through to dynamic response
-      }
-    }
-
-    // 💜 FALLBACK: Dynamic responses for basic interactions
-    const response = await this.generateDynamicEmmaResponse(userMessage);
-    this.addMessage(response, 'emma');
-  }
-
-  /**
-   * 🎯 INTELLIGENT INTENT CLASSIFICATION
-   * Determines what the user is trying to do
-   */
-  classifyUserIntent(message) {
-    const lower = message.toLowerCase().trim();
-
-    // 👥 PEOPLE LISTING QUERIES (asking about ALL people)
-    if (/\b(who are|what are|show me|list|see|view)\b.*\b(my|the|all)\b.*\b(people|person|contacts|family|friends)\b/i.test(message) ||
-        /\b(my|all)\b.*\b(people|contacts|family|friends)\b/i.test(message) ||
-        /\bpeople\b.*\b(list|vault|have|know)\b/i.test(message)) {
-      return { type: 'people_list', confidence: 0.95 };
-    }
-
-    // 👤 Person inquiries (asking ABOUT someone specific)
-    if (/^(who is|tell me about|show me|what about|how about)\s+[A-Z]/i.test(message) ||
-        /^[A-Z][a-z]+\s*\?+\s*$/.test(message)) {
-      return { type: 'person_inquiry', confidence: 0.9 };
-    }
-
-    // 🔍 Memory search queries - ENHANCED to catch edge cases
-    if (/\b(find|search|show|what|who|when|where|list|see|view|tell me)\b.*\b(memory|memories|remember)\b/i.test(message) ||
-        /\b(what are|show me|tell me|list)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(message) ||
-        /\bmemory\b.*\b(list|search|find|show)\b/i.test(message) ||
-        /\bmemories\b.*\b(list|search|find|show)\b/i.test(message)) {
-      return { type: 'memory_search', confidence: 0.9 };
-    }
-
-    // 🏛️ CORE VAULT OPERATIONS (Emma's primary job - always works!)
-    // ULTRA-ROBUST for dementia users - catch every possible way they might ask
-    if (
-      // Direct vault operations
-      /\b(add|create|new|save)\b.*\b(person|people|memory|memories|vault)\b/i.test(message) ||
-      /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(message) ||
-      /\blet'?s?\s+(add|create|save)\b/i.test(message) ||
-      
-      // Natural language patterns for dementia users
-      /\b(?:want|need|would\s+like)\s+(?:to\s+)?(?:add|save|create|put)\b/i.test(message) ||
-      /\b(?:please|can\s+you)\s+(?:add|save|create|put)\b/i.test(message) ||
-      /\b(?:put|place)\s+[a-zA-Z]+\b/i.test(message) ||
-      
-      // Simple "add [name]" pattern
-      /\badd\s+[a-zA-Z]+/i.test(message) ||
-      
-      // "I have a person/friend/family member" patterns
-      /\b(?:have|met|know)\s+(?:a\s+)?(?:person|friend|family|someone)\b/i.test(message)
-    ) {
-      return { type: 'vault_operation', confidence: 0.95 };
-    }
-
-    // 💬 General conversation & questions (use AI if available)
-    if (/^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/i.test(message) ||
-        message.includes('?') ||
-        /\b(hello|hi|hey|thank|thanks|help|tell me|explain)\b/i.test(message)) {
-      return { type: 'conversation', confidence: 0.6 };
-    }
-
-    // 🎯 Other commands/actions
-    if (/\b(add|create|new|save|let|want|need|help)\b/i.test(message)) {
-      return { type: 'general_command', confidence: 0.5 };
-    }
-
-    // 💬 Default: General conversation
-    return { type: 'conversation', confidence: 0.4 };
-  }
-
-  /**
-   * 🚀 GENERATE INTELLIGENT EMMA RESPONSE using OpenAI
-   * This is where the real AI magic happens!
-   */
-  async generateIntelligentEmmaResponse(userMessage, intent) {
-    const env = (typeof window !== 'undefined' && window.EMMA_ENV) ? window.EMMA_ENV : 'production';
-    const useLLM = env !== 'production' && !!this.apiKey;
-
-    try {
-      // Get vault context for personalization
-      const vaultContext = await this.getVaultContextForAI();
-
-      if (!useLLM) {
-        // Gentle, local-first fallback aligned with Emma ethos
-        const topics = (vaultContext.recentTopics || []).slice(0, 3);
-        const topicStr = topics.length ? ` I remember recent topics like ${topics.join(', ')}.` : '';
-        const suggestions = [
-          'Would you like me to save this as a memory?',
-          'Should we look for related photos together?',
-          'Want to add who was with you in this memory?'
-        ];
-        const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-        return (
-          `I’m here with you. Let’s explore this together.${topicStr} ` +
-          `${suggestion}`
-        );
-      }
-
-      // Build the prompt based on intent and context
-      const prompt = this.buildEmmaPrompt(userMessage, intent, vaultContext);
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            { role: 'system', content: prompt.system },
-            { role: 'user', content: prompt.user }
-          ],
-          max_tokens: 300,
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
-      const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
-      if (aiResponse) return aiResponse.trim();
-      throw new Error('No response content from OpenAI');
-
-    } catch (error) {
-      // Final safe fallback to ensure no broken UX
-      const calm = 'I’m here with you. Let’s take this step by step.';
-      return `${calm} Would you like me to save this as a memory?`;
+    const response = await this.unifiedIntelligence.analyzeAndRespond(userMessage, this);
+    this.addMessage(response.text, 'emma');
+    if (response.actions && response.actions.length > 0) {
+      this.executeIntelligentActions(response.actions, response.analysis);
     }
   }
 
-  /**
-   * 🧠 BUILD EMMA-SPECIFIC PROMPT for OpenAI
-   */
-  buildEmmaPrompt(userMessage, intent, vaultContext) {
-    // 💝 CRITICAL: Include conversation context for continuity
-    const conversationHistory = this.conversationContext.conversationFlow
-      .slice(-3)
-      .map(flow => `User: ${flow.message}`)
-      .join('\n');
-
-    const systemPrompt = `You are Emma, an intelligent memory companion. You help users organize, explore, and interact with their personal memories in a warm, helpful way.
-
-PERSONALITY:
-- Warm, caring, and memory-focused
-- Always helpful but never overwhelming
-- Gentle and patient, especially for users with memory challenges
-- Focus on preserving and celebrating memories
-
-CRITICAL - DEMENTIA CARE MODE (ALWAYS ACTIVE FOR THIS USER):
-- NEVER correct or contradict any memories, even if they seem inconsistent
-- Use validation therapy - affirm their feelings and experiences always
-- Focus on emotional truth rather than factual accuracy
-- Maintain warmth and patience in every single response
-- If memories seem confused, gently redirect to positive aspects
-- ALWAYS validate what they're sharing as real and meaningful
-- Never use phrases like "Do you remember" or "Are you sure"
-- When asked about people ("show me Mark"), provide warm recall assistance
-- Help them remember relationships, shared experiences, and emotional connections
-
-CONVERSATION CONTEXT:
-Recent conversation flow:
-${conversationHistory}
-
-People mentioned recently: ${Array.from(this.conversationContext.recentPeople).join(', ') || 'None'}
-Current emotional tone: ${this.conversationContext.emotionalState}
-Family/People context: Based on vault data and conversation
-
-VAULT CONTEXT:
-- User has ${vaultContext.memoryCount} memories in their vault
-- Recent memories include: ${vaultContext.recentTopics.join(', ')}
-- People in vault: ${vaultContext.people.join(', ')}
-
-CAPABILITIES:
-- Provide warm conversation about memories
-- Answer questions about their vault and memories
-- Give gentle encouragement about memory preservation
-- Help them reflect on their experiences
-
-NOTE: Core vault operations (adding people, creating memories) are handled by Emma's built-in systems. Focus on conversation, encouragement, and emotional support.
-
-INTENT: ${intent.type}
-${intent.type === 'conversation' ? 'User wants to have a conversation. Be warm, engaging, and memory-focused. Provide emotional support and encouragement.' : ''}
-
-RULES:
-- Keep responses concise (1-3 sentences)
-- Always be encouraging about memory preservation
-- NEVER contradict or correct memories - validate everything
-- Never mention technical details or AI limitations
-- If unsure, offer to help them explore their memories`;
-
-    return {
-      system: systemPrompt,
-      user: userMessage
-    };
-  }
-
-  /**
-   * 📊 GET VAULT CONTEXT for AI responses
-   */
-  async getVaultContextForAI() {
-    try {
-      const vault = window.emmaWebVault?.vaultData?.content;
-      
-      if (!vault) {
-        return {
-          memoryCount: 0,
-          recentTopics: ['No memories yet'],
-          people: ['No people yet']
-        };
-      }
-
-      const memories = vault.memories || {};
-      const people = vault.people || {};
-      
-      // Get recent memory topics
-      const memoryList = Object.values(memories);
-      const recentTopics = memoryList
-        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-        .slice(0, 3)
-        .map(m => m.title || 'Untitled memory')
-        .filter(Boolean);
-
-      // Get people names
-      const peopleNames = Object.values(people)
-        .map(p => p.name)
-        .filter(Boolean)
-        .slice(0, 5);
-
-      return {
-        memoryCount: memoryList.length,
-        recentTopics: recentTopics.length ? recentTopics : ['No recent memories'],
-        people: peopleNames.length ? peopleNames : ['No people yet']
-      };
-
-    } catch (error) {
-      console.error('📊 Error getting vault context:', error);
-      return {
-        memoryCount: 0,
-        recentTopics: ['Context unavailable'],
-        people: ['Context unavailable']
-      };
-    }
-  }
 
   /**
    * 🔍 HANDLE MEMORY LIST REQUEST
@@ -3157,24 +2795,24 @@ RULES:
         if (!window.emmaWebVault.vaultData.content.people) {
           window.emmaWebVault.vaultData.content.people = {};
         }
-        
+
         window.emmaWebVault.vaultData.content.people[newPerson.id] = newPerson;
         console.log('👤 Added to vault data structure');
-        
+
         // Trigger save
         await window.emmaWebVault.scheduleElegantSave();
         console.log('👤 Vault save scheduled');
-        
+
         // 💜 DEMENTIA-FRIENDLY SUCCESS MESSAGE
         this.addMessage(`✅ Perfect! I've added ${personName} to your vault.`, 'emma');
         this.addVaultOperationIndicator(); // Show that this was a core vault operation
         console.log('✅ PERSON ADDED SUCCESSFULLY:', personName);
-        
+
         // 🌟 CRITICAL: Refresh constellation after adding new person
         setTimeout(() => {
           this.refreshConstellationAfterPersonAdd();
         }, 500);
-        
+
         // 🤔 GENTLE FOLLOW-UP CONVERSATION
         setTimeout(() => {
           this.startPersonEnrichmentFlow(personName);
@@ -3182,13 +2820,13 @@ RULES:
 
         saved = true;
       } else {
-        console.error('❌ Vault not available:', { 
-          hasWebVault: !!window.emmaWebVault, 
-          hasVaultData: !!window.emmaWebVault?.vaultData 
+        console.error('❌ Vault not available:', {
+          hasWebVault: !!window.emmaWebVault,
+          hasVaultData: !!window.emmaWebVault?.vaultData
         });
         this.addMessage("I'm having trouble accessing your vault right now. Please make sure it's unlocked and try again.", 'emma');
       }
-      
+
     } catch (error) {
       console.error('❌ PERSON ADD ERROR:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
@@ -3231,7 +2869,7 @@ RULES:
    */
   async startPersonEnrichmentFlow(personName) {
     console.log('🤔 Starting person enrichment flow for:', personName);
-    
+
     // 💜 GENTLE, NON-OVERWHELMING QUESTIONS
     const followUpQuestions = [
       `Tell me a little about ${personName}. How do you know them?`,
@@ -3239,10 +2877,10 @@ RULES:
       `Would you like to tell me how ${personName} is important to you?`,
       `Is there anything particular about ${personName} that makes you smile?`
     ];
-    
+
     // Pick a random gentle question
     const question = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
-    
+
     // 🕰️ Give them time to process the success first
     setTimeout(() => {
       this.addMessage(question, 'emma');
@@ -3253,7 +2891,7 @@ RULES:
         stage: 'relationship', // relationship, details, memories, complete
         startedAt: Date.now()
       };
-      
+
     }, 2000); // Wait 2 seconds after success message
   }
 
@@ -3263,23 +2901,23 @@ RULES:
    */
   async handlePersonEnrichmentResponse(userMessage, personName) {
     console.log('🤔 Handling enrichment response for:', personName, userMessage);
-    
+
     // 🚫 CHECK FOR SKIP/DECLINE SIGNALS
     const skipPatterns = [
       /\b(no|nah|skip|pass|not now|maybe later|that'?s enough|i'?m good|all set)\b/i,
       /\b(move on|next|done|finished|enough|nothing else)\b/i,
       /\b(don'?t want|not interested|not really)\b/i
     ];
-    
+
     const isSkipping = skipPatterns.some(pattern => pattern.test(userMessage.toLowerCase()));
-    
+
     if (isSkipping) {
       console.log('🤔 User is skipping enrichment');
       this.addMessage(`That's perfectly fine! ${personName} is safely in your vault. We can always add more details later.`, 'emma');
       this.currentPersonEnrichment = null; // Clear the enrichment flow
       return true;
     }
-    
+
     try {
       // Find the person in vault
       const vault = window.emmaWebVault?.vaultData?.content;
@@ -3287,7 +2925,7 @@ RULES:
         console.error('❌ No people section in vault');
         return false;
       }
-      
+
       // Find person by name
       let targetPerson = null;
       for (const [id, person] of Object.entries(vault.people)) {
@@ -3301,7 +2939,7 @@ RULES:
         console.error('❌ Person not found in vault:', personName);
         return false;
       }
-      
+
       // 💝 ADD ENRICHMENT INFO
       if (!targetPerson.enrichment) {
         targetPerson.enrichment = {
@@ -3311,13 +2949,13 @@ RULES:
           addedAt: new Date().toISOString()
         };
       }
-      
+
       const stage = this.currentPersonEnrichment?.stage || 'relationship';
-      
+
       if (stage === 'relationship') {
         targetPerson.enrichment.relationship = userMessage;
         targetPerson.notes = `${targetPerson.notes}\nRelationship: ${userMessage}`;
-        
+
         // 💬 ACKNOWLEDGING RESPONSE
         const acknowledgments = [
           `That's wonderful! ${userMessage.includes('friend') ? 'Friends are so precious.' : 'Thank you for sharing that.'}`,
@@ -3325,17 +2963,17 @@ RULES:
           `That's beautiful. ${personName} sounds like someone special.`,
           `Thank you for telling me about your connection with ${personName}.`
         ];
-        
+
         const ack = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
         this.addMessage(ack, 'emma');
-        
+
         // 🎯 OPTIONAL FOLLOW-UP
         setTimeout(() => {
           this.addMessage(`Is there anything else you'd like me to remember about ${personName}? Or we can move on to something else - whatever feels right for you.`, 'emma');
-          
+
           this.currentPersonEnrichment.stage = 'complete';
         }, 2500);
-        
+
       } else {
         // Additional details
         if (!targetPerson.enrichment.details) {
@@ -3343,19 +2981,19 @@ RULES:
         } else {
           targetPerson.enrichment.details += `\n${userMessage}`;
         }
-        
+
         targetPerson.notes += `\nAdditional: ${userMessage}`;
-        
+
         this.addMessage(`Thank you for sharing that about ${personName}. I'll keep that in your vault.`, 'emma');
         this.currentPersonEnrichment.stage = 'complete';
       }
-      
+
       // 💾 SAVE ENRICHMENT
       await window.emmaWebVault.scheduleElegantSave();
       console.log('✅ Person enrichment saved:', targetPerson.enrichment);
-      
+
       return true;
-      
+
     } catch (error) {
       console.error('❌ Error handling person enrichment:', error);
       return false;
@@ -3766,6 +3404,12 @@ RULES:
             }
           }
           break;
+
+        case 'displayMemoryResults':
+          if (analysis.memories) {
+            this.displayMemoryResults(analysis.memories);
+          }
+          break;
       }
     }
   }
@@ -3773,7 +3417,7 @@ RULES:
   // 💝 CRITICAL: Update conversation context for continuity
   updateConversationContext(userMessage) {
     // Track conversation flow
-    this.conversationContext.conversationFlow.push({
+    this.unifiedIntelligence.conversationContext.conversationFlow.push({
       timestamp: Date.now(),
       message: userMessage,
       detected: {
@@ -3784,37 +3428,37 @@ RULES:
     });
 
     // Keep only last 5 exchanges for context
-    if (this.conversationContext.conversationFlow.length > 5) {
-      this.conversationContext.conversationFlow.shift();
+    if (this.unifiedIntelligence.conversationContext.conversationFlow.length > 5) {
+      this.unifiedIntelligence.conversationContext.conversationFlow.shift();
     }
 
     // Update people mentioned
     const people = this.extractPeople(userMessage);
-    people.forEach(person => this.conversationContext.recentPeople.add(person));
+    people.forEach(person => this.unifiedIntelligence.conversationContext.recentPeople.add(person));
     
     // 💜 CTO ENHANCEMENT: Enhanced context tracking for memory companion
-    this.conversationContext.currentTopic = this.extractTopic(userMessage);
-    this.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
+    this.unifiedIntelligence.conversationContext.currentTopic = this.extractTopic(userMessage);
+    this.unifiedIntelligence.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
     
     // 🎯 CTO CRITICAL: Track the MAIN SUBJECT of user queries (not just mentioned people)
     if (people.length > 0) {
-      this.conversationContext.lastQueriedPerson = people[0]; // The person user specifically asked about
+      this.unifiedIntelligence.conversationContext.lastQueriedPerson = people[0]; // The person user specifically asked about
     }
     
     console.log('💝 CTO CONTEXT UPDATE:', {
       userMessage,
       extractedPeople: people,
-      recentPeople: Array.from(this.conversationContext.recentPeople),
-      currentTopic: this.conversationContext.currentTopic,
-      lastIntent: this.conversationContext.lastUserIntent,
-      conversationFlow: this.conversationContext.conversationFlow.length
+      recentPeople: Array.from(this.unifiedIntelligence.conversationContext.recentPeople),
+      currentTopic: this.unifiedIntelligence.conversationContext.currentTopic,
+      lastIntent: this.unifiedIntelligence.conversationContext.lastUserIntent,
+      conversationFlow: this.unifiedIntelligence.conversationContext.conversationFlow.length
     });
   }
 
   // 🧠 DEMENTIA-AWARE RESPONSES: Always validate, never contradict
   generateDementiaAwareResponse(userMessage) {
     const lower = userMessage.toLowerCase();
-    const context = this.conversationContext;
+    const context = this.unifiedIntelligence.conversationContext;
     
     // Dynamically detect people from vault and respond appropriately
     const mentionedPeople = this.extractPeople(userMessage);
@@ -8136,7 +7780,7 @@ RULES:
       for (const [id, state] of this.enrichmentState) {
         if (state.memory && state.memory.id === memoryId) {
           enrichmentState = state;
-          
+
           // CRITICAL FIX: Build enriched memory with all collected data
           memory = {
             ...state.memory,
@@ -8150,7 +7794,7 @@ RULES:
             },
             content: state.collectedData.enrichedContent || state.memory.content
           };
-          
+
           console.log('💾 EMMA CHAT: Using ENRICHED memory with people:', memory.metadata.people);
           break;
         }
@@ -8176,16 +7820,16 @@ RULES:
       const newPeople = memory.metadata.newPeopleDetected || [];
       const existingPeople = memory.metadata.people || [];
       const peopleNames = memory.metadata.peopleNames || [];
-      
+
       console.log('👥 EMMA CHAT: Memory people analysis:', {
         newPeople,
-        existingPeople, 
+        existingPeople,
         peopleNames,
         hasNewPeople: newPeople.length > 0
       });
-      
+
       console.log('🚨 DEBUG: confirmSaveMemory called with memoryId:', memoryId);
-      
+
       if (newPeople.length > 0) {
         console.log('👥 EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
         await this.startNewPersonOnboarding(memoryId, newPeople);
@@ -8208,9 +7852,9 @@ RULES:
     this.captureSession = this.captureSession || {};
     this.captureSession.pendingNewPeople = [...newPeople]; // Copy array
     this.captureSession.memoryId = memoryId;
-    
+
     console.log('👥 EMMA CHAT: Starting onboarding for ALL new people:', newPeople);
-    
+
     // Start with the first person
     await this.processNextNewPerson();
   }
@@ -8231,13 +7875,13 @@ RULES:
 
     const personName = this.captureSession.pendingNewPeople.shift(); // Remove first person from queue
     const remaining = this.captureSession.pendingNewPeople.length;
-    
+
     let message = `Great! Let me add ${personName} to your vault first.`;
     if (remaining > 0) {
       message += ` After ${personName}, I'll ask about ${remaining} more ${remaining === 1 ? 'person' : 'people'}.`;
     }
     message += ` What's your relationship with ${personName}?`;
-    
+
     this.addMessage(message, 'emma', {
       isNewPersonPrompt: true,
       memoryId: this.captureSession.memoryId,
@@ -8252,7 +7896,7 @@ RULES:
   async addPersonToVault(memoryId, personName, relationship) {
     try {
       console.log(`👥 ADDING PERSON: ${personName} as ${relationship}`);
-      
+
       // CRITICAL: Check vault access first
       if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
         throw new Error('Vault is not accessible');
@@ -8289,11 +7933,11 @@ RULES:
         // Try to save anyway with basic memory structure
         await this.fallbackMemorySave(memoryId, personName);
       }
-      
+
     } catch (error) {
       console.error('❌ CRITICAL: Failed to add person to vault:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault (${error.message}), but let me save your memory anyway.`, 'emma');
-      
+
       // Always try to save the memory even if person addition fails
       const state = this.enrichmentState.get(memoryId);
       if (state && state.memory) {
@@ -8309,7 +7953,7 @@ RULES:
    */
   async skipPersonAddition(memoryId) {
     this.addMessage("No worries! Let me create your memory capsule...", 'emma');
-    
+
     const state = this.enrichmentState.get(memoryId);
     if (state && state.memory) {
       await this.finalizeMemorySave(state.memory, memoryId);
@@ -8322,7 +7966,7 @@ RULES:
   async fallbackMemorySave(memoryId, personName = null) {
     try {
       console.log('🚨 FALLBACK: Attempting to save memory without enrichment state');
-      
+
       // Try to find the memory in detected memories
       let memory = null;
       for (const [msgId, analysis] of this.detectedMemories) {
@@ -8347,7 +7991,7 @@ RULES:
       }
       
       await this.finalizeMemorySave(memory, memoryId);
-      
+
     } catch (error) {
       console.error('❌ FALLBACK SAVE FAILED:', error);
       this.addMessage("I'm having trouble saving your memory. Please try again.", 'emma');
@@ -8374,7 +8018,7 @@ RULES:
         const tempId = `temp_${personName.toLowerCase()}`;
         const peopleIds = Array.isArray(state.memory.metadata.people) ? state.memory.metadata.people : [];
         const updatedPeopleIds = peopleIds.map(id => id === tempId ? newPerson.id : id);
-        
+
         state.memory.metadata.people = updatedPeopleIds;
         
         const existingNames = Array.isArray(state.memory.metadata.peopleNames) ? state.memory.metadata.peopleNames : [];
@@ -8391,7 +8035,7 @@ RULES:
         // Remove from newPeopleDetected
         state.memory.metadata.newPeopleDetected = (state.memory.metadata.newPeopleDetected || [])
           .filter(name => name.toLowerCase() !== personName.toLowerCase());
-          
+
         console.log('✅ Updated memory with real person ID:', newPerson.id);
         console.log('💾 FINAL MEMORY PEOPLE:', state.memory.metadata.people);
       }
@@ -10544,317 +10188,3 @@ Just the question:`;
   }
 }
 
-/**
- * 🧠 CTO UNIFIED EMMA INTELLIGENCE SYSTEM
- * Single, intelligent response engine that replaces all pattern-matching hacks
- */
-class EmmaUnifiedIntelligence {
-  constructor(options = {}) {
-    this.options = options;
-    this.conversationHistory = [];
-    this.currentContext = {
-      lastQueriedPerson: null,
-      activeMemoryDiscussion: null,
-      waitingForResponse: null,
-      userEmotionalState: 'neutral'
-    };
-  }
-
-  /**
-   * 🎯 SINGLE ENTRY POINT: Analyze user message and generate intelligent response
-   */
-  async analyzeAndRespond(userMessage, chatInstance) {
-    try {
-      console.log('🧠 UNIFIED INTELLIGENCE: Processing:', userMessage);
-      
-      // Add to conversation history
-      this.addToHistory(userMessage, 'user');
-      
-      // Get vault context
-      const vaultContext = this.getVaultContext();
-      
-      // Use LLM for intelligent analysis if available, fallback to smart heuristics
-      const analysis = await this.analyzeUserIntent(userMessage, vaultContext);
-      console.log('🧠 UNIFIED ANALYSIS:', analysis);
-      
-      // Generate single, contextual response
-      const response = await this.generateUnifiedResponse(analysis, chatInstance);
-      
-      // Add Emma's response to history
-      this.addToHistory(response.text, 'emma');
-      
-      return response;
-      
-    } catch (error) {
-      console.error('🧠 UNIFIED INTELLIGENCE ERROR:', error);
-      return {
-        text: "I'm here to listen and help with your memories. What would you like to share?",
-        actions: []
-      };
-    }
-  }
-
-  /**
-   * 🧠 INTELLIGENT INTENT ANALYSIS using LLM reasoning
-   */
-  async analyzeUserIntent(userMessage, vaultContext) {
-    const conversationContext = this.conversationHistory.slice(-5).map(h => 
-      `${h.sender}: ${h.message}`
-    ).join('\n');
-
-    // If we have API access, use LLM for true intelligence
-    if (this.options.apiKey) {
-      return await this.llmAnalyzeIntent(userMessage, vaultContext, conversationContext);
-    }
-    
-    // Fallback to smart heuristic analysis
-    return this.heuristicAnalyzeIntent(userMessage, vaultContext);
-  }
-
-  /**
-   * 🤖 LLM-POWERED INTENT ANALYSIS
-   */
-  async llmAnalyzeIntent(userMessage, vaultContext, conversationContext) {
-    const prompt = `You are Emma's intelligence system. Analyze this user message and determine the appropriate response type.
-
-CONVERSATION CONTEXT:
-${conversationContext}
-
-USER MESSAGE: "${userMessage}"
-
-VAULT CONTEXT:
-- ${vaultContext.memoryCount} memories
-- ${vaultContext.peopleCount} people: ${vaultContext.peopleNames.join(', ')}
-- Recent topics: ${vaultContext.recentTopics.join(', ')}
-
-DEMENTIA CARE MODE: Always validate, never contradict, use warm validation therapy.
-
-Analyze the user's intent and respond with JSON:
-{
-  "intent": "vault_query|memory_sharing|photo_request|conversation|confusion",
-  "confidence": 0.95,
-  "targetPerson": "person name if relevant",
-  "memoryContent": "if sharing a memory",
-  "emotionalTone": "positive|neutral|confused|sad",
-  "suggestedResponse": "brief Emma response",
-  "recommendedActions": ["show_person", "display_memories", "trigger_photo_upload", "create_memory"]
-}`;
-
-    try {
-      const response = await this.callLLM(prompt);
-      return JSON.parse(response);
-    } catch (error) {
-      console.warn('🧠 LLM analysis failed, using heuristic fallback');
-      return this.heuristicAnalyzeIntent(userMessage, vaultContext);
-    }
-  }
-
-  /**
-   * 🎯 SMART HEURISTIC ANALYSIS (LLM fallback)
-   */
-  heuristicAnalyzeIntent(userMessage, vaultContext) {
-    const lower = userMessage.toLowerCase().trim();
-    
-    // Vault queries
-    if (lower.includes('who') && vaultContext.peopleNames.some(name => 
-        lower.includes(name.toLowerCase()))) {
-      const targetPerson = vaultContext.peopleNames.find(name => lower.includes(name.toLowerCase()));
-      return {
-        intent: 'vault_query',
-        confidence: 0.9,
-        targetPerson: targetPerson,
-        recommendedActions: ['show_person']
-      };
-    }
-    
-    // Photo requests
-    if ((lower.includes('add') || lower.includes('yes')) && 
-        (lower.includes('picture') || lower.includes('photo') || this.isPhotoContext())) {
-      return {
-        intent: 'photo_request',
-        confidence: 0.9,
-        targetPerson: this.currentContext.lastQueriedPerson,
-        recommendedActions: ['trigger_photo_upload']
-      };
-    }
-    
-    // Memory sharing (in person context)
-    if (this.currentContext.lastQueriedPerson && this.isLikelyMemorySharing(lower)) {
-      return {
-        intent: 'memory_sharing',
-        confidence: 0.8,
-        targetPerson: this.currentContext.lastQueriedPerson,
-        memoryContent: userMessage,
-        suggestedResponse: this.generateMemoryValidation(userMessage, this.currentContext.lastQueriedPerson)
-      };
-    }
-    
-    return {
-      intent: 'conversation',
-      confidence: 0.5,
-      suggestedResponse: "I'm here to help with your memories. What would you like to explore?"
-    };
-  }
-
-  /**
-   * 🎯 GENERATE UNIFIED RESPONSE - NO DUPLICATES!
-   */
-  async generateUnifiedResponse(analysis, chatInstance) {
-    // Update context based on analysis
-    if (analysis.targetPerson) {
-      this.currentContext.lastQueriedPerson = analysis.targetPerson;
-    }
-
-    switch (analysis.intent) {
-      case 'vault_query':
-        return await this.handleVaultQuery(analysis, chatInstance);
-        
-      case 'photo_request':
-        return await this.handlePhotoRequest(analysis, chatInstance);
-        
-      case 'memory_sharing':
-        return this.handleMemorySharing(analysis);
-        
-      case 'confusion':
-        return this.handleConfusion(analysis);
-        
-      default:
-        return {
-          text: analysis.suggestedResponse || "I'm here to listen. What would you like to share?",
-          actions: []
-        };
-    }
-  }
-
-  // Helper methods
-  addToHistory(message, sender) {
-    this.conversationHistory.push({ message, sender, timestamp: Date.now() });
-    if (this.conversationHistory.length > 10) {
-      this.conversationHistory.shift();
-    }
-  }
-
-  getVaultContext() {
-    const vault = this.options.vaultAccess();
-    return {
-      memoryCount: vault?.memories ? Object.keys(vault.memories).length : 0,
-      peopleCount: vault?.people ? Object.keys(vault.people).length : 0,
-      peopleNames: vault?.people ? Object.values(vault.people).map(p => p.name).filter(Boolean) : [],
-      recentTopics: []
-    };
-  }
-
-  isPhotoContext() {
-    // Check if Emma recently asked about photos
-    const recentEmmaMessages = this.conversationHistory
-      .filter(h => h.sender === 'emma')
-      .slice(-2)
-      .map(h => h.message);
-    
-    return recentEmmaMessages.some(msg => 
-      msg.includes('photo') || msg.includes('picture')
-    );
-  }
-
-  isLikelyMemorySharing(lowerMessage) {
-    const memoryIndicators = [
-      'mowing', 'cooking', 'cleaning', 'always', 'usually', 'every day',
-      'fell', 'went', 'did', 'was', 'had', 'saw', 'met', 'talked',
-      'lawn', 'tree', 'house', 'school', 'work', 'funny', 'sad'
-    ];
-    return memoryIndicators.some(word => lowerMessage.includes(word)) ||
-           lowerMessage.length < 20; // Short responses in person context likely memory-related
-  }
-
-  generateMemoryValidation(message, person) {
-    const lower = message.toLowerCase();
-    
-    if (lower.includes('mowing') || lower.includes('lawn')) {
-      return `Oh, ${person} and lawn mowing! That sounds like such a regular part of life together. I can picture those times. What made those moments special?`;
-    }
-    
-    if (lower.includes('always')) {
-      return `That sounds like such a meaningful pattern with ${person}! Those regular moments together can be so precious. Tell me more about those times.`;
-    }
-    
-    return `That sounds like a special memory with ${person}! I love hearing about moments like that. What else do you remember about it?`;
-  }
-
-  // 🎯 HANDLE VAULT QUERIES (person lookups)
-  async handleVaultQuery(analysis, chatInstance) {
-    const person = await chatInstance.findPersonInVault(analysis.targetPerson);
-    
-    if (!person) {
-      return {
-        text: `I don't see ${analysis.targetPerson} in your vault yet. Would you like to add them?`,
-        actions: []
-      };
-    }
-    
-    // Generate contextual person response
-    const memories = await chatInstance.getPersonMemories(person);
-    const memoryText = memories.length > 0 ? 
-      `I have ${memories.length} ${memories.length === 1 ? 'memory' : 'memories'} about them.` :
-      `I don't see any memories with them yet.`;
-    
-    return {
-      text: `${analysis.targetPerson} - they're ${person.relationship || 'someone special'}! ${memoryText} Would you like me to share what I know?`,
-      actions: ['show_person'],
-      analysis: analysis
-    };
-  }
-
-  // 📷 HANDLE PHOTO REQUESTS  
-  async handlePhotoRequest(analysis, chatInstance) {
-    return {
-      text: `Wonderful! I'd love to help you add photos with ${analysis.targetPerson}. You can drag and drop photos here, or click to browse your files.`,
-      actions: ['trigger_photo_upload'],
-      analysis: analysis
-    };
-  }
-
-  // 💝 HANDLE MEMORY SHARING
-  handleMemorySharing(analysis) {
-    return {
-      text: analysis.suggestedResponse,
-      actions: ['offer_memory_save'],
-      analysis: analysis
-    };
-  }
-
-  // 🤔 HANDLE CONFUSION
-  handleConfusion(analysis) {
-    const person = this.currentContext.lastQueriedPerson;
-    return {
-      text: person ? 
-        `I'm sorry if I confused you! You were telling me about ${person}. Would you like to continue sharing about them?` :
-        `I'm here to help! What would you like to talk about?`,
-      actions: []
-    };
-  }
-
-  async callLLM(prompt) {
-    if (!this.options.apiKey) throw new Error('No API key available');
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.options.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 300,
-        temperature: 0.7
-      })
-    });
-    
-    const data = await response.json();
-    return data.choices[0].message.content;
-  }
-}
-
-// Export for use in other modules
-window.EmmaChatExperience = EmmaChatExperience;
-console.log('💬 Emma Chat Experience: Module loaded successfully');

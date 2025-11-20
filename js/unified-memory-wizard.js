@@ -1815,7 +1815,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
           }
 
           console.log('👥 WIZARD: Saving memory with people connections:', this.selectedPeople);
-          
+
           const result = await window.emmaWebVault.addMemory({
             content: memoryCapsule.content || memoryCapsule.story,
             metadata: {
@@ -1829,7 +1829,7 @@ class UnifiedMemoryWizard extends ExperiencePopup {
             },
             attachments: vaultAttachments
           });
-          
+
           console.log('✅ WIZARD: Memory saved with people connections:', this.selectedPeople?.length || 0);
 
           this.showSuccessMessage('Memory capsule saved to your secure .emma vault! 🎉');

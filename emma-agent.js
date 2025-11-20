@@ -20,7 +20,7 @@ class EmmaServerAgent {
     this.options = { ...DEFAULT_OPTIONS, ...options };
 
     this.browserWs = null;
-    this.chatHistory = [];
+    this.chatHistory = options.chatHistory || [];
     this.pendingToolCalls = new Map();
     this.activeResponse = Promise.resolve();
     this.isActive = false;
@@ -44,7 +44,6 @@ class EmmaServerAgent {
   async startSession(browserWebSocket) {
     this.browserWs = browserWebSocket;
     this.isActive = true;
-    this.chatHistory = [];
     this.pendingToolCalls.clear();
     this.lastSpokenText = '';
 
