@@ -108,6 +108,12 @@ class EmmaChatExperience extends ExperiencePopup {
     this.agentConnectPromise = null;
     this.agentConnectionNotified = false;
 
+    // WebSocket retry backoff
+    this.agentRetryCount = 0;
+    this.agentMaxRetries = 5;
+    this.agentRetryDelay = 2000; // Start with 2 seconds
+    this.agentRetryTimeout = null;
+
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
@@ -317,6 +323,14 @@ class EmmaChatExperience extends ExperiencePopup {
       clearTimeout(this.initialWelcomeTimeout);
       this.initialWelcomeTimeout = null;
     }
+
+    // Reset retry count on successful connection
+    this.agentRetryCount = 0;
+    if (this.agentRetryTimeout) {
+      clearTimeout(this.agentRetryTimeout);
+      this.agentRetryTimeout = null;
+    }
+
     if (this.agentChatEnabled) {
       if (typeof this.hideTypingIndicator === 'function') {
         this.hideTypingIndicator();
@@ -341,8 +355,28 @@ class EmmaChatExperience extends ExperiencePopup {
     if (typeof this.hideTypingIndicator === 'function') {
       this.hideTypingIndicator();
     }
-    this.addMessage('system', '⚠️ Emma lost connection to the advanced memory tools. Trying to reconnect...');
-    this.connectAgentForChat();
+
+    // Implement exponential backoff for retries
+    this.agentRetryCount++;
+
+    if (this.agentRetryCount > this.agentMaxRetries) {
+      this.addMessage('system', '⚠️ Could not reach Emma\'s advanced memory tools. Using local intelligence only.');
+      this.agentConnectionNotified = true;
+      return;
+    }
+
+    const delay = Math.min(this.agentRetryDelay * Math.pow(2, this.agentRetryCount - 1), 30000);
+    this.addMessage('system', `⚠️ Emma lost connection to the advanced memory tools. Retrying in ${delay/1000}s... (${this.agentRetryCount}/${this.agentMaxRetries})`);
+
+    // Clear existing retry timeout
+    if (this.agentRetryTimeout) {
+      clearTimeout(this.agentRetryTimeout);
+    }
+
+    // Schedule retry with exponential backoff
+    this.agentRetryTimeout = setTimeout(() => {
+      this.connectAgentForChat();
+    }, delay);
   }
 
   /**
