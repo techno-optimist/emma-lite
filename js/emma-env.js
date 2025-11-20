@@ -20,6 +20,12 @@
 		if (env !== 'development' && env !== 'production') env = 'production';
 		window.EMMA_ENV = env;
 		window.EMMA_DEBUG = (env === 'development') || params.get('emma_debug') === '1';
+
+		// FORCE debug logging bypassing production suppression
+		var forceLog = function() {
+			Function.prototype.call.call(console.log, console, ...arguments);
+		};
+		forceLog('🔧 EMMA_ENV INIT: host=', host, 'protocol=', protocol, 'isLocalHost=', isLocalHost, 'env=', env);
 	} catch (e) {
 		// Safe defaults for production
 		try { window.EMMA_ENV = 'production'; window.EMMA_DEBUG = false; } catch (_) {}

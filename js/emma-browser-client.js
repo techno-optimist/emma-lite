@@ -219,11 +219,27 @@ class EmmaBrowserClient {
         ? window.getEmmaBackendWsUrl()
         : 'wss://emma-lite-optimized.onrender.com/voice';
 
-      console.log('🔗 Connecting to Emma agent...');
-      console.log('   wsUrl:', wsUrl);
-      console.log('   window.location.hostname:', window.location.hostname);
-      console.log('   window.EMMA_ENV:', window.EMMA_ENV);
-      console.log('   getEmmaBackendOrigin:', typeof window.getEmmaBackendOrigin === 'function' ? window.getEmmaBackendOrigin() : 'undefined');
+      // FORCE debug logging bypassing production suppression
+      const forceLog = (...args) => Function.prototype.call.call(console.log, console, ...args);
+
+      forceLog('🔗 ===== EMMA WEBSOCKET CONNECTION DEBUG =====');
+      forceLog('   wsUrl:', wsUrl);
+      forceLog('   window.location.href:', window.location.href);
+      forceLog('   window.location.hostname:', window.location.hostname);
+      forceLog('   window.location.port:', window.location.port);
+      forceLog('   window.location.protocol:', window.location.protocol);
+      forceLog('   window.EMMA_ENV:', window.EMMA_ENV);
+      forceLog('   window.EMMA_DEBUG:', window.EMMA_DEBUG);
+      forceLog('   window.EMMA_BACKEND_ORIGIN:', window.EMMA_BACKEND_ORIGIN);
+      forceLog('   typeof getEmmaBackendWsUrl:', typeof window.getEmmaBackendWsUrl);
+      forceLog('   typeof getEmmaBackendOrigin:', typeof window.getEmmaBackendOrigin);
+      if (typeof window.getEmmaBackendOrigin === 'function') {
+        forceLog('   getEmmaBackendOrigin() result:', window.getEmmaBackendOrigin());
+      }
+      if (typeof window.getEmmaBackendWsUrl === 'function') {
+        forceLog('   getEmmaBackendWsUrl() result:', window.getEmmaBackendWsUrl());
+      }
+      forceLog('==============================================');
       
       this.websocket = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
