@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧠 EmmaUnifiedIntelligence: Refactored for Modularity and Enhanced Capabilities
  * This class serves as the central intelligence hub for Emma, handling intent analysis,
  * response generation, and action dispatching. It's designed to be extensible and

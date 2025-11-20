@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emma - Chat</title>
+
+  <!-- Emma Vault System -->
+  <script src="js/emma-env.js"></script>
+  <script src="js/emma-logger.js"></script>
+  <script src="js/emma-input-modal.js"></script>
+  <script src="js/clean-password-modal.js"></script>
+  <script src="js/modal-helpers.js"></script>
+  <script src="js/emma-feature-flags.js"></script>
+  <script src="js/emma-vault-primary.js"></script>
+  <script src="js/emma-web-vault.js"></script>
+  <script src="js/web-vault-status.js"></script>
+
   <link rel="stylesheet" href="css/emma-chat-clean.css">
   <style>
     body {
@@ -38,6 +50,23 @@
       <button onclick="emmaWsChat.sendMessage()">Send</button>
     </div>
   </div>
+
+  <!-- Initialize Emma Web Vault -->
+  <script>
+    // Ensure Emma Web Vault is initialized before ws-chat.js uses it
+    (async function initializeVault() {
+      if (typeof EmmaWebVault === 'undefined') {
+        console.error('EmmaWebVault class not loaded!');
+        return;
+      }
+
+      if (!window.emmaWebVault) {
+        window.emmaWebVault = new EmmaWebVault();
+        console.log('✓ EmmaWebVault initialized for chat interface');
+      }
+    })();
+  </script>
+
   <script src="js/ws-chat.js"></script>
 </body>
 </html>
