@@ -174,8 +174,6 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   async initialize() {
-    this.ui.render(this.contentElement);
-    
     // 🎙️ PHASE 3: Initialize voice integration after chat setup
     setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
@@ -514,6 +512,10 @@ class EmmaChatExperience extends ExperiencePopup {
     button.append(icon, label);
     this.voiceToggleButton = button;
     return button;
+  }
+
+  renderContent(contentElement) {
+    this.ui.render(contentElement);
   }
 
   toggleVoicePlayback() {
