@@ -164,6 +164,10 @@ class EmmaServerAgent {
    * Execute an Emma tool, preferring privacy-first browser execution.
    */
   async requestBrowserTool(toolName, params) {
+    if (toolName === 'summarize_conversation') {
+      return this.summarizeConversation(params);
+    }
+
     if (this.canUseBrowserTools()) {
       try {
         return await this.executeToolViaBrowser(toolName, params);
@@ -190,6 +194,35 @@ class EmmaServerAgent {
     }
 
     throw new Error('No available execution path for requested tool');
+  }
+
+  async summarizeConversation({ topic }) {
+    if (!this.getActiveApiKey()) {
+      return { error: 'OpenAI API key not available' };
+    }
+
+    const conversation = this.chatHistory
+      .map((entry) => `${entry.role}: ${entry.content}`)
+      .join('\n');
+
+    const prompt = `Summarize the following conversation about ${topic}. The summary should be a concise and coherent narrative, suitable for a memory capsule. Focus on the key points and emotions expressed.`;
+
+    const input = [
+      this.buildInputMessage('system', prompt),
+      this.buildInputMessage('user', conversation),
+    ];
+
+    try {
+      const response = await this.postToOpenAI('/v1/responses', {
+        model: this.options.model,
+        input,
+      });
+      const summary = this.extractResponseText(response);
+      return { summary };
+    } catch (error) {
+      console.error('Conversation summarization error:', error);
+      return { error: 'Failed to summarize conversation' };
+    }
   }
 
   canUseBrowserTools() {

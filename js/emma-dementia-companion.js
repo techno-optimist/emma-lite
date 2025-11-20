@@ -50,7 +50,7 @@ class EmmaDementiaCompanion extends BaseOrb {
     try {
       // Initialize Memory Context Analyzer for personalized responses
       if (typeof MemoryContextAnalyzer !== 'undefined') {
-        this.contextAnalyzer = new MemoryContextAnalyzer();
+        this.contextAnalyzer = new MemoryContextAnalyzer(window.memoryOrchestrator);
         console.log('🧠 Memory Context Analyzer initialized for dementia care');
       } else {
         console.warn('🧠 MemoryContextAnalyzer not available - using basic responses');

@@ -13,6 +13,7 @@ async function initializeHMLSyncForMemoriesPage() {
     // Import HML components lazily
     const { P2PManager } = await import('./p2p/p2p-manager.js');
     const { BulletinBoardManager } = await import('./p2p/bulletin-board.js');
+    await import('./emma-unified-intelligence.js');
 
     // Load identity
     const result = chrome && chrome.storage && chrome.storage.local
