@@ -72,6 +72,8 @@ class EmmaChatExperience extends ExperiencePopup {
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
+    this.vectorlessReadyPromise = null;
+    this.vectorlessReadyState = 'idle';
 
     // 🧠 CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
     this.unifiedIntelligence = new EmmaUnifiedIntelligence({
@@ -88,6 +90,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
+    this.captureFallbackQueue = this.loadQueuedCaptures();
     
     // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
     this.temporaryMemories = new Map(); // Store preview memories before vault save
@@ -129,13 +132,13 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async initializeEmmaIntelligence() {
     console.log('🧠 Initializing Emma Intelligence Systems...');
-    
+
     try {
       // Load vectorless settings (includes API key detection)
       this.loadVectorlessSettings();
-      
+
       // Initialize vectorless engine for memory search
-      await this.initializeVectorlessEngine();
+      await this.ensureVectorlessReady();
       
       // Log the intelligence status
       this.logIntelligenceStatus();
@@ -190,7 +193,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
-    await this.initializeVectorlessEngine();
+    await this.ensureVectorlessReady();
 
     // 💝 Initialize Intelligent Memory Capture
     await this.initializeIntelligentCapture();
@@ -2304,7 +2307,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
     const localHandled = await this.processLocalChatMessage(message, messageId, {
-      allowDefaultResponse: !canUseAgent
+      allowDefaultResponse: !canUseAgent,
+      preferRemote: canUseAgent
     });
 
     if (localHandled) {
@@ -2325,16 +2329,30 @@ class EmmaChatExperience extends ExperiencePopup {
 
 
 
-  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true } = {}) {
+  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true, preferRemote = false } = {}) {
     const activeEnrichment = this.findActiveEnrichmentForResponse();
     if (activeEnrichment) {
       await this.processEnrichmentResponse(activeEnrichment, message);
       return true;
     }
 
+    // If the remote agent is available, prioritize tool-handled responses there
+    if (preferRemote) {
+      return false;
+    }
+
     const intent = this.classifyUserIntent(message);
     if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
-      console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
+      console.log('🎯 CTO: VAULT OPERATION DETECTED - Routing to local vault tools:', intent.type, message);
+      const handled = await this.handleLocalVaultIntent(intent, message);
+      if (handled) {
+        return true;
+      }
+
+      if (!allowDefaultResponse) {
+        return false;
+      }
+
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
@@ -2358,6 +2376,62 @@ class EmmaChatExperience extends ExperiencePopup {
       this.respondAsEmma(message);
     }, 1000 + Math.random() * 1500);
     return true;
+  }
+
+  /**
+   * Route vault intents to local Emma tools when the remote agent is unavailable
+   */
+  async handleLocalVaultIntent(intent, message) {
+    try {
+      if (!this.emmaVoice || !this.emmaVoice.tools) {
+        return false;
+      }
+
+      switch (intent.type) {
+        case 'people_list': {
+          const peopleResult = await this.emmaVoice.tools.execute('get_people', { query: message });
+          if (peopleResult?.people?.length) {
+            this.displayPeopleResults(peopleResult.people);
+            return true;
+          }
+          this.addMessage('emma', "I couldn't find anyone yet. Try adding a person first.");
+          return true;
+        }
+
+        case 'memory_search': {
+          const memoriesResult = await this.emmaVoice.tools.execute('get_memories', { query: message, limit: 5 });
+          if (memoriesResult?.memories?.length) {
+            this.displayMemoryResults(memoriesResult.memories);
+            return true;
+          }
+          this.addMessage('emma', "I don't see any matching memories yet. Want me to save this one?");
+          return true;
+        }
+
+        case 'person_inquiry': {
+          const peopleLookup = await this.emmaVoice.tools.execute('get_people', { query: message });
+          const firstMatch = peopleLookup?.people?.[0];
+          if (firstMatch?.id) {
+            const memories = await this.emmaVoice.tools.execute('get_memories', { personId: firstMatch.id, limit: 3 });
+            if (memories?.memories?.length) {
+              this.addMessage('emma', `Here are some memories about ${firstMatch.name}:`);
+              this.displayMemoryResults(memories.memories);
+              return true;
+            }
+            this.addMessage('emma', `I know ${firstMatch.name}, but I don't have memories yet. Want to add one?`);
+            return true;
+          }
+          this.addMessage('emma', "I don't recognize that person yet. Would you like to add them?");
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('❌ Local vault intent failed:', error);
+      this.addMessage('system', '⚠️ I had trouble accessing the vault locally.');
+      return true;
+    }
+
+    return false;
   }
 
 
@@ -4308,6 +4382,83 @@ class EmmaChatExperience extends ExperiencePopup {
 
   // 🧠 VECTORLESS AI INTEGRATION METHODS
 
+  ensureVectorlessReady() {
+    if (this.vectorlessReadyPromise) {
+      return this.vectorlessReadyPromise;
+    }
+
+    this.vectorlessReadyState = 'loading';
+    this.vectorlessReadyPromise = this.initializeVectorlessEngine()
+      .then(() => {
+        this.vectorlessReadyState = this.isVectorlessEnabled ? 'ready' : 'fallback';
+        this.flushQueuedCaptures();
+        return this.vectorlessEngine;
+      })
+      .catch((error) => {
+        this.vectorlessReadyState = 'failed';
+        throw error;
+      });
+
+    return this.vectorlessReadyPromise;
+  }
+
+  loadQueuedCaptures() {
+    try {
+      const stored = localStorage.getItem('emma-capture-queue');
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn('Failed to load capture queue from storage:', error);
+      return [];
+    }
+  }
+
+  persistQueuedCaptures() {
+    try {
+      localStorage.setItem('emma-capture-queue', JSON.stringify(this.captureFallbackQueue || []));
+    } catch (error) {
+      console.warn('Failed to persist capture queue:', error);
+    }
+  }
+
+  enqueueCaptureFallback(memoryDraft) {
+    if (!memoryDraft || !memoryDraft.content) return;
+    const payload = {
+      ...memoryDraft,
+      queuedAt: new Date().toISOString()
+    };
+
+    this.captureFallbackQueue.push(payload);
+    this.persistQueuedCaptures();
+
+    this.addMessage(
+      "I'm holding onto this memory locally and will save it once everything is back online.",
+      'emma'
+    );
+  }
+
+  async flushQueuedCaptures() {
+    if (!this.captureFallbackQueue.length || !window.emmaWebVault?.addMemory) {
+      return;
+    }
+
+    const pending = [...this.captureFallbackQueue];
+    this.captureFallbackQueue = [];
+    this.persistQueuedCaptures();
+
+    for (const entry of pending) {
+      try {
+        await window.emmaWebVault.addMemory(entry);
+      } catch (error) {
+        console.warn('Failed to flush queued memory capture:', error);
+        this.captureFallbackQueue.push(entry);
+      }
+    }
+
+    this.persistQueuedCaptures();
+  }
+
   /**
    * Initialize the Vectorless AI Engine with vault data
    */
@@ -4762,7 +4913,8 @@ class EmmaChatExperience extends ExperiencePopup {
       apiKeyInput.onchange = (e) => {
         this.apiKey = e.target.value;
         if (this.apiKey) {
-          this.initializeVectorlessEngine();
+          this.vectorlessReadyPromise = null;
+          this.ensureVectorlessReady();
         }
       };
     }
@@ -4849,7 +5001,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
-      this.initializeVectorlessEngine();
+      this.vectorlessReadyPromise = null;
+      this.ensureVectorlessReady();
     }
 
     this.showToast('✅ Settings saved successfully!', 'success');
@@ -5240,6 +5393,15 @@ class EmmaChatExperience extends ExperiencePopup {
       this.temporaryMemories.set(memory.id, memory);
       console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
       console.log('🎯 MEDIA REQUEST: Memory metadata:', memory.metadata);
+
+      if (!this.isVectorlessEnabled) {
+        this.enqueueCaptureFallback({
+          title: memory.title,
+          content: memory.content,
+          attachments: memory.attachments,
+          metadata: memory.metadata
+        });
+      }
       
       // Show the much better edit dialog we just perfected!
       this.editMemoryDetails(memory.id);
