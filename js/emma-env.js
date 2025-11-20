@@ -20,6 +20,12 @@
 		if (env !== 'development' && env !== 'production') env = 'production';
 		window.EMMA_ENV = env;
 		window.EMMA_DEBUG = (env === 'development') || params.get('emma_debug') === '1';
+
+		// FORCE debug logging bypassing production suppression
+		var forceLog = function() {
+			Function.prototype.call.call(console.log, console, ...arguments);
+		};
+		forceLog('🔧 EMMA_ENV INIT: host=', host, 'protocol=', protocol, 'isLocalHost=', isLocalHost, 'env=', env);
 	} catch (e) {
 		// Safe defaults for production
 		try { window.EMMA_ENV = 'production'; window.EMMA_DEBUG = false; } catch (_) {}
@@ -73,15 +79,14 @@
 			return scheme + '//' + resolvedHost + portSegment;
 		}
 
-		if (hostname === 'emma-lite-optimized.onrender.com') {
-			var backendPortSegment = port ? (':' + port) : '';
-			return (protocol || 'https:') + '//' + loc.hostname + backendPortSegment;
-		}
-
+		// CRITICAL FIX: On production/Render, ALWAYS use current page's origin
+		// This ensures WebSocket connects to the SAME server serving the page
+		// Works for emma-hjjc.onrender.com, emma-lite-optimized.onrender.com, or any other deployment
 		if (loc.origin) {
 			return normalizeOrigin(loc.origin);
 		}
 
+		// Fallback only if origin is not available (very old browsers)
 		var fallbackHost = hostname || 'emma-lite-optimized.onrender.com';
 		var fallbackScheme = protocol || 'https:';
 		var fallbackPort = port ? (':' + port) : '';
