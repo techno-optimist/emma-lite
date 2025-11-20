@@ -953,12 +953,15 @@ class EmmaChatExperience extends ExperiencePopup {
       button.addEventListener('click', (e) => {
         const action = e.currentTarget.dataset.action;
         const text = e.currentTarget.dataset.text;
-        
-        // Visual feedback
-        e.currentTarget.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          e.currentTarget.style.transform = '';
-        }, 150);
+
+        // Visual feedback - store reference to avoid null after timeout
+        const button = e.currentTarget;
+        if (button) {
+          button.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            if (button) button.style.transform = '';
+          }, 150);
+        }
 
         // Execute the appropriate action
         this.handlePromptAction(action, text);
@@ -5245,6 +5248,34 @@ class EmmaChatExperience extends ExperiencePopup {
       console.error('❌ Error handling media request:', error);
       await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
     }
+  }
+
+  /**
+   * Classify user intent for message routing
+   */
+  classifyUserIntent(message) {
+    const lowerMsg = message.toLowerCase().trim();
+
+    // People list queries
+    if (/\b(show|list|display|get|who are)\s+(all\s+)?(my\s+)?(people|persons|contacts|friends|family)\b/i.test(lowerMsg) ||
+        /\b(all\s+)?(my\s+)?people\s+(list|I\s+know)\b/i.test(lowerMsg)) {
+      return { type: 'people_list', confidence: 0.9 };
+    }
+
+    // Memory search queries
+    if (/\b(show|find|search|display|get|list)\s+(me\s+)?(all\s+)?(my\s+)?memor(y|ies)\b/i.test(lowerMsg) ||
+        /\bwhat\s+memor(y|ies)\b/i.test(lowerMsg) ||
+        /\bdo\s+I\s+have.*memor(y|ies)\b/i.test(lowerMsg)) {
+      return { type: 'memory_search', confidence: 0.9 };
+    }
+
+    // Person inquiry
+    if (/\b(who\s+is|tell\s+me\s+about|what\s+about|show\s+me)\s+\w+/i.test(lowerMsg)) {
+      return { type: 'person_inquiry', confidence: 0.7 };
+    }
+
+    // General conversation
+    return { type: 'general', confidence: 0.5 };
   }
 
   /**

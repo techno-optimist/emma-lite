@@ -218,8 +218,12 @@ class EmmaBrowserClient {
       const wsUrl = (typeof window.getEmmaBackendWsUrl === 'function')
         ? window.getEmmaBackendWsUrl()
         : 'wss://emma-lite-optimized.onrender.com/voice';
-      
-      console.log('🔗 Connecting to Emma agent...', wsUrl);
+
+      console.log('🔗 Connecting to Emma agent...');
+      console.log('   wsUrl:', wsUrl);
+      console.log('   window.location.hostname:', window.location.hostname);
+      console.log('   window.EMMA_ENV:', window.EMMA_ENV);
+      console.log('   getEmmaBackendOrigin:', typeof window.getEmmaBackendOrigin === 'function' ? window.getEmmaBackendOrigin() : 'undefined');
       
       this.websocket = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
