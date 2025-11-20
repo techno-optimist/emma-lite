@@ -79,15 +79,14 @@
 			return scheme + '//' + resolvedHost + portSegment;
 		}
 
-		if (hostname === 'emma-lite-optimized.onrender.com') {
-			var backendPortSegment = port ? (':' + port) : '';
-			return (protocol || 'https:') + '//' + loc.hostname + backendPortSegment;
-		}
-
+		// CRITICAL FIX: On production/Render, ALWAYS use current page's origin
+		// This ensures WebSocket connects to the SAME server serving the page
+		// Works for emma-hjjc.onrender.com, emma-lite-optimized.onrender.com, or any other deployment
 		if (loc.origin) {
 			return normalizeOrigin(loc.origin);
 		}
 
+		// Fallback only if origin is not available (very old browsers)
 		var fallbackHost = hostname || 'emma-lite-optimized.onrender.com';
 		var fallbackScheme = protocol || 'https:';
 		var fallbackPort = port ? (':' + port) : '';
