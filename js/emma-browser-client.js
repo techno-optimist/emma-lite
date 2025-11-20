@@ -583,8 +583,9 @@ class EmmaBrowserClient {
         break;
 
       case 'create_memory_from_voice':
-        if (result.success) {
-          this.chatInstance.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
+        if (result.success || result.memoryId) {
+          const snippet = params.content?.substring(0, 50) || result.title || 'New memory';
+          this.chatInstance.addMessage('system', `💭 New memory created: "${snippet}..."`, {
             type: 'memory-created',
             memoryId: result.memoryId
           });
@@ -592,7 +593,7 @@ class EmmaBrowserClient {
         break;
 
       case 'create_memory_capsule':
-        if (result.success) {
+        if (result.success || result.memoryId) {
           const label = result.title || params.title || params.content?.substring(0, 50) || 'New memory';
           this.chatInstance.addMessage('system', `💾 Saved memory: "${label}"`, {
             type: 'memory-created',
@@ -636,6 +637,24 @@ class EmmaBrowserClient {
           this.chatInstance.addMessage('system', `📎 Added ${count} new ${count === 1 ? 'attachment' : 'attachments'} to your memory`, {
             type: 'memory-media-added',
             memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'delete_memory':
+        if (result.success || result.memoryId) {
+          this.chatInstance.addMessage('system', '🗑️ Memory removed from your vault.', {
+            type: 'memory-deleted',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'delete_person':
+        if (result.success || result.personId) {
+          this.chatInstance.addMessage('system', '👥 Removed that person from your vault.', {
+            type: 'person-deleted',
+            personId: result.personId
           });
         }
         break;
