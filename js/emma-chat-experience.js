@@ -5218,7 +5218,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Generate dynamic response for media requests
       const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
-      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', null, 'response');
+      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', {});
 
       // Create a basic memory from the request
       const memory = {
@@ -5246,7 +5246,7 @@ class EmmaChatExperience extends ExperiencePopup {
 
     } catch (error) {
       console.error('❌ Error handling media request:', error);
-      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
+      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', {});
     }
   }
 
@@ -10231,7 +10231,7 @@ Just the question:`;
         }
         
         // Show success message
-        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', {});
         
         this.showToast("Memory saved successfully! 💝", "success");
         
