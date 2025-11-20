@@ -161,7 +161,9 @@ class EmmaDementiaModals {
    */
   createModal(config) {
     if (this.isOpen) {
-      return Promise.reject(new Error('Modal is already open'));
+      // Don't throw error - just warn and ignore duplicate modals
+      console.warn('⚠️ Modal already open - ignoring duplicate request');
+      return Promise.resolve(null);
     }
 
     this.isOpen = true;

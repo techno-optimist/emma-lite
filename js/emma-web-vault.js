@@ -1896,14 +1896,16 @@ class EmmaWebVault {
         if (this.fileHandle) {
           if (persistedHandleStatus && persistedHandleStatus.permission === 'denied') {
             this.needsFileReauth = true;
-            this.promptForFileReauth();
+            // DON'T prompt on page load - only when user tries to save
+            console.log('📝 Vault file permission denied - will prompt on next save');
           } else {
             this.needsFileReauth = false;
           }
         } else if (this.originalFileName) {
           //  CRITICAL: Defer re-auth until user action to avoid unsolicited file pickers
           this.needsFileReauth = true;
-          this.promptForFileReauth();
+          // DON'T prompt on page load - only when user tries to save
+          console.log('📝 Vault file reauth needed - will prompt on next save');
         }
 
         return { vaultData: this.vaultData, hasPassphrase: true, hasFileName: !!this.originalFileName };
