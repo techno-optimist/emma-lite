@@ -168,6 +168,7 @@ class EmmaServerAgent {
         return await this.executeToolViaBrowser(toolName, params);
       } catch (error) {
         console.warn(`Browser tool execution failed for ${toolName}:`, error?.message || error);
+        this.notifyToolHealth(toolName, 'degraded', 'browser_tool_unavailable');
         if (!this.canUseServerTools(toolName)) {
           throw error;
         }
@@ -180,14 +181,18 @@ class EmmaServerAgent {
         return await this.vaultService.execute(toolName, params);
       } catch (error) {
         console.warn(`Vault tool execution failed for ${toolName}:`, error?.message || error);
+        this.notifyToolHealth(toolName, 'degraded', 'vault_execution_failed');
         if (!this.canUseBrowserTools()) {
           throw error;
         }
         console.warn(`Retrying ${toolName} via browser after vault failure`);
-        return this.executeToolViaBrowser(toolName, params);
+        const result = await this.executeToolViaBrowser(toolName, params);
+        this.notifyToolHealth(toolName, 'recovered', 'browser_retry_success');
+        return result;
       }
     }
 
+    this.notifyToolHealth(toolName, 'unavailable', 'no_execution_path');
     throw new Error('No available execution path for requested tool');
   }
 
@@ -197,6 +202,16 @@ class EmmaServerAgent {
 
   canUseServerTools(toolName) {
     return Boolean(this.vaultService && this.vaultService.canExecute(toolName));
+  }
+
+  notifyToolHealth(toolName, status, detail) {
+    this.sendToBrowser({
+      type: 'tool_health',
+      tool: toolName,
+      status,
+      detail,
+      timestamp: Date.now()
+    });
   }
 
   executeToolViaBrowser(toolName, params) {

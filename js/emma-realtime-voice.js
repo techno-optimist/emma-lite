@@ -531,7 +531,9 @@ class EmmaVoiceTools {
       update_person: this.updatePerson.bind(this),
       create_person_profile: this.createPersonProfile.bind(this),
       update_memory_capsule: this.updateMemoryCapsule.bind(this),
-      attach_memory_media: this.attachMemoryMedia.bind(this)
+      attach_memory_media: this.attachMemoryMedia.bind(this),
+      delete_memory: this.deleteMemory.bind(this),
+      delete_person: this.deletePerson.bind(this)
     };
     
     console.log('🔧 Emma Voice Tools initialized (local-only)');
@@ -587,29 +589,39 @@ class EmmaVoiceTools {
       
       const vaultMemories = window.emmaWebVault.vaultData?.content?.memories || {};
       let memories = Object.values(vaultMemories);
-      
+
       // Filter by person if provided
       if (params.personId) {
-        memories = memories.filter(memory => 
+        memories = memories.filter(memory =>
           memory.metadata?.people?.includes(params.personId)
         );
       }
-      
+
+      // Basic keyword search on content/title/tags
+      const query = (params.query || '').trim().toLowerCase();
+      if (query) {
+        memories = memories.filter(memory => {
+          const haystack = [memory.content, memory.metadata?.title, (memory.metadata?.tags || []).join(' ')].join(' ').toLowerCase();
+          return haystack.includes(query);
+        });
+      }
+
       // Sort by date (newest first)
       memories.sort((a, b) => new Date(b.created) - new Date(a.created));
-      
+
       // Limit results
       const limit = params.limit || 5;
       memories = memories.slice(0, limit);
-      
-      // Return only metadata (no content for privacy)
+
       return {
         memories: memories.map(m => ({
           id: m.id,
           created: m.created,
-          title: m.content?.substring(0, 50) + '...',
+          title: m.metadata?.title || m.content?.substring(0, 80) || 'Untitled memory',
+          preview: m.content?.substring(0, 160) || '',
           people: m.metadata?.people || [],
-          tags: m.metadata?.tags || []
+          tags: m.metadata?.tags || [],
+          attachments: Array.isArray(m.attachments) ? m.attachments.map(att => ({ id: att.id, name: att.name, type: att.type })) : []
         }))
       };
       
@@ -1246,6 +1258,68 @@ class EmmaVoiceTools {
     } catch (error) {
       console.error('❌ attachMemoryMedia error:', error);
       return { error: 'Failed to attach media: ' + error.message };
+    }
+  }
+
+  async deleteMemory(params = {}) {
+    try {
+      const memoryId = params.memoryId?.trim();
+      if (!memoryId) {
+        return { error: 'memoryId is required' };
+      }
+
+      if (!window.emmaWebVault?.isOpen) {
+        return { error: 'Vault not available - please open your vault first' };
+      }
+
+      if (!window.emmaWebVault.vaultData?.content?.memories?.[memoryId]) {
+        return { error: 'Memory not found in vault' };
+      }
+
+      await window.emmaWebVault.deleteMemory(memoryId);
+      return { success: true, memoryId };
+    } catch (error) {
+      console.error('❌ deleteMemory error:', error);
+      return { error: 'Failed to delete memory: ' + error.message };
+    }
+  }
+
+  async deletePerson(params = {}) {
+    try {
+      const personId = params.personId?.trim();
+      if (!personId) {
+        return { error: 'personId is required' };
+      }
+
+      if (!window.emmaWebVault?.isOpen) {
+        return { error: 'Vault not available - please open your vault first' };
+      }
+
+      const vault = window.emmaWebVault.vaultData?.content;
+      if (!vault?.people?.[personId]) {
+        return { error: 'Person not found in vault' };
+      }
+
+      // Remove from people list
+      delete vault.people[personId];
+
+      // Remove references from memories
+      if (vault.memories) {
+        Object.values(vault.memories).forEach(memory => {
+          if (Array.isArray(memory.metadata?.people)) {
+            memory.metadata.people = memory.metadata.people.filter(id => id !== personId);
+          }
+          if (Array.isArray(memory.people)) {
+            memory.people = memory.people.filter(person => person.id !== personId);
+          }
+        });
+      }
+
+      await window.emmaWebVault.scheduleElegantSave();
+      return { success: true, personId };
+    } catch (error) {
+      console.error('❌ deletePerson error:', error);
+      return { error: 'Failed to delete person: ' + error.message };
     }
   }
 }

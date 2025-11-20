@@ -72,6 +72,8 @@ class EmmaChatExperience extends ExperiencePopup {
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
+    this.vectorlessReadyPromise = null;
+    this.vectorlessReadyState = 'idle';
 
     // 🧠 CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
     this.unifiedIntelligence = new EmmaUnifiedIntelligence({
@@ -88,6 +90,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
+    this.captureFallbackQueue = this.loadQueuedCaptures();
     
     // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
     this.temporaryMemories = new Map(); // Store preview memories before vault save
@@ -108,6 +111,12 @@ class EmmaChatExperience extends ExperiencePopup {
     this.agentConnectPromise = null;
     this.agentConnectionNotified = false;
 
+    // WebSocket retry backoff
+    this.agentRetryCount = 0;
+    this.agentMaxRetries = 5;
+    this.agentRetryDelay = 2000; // Start with 2 seconds
+    this.agentRetryTimeout = null;
+
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
@@ -123,13 +132,13 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async initializeEmmaIntelligence() {
     console.log('🧠 Initializing Emma Intelligence Systems...');
-    
+
     try {
       // Load vectorless settings (includes API key detection)
       this.loadVectorlessSettings();
-      
+
       // Initialize vectorless engine for memory search
-      await this.initializeVectorlessEngine();
+      await this.ensureVectorlessReady();
       
       // Log the intelligence status
       this.logIntelligenceStatus();
@@ -184,7 +193,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
-    await this.initializeVectorlessEngine();
+    await this.ensureVectorlessReady();
 
     // 💝 Initialize Intelligent Memory Capture
     await this.initializeIntelligentCapture();
@@ -317,6 +326,14 @@ class EmmaChatExperience extends ExperiencePopup {
       clearTimeout(this.initialWelcomeTimeout);
       this.initialWelcomeTimeout = null;
     }
+
+    // Reset retry count on successful connection
+    this.agentRetryCount = 0;
+    if (this.agentRetryTimeout) {
+      clearTimeout(this.agentRetryTimeout);
+      this.agentRetryTimeout = null;
+    }
+
     if (this.agentChatEnabled) {
       if (typeof this.hideTypingIndicator === 'function') {
         this.hideTypingIndicator();
@@ -341,8 +358,28 @@ class EmmaChatExperience extends ExperiencePopup {
     if (typeof this.hideTypingIndicator === 'function') {
       this.hideTypingIndicator();
     }
-    this.addMessage('system', '⚠️ Emma lost connection to the advanced memory tools. Trying to reconnect...');
-    this.connectAgentForChat();
+
+    // Implement exponential backoff for retries
+    this.agentRetryCount++;
+
+    if (this.agentRetryCount > this.agentMaxRetries) {
+      this.addMessage('system', '⚠️ Could not reach Emma\'s advanced memory tools. Using local intelligence only.');
+      this.agentConnectionNotified = true;
+      return;
+    }
+
+    const delay = Math.min(this.agentRetryDelay * Math.pow(2, this.agentRetryCount - 1), 30000);
+    this.addMessage('system', `⚠️ Emma lost connection to the advanced memory tools. Retrying in ${delay/1000}s... (${this.agentRetryCount}/${this.agentMaxRetries})`);
+
+    // Clear existing retry timeout
+    if (this.agentRetryTimeout) {
+      clearTimeout(this.agentRetryTimeout);
+    }
+
+    // Schedule retry with exponential backoff
+    this.agentRetryTimeout = setTimeout(() => {
+      this.connectAgentForChat();
+    }, delay);
   }
 
   /**
@@ -919,12 +956,15 @@ class EmmaChatExperience extends ExperiencePopup {
       button.addEventListener('click', (e) => {
         const action = e.currentTarget.dataset.action;
         const text = e.currentTarget.dataset.text;
-        
-        // Visual feedback
-        e.currentTarget.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          e.currentTarget.style.transform = '';
-        }, 150);
+
+        // Visual feedback - store reference to avoid null after timeout
+        const button = e.currentTarget;
+        if (button) {
+          button.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            if (button) button.style.transform = '';
+          }, 150);
+        }
 
         // Execute the appropriate action
         this.handlePromptAction(action, text);
@@ -4271,6 +4311,83 @@ class EmmaChatExperience extends ExperiencePopup {
 
   // 🧠 VECTORLESS AI INTEGRATION METHODS
 
+  ensureVectorlessReady() {
+    if (this.vectorlessReadyPromise) {
+      return this.vectorlessReadyPromise;
+    }
+
+    this.vectorlessReadyState = 'loading';
+    this.vectorlessReadyPromise = this.initializeVectorlessEngine()
+      .then(() => {
+        this.vectorlessReadyState = this.isVectorlessEnabled ? 'ready' : 'fallback';
+        this.flushQueuedCaptures();
+        return this.vectorlessEngine;
+      })
+      .catch((error) => {
+        this.vectorlessReadyState = 'failed';
+        throw error;
+      });
+
+    return this.vectorlessReadyPromise;
+  }
+
+  loadQueuedCaptures() {
+    try {
+      const stored = localStorage.getItem('emma-capture-queue');
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn('Failed to load capture queue from storage:', error);
+      return [];
+    }
+  }
+
+  persistQueuedCaptures() {
+    try {
+      localStorage.setItem('emma-capture-queue', JSON.stringify(this.captureFallbackQueue || []));
+    } catch (error) {
+      console.warn('Failed to persist capture queue:', error);
+    }
+  }
+
+  enqueueCaptureFallback(memoryDraft) {
+    if (!memoryDraft || !memoryDraft.content) return;
+    const payload = {
+      ...memoryDraft,
+      queuedAt: new Date().toISOString()
+    };
+
+    this.captureFallbackQueue.push(payload);
+    this.persistQueuedCaptures();
+
+    this.addMessage(
+      "I'm holding onto this memory locally and will save it once everything is back online.",
+      'emma'
+    );
+  }
+
+  async flushQueuedCaptures() {
+    if (!this.captureFallbackQueue.length || !window.emmaWebVault?.addMemory) {
+      return;
+    }
+
+    const pending = [...this.captureFallbackQueue];
+    this.captureFallbackQueue = [];
+    this.persistQueuedCaptures();
+
+    for (const entry of pending) {
+      try {
+        await window.emmaWebVault.addMemory(entry);
+      } catch (error) {
+        console.warn('Failed to flush queued memory capture:', error);
+        this.captureFallbackQueue.push(entry);
+      }
+    }
+
+    this.persistQueuedCaptures();
+  }
+
   /**
    * Initialize the Vectorless AI Engine with vault data
    */
@@ -4725,7 +4842,8 @@ class EmmaChatExperience extends ExperiencePopup {
       apiKeyInput.onchange = (e) => {
         this.apiKey = e.target.value;
         if (this.apiKey) {
-          this.initializeVectorlessEngine();
+          this.vectorlessReadyPromise = null;
+          this.ensureVectorlessReady();
         }
       };
     }
@@ -4812,7 +4930,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
-      this.initializeVectorlessEngine();
+      this.vectorlessReadyPromise = null;
+      this.ensureVectorlessReady();
     }
 
     this.showToast('✅ Settings saved successfully!', 'success');
@@ -5181,7 +5300,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Generate dynamic response for media requests
       const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
-      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', null, 'response');
+      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', {});
 
       // Create a basic memory from the request
       const memory = {
@@ -5203,14 +5322,51 @@ class EmmaChatExperience extends ExperiencePopup {
       this.temporaryMemories.set(memory.id, memory);
       console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
       console.log('🎯 MEDIA REQUEST: Memory metadata:', memory.metadata);
+
+      if (!this.isVectorlessEnabled) {
+        this.enqueueCaptureFallback({
+          title: memory.title,
+          content: memory.content,
+          attachments: memory.attachments,
+          metadata: memory.metadata
+        });
+      }
       
       // Show the much better edit dialog we just perfected!
       this.editMemoryDetails(memory.id);
 
     } catch (error) {
       console.error('❌ Error handling media request:', error);
-      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
+      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', {});
     }
+  }
+
+  /**
+   * Classify user intent for message routing
+   */
+  classifyUserIntent(message) {
+    const lowerMsg = message.toLowerCase().trim();
+
+    // People list queries
+    if (/\b(show|list|display|get|who are)\s+(all\s+)?(my\s+)?(people|persons|contacts|friends|family)\b/i.test(lowerMsg) ||
+        /\b(all\s+)?(my\s+)?people\s+(list|I\s+know)\b/i.test(lowerMsg)) {
+      return { type: 'people_list', confidence: 0.9 };
+    }
+
+    // Memory search queries
+    if (/\b(show|find|search|display|get|list)\s+(me\s+)?(all\s+)?(my\s+)?memor(y|ies)\b/i.test(lowerMsg) ||
+        /\bwhat\s+memor(y|ies)\b/i.test(lowerMsg) ||
+        /\bdo\s+I\s+have.*memor(y|ies)\b/i.test(lowerMsg)) {
+      return { type: 'memory_search', confidence: 0.9 };
+    }
+
+    // Person inquiry
+    if (/\b(who\s+is|tell\s+me\s+about|what\s+about|show\s+me)\s+\w+/i.test(lowerMsg)) {
+      return { type: 'person_inquiry', confidence: 0.7 };
+    }
+
+    // General conversation
+    return { type: 'general', confidence: 0.5 };
   }
 
   /**
@@ -10166,7 +10322,7 @@ Just the question:`;
         }
         
         // Show success message
-        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', {});
         
         this.showToast("Memory saved successfully! 💝", "success");
         
