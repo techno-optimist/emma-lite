@@ -116,11 +116,11 @@ class EmmaRealtimeVoice {
       this.updateStatus('Preparing voice session...');
 
       // Get ephemeral token (privacy-first)
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001' 
-        : 'https://emma-voice-backend.onrender.com';
+      const backendOrigin = (typeof window.getEmmaBackendOrigin === 'function')
+        ? window.getEmmaBackendOrigin()
+        : 'https://emma-lite-optimized.onrender.com';
         
-      const tokenResponse = await fetch(`${backendUrl}/token`);
+      const tokenResponse = await fetch(`${backendOrigin}/token`);
 
       if (!tokenResponse.ok) {
         const error = await tokenResponse.json();
@@ -527,7 +527,11 @@ class EmmaVoiceTools {
       get_memories: this.getMemories.bind(this),
       summarize_memory: this.summarizeMemory.bind(this),
       create_memory_from_voice: this.createMemoryFromVoice.bind(this),
-      update_person: this.updatePerson.bind(this)
+      create_memory_capsule: this.createMemoryCapsule.bind(this),
+      update_person: this.updatePerson.bind(this),
+      create_person_profile: this.createPersonProfile.bind(this),
+      update_memory_capsule: this.updateMemoryCapsule.bind(this),
+      attach_memory_media: this.attachMemoryMedia.bind(this)
     };
     
     console.log('🔧 Emma Voice Tools initialized (local-only)');
@@ -657,21 +661,14 @@ class EmmaVoiceTools {
       if (!window.emmaWebVault?.isOpen) {
         return { error: 'Vault not available - please open your vault first' };
       }
-      
+
       console.log('💭 Creating memory from voice:', params);
-      
-      // Process people mentioned in the memory
-      const peopleIds = [];
-      if (params.people && params.people.length > 0) {
-        for (const personName of params.people) {
-          // Try to find existing person or create new one
-          const person = await this.findOrCreatePerson(personName);
-          if (person && person.id) {
-            peopleIds.push(person.id);
-          }
-        }
-      }
-      
+
+      const peopleIds = await this.resolvePeopleIdentifiers(params.people || []);
+      const attachments = await this.normalizeAttachments(params.attachments || []);
+      const content = (params.content || '').trim();
+      const derivedTitle = params.title || (content ? content.substring(0, 60) : 'Voice memory');
+
       // Create rich metadata from voice parameters
       const metadata = {
         source: 'voice-conversation',
@@ -680,27 +677,86 @@ class EmmaVoiceTools {
         emotion: params.emotion || 'neutral',
         importance: params.importance || 7, // Default to high importance for voice memories
         created_via: 'emma-voice',
-        date_captured: new Date().toISOString()
+        date_captured: new Date().toISOString(),
+        title: derivedTitle,
+        date: params.date || undefined,
+        location: params.location || undefined
       };
-      
+
       // Use existing vault system (Staging → Approval → Vault)
       const result = await window.emmaWebVault.addMemory({
-        content: params.content,
-        metadata: metadata
+        content: content,
+        metadata: metadata,
+        attachments
       });
-      
+
       console.log('✅ Memory created successfully:', result.memory?.id);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         memoryId: result.memory?.id,
         peopleConnected: peopleIds.length,
+        attachmentCount: attachments.length,
         message: `Memory saved with ${peopleIds.length} people connected`
       };
-      
+
     } catch (error) {
       console.error('❌ createMemoryFromVoice error:', error);
       return { error: 'Failed to create memory: ' + error.message };
+    }
+  }
+
+  async createMemoryCapsule(params = {}) {
+    try {
+      if (!window.emmaWebVault?.isOpen) {
+        return { error: 'Vault not available - please open your vault first' };
+      }
+
+      const content = (params.content || '').trim();
+      if (!content) {
+        return { error: 'Memory content is required' };
+      }
+
+      const title = params.title?.trim() || content.substring(0, 60);
+      const peopleIds = await this.resolvePeopleIdentifiers(params.people || []);
+      const attachments = await this.normalizeAttachments(params.attachments || []);
+
+      const metadata = {
+        ...(params.metadata || {}),
+        title,
+        people: peopleIds,
+        emotion: params.emotion || params.metadata?.emotion || 'neutral',
+        importance: typeof params.importance === 'number'
+          ? params.importance
+          : params.metadata?.importance || 5,
+        tags: Array.isArray(params.tags) ? params.tags : params.metadata?.tags || [],
+        location: params.location || params.metadata?.location || '',
+        date: params.date || params.metadata?.date,
+        captureMethod: params.captureMethod || 'chat-agent',
+        created_via: 'emma-agent-chat'
+      };
+
+      const result = await window.emmaWebVault.addMemory({
+        content,
+        metadata,
+        attachments
+      });
+
+      if (!result?.success) {
+        return { error: result?.error || 'Failed to save memory' };
+      }
+
+      return {
+        success: true,
+        memoryId: result.memory?.id,
+        title,
+        peopleCount: peopleIds.length,
+        attachmentCount: attachments.length
+      };
+
+    } catch (error) {
+      console.error('❌ createMemoryCapsule error:', error);
+      return { error: 'Failed to save memory capsule: ' + error.message };
     }
   }
 
@@ -750,6 +806,234 @@ class EmmaVoiceTools {
     } catch (error) {
       console.error('❌ findOrCreatePerson error:', error);
       return null;
+    }
+  }
+
+  async resolvePeopleIdentifiers(peopleInput) {
+    const ids = [];
+    if (!Array.isArray(peopleInput)) {
+      return ids;
+    }
+
+    const seen = new Set();
+    for (const entry of peopleInput) {
+      if (!entry) continue;
+
+      if (typeof entry === 'string') {
+        const person = await this.findOrCreatePerson(entry.trim());
+        if (person?.id && !seen.has(person.id)) {
+          ids.push(person.id);
+          seen.add(person.id);
+        }
+        continue;
+      }
+
+      if (typeof entry === 'object') {
+        if (entry.id) {
+          if (!seen.has(entry.id)) {
+            ids.push(entry.id);
+            seen.add(entry.id);
+          }
+          if (entry.relationship && window.emmaWebVault?.vaultData?.content?.people?.[entry.id]) {
+            window.emmaWebVault.vaultData.content.people[entry.id].relationship = entry.relationship;
+          }
+          continue;
+        }
+
+        if (entry.name) {
+          const person = await this.findOrCreatePerson(entry.name);
+          if (person?.id && !seen.has(person.id)) {
+            ids.push(person.id);
+            seen.add(person.id);
+          }
+          if (entry.relationship && person) {
+            person.relationship = entry.relationship;
+          }
+        }
+      }
+    }
+
+    return ids;
+  }
+
+  lookupChatMedia(uploadId) {
+    if (!uploadId) return null;
+
+    try {
+      if (window.chatExperience && typeof window.chatExperience.lookupMediaUpload === 'function') {
+        const media = window.chatExperience.lookupMediaUpload(uploadId);
+        if (media) {
+          return media;
+        }
+      }
+    } catch (error) {
+      console.warn('📷 lookupChatMedia error:', error);
+    }
+
+    return null;
+  }
+
+  async processAttachmentPayload(attachment) {
+    if (!attachment) return null;
+
+    try {
+      const mediaStore = window.emmaWebVault?.vaultData?.content?.media || {};
+      let { id, uploadId, data, dataUrl, type, name, size } = attachment;
+      let payload = data || dataUrl || attachment.url;
+      let resolvedName = name;
+      let resolvedType = type || attachment.mimeType;
+      let resolvedSize = size || attachment.fileSize || 0;
+
+      if (!payload && (uploadId || id)) {
+        const lookupId = uploadId || id;
+        const chatMedia = this.lookupChatMedia(lookupId);
+        if (chatMedia) {
+          payload = chatMedia.dataUrl || chatMedia.data;
+          resolvedName = resolvedName || chatMedia.name;
+          resolvedType = resolvedType || chatMedia.type;
+          resolvedSize = resolvedSize || chatMedia.size || resolvedSize;
+          id = chatMedia.id || lookupId;
+        }
+      }
+
+      if (!payload && id && mediaStore[id]) {
+        const mediaItem = mediaStore[id];
+        return {
+          id,
+          type: resolvedType || mediaItem.type,
+          name: resolvedName || mediaItem.name,
+          size: resolvedSize || mediaItem.size || 0
+        };
+      }
+
+      if (!payload) {
+        return null;
+      }
+
+      const mime = resolvedType || 'application/octet-stream';
+      if (typeof payload === 'string' && !payload.startsWith('data:')) {
+        payload = `data:${mime};base64,${payload}`;
+      }
+
+      const storedId = await window.emmaWebVault.addMedia({
+        type: mime,
+        name: resolvedName || 'memory-attachment',
+        data: payload
+      });
+
+      return {
+        id: storedId,
+        type: mime,
+        name: resolvedName || 'memory-attachment',
+        size: resolvedSize || 0
+      };
+
+    } catch (error) {
+      console.error('❌ processAttachmentPayload error:', error);
+      return null;
+    }
+  }
+
+  async normalizeAttachments(attachments) {
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return [];
+    }
+
+    const processed = [];
+    for (const attachment of attachments) {
+      const normalized = await this.processAttachmentPayload(attachment);
+      if (normalized) {
+        processed.push(normalized);
+      }
+    }
+
+    return processed;
+  }
+
+  async createPersonProfile(params = {}) {
+    try {
+      if (!window.emmaWebVault?.isOpen) {
+        return { error: 'Vault not available - please open your vault first' };
+      }
+
+      const name = params.name?.trim();
+      if (!name) {
+        return { error: 'Person name is required' };
+      }
+
+      const people = window.emmaWebVault.vaultData?.content?.people || {};
+      let person = Object.values(people).find(p => p.name?.toLowerCase() === name.toLowerCase());
+
+      if (!person) {
+        const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        person = {
+          id: personId,
+          name,
+          created: new Date().toISOString(),
+          source: 'emma-agent-chat'
+        };
+        people[personId] = person;
+      }
+
+      if (params.relationship) {
+        person.relationship = params.relationship;
+      }
+
+      if (params.pronouns) {
+        person.pronouns = params.pronouns;
+      }
+
+      if (params.birthday) {
+        person.birthday = params.birthday;
+      }
+
+      if (params.details) {
+        if (!person.details) {
+          person.details = [];
+        }
+        if (Array.isArray(person.details)) {
+          person.details.push({
+            detail: params.details,
+            added: new Date().toISOString(),
+            source: 'emma-agent-chat'
+          });
+        } else if (typeof person.details === 'string') {
+          person.details = [
+            { detail: person.details, source: 'legacy' },
+            { detail: params.details, added: new Date().toISOString(), source: 'emma-agent-chat' }
+          ];
+        }
+      }
+
+      if (params.avatar && (params.avatar.data || params.avatar.dataUrl || params.avatar.uploadId || params.avatar.id)) {
+        const avatarAttachment = await this.processAttachmentPayload({
+          id: params.avatar.id,
+          uploadId: params.avatar.uploadId,
+          data: params.avatar.data,
+          dataUrl: params.avatar.dataUrl,
+          type: params.avatar.type || 'image/png',
+          name: params.avatar.name || `${name}-avatar`
+        });
+
+        if (avatarAttachment?.id) {
+          person.avatarId = avatarAttachment.id;
+          person.avatarUpdated = new Date().toISOString();
+        }
+      }
+
+      person.updated = new Date().toISOString();
+
+      await window.emmaWebVault.scheduleElegantSave();
+
+      return {
+        success: true,
+        personId: person.id,
+        personName: person.name
+      };
+
+    } catch (error) {
+      console.error('❌ createPersonProfile error:', error);
+      return { error: 'Failed to create person: ' + error.message };
     }
   }
 
@@ -813,15 +1097,155 @@ class EmmaVoiceTools {
       
       console.log('✅ Person updated successfully:', person.name);
       
-      return { 
-        success: true, 
+      return {
+        success: true,
         personName: person.name,
         message: `Updated ${person.name} with new details`
       };
-      
+
     } catch (error) {
       console.error('❌ updatePerson error:', error);
       return { error: 'Failed to update person: ' + error.message };
+    }
+  }
+
+  async updateMemoryCapsule(params = {}) {
+    try {
+      if (!window.emmaWebVault?.isOpen) {
+        return { error: 'Vault not available - please open your vault first' };
+      }
+
+      const memoryId = params.memoryId;
+      if (!memoryId) {
+        return { error: 'memoryId is required' };
+      }
+
+      const memory = window.emmaWebVault.vaultData?.content?.memories?.[memoryId];
+      if (!memory) {
+        return { error: 'Memory not found' };
+      }
+
+      const updates = {};
+      const metadataUpdates = {};
+
+      if (typeof params.content === 'string' && params.content.trim()) {
+        updates.content = params.content.trim();
+        if (!params.title) {
+          metadataUpdates.title = params.content.trim().substring(0, 60);
+        }
+      }
+
+      if (params.title) {
+        metadataUpdates.title = params.title;
+      }
+
+      if (Array.isArray(params.tags)) {
+        metadataUpdates.tags = params.tags;
+      }
+
+      if (params.emotion) {
+        metadataUpdates.emotion = params.emotion;
+      }
+
+      if (typeof params.importance === 'number') {
+        metadataUpdates.importance = params.importance;
+      }
+
+      if (params.location) {
+        metadataUpdates.location = params.location;
+      }
+
+      if (params.date) {
+        metadataUpdates.date = params.date;
+      }
+
+      if (params.people) {
+        metadataUpdates.people = await this.resolvePeopleIdentifiers(params.people);
+      }
+
+      if (Object.keys(metadataUpdates).length > 0) {
+        updates.metadata = {
+          ...memory.metadata,
+          ...metadataUpdates
+        };
+      }
+
+      let attachmentsChanged = false;
+      let attachments = Array.isArray(memory.attachments) ? [...memory.attachments] : [];
+
+      if (Array.isArray(params.removeAttachmentIds) && params.removeAttachmentIds.length > 0) {
+        const removalSet = new Set(params.removeAttachmentIds);
+        attachments = attachments.filter(att => !removalSet.has(att.id));
+        attachmentsChanged = true;
+      }
+
+      if (params.replaceAttachments) {
+        attachments = [];
+        attachmentsChanged = true;
+      }
+
+      if (Array.isArray(params.attachments) && params.attachments.length > 0) {
+        const newAttachments = await this.normalizeAttachments(params.attachments);
+        if (newAttachments.length > 0) {
+          attachments = attachments.concat(newAttachments);
+          attachmentsChanged = true;
+        }
+      }
+
+      if (attachmentsChanged) {
+        updates.attachments = attachments;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return { success: true, memoryId, updatedFields: [] };
+      }
+
+      const result = await window.emmaWebVault.updateMemory(memoryId, updates);
+      if (!result?.success) {
+        return { error: result?.error || 'Failed to update memory' };
+      }
+
+      const updatedFields = Object.keys(updates);
+      return {
+        success: true,
+        memoryId,
+        updatedFields,
+        attachmentCount: updates.attachments ? updates.attachments.length : undefined
+      };
+
+    } catch (error) {
+      console.error('❌ updateMemoryCapsule error:', error);
+      return { error: 'Failed to update memory: ' + error.message };
+    }
+  }
+
+  async attachMemoryMedia(params = {}) {
+    try {
+      if (!params.memoryId) {
+        return { error: 'memoryId is required' };
+      }
+      if (!Array.isArray(params.media) || params.media.length === 0) {
+        return { error: 'Media array is required' };
+      }
+
+      const updateResult = await this.updateMemoryCapsule({
+        memoryId: params.memoryId,
+        attachments: params.media,
+        replaceAttachments: params.replaceExisting === true
+      });
+
+      if (updateResult.success) {
+        return {
+          ...updateResult,
+          attachmentCount: updateResult.attachmentCount ?? params.media.length
+        };
+      }
+
+      return updateResult;
+
+    } catch (error) {
+      console.error('❌ attachMemoryMedia error:', error);
+      return { error: 'Failed to attach media: ' + error.message };
     }
   }
 }

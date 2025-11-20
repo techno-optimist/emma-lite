@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings - Emma</title>
+  <link rel="stylesheet" href="../css/theme-tokens.css">
   <link rel="stylesheet" href="../css/main.css">
   <style>
     .settings-container {
@@ -37,7 +38,157 @@
     .setting-item:last-child {
       border-bottom: none;
     }
-    
+
+    /* Theme gallery */
+    .theme-gallery {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      margin-top: 16px;
+    }
+
+    .theme-card {
+      position: relative;
+      border: 1px solid var(--emma-button-secondary-border);
+      border-radius: 16px;
+      padding: 16px;
+      background: var(--emma-card-bg);
+      color: var(--emma-text-standard);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 140px;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--emma-shadow-raised);
+    }
+
+    .theme-card--active {
+      border-color: var(--emma-accent-primary);
+      box-shadow: 0 12px 32px rgba(var(--emma-accent-primary-rgb), 0.35);
+    }
+
+    .theme-card__preview {
+      height: 72px;
+      border-radius: 12px;
+      background: var(--emma-gradient-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .theme-card__swatches {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .theme-card__swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid rgba(0, 0, 0, 0.12);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .theme-card__info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .theme-card__name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--emma-text-strong);
+    }
+
+    .theme-card__description {
+      font-size: 13px;
+      color: var(--emma-text-muted);
+      line-height: 1.5;
+    }
+
+    .theme-card__badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .theme-card__badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(var(--emma-accent-primary-rgb), 0.15);
+      color: var(--emma-accent-primary);
+      font-weight: 600;
+    }
+
+    .background-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .background-option {
+      flex: 1 1 140px;
+      min-width: 140px;
+      border: 1px solid var(--emma-button-secondary-border);
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--emma-card-bg);
+      color: var(--emma-text-standard);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .background-option:hover {
+      transform: translateY(-2px);
+      border-color: var(--emma-accent-primary);
+      box-shadow: var(--emma-shadow-raised);
+    }
+
+    .background-option--active {
+      border-color: var(--emma-accent-primary);
+      box-shadow: 0 12px 28px rgba(var(--emma-accent-primary-rgb), 0.3);
+    }
+
+    .background-option__preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--emma-gradient-primary);
+      flex-shrink: 0;
+    }
+
+    .background-option__info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .background-option__name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--emma-text-strong);
+    }
+
+    .background-option__description {
+      font-size: 12px;
+      color: var(--emma-text-muted);
+      line-height: 1.4;
+    }
+
     .setting-label {
       flex: 1;
     }
@@ -178,7 +329,7 @@
     
     /* MTAP Section */
     .mtap-status {
-      background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
+      background: linear-gradient(135deg, rgba(222, 179, 228, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
       border: 1px solid rgba(118, 75, 162, 0.3);
       border-radius: 12px;
       padding: 20px;
@@ -971,7 +1122,7 @@
       align-items: center;
       gap: 16px;
       padding: 32px;
-      background: rgba(139, 92, 246, 0.05);
+      background: rgba(111, 99, 217, 0.05);
       border-radius: 12px;
       border: 1px solid var(--emma-border);
     }
@@ -980,15 +1131,15 @@
       width: 72px;
       height: 72px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+      background: linear-gradient(135deg, #6f63d9 0%, #7c3aed 100%);
+      box-shadow: 0 8px 32px rgba(111, 99, 217, 0.3);
       transition: all 0.3s ease;
       cursor: pointer;
     }
     
     .orb-preview:hover {
       transform: scale(1.1);
-      box-shadow: 0 12px 40px rgba(139, 92, 246, 0.4);
+      box-shadow: 0 12px 40px rgba(111, 99, 217, 0.4);
     }
     
     .preview-note {
@@ -1020,15 +1171,15 @@
     
     .orb-option:hover {
       border-color: var(--emma-primary);
-      background: rgba(139, 92, 246, 0.1);
+      background: rgba(111, 99, 217, 0.1);
       transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+      box-shadow: 0 8px 32px rgba(111, 99, 217, 0.2);
     }
     
     .orb-option.active {
       border-color: var(--emma-primary);
-      background: rgba(139, 92, 246, 0.15);
-      box-shadow: 0 4px 24px rgba(139, 92, 246, 0.3);
+      background: rgba(111, 99, 217, 0.15);
+      box-shadow: 0 4px 24px rgba(111, 99, 217, 0.3);
     }
     
     .orb-avatar {
@@ -1085,7 +1236,7 @@
     
     .orb-status-badge:hover {
       transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+      box-shadow: 0 4px 12px rgba(111, 99, 217, 0.4);
     }
     
     .orb-status-badge.inactive {
@@ -1142,7 +1293,7 @@
       justify-content: space-between;
       padding: 32px;
       border-bottom: 1px solid var(--emma-border);
-      background: rgba(139, 92, 246, 0.05);
+      background: rgba(111, 99, 217, 0.05);
     }
     
     .orb-dialog-title {
@@ -1328,7 +1479,7 @@
       border-radius: 50%;
       background: var(--emma-primary);
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 2px 8px rgba(111, 99, 217, 0.3);
     }
     
     .size-control span {
@@ -1360,7 +1511,7 @@
     
     .position-option.active {
       border-color: var(--emma-primary);
-      background: rgba(139, 92, 246, 0.1);
+      background: rgba(111, 99, 217, 0.1);
     }
     
     .position-preview {
@@ -1428,7 +1579,7 @@
     .text-input:focus {
       outline: none;
       border-color: var(--emma-primary);
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+      box-shadow: 0 0 0 3px rgba(111, 99, 217, 0.1);
     }
     
     .orb-dialog-footer {
@@ -1476,7 +1627,7 @@
     
     .btn-primary:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 4px 16px rgba(111, 99, 217, 0.3);
     }
   </style>
 </head>
@@ -1509,6 +1660,184 @@
           </label>
         </div>
         
+        <!-- Theme & Background Selection -->
+        <div class="setting-section" id="theme-settings">
+          <h3>Visual Themes</h3>
+          <p class="section-description">Choose a theme and background to match your style. Themes update instantly so you can preview before you commit.</p>
+          <div id="theme-gallery" class="theme-gallery" role="list" aria-label="Available themes">
+            <button type="button" class="theme-card" data-theme-id="aurora-classic" role="listitem" aria-label="Aurora Classic theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Aurora Classic</div>
+                <div class="theme-card__description">Signature Emma gradient with deep cosmos ambiance.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">Animated</span>
+              </div>
+            </button>
+            <button type="button" class="theme-card" data-theme-id="sunrise-glow" role="listitem" aria-label="Sunrise Glow theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Sunrise Glow</div>
+                <div class="theme-card__description">Warm peach and coral palette with soft morning light.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">Animated</span>
+              </div>
+            </button>
+            <button type="button" class="theme-card" data-theme-id="midnight-forest" role="listitem" aria-label="Midnight Forest theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Midnight Forest</div>
+                <div class="theme-card__description">Deep greens and teals with luminous accents for focus.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">High Contrast</span>
+              </div>
+            </button>
+            <button type="button" class="theme-card" data-theme-id="lunar-tide" role="listitem" aria-label="Lunar Tide theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Lunar Tide</div>
+                <div class="theme-card__description">Noctilucent blues with aqua highlights for calm focus.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">High Contrast</span>
+                <span class="theme-card__badge">Animated</span>
+              </div>
+            </button>
+            <button type="button" class="theme-card" data-theme-id="ember-noir" role="listitem" aria-label="Ember Noir theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Ember Noir</div>
+                <div class="theme-card__description">Sleek charcoal base with ember-lit highlights.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">Animated</span>
+              </div>
+            </button>
+            <button type="button" class="theme-card" data-theme-id="blossom-dream" role="listitem" aria-label="Blossom Dream theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Blossom Dream</div>
+                <div class="theme-card__description">Pastel bloom with gentle light for uplifting moments.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">Animated</span>
+              </div>
+            </button>
+            <button type="button" class="theme-card" data-theme-id="zen-slate" role="listitem" aria-label="Zen Slate theme">
+              <div class="theme-card__preview" aria-hidden="true">
+                <div class="theme-card__swatches">
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                  <span class="theme-card__swatch"></span>
+                </div>
+              </div>
+              <div class="theme-card__info">
+                <div class="theme-card__name">Zen Slate</div>
+                <div class="theme-card__description">Modern graphite palette with calm blue-green accents.</div>
+              </div>
+              <div class="theme-card__badges">
+                <span class="theme-card__badge">High Contrast</span>
+              </div>
+            </button>
+          </div>
+          <div class="background-options" id="background-options" role="list" aria-label="Background options">
+            <button type="button" class="background-option" data-background-id="" role="listitem" aria-label="Emma Adaptive background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Emma Adaptive</div>
+                <div class="background-option__description">Let each theme choose the perfect ambient motion.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="aurora" role="listitem" aria-label="Aurora Field background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Aurora Field</div>
+                <div class="background-option__description">Soft cosmic gradients with Emma's signature glow.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="sunrise" role="listitem" aria-label="Sunrise Veil background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Sunrise Veil</div>
+                <div class="background-option__description">Warm morning light with gentle amber motion.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="forest" role="listitem" aria-label="Forest Night background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Forest Night</div>
+                <div class="background-option__description">Luminous particles drifting through deep forest hues.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="ocean" role="listitem" aria-label="Lunar Tide background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Lunar Tide</div>
+                <div class="background-option__description">Slow aurora bands drifting over deep ocean blues.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="ember" role="listitem" aria-label="Ember Noir background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Ember Noir</div>
+                <div class="background-option__description">Amber sparks drifting across a noir twilight.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="blossom" role="listitem" aria-label="Blossom Veil background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Blossom Veil</div>
+                <div class="background-option__description">Soft petal diffraction floating across gentle light.</div>
+              </div>
+            </button>
+            <button type="button" class="background-option" data-background-id="zen" role="listitem" aria-label="Zen Slate background">
+              <div class="background-option__preview" aria-hidden="true"></div>
+              <div class="background-option__info">
+                <div class="background-option__name">Zen Slate</div>
+                <div class="background-option__description">Holographic mist gliding over graphite horizons.</div>
+              </div>
+            </button>
+          </div>
+        </div>
         <!-- Emma Orb Selector -->
         <div class="setting-section">
           <h3>✨ Choose Your Emma</h3>
@@ -1896,7 +2225,7 @@
           <!-- Migration Actions -->
           <div class="migration-actions">
             <button type="button" id="analyze-legacy-btn" class="btn-secondary">
-              <span>📊</span> Analyze Legacy Data
+              <span>📚</span> Analyze Legacy Data
             </button>
             
             <button type="button" id="preview-migration-btn" class="btn-info" style="display: none;">
@@ -1991,7 +2320,7 @@
     <div class="password-modal-content">
       <div class="password-modal-header">
         <h3 id="password-modal-title">Enter Vault Code</h3>
-        <button type="button" id="password-modal-close" class="password-modal-close">×</button>
+        <button type="button" id="password-modal-close" class="password-modal-close">&times;</button>
       </div>
       <div class="password-modal-body">
         <input 
@@ -2040,16 +2369,16 @@
             <div class="setting-row">
               <label>Color Theme</label>
               <div class="color-theme-selector">
-                <div class="color-option active" data-color="default" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)"></div>
+                <div class="color-option active" data-color="default" style="background: linear-gradient(135deg, #6f63d9, #7c3aed)"></div>
                 <div class="color-option" data-color="blue" style="background: linear-gradient(135deg, #3b82f6, #2563eb)"></div>
                 <div class="color-option" data-color="green" style="background: linear-gradient(135deg, #10b981, #059669)"></div>
                 <div class="color-option" data-color="orange" style="background: linear-gradient(135deg, #f59e0b, #d97706)"></div>
-                <div class="color-option" data-color="pink" style="background: linear-gradient(135deg, #ec4899, #db2777)"></div>
+                <div class="color-option" data-color="pink" style="background: linear-gradient(135deg, #d06fa8, #db2777)"></div>
                 <div class="color-option" data-color="custom" style="background: linear-gradient(45deg, #333, #666)">
                   <span>+</span>
                 </div>
               </div>
-              <input type="color" id="dialog-custom-color" value="#8b5cf6" style="display: none;">
+              <input type="color" id="dialog-custom-color" value="#6f63d9" style="display: none;">
             </div>
             
             <div class="setting-row">
@@ -2292,27 +2621,30 @@
     transition: all 0.3s ease;
     z-index: 1000;
   " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-    🏠
+    🏀
   </button>
 
   <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
   <!-- Web Vault System Scripts -->
-  <script src="../js/emma-input-modal.js"></script>
-  <script src="../js/clean-password-modal.js"></script>
-  <script src="../js/emma-web-vault.js"></script>
-  <script src="../js/web-vault-status.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-input-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/clean-password-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/web-vault-status.js"></script>
   
-  <script src="../js/emma-orb.js"></script>
-  <script src="../js/settings-service.js"></script> 
-  <script src="../js/orb-experience-manager.js"></script>
-  <script src="../js/experience-popup-base.js"></script>
-  <script src="../js/assistant-experience-popup.js"></script>
-  <script src="../js/dementia-experience-popup.js"></script>
-  <script src="../js/mirror-experience-popup.js"></script>
-  <script src="../js/universal-emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../themes/theme-catalog.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/theme-settings-ui.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script> 
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/assistant-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/dementia-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/mirror-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-emma-orb.js"></script>
   
   <!-- Initialize Universal Orb for Extension Page -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL: Initialize vault system for options page
@@ -2337,7 +2669,7 @@
               const result = await window.emmaWebVault.restoreVaultState();
               if (result) {
                 console.log('✅ OPTIONS: Vault state restored successfully');
-                console.log('📊 OPTIONS: Passphrase available:', result.hasPassphrase);
+                console.log('📚 OPTIONS: Passphrase available:', result.hasPassphrase);
                 console.log('📁 OPTIONS: Filename available:', result.hasFileName);
                 // If in fallback mode, show affordance to re-enable direct save
                 try {
@@ -2360,6 +2692,8 @@
     }
   </script>
   
-  <script src="../js/options.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/options.js"></script>
 </body>
 </html>
+
+

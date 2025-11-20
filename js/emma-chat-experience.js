@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Emma Chat Experience - Intelligent Memory Companion Chat Interface
  * CTO-approved implementation following Emma's premium design principles
  *
@@ -7,6 +7,46 @@
  */
 
 // Emma Chat Experience - Production Ready
+
+window.metadataIncludesPerson = window.metadataIncludesPerson || ((peopleList, person) => {
+  if (!Array.isArray(peopleList) || !person) return false;
+
+  const targetId = person.id ? String(person.id).trim() : '';
+  if (!targetId) return false;
+
+  const resolveEntryId = (entry) => {
+    if (!entry) return null;
+    if (typeof entry === 'string' || typeof entry === 'number') {
+      const trimmed = String(entry).trim();
+      return trimmed || null;
+    }
+    if (typeof entry === 'object') {
+      const candidate = entry.id ?? entry.personId ?? entry.personID ?? entry.person_id ?? entry.uuid ?? entry.guid;
+      if (candidate === undefined || candidate === null) return null;
+      const trimmed = String(candidate).trim();
+      return trimmed || null;
+    }
+    return null;
+  };
+
+  return peopleList.some(entry => {
+    const entryId = resolveEntryId(entry);
+    return entryId && entryId === targetId;
+  });
+});
+
+window.contentMentionsPerson = window.contentMentionsPerson || ((personName, content) => {
+  if (!personName || !content) return false;
+
+  const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const words = personName.trim().split(/\s+/).filter(Boolean).map(escapeRegex);
+  if (words.length === 0) return false;
+
+  const pattern = `\\b${words.join('\\s+')}\\b(?:'s)?`;
+  const regex = new RegExp(pattern, 'i');
+
+  return regex.test(content);
+});
 
 class EmmaChatExperience extends ExperiencePopup {
   constructor(position, settings = {}) {
@@ -20,34 +60,27 @@ class EmmaChatExperience extends ExperiencePopup {
     this.messageContainer = null;
     this.inputField = null;
     this.sendButton = null;
+    this.voiceIntegrationInitialized = false;
+    this.voiceIntegrationInitializing = false;
+    this.initialWelcomeTimeout = null;
+    this.localWelcomeShown = false;
+    this.remoteGreetingReceived = false;
+    this.voicePlaybackEnabled = false;
+    this.voiceToggleButton = null;
 
     // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
-    
+
     // 🧠 CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
     this.unifiedIntelligence = new EmmaUnifiedIntelligence({
       dementiaMode: true,
       validationTherapy: true,
       vaultAccess: () => window.emmaWebVault?.vaultData?.content,
-      apiKey: null // Will be set when available
+      apiKey: this.apiKey // Will be set when available
     });
     
-    // Legacy context for transition period
-    this.conversationContext = {
-      currentTopic: null,
-      recentPeople: new Set(),
-      emotionalState: 'positive',
-      lastMemoryMentioned: null,
-      conversationFlow: [],
-      dementiaMode: true,
-      validationMode: true,
-      personalContext: {
-        recentActivities: [],
-        emotionalTone: 'warm and loving'
-      }
-    };
 
     // 💝 Intelligent Memory Capture Integration
     this.intelligentCapture = null;
@@ -69,6 +102,17 @@ class EmmaChatExperience extends ExperiencePopup {
       tone: "warm, helpful, memory-focused",
       capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
+
+    // Agent SDK chat support
+    this.agentChatEnabled = false;
+    this.agentConnectPromise = null;
+    this.agentConnectionNotified = false;
+
+    // WebSocket retry backoff
+    this.agentRetryCount = 0;
+    this.agentMaxRetries = 5;
+    this.agentRetryDelay = 2000; // Start with 2 seconds
+    this.agentRetryTimeout = null;
 
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
@@ -136,13 +180,13 @@ class EmmaChatExperience extends ExperiencePopup {
   async initialize() {
     this.initializeEmmaOrb();
     this.setupChatInterface();
-    
+
     // 🎙️ PHASE 3: Initialize voice integration after chat setup
     setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
 
-    // Add initial Emma welcome message (single clean bubble)
-    await this.addInitialWelcomeMessage();
+    // Add initial Emma welcome message only if remote agent doesn’t greet
+    this.scheduleInitialWelcome();
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
@@ -167,6 +211,12 @@ class EmmaChatExperience extends ExperiencePopup {
    * Transforms chat into voice-first multimodal experience
    */
   async initializeVoiceIntegration() {
+    if (this.voiceIntegrationInitialized || this.voiceIntegrationInitializing) {
+      return;
+    }
+
+    this.voiceIntegrationInitializing = true;
+
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
@@ -177,7 +227,8 @@ class EmmaChatExperience extends ExperiencePopup {
           speed: 1.0,
           tone: 'caring',
           pacing: 2.5,
-          validationMode: true
+          validationMode: true,
+          apiKey: this.apiKey || null
         });
       } else {
         console.warn('⚠️ EmmaBrowserClient not available');
@@ -189,14 +240,23 @@ class EmmaChatExperience extends ExperiencePopup {
       if (this.emmaVoice) {
         // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
+        if (typeof this.emmaVoice.setVoicePlaybackEnabled === 'function') {
+          this.emmaVoice.setVoicePlaybackEnabled(this.voicePlaybackEnabled);
+        }
+        this.syncVoiceApiKey(true);
 
         // Connect voice button to Emma's voice system
         this.setupVoiceButton();
+
+        this.voiceIntegrationInitialized = true;
 
         // Set up voice event handlers for chat integration (if needed)
         if (this.setupVoiceEventHandlers) {
           this.setupVoiceEventHandlers();
         }
+
+        // Ensure the chat interface connects to the Agent SDK backend
+        this.connectAgentForChat();
 
         console.log('✅ Emma voice client ready!');
       } else {
@@ -205,10 +265,118 @@ class EmmaChatExperience extends ExperiencePopup {
         this.voiceButton.title = 'Voice system not available';
       }
     } catch (error) {
-      console.error('❌ Voice integration failed:', error);
+      console.error('[VOICE] Integration failed:', error);
       this.voiceButton.style.opacity = '0.5';
       this.voiceButton.title = 'Voice system error: ' + error.message;
+    } finally {
+      this.voiceIntegrationInitializing = false;
     }
+  }
+
+  /**
+   * Sync the runtime API key with the voice client (if connected)
+   */
+  syncVoiceApiKey(silent = true) {
+    if (this.emmaVoice && typeof this.emmaVoice.setApiKey === 'function') {
+      this.emmaVoice.setApiKey(this.apiKey, { silent });
+    }
+  }
+
+  /**
+   * Ensure the chat agent connection is established for tool usage
+   */
+  async connectAgentForChat() {
+    try {
+      if (!this.emmaVoice) return;
+      if (this.agentChatEnabled && this.emmaVoice.isConnected) return;
+      if (this.agentConnectPromise) return this.agentConnectPromise;
+
+      this.agentConnectPromise = (async () => {
+        try {
+          if (!this.emmaVoice.isConnected) {
+            await this.emmaVoice.connectToEmmaAgent();
+          }
+        } catch (error) {
+          console.error('❌ Failed to connect Emma agent for chat:', error);
+          this.agentChatEnabled = false;
+          if (!this.agentConnectionNotified) {
+            this.addMessage('system', '⚠️ I could not reach Emma\'s advanced memory tools yet. I\'ll keep helping locally.');
+            this.agentConnectionNotified = true;
+          }
+        } finally {
+          this.agentConnectPromise = null;
+        }
+      })();
+
+      return this.agentConnectPromise;
+    } catch (error) {
+      console.error('❌ Agent connection setup error:', error);
+    }
+  }
+
+  /**
+   * Mark that the Agent SDK connection is active
+   */
+  markAgentReady() {
+    this.remoteGreetingReceived = true;
+    if (this.initialWelcomeTimeout) {
+      clearTimeout(this.initialWelcomeTimeout);
+      this.initialWelcomeTimeout = null;
+    }
+
+    // Reset retry count on successful connection
+    this.agentRetryCount = 0;
+    if (this.agentRetryTimeout) {
+      clearTimeout(this.agentRetryTimeout);
+      this.agentRetryTimeout = null;
+    }
+
+    if (this.agentChatEnabled) {
+      if (typeof this.hideTypingIndicator === 'function') {
+        this.hideTypingIndicator();
+      }
+      return;
+    }
+
+    this.agentChatEnabled = true;
+    this.agentConnectionNotified = true;
+    this.addMessage('system', '🤖 Emma is connected to your memory tools and can use them for you.');
+    if (typeof this.hideTypingIndicator === 'function') {
+      this.hideTypingIndicator();
+    }
+  }
+
+  /**
+   * Handle agent disconnects gracefully
+   */
+  markAgentDisconnected() {
+    this.agentChatEnabled = false;
+    this.agentConnectionNotified = false;
+    if (typeof this.hideTypingIndicator === 'function') {
+      this.hideTypingIndicator();
+    }
+
+    // Implement exponential backoff for retries
+    this.agentRetryCount++;
+
+    if (this.agentRetryCount > this.agentMaxRetries) {
+      this.addMessage('system', '⚠️ Could not reach Emma\'s advanced memory tools. Using local intelligence only.');
+      this.agentConnectionNotified = true;
+      return;
+    }
+
+    const delay = Math.min(this.agentRetryDelay * Math.pow(2, this.agentRetryCount - 1), 30000);
+    this.addMessage('system', `⚠️ Emma lost connection to the advanced memory tools. Retrying in ${delay/1000}s... (${this.agentRetryCount}/${this.agentMaxRetries})`);
+
+    // Clear existing retry timeout
+    if (this.agentRetryTimeout) {
+      clearTimeout(this.agentRetryTimeout);
+    }
+
+    // Schedule retry with exponential backoff
+    this.agentRetryTimeout = setTimeout(() => {
+      this.connectAgentForChat();
+    }, delay);
   }
 
   /**
@@ -298,13 +466,13 @@ class EmmaChatExperience extends ExperiencePopup {
           this.displayPeopleResults(result.people);
         }
         break;
-        
+
       case 'get_memories':
         if (result.memories && result.memories.length > 0) {
           this.displayMemoryResults(result.memories);
         }
         break;
-        
+
       case 'create_memory_from_voice':
         if (result.success) {
           this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
@@ -313,7 +481,7 @@ class EmmaChatExperience extends ExperiencePopup {
           });
         }
         break;
-        
+
       case 'update_person':
         if (result.success) {
           this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
@@ -357,7 +525,7 @@ class EmmaChatExperience extends ExperiencePopup {
     `).join('');
 
     this.addMessage('emma', `I found ${memories.length} memories:`, {
-      type: 'memory-results', 
+      type: 'memory-results',
       html: `<div class="memories-grid">${memoriesHtml}</div>`
     });
   }
@@ -381,6 +549,34 @@ class EmmaChatExperience extends ExperiencePopup {
         this.typingIndicator.style.display = state === 'idle' ? 'none' : 'block';
       }
     }
+  }
+
+  getHeaderActions() {
+    const toggle = this.createVoiceToggleButton();
+    return toggle ? [toggle] : [];
+  }
+
+  createVoiceToggleButton() {
+    if (this.voiceToggleButton && this.voiceToggleButton.tagName) {
+      return this.voiceToggleButton;
+    }
+
+    const button = document.createElement('button');
+    button.id = 'voice-tts-toggle';
+    button.className = 'voice-toggle is-on';
+    button.setAttribute('aria-pressed', 'true');
+
+    const icon = document.createElement('span');
+    icon.className = 'voice-toggle-icon';
+    icon.textContent = '🔊';
+
+    const label = document.createElement('span');
+    label.className = 'voice-toggle-label';
+    label.textContent = 'Voice On';
+
+    button.append(icon, label);
+    this.voiceToggleButton = button;
+    return button;
   }
 
   renderContent(contentElement) {
@@ -461,6 +657,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = document.getElementById('send-btn');
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
+    this.voiceToggleButton = this.voiceToggleButton || document.getElementById('voice-tts-toggle');
     // Settings button removed - clean chat interface
 
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
@@ -476,6 +673,11 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
+    if (this.voiceToggleButton && !this.voiceToggleButton.dataset.toggleBound) {
+      this.voiceToggleButton.addEventListener('click', () => this.toggleVoicePlayback());
+      this.voiceToggleButton.dataset.toggleBound = 'true';
+    }
+    this.updateVoiceToggleUI();
 
     // Settings removed from chat - access via main settings panel
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
@@ -488,9 +690,37 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Setup settings modal
     this.setupSettingsModal();
-    
+
     // 🎯 Setup dynamic quick start prompts
     this.setupQuickStartPrompts();
+  }
+
+  toggleVoicePlayback() {
+    this.voicePlaybackEnabled = !this.voicePlaybackEnabled;
+    if (this.emmaVoice && typeof this.emmaVoice.setVoicePlaybackEnabled === 'function') {
+      this.emmaVoice.setVoicePlaybackEnabled(this.voicePlaybackEnabled);
+    }
+    this.updateVoiceToggleUI();
+    console.log(`🔊 Emma TTS ${this.voicePlaybackEnabled ? 'enabled' : 'muted'}`);
+  }
+
+  updateVoiceToggleUI() {
+    if (!this.voiceToggleButton) {
+      return;
+    }
+
+    const label = this.voiceToggleButton.querySelector('.voice-toggle-label');
+    const icon = this.voiceToggleButton.querySelector('.voice-toggle-icon');
+    this.voiceToggleButton.classList.toggle('is-on', this.voicePlaybackEnabled);
+    this.voiceToggleButton.classList.toggle('is-muted', !this.voicePlaybackEnabled);
+    this.voiceToggleButton.setAttribute('aria-pressed', this.voicePlaybackEnabled ? 'true' : 'false');
+    this.voiceToggleButton.setAttribute('title', this.voicePlaybackEnabled ? 'Emma will speak responses' : 'Emma voice muted');
+    if (label) {
+      label.textContent = this.voicePlaybackEnabled ? 'Voice On' : 'Voice Off';
+    }
+    if (icon) {
+      icon.textContent = this.voicePlaybackEnabled ? '🔊' : '🔇';
+    }
   }
 
   /**
@@ -514,13 +744,13 @@ class EmmaChatExperience extends ExperiencePopup {
       },
       {
         text: "Let's save a new memory",
-        icon: "💝",
+        icon: "📝",
         action: "memory", 
         description: "Create a new memory capsule"
       },
       {
         text: "Ask me about any of your memories",
-        icon: "🧠",
+        icon: "💬",
         action: "explore",
         description: "Explore and reminisce about past memories"
       }
@@ -723,12 +953,15 @@ class EmmaChatExperience extends ExperiencePopup {
       button.addEventListener('click', (e) => {
         const action = e.currentTarget.dataset.action;
         const text = e.currentTarget.dataset.text;
-        
-        // Visual feedback
-        e.currentTarget.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-          e.currentTarget.style.transform = '';
-        }, 150);
+
+        // Visual feedback - store reference to avoid null after timeout
+        const button = e.currentTarget;
+        if (button) {
+          button.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            if (button) button.style.transform = '';
+          }, 150);
+        }
 
         // Execute the appropriate action
         this.handlePromptAction(action, text);
@@ -808,10 +1041,10 @@ class EmmaChatExperience extends ExperiencePopup {
       "Perfect! What special moment would you like to capture in your memory vault?",
       "I'm here to help! What's the story you'd like to preserve?"
     ];
-    
+
     const response = responses[Math.floor(Math.random() * responses.length)];
     this.addMessage(response, 'emma');
-    
+
     // Focus on the input for immediate typing
     if (this.inputField) {
       this.inputField.focus();
@@ -856,7 +1089,7 @@ class EmmaChatExperience extends ExperiencePopup {
     for (const pattern of pronounPatterns) {
       const pronounMatch = message.match(pattern);
       if (pronounMatch) {
-        const recentPeople = Array.from(this.conversationContext.recentPeople);
+        const recentPeople = Array.from(this.unifiedIntelligence.conversationContext.recentPeople);
         if (recentPeople.length > 0) {
           const resolvedPerson = recentPeople[recentPeople.length - 1]; // Most recent
           console.log(`🎯 CTO: Resolved pronoun "${pronounMatch[1]}" to "${resolvedPerson}" from context`);
@@ -1225,29 +1458,20 @@ class EmmaChatExperience extends ExperiencePopup {
       
       // Find connected memories using same logic as people page
       let connectedMemories = [];
-      
+
       if (window.emmaWebVault?.vaultData?.content?.memories) {
         const vaultMemories = window.emmaWebVault.vaultData.content.memories;
-        
+        const personForMatching = { id: person.id, name: person.name };
+
         for (const [memoryId, memory] of Object.entries(vaultMemories)) {
-          // Check if person is in memory's people metadata
-          if (memory.metadata && memory.metadata.people && 
-              Array.isArray(memory.metadata.people) && 
-              memory.metadata.people.includes(person.id)) {
-            connectedMemories.push({ ...memory, id: memoryId });
+          const normalizedMemory = { ...memory, id: memory.id || memoryId };
+
+          if (window.metadataIncludesPerson(memory.metadata?.people, personForMatching)) {
+            connectedMemories.push(normalizedMemory);
+            continue;
           }
-          
-          // Also check if person's name is mentioned in content
-          if (person.name && memory.content) {
-            const personName = person.name.toLowerCase();
-            const memoryContent = memory.content.toLowerCase();
-            if (memoryContent.includes(personName)) {
-              // Avoid duplicates
-              if (!connectedMemories.find(m => m.id === memoryId)) {
-                connectedMemories.push({ ...memory, id: memoryId });
-              }
-            }
-          }
+
+          // Content-based inference removed; rely on explicit metadata associations only
         }
       }
 
@@ -1625,7 +1849,7 @@ class EmmaChatExperience extends ExperiencePopup {
         <div class="emma-image-modal" id="emma-image-modal" onclick="this.remove()">
           <div class="image-modal-content" onclick="event.stopPropagation()">
             <button class="modal-close-btn" onclick="document.getElementById('emma-image-modal').remove()">
-              ×
+              &times;
             </button>
             <div class="image-container">
               <img src="${imageUrl}" alt="Memory photo" id="modal-image" />
@@ -2065,57 +2289,77 @@ class EmmaChatExperience extends ExperiencePopup {
     const message = this.inputField.value.trim();
     if (!message) return;
 
-    // Hide quick start prompts when user starts typing their own messages
     if (this.hasQuickPromptsShowing) {
       this.hideQuickStartPrompts();
     }
 
-    // Add user message
     const messageId = this.addMessage(message, 'user');
     this.inputField.value = '';
     this.autoResizeTextarea();
     this.handleInputChange();
 
-    // 🎯 ENRICHMENT FSM: Check if this is a response to an enrichment question
-    const activeEnrichment = this.findActiveEnrichmentForResponse();
-    if (activeEnrichment) {
-      await this.processEnrichmentResponse(activeEnrichment, message);
+    if (this.emmaVoice) {
+      await this.connectAgentForChat();
+    }
+
+    const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
+    const localHandled = await this.processLocalChatMessage(message, messageId, {
+      allowDefaultResponse: !canUseAgent
+    });
+
+    if (localHandled) {
       return;
     }
 
-    // 🎯 CTO OPTIMIZATION: VAULT OPERATIONS FIRST - Complete intent hierarchy
-    // This prevents ALL vault queries from being captured as memories
+    if (canUseAgent) {
+      if (typeof this.showTypingIndicator === 'function') {
+        this.showTypingIndicator();
+      }
+      this.emmaVoice.sendToAgent({ type: 'user_text', text: message, source: 'chat' });
+      return;
+    }
+
+    await this.respondAsEmma(message);
+  }
+
+
+
+
+  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true } = {}) {
+    const activeEnrichment = this.findActiveEnrichmentForResponse();
+    if (activeEnrichment) {
+      await this.processEnrichmentResponse(activeEnrichment, message);
+      return true;
+    }
+
     const intent = this.classifyUserIntent(message);
-    
-    // VAULT OPERATIONS have HIGHEST PRIORITY
     if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
       console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
       }, 1000 + Math.random() * 1500);
-      return;
+      return true;
     }
 
-    // 💝 Check for memory detection (new messages only)
     if (this.intelligentCapture) {
       const analysisResult = await this.analyzeForMemory(message, messageId);
-      // If intelligent capture already produced a response (unified prompt), stop here
       if (analysisResult && analysisResult.handled) {
-        return;
+        return true;
       }
-    } else {
-      // ... existing code ...
     }
 
-    // Show typing indicator
-    this.showTypingIndicator();
+    if (!allowDefaultResponse) {
+      return false;
+    }
 
-    // Simulate Emma thinking and respond
+    this.showTypingIndicator();
     setTimeout(() => {
       this.respondAsEmma(message);
-    }, 1000 + Math.random() * 1500); // 1-2.5s realistic delay
+    }, 1000 + Math.random() * 1500);
+    return true;
   }
+
 
   addMessage(content, sender, options = {}) {
     // Defensive argument handling: many call sites mistakenly pass (sender, content).
@@ -2134,21 +2378,21 @@ class EmmaChatExperience extends ExperiencePopup {
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
-    
+
     // 🎙️ VOICE: Add voice indicators for transcribed messages
     if (options.isVoice) {
       messageDiv.setAttribute('data-voice', 'true');
     }
-    
+
     // 💝 CRITICAL: Track people mentioned in Emma's responses too
     if (sender === 'emma' && content) {
       const emmaPeople = this.extractPeople(content);
-      emmaPeople.forEach(person => this.conversationContext.recentPeople.add(person));
-      
+      emmaPeople.forEach(person => this.unifiedIntelligence.conversationContext.recentPeople.add(person));
+
       console.log('💝 EMMA RESPONSE TRACKING:', {
         content: content.substring(0, 50) + '...',
         extractedPeople: emmaPeople,
-        recentPeople: Array.from(this.conversationContext.recentPeople)
+        recentPeople: Array.from(this.unifiedIntelligence.conversationContext.recentPeople)
       });
     }
 
@@ -2157,7 +2401,7 @@ class EmmaChatExperience extends ExperiencePopup {
     if (sender === 'emma') {
       // SAFETY: Ensure options exists
       const safeOptions = options || {};
-      
+
       // Handle HTML content vs regular text
       const messageContent = safeOptions.isHtml ? content : `<p>${this.formatMessageContent(content || '')}</p>`;
 
@@ -2224,11 +2468,11 @@ class EmmaChatExperience extends ExperiencePopup {
           console.warn('⚠️ Emma orb fallback for message avatar');
           // High-quality fallback gradient
           orbContainer.style.cssText = `
-            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
+            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4);
             border-radius: 50%;
             width: 100%;
             height: 100%;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
           `;
         }
       }
@@ -2257,8 +2501,12 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   formatMessageContent(content) {
-    // Basic formatting for Emma's responses
-    return content
+    // Escape HTML, then apply basic formatting for Emma's responses
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safe = esc(content || '');
+    return safe
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
       .replace(/\n/g, '<br>'); // Line breaks
@@ -2315,361 +2563,13 @@ class EmmaChatExperience extends ExperiencePopup {
 
   async respondAsEmma(userMessage) {
     this.hideTypingIndicator();
-
-    // 🚨 CTO EMERGENCY ROLLBACK: Unified system broken, using working legacy system
-    console.log('🚨 CTO: Using proven legacy system (unified intelligence disabled for emergency)');
-
-    // 🤔 CHECK FOR ACTIVE PERSON ENRICHMENT FLOW
-    if (this.currentPersonEnrichment && 
-        this.currentPersonEnrichment.stage !== 'complete' &&
-        Date.now() - this.currentPersonEnrichment.startedAt < 300000) { // 5 minute timeout
-      
-      console.log('🤔 Active person enrichment detected, handling response');
-      const handled = await this.handlePersonEnrichmentResponse(userMessage, this.currentPersonEnrichment.personName);
-      
-      if (handled) {
-        // If this completed the enrichment, clear it
-        if (this.currentPersonEnrichment.stage === 'complete') {
-          this.currentPersonEnrichment = null;
-        }
-        return;
-      }
-    }
-
-    // 🎯 INTELLIGENT INTENT CLASSIFICATION
-    const intent = this.classifyUserIntent(userMessage);
-    console.log('🧠 CHAT: Intent classified as:', intent);
-
-    // 👥 PEOPLE LIST REQUEST: Show all people in vault
-    if (intent.type === 'people_list') {
-      console.log('👥 CHAT: People list request detected');
-      await this.handlePeopleListRequest(userMessage);
-      return;
-    }
-
-    // 👤 PERSON REQUEST DETECTION: Only for specific person inquiries
-    if (intent.type === 'person_inquiry') {
-      const personRequest = this.detectPersonRequest(userMessage);
-      if (personRequest) {
-        console.log('👤 CHAT: Person request detected:', personRequest);
-        
-        // 🎯 CTO CRITICAL: Track the person being queried for context continuity
-        this.conversationContext.lastQueriedPerson = personRequest.personName;
-        console.log(`🎯 CTO: Set lastQueriedPerson to: ${personRequest.personName}`);
-        
-        await this.handlePersonRequest(personRequest);
-        return;
-      }
-    }
-
-    // 💝 Memory capture detection for ongoing conversations
-    const hasDetectedMemory = Array.from(this.detectedMemories.values()).some(analysis =>
-      analysis.memory && analysis.memory.originalContent &&
-      analysis.memory.originalContent.includes(userMessage.substring(0, 50))
-    );
-
-    if (hasDetectedMemory) {
-      const captureResponse = await this.generateMemoryCaptureResponse(userMessage);
-      this.addMessage(captureResponse, 'emma');
-      return;
-    }
-
-    // 🏛️ CORE VAULT OPERATIONS: Emma's primary job (always works!)
-    if (intent.type === 'vault_operation') {
-      console.log('🏛️ CORE VAULT OPERATION: Handling directly');
-      await this.handleVaultOperation(userMessage, intent);
-      return;
-    }
-
-    // 🔍 MEMORY SEARCH: Handle memory queries intelligently
-    if (intent.type === 'memory_search') {
-      // Check if this is a simple "what are my memories" type query
-      if (/\b(what are|show me|list|tell me)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(userMessage)) {
-        console.log('🔍 MEMORY SEARCH: Handling simple memory list request');
-        await this.handleMemoryListRequest(userMessage);
-        return;
-      }
-      
-      // For complex memory search queries, use vectorless if available
-      if (this.isVectorlessEnabled && this.vectorlessEngine) {
-        try {
-          const result = await this.vectorlessEngine.processQuestion(userMessage);
-          if (result.success) {
-            this.addVectorlessMessage(result.response, result.memories, result.citations, result.suggestions);
-            return;
-          } else {
-            console.warn('💬 Vectorless processing failed, using fallback:', result.error);
-          }
-        } catch (error) {
-          console.error('💬 Vectorless AI error:', error);
-        }
-      }
-      
-      // Fallback for memory search without vectorless
-      await this.handleMemoryListRequest(userMessage);
-      return;
-    }
-
-    // 🚀 ADVANCED AI MODE: Use OpenAI for conversation and questions
-    if (this.apiKey && intent.type === 'conversation') {
-      console.log('🚀 ADVANCED AI MODE: Using OpenAI for intelligent conversation');
-      console.log('🎯 Intent:', intent);
-      try {
-        const response = await this.generateIntelligentEmmaResponse(userMessage, intent);
-        this.addMessage(response, 'emma');
-        this.addAIModeIndicator(); // Show that AI was used
-        return;
-      } catch (error) {
-        console.warn('🤖 AI response failed, using fallback:', error);
-        // Don't show error for conversation - just fall through to dynamic response
-      }
-    }
-
-    // 💜 FALLBACK: Dynamic responses for basic interactions
-    const response = await this.generateDynamicEmmaResponse(userMessage);
-    this.addMessage(response, 'emma');
-  }
-
-  /**
-   * 🎯 INTELLIGENT INTENT CLASSIFICATION
-   * Determines what the user is trying to do
-   */
-  classifyUserIntent(message) {
-    const lower = message.toLowerCase().trim();
-
-    // 👥 PEOPLE LISTING QUERIES (asking about ALL people)
-    if (/\b(who are|what are|show me|list|see|view)\b.*\b(my|the|all)\b.*\b(people|person|contacts|family|friends)\b/i.test(message) ||
-        /\b(my|all)\b.*\b(people|contacts|family|friends)\b/i.test(message) ||
-        /\bpeople\b.*\b(list|vault|have|know)\b/i.test(message)) {
-      return { type: 'people_list', confidence: 0.95 };
-    }
-
-    // 👤 Person inquiries (asking ABOUT someone specific)
-    if (/^(who is|tell me about|show me|what about|how about)\s+[A-Z]/i.test(message) ||
-        /^[A-Z][a-z]+\s*\?+\s*$/.test(message)) {
-      return { type: 'person_inquiry', confidence: 0.9 };
-    }
-
-    // 🔍 Memory search queries - ENHANCED to catch edge cases
-    if (/\b(find|search|show|what|who|when|where|list|see|view|tell me)\b.*\b(memory|memories|remember)\b/i.test(message) ||
-        /\b(what are|show me|tell me|list)\b.*\b(my|the)\b.*\b(memory|memories)\b/i.test(message) ||
-        /\bmemory\b.*\b(list|search|find|show)\b/i.test(message) ||
-        /\bmemories\b.*\b(list|search|find|show)\b/i.test(message)) {
-      return { type: 'memory_search', confidence: 0.9 };
-    }
-
-    // 🏛️ CORE VAULT OPERATIONS (Emma's primary job - always works!)
-    // ULTRA-ROBUST for dementia users - catch every possible way they might ask
-    if (
-      // Direct vault operations
-      /\b(add|create|new|save)\b.*\b(person|people|memory|memories|vault)\b/i.test(message) ||
-      /\b(add|save)\b.*\b(to|in)\b.*\b(vault|emma)\b/i.test(message) ||
-      /\blet'?s?\s+(add|create|save)\b/i.test(message) ||
-      
-      // Natural language patterns for dementia users
-      /\b(?:want|need|would\s+like)\s+(?:to\s+)?(?:add|save|create|put)\b/i.test(message) ||
-      /\b(?:please|can\s+you)\s+(?:add|save|create|put)\b/i.test(message) ||
-      /\b(?:put|place)\s+[a-zA-Z]+\b/i.test(message) ||
-      
-      // Simple "add [name]" pattern
-      /\badd\s+[a-zA-Z]+/i.test(message) ||
-      
-      // "I have a person/friend/family member" patterns
-      /\b(?:have|met|know)\s+(?:a\s+)?(?:person|friend|family|someone)\b/i.test(message)
-    ) {
-      return { type: 'vault_operation', confidence: 0.95 };
-    }
-
-    // 💬 General conversation & questions (use AI if available)
-    if (/^(what|who|when|where|why|how|can|could|would|should|do|does|did|is|are|was|were)\b/i.test(message) ||
-        message.includes('?') ||
-        /\b(hello|hi|hey|thank|thanks|help|tell me|explain)\b/i.test(message)) {
-      return { type: 'conversation', confidence: 0.6 };
-    }
-
-    // 🎯 Other commands/actions
-    if (/\b(add|create|new|save|let|want|need|help)\b/i.test(message)) {
-      return { type: 'general_command', confidence: 0.5 };
-    }
-
-    // 💬 Default: General conversation
-    return { type: 'conversation', confidence: 0.4 };
-  }
-
-  /**
-   * 🚀 GENERATE INTELLIGENT EMMA RESPONSE using OpenAI
-   * This is where the real AI magic happens!
-   */
-  async generateIntelligentEmmaResponse(userMessage, intent) {
-    const env = (typeof window !== 'undefined' && window.EMMA_ENV) ? window.EMMA_ENV : 'production';
-    const useLLM = env !== 'production' && !!this.apiKey;
-
-    try {
-      // Get vault context for personalization
-      const vaultContext = await this.getVaultContextForAI();
-
-      if (!useLLM) {
-        // Gentle, local-first fallback aligned with Emma ethos
-        const topics = (vaultContext.recentTopics || []).slice(0, 3);
-        const topicStr = topics.length ? ` I remember recent topics like ${topics.join(', ')}.` : '';
-        const suggestions = [
-          'Would you like me to save this as a memory?',
-          'Should we look for related photos together?',
-          'Want to add who was with you in this memory?'
-        ];
-        const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-        return (
-          `I’m here with you. Let’s explore this together.${topicStr} ` +
-          `${suggestion}`
-        );
-      }
-
-      // Build the prompt based on intent and context
-      const prompt = this.buildEmmaPrompt(userMessage, intent, vaultContext);
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            { role: 'system', content: prompt.system },
-            { role: 'user', content: prompt.user }
-          ],
-          max_tokens: 300,
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
-      const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
-      if (aiResponse) return aiResponse.trim();
-      throw new Error('No response content from OpenAI');
-
-    } catch (error) {
-      // Final safe fallback to ensure no broken UX
-      const calm = 'I’m here with you. Let’s take this step by step.';
-      return `${calm} Would you like me to save this as a memory?`;
+    const response = await this.unifiedIntelligence.analyzeAndRespond(userMessage, this);
+    this.addMessage(response.text, 'emma');
+    if (response.actions && response.actions.length > 0) {
+      this.executeIntelligentActions(response.actions, response.analysis);
     }
   }
 
-  /**
-   * 🧠 BUILD EMMA-SPECIFIC PROMPT for OpenAI
-   */
-  buildEmmaPrompt(userMessage, intent, vaultContext) {
-    // 💝 CRITICAL: Include conversation context for continuity
-    const conversationHistory = this.conversationContext.conversationFlow
-      .slice(-3)
-      .map(flow => `User: ${flow.message}`)
-      .join('\n');
-
-    const systemPrompt = `You are Emma, an intelligent memory companion. You help users organize, explore, and interact with their personal memories in a warm, helpful way.
-
-PERSONALITY:
-- Warm, caring, and memory-focused
-- Always helpful but never overwhelming
-- Gentle and patient, especially for users with memory challenges
-- Focus on preserving and celebrating memories
-
-CRITICAL - DEMENTIA CARE MODE (ALWAYS ACTIVE FOR THIS USER):
-- NEVER correct or contradict any memories, even if they seem inconsistent
-- Use validation therapy - affirm their feelings and experiences always
-- Focus on emotional truth rather than factual accuracy
-- Maintain warmth and patience in every single response
-- If memories seem confused, gently redirect to positive aspects
-- ALWAYS validate what they're sharing as real and meaningful
-- Never use phrases like "Do you remember" or "Are you sure"
-- When asked about people ("show me Mark"), provide warm recall assistance
-- Help them remember relationships, shared experiences, and emotional connections
-
-CONVERSATION CONTEXT:
-Recent conversation flow:
-${conversationHistory}
-
-People mentioned recently: ${Array.from(this.conversationContext.recentPeople).join(', ') || 'None'}
-Current emotional tone: ${this.conversationContext.emotionalState}
-Family/People context: Based on vault data and conversation
-
-VAULT CONTEXT:
-- User has ${vaultContext.memoryCount} memories in their vault
-- Recent memories include: ${vaultContext.recentTopics.join(', ')}
-- People in vault: ${vaultContext.people.join(', ')}
-
-CAPABILITIES:
-- Provide warm conversation about memories
-- Answer questions about their vault and memories
-- Give gentle encouragement about memory preservation
-- Help them reflect on their experiences
-
-NOTE: Core vault operations (adding people, creating memories) are handled by Emma's built-in systems. Focus on conversation, encouragement, and emotional support.
-
-INTENT: ${intent.type}
-${intent.type === 'conversation' ? 'User wants to have a conversation. Be warm, engaging, and memory-focused. Provide emotional support and encouragement.' : ''}
-
-RULES:
-- Keep responses concise (1-3 sentences)
-- Always be encouraging about memory preservation
-- NEVER contradict or correct memories - validate everything
-- Never mention technical details or AI limitations
-- If unsure, offer to help them explore their memories`;
-
-    return {
-      system: systemPrompt,
-      user: userMessage
-    };
-  }
-
-  /**
-   * 📊 GET VAULT CONTEXT for AI responses
-   */
-  async getVaultContextForAI() {
-    try {
-      const vault = window.emmaWebVault?.vaultData?.content;
-      
-      if (!vault) {
-        return {
-          memoryCount: 0,
-          recentTopics: ['No memories yet'],
-          people: ['No people yet']
-        };
-      }
-
-      const memories = vault.memories || {};
-      const people = vault.people || {};
-      
-      // Get recent memory topics
-      const memoryList = Object.values(memories);
-      const recentTopics = memoryList
-        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-        .slice(0, 3)
-        .map(m => m.title || 'Untitled memory')
-        .filter(Boolean);
-
-      // Get people names
-      const peopleNames = Object.values(people)
-        .map(p => p.name)
-        .filter(Boolean)
-        .slice(0, 5);
-
-      return {
-        memoryCount: memoryList.length,
-        recentTopics: recentTopics.length ? recentTopics : ['No recent memories'],
-        people: peopleNames.length ? peopleNames : ['No people yet']
-      };
-
-    } catch (error) {
-      console.error('📊 Error getting vault context:', error);
-      return {
-        memoryCount: 0,
-        recentTopics: ['Context unavailable'],
-        people: ['Context unavailable']
-      };
-    }
-  }
 
   /**
    * 🔍 HANDLE MEMORY LIST REQUEST
@@ -2932,37 +2832,38 @@ RULES:
         if (!window.emmaWebVault.vaultData.content.people) {
           window.emmaWebVault.vaultData.content.people = {};
         }
-        
+
         window.emmaWebVault.vaultData.content.people[newPerson.id] = newPerson;
         console.log('👤 Added to vault data structure');
-        
+
         // Trigger save
         await window.emmaWebVault.scheduleElegantSave();
         console.log('👤 Vault save scheduled');
-        
+
         // 💜 DEMENTIA-FRIENDLY SUCCESS MESSAGE
         this.addMessage(`✅ Perfect! I've added ${personName} to your vault.`, 'emma');
         this.addVaultOperationIndicator(); // Show that this was a core vault operation
         console.log('✅ PERSON ADDED SUCCESSFULLY:', personName);
-        
+
         // 🌟 CRITICAL: Refresh constellation after adding new person
         setTimeout(() => {
           this.refreshConstellationAfterPersonAdd();
         }, 500);
-        
+
         // 🤔 GENTLE FOLLOW-UP CONVERSATION
         setTimeout(() => {
           this.startPersonEnrichmentFlow(personName);
         }, 1500);
-        
+
+        saved = true;
       } else {
-        console.error('❌ Vault not available:', { 
-          hasWebVault: !!window.emmaWebVault, 
-          hasVaultData: !!window.emmaWebVault?.vaultData 
+        console.error('❌ Vault not available:', {
+          hasWebVault: !!window.emmaWebVault,
+          hasVaultData: !!window.emmaWebVault?.vaultData
         });
         this.addMessage("I'm having trouble accessing your vault right now. Please make sure it's unlocked and try again.", 'emma');
       }
-      
+
     } catch (error) {
       console.error('❌ PERSON ADD ERROR:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault. Let me try again in a moment.`, 'emma');
@@ -3005,7 +2906,7 @@ RULES:
    */
   async startPersonEnrichmentFlow(personName) {
     console.log('🤔 Starting person enrichment flow for:', personName);
-    
+
     // 💜 GENTLE, NON-OVERWHELMING QUESTIONS
     const followUpQuestions = [
       `Tell me a little about ${personName}. How do you know them?`,
@@ -3013,10 +2914,10 @@ RULES:
       `Would you like to tell me how ${personName} is important to you?`,
       `Is there anything particular about ${personName} that makes you smile?`
     ];
-    
+
     // Pick a random gentle question
     const question = followUpQuestions[Math.floor(Math.random() * followUpQuestions.length)];
-    
+
     // 🕰️ Give them time to process the success first
     setTimeout(() => {
       this.addMessage(question, 'emma');
@@ -3027,7 +2928,7 @@ RULES:
         stage: 'relationship', // relationship, details, memories, complete
         startedAt: Date.now()
       };
-      
+
     }, 2000); // Wait 2 seconds after success message
   }
 
@@ -3037,23 +2938,23 @@ RULES:
    */
   async handlePersonEnrichmentResponse(userMessage, personName) {
     console.log('🤔 Handling enrichment response for:', personName, userMessage);
-    
+
     // 🚫 CHECK FOR SKIP/DECLINE SIGNALS
     const skipPatterns = [
       /\b(no|nah|skip|pass|not now|maybe later|that'?s enough|i'?m good|all set)\b/i,
       /\b(move on|next|done|finished|enough|nothing else)\b/i,
       /\b(don'?t want|not interested|not really)\b/i
     ];
-    
+
     const isSkipping = skipPatterns.some(pattern => pattern.test(userMessage.toLowerCase()));
-    
+
     if (isSkipping) {
       console.log('🤔 User is skipping enrichment');
       this.addMessage(`That's perfectly fine! ${personName} is safely in your vault. We can always add more details later.`, 'emma');
       this.currentPersonEnrichment = null; // Clear the enrichment flow
       return true;
     }
-    
+
     try {
       // Find the person in vault
       const vault = window.emmaWebVault?.vaultData?.content;
@@ -3061,7 +2962,7 @@ RULES:
         console.error('❌ No people section in vault');
         return false;
       }
-      
+
       // Find person by name
       let targetPerson = null;
       for (const [id, person] of Object.entries(vault.people)) {
@@ -3075,7 +2976,7 @@ RULES:
         console.error('❌ Person not found in vault:', personName);
         return false;
       }
-      
+
       // 💝 ADD ENRICHMENT INFO
       if (!targetPerson.enrichment) {
         targetPerson.enrichment = {
@@ -3085,13 +2986,13 @@ RULES:
           addedAt: new Date().toISOString()
         };
       }
-      
+
       const stage = this.currentPersonEnrichment?.stage || 'relationship';
-      
+
       if (stage === 'relationship') {
         targetPerson.enrichment.relationship = userMessage;
         targetPerson.notes = `${targetPerson.notes}\nRelationship: ${userMessage}`;
-        
+
         // 💬 ACKNOWLEDGING RESPONSE
         const acknowledgments = [
           `That's wonderful! ${userMessage.includes('friend') ? 'Friends are so precious.' : 'Thank you for sharing that.'}`,
@@ -3099,17 +3000,17 @@ RULES:
           `That's beautiful. ${personName} sounds like someone special.`,
           `Thank you for telling me about your connection with ${personName}.`
         ];
-        
+
         const ack = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
         this.addMessage(ack, 'emma');
-        
+
         // 🎯 OPTIONAL FOLLOW-UP
         setTimeout(() => {
           this.addMessage(`Is there anything else you'd like me to remember about ${personName}? Or we can move on to something else - whatever feels right for you.`, 'emma');
-          
+
           this.currentPersonEnrichment.stage = 'complete';
         }, 2500);
-        
+
       } else {
         // Additional details
         if (!targetPerson.enrichment.details) {
@@ -3117,19 +3018,19 @@ RULES:
         } else {
           targetPerson.enrichment.details += `\n${userMessage}`;
         }
-        
+
         targetPerson.notes += `\nAdditional: ${userMessage}`;
-        
+
         this.addMessage(`Thank you for sharing that about ${personName}. I'll keep that in your vault.`, 'emma');
         this.currentPersonEnrichment.stage = 'complete';
       }
-      
+
       // 💾 SAVE ENRICHMENT
       await window.emmaWebVault.scheduleElegantSave();
       console.log('✅ Person enrichment saved:', targetPerson.enrichment);
-      
+
       return true;
-      
+
     } catch (error) {
       console.error('❌ Error handling person enrichment:', error);
       return false;
@@ -3540,6 +3441,12 @@ RULES:
             }
           }
           break;
+
+        case 'displayMemoryResults':
+          if (analysis.memories) {
+            this.displayMemoryResults(analysis.memories);
+          }
+          break;
       }
     }
   }
@@ -3547,7 +3454,7 @@ RULES:
   // 💝 CRITICAL: Update conversation context for continuity
   updateConversationContext(userMessage) {
     // Track conversation flow
-    this.conversationContext.conversationFlow.push({
+    this.unifiedIntelligence.conversationContext.conversationFlow.push({
       timestamp: Date.now(),
       message: userMessage,
       detected: {
@@ -3558,37 +3465,37 @@ RULES:
     });
 
     // Keep only last 5 exchanges for context
-    if (this.conversationContext.conversationFlow.length > 5) {
-      this.conversationContext.conversationFlow.shift();
+    if (this.unifiedIntelligence.conversationContext.conversationFlow.length > 5) {
+      this.unifiedIntelligence.conversationContext.conversationFlow.shift();
     }
 
     // Update people mentioned
     const people = this.extractPeople(userMessage);
-    people.forEach(person => this.conversationContext.recentPeople.add(person));
+    people.forEach(person => this.unifiedIntelligence.conversationContext.recentPeople.add(person));
     
     // 💜 CTO ENHANCEMENT: Enhanced context tracking for memory companion
-    this.conversationContext.currentTopic = this.extractTopic(userMessage);
-    this.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
+    this.unifiedIntelligence.conversationContext.currentTopic = this.extractTopic(userMessage);
+    this.unifiedIntelligence.conversationContext.lastUserIntent = people.length > 0 ? 'discussing_person' : 'general';
     
     // 🎯 CTO CRITICAL: Track the MAIN SUBJECT of user queries (not just mentioned people)
     if (people.length > 0) {
-      this.conversationContext.lastQueriedPerson = people[0]; // The person user specifically asked about
+      this.unifiedIntelligence.conversationContext.lastQueriedPerson = people[0]; // The person user specifically asked about
     }
     
     console.log('💝 CTO CONTEXT UPDATE:', {
       userMessage,
       extractedPeople: people,
-      recentPeople: Array.from(this.conversationContext.recentPeople),
-      currentTopic: this.conversationContext.currentTopic,
-      lastIntent: this.conversationContext.lastUserIntent,
-      conversationFlow: this.conversationContext.conversationFlow.length
+      recentPeople: Array.from(this.unifiedIntelligence.conversationContext.recentPeople),
+      currentTopic: this.unifiedIntelligence.conversationContext.currentTopic,
+      lastIntent: this.unifiedIntelligence.conversationContext.lastUserIntent,
+      conversationFlow: this.unifiedIntelligence.conversationContext.conversationFlow.length
     });
   }
 
   // 🧠 DEMENTIA-AWARE RESPONSES: Always validate, never contradict
   generateDementiaAwareResponse(userMessage) {
     const lower = userMessage.toLowerCase();
-    const context = this.conversationContext;
+    const context = this.unifiedIntelligence.conversationContext;
     
     // Dynamically detect people from vault and respond appropriately
     const mentionedPeople = this.extractPeople(userMessage);
@@ -3920,9 +3827,9 @@ RULES:
         
         // Create a photo preview message
         const photoPreview = `
-          <div style="margin: 10px 0; padding: 15px; background: rgba(134, 88, 255, 0.1); border-radius: 12px; border: 2px dashed rgba(134, 88, 255, 0.3);">
+          <div style="margin: 10px 0; padding: 15px; background: rgba(111, 99, 217, 0.1); border-radius: 12px; border: 2px dashed rgba(111, 99, 217, 0.3);">
             <img src="${imageData}" style="max-width: 200px; max-height: 200px; border-radius: 8px; object-fit: cover;">
-            <div style="margin-top: 8px; font-size: 14px; color: #8658ff;">
+            <div style="margin-top: 8px; font-size: 14px; color: #6f63d9;">
               📷 Photo with ${personName} - Ready to save!
             </div>
           </div>
@@ -4741,6 +4648,10 @@ RULES:
    * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
   async addInitialWelcomeMessage() {
+    if (this.remoteGreetingReceived || this.localWelcomeShown) {
+      return;
+    }
+    this.localWelcomeShown = true;
 
     // Get current session context
     const hour = new Date().getHours();
@@ -4789,6 +4700,18 @@ RULES:
 
     this.addMessage(welcomeMessage, 'emma');
     console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
+  }
+
+  scheduleInitialWelcome() {
+    if (this.initialWelcomeTimeout || this.localWelcomeShown) {
+      return;
+    }
+    this.initialWelcomeTimeout = setTimeout(() => {
+      this.initialWelcomeTimeout = null;
+      if (!this.remoteGreetingReceived) {
+        this.addInitialWelcomeMessage();
+      }
+    }, 1200);
   }
 
   // Chat settings modal removed - access via main settings panel
@@ -4922,6 +4845,8 @@ RULES:
     this.debugMode = debugMode;
     this.dementiaMode = dementiaMode;
 
+    this.syncVoiceApiKey(false);
+
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
       this.initializeVectorlessEngine();
@@ -5027,6 +4952,8 @@ RULES:
     this.dementiaMode = newDementiaMode;
     this.debugMode = newDebugMode;
 
+    this.syncVoiceApiKey(false);
+
     // Save to localStorage
     const settings = {
       apiKey: this.apiKey,
@@ -5084,37 +5011,87 @@ RULES:
    */
   loadVectorlessSettings() {
     try {
-          // 🚀 DEMO SECURITY: API keys disabled for family demo
-    
-    // 1. SECURITY LOCKDOWN: No API key access for demo safety
-    this.apiKey = null; // DEMO MODE: API keys disabled for security
-      
-      // 2. Check old vectorless settings format (backup)
-      if (!this.apiKey) {
-        const stored = localStorage.getItem('emma-vectorless-settings');
-        if (stored) {
-          const settings = JSON.parse(stored);
-          this.apiKey = settings.apiKey || null;
+      const normalizeApiKey = (value) => {
+        if (!value || typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+      };
+
+      this.apiKey = null;
+      let legacySettings = null;
+
+      // 1. Primary source: redesigned settings page
+      const generalSettingsRaw = localStorage.getItem('emmaSettings');
+      if (generalSettingsRaw) {
+        try {
+          const generalSettings = JSON.parse(generalSettingsRaw);
+          const modernKey = normalizeApiKey(generalSettings?.apiKey);
+          if (modernKey) {
+            this.apiKey = modernKey;
+          }
+        } catch (settingsError) {
+          if (window.EMMA_DEBUG) {
+            console.warn('emmaSettings parse failed:', settingsError);
+          }
         }
       }
-      
-      // 3. Check global API key (backup)
-      if (!this.apiKey && window.API_KEY) {
-        this.apiKey = window.API_KEY;
-        console.log('💬 Using global API key for Emma responses');
+
+      // 2. Legacy storage fallback (vectorless modal)
+      const legacyRaw = localStorage.getItem('emma-vectorless-settings');
+      if (legacyRaw) {
+        try {
+          legacySettings = JSON.parse(legacyRaw);
+          if (!this.apiKey) {
+            const legacyKey = normalizeApiKey(legacySettings.apiKey);
+            if (legacyKey) {
+              this.apiKey = legacyKey;
+            }
+          }
+        } catch (legacyError) {
+          if (window.EMMA_DEBUG) {
+            console.warn('Legacy vectorless settings parse failed:', legacyError);
+          }
+          legacySettings = null;
+        }
       }
-      
-      // 🔧 Load other settings
-      this.dementiaMode = localStorage.getItem('emma-dementia-mode') === 'true';
-      this.debugMode = localStorage.getItem('emma-debug-mode') === 'true';
-      
+
+      // 3. Global fallback for embedded demos or manual overrides
+      if (!this.apiKey && window.API_KEY) {
+        const globalKey = normalizeApiKey(window.API_KEY);
+        if (globalKey) {
+          this.apiKey = globalKey;
+          console.log('💬 Using global API key for Emma responses');
+        }
+      }
+
+      // 4. Feature toggles (persisted separately, with legacy fallback)
+      const dementiaFlag = localStorage.getItem('emma-dementia-mode');
+      if (dementiaFlag !== null) {
+        this.dementiaMode = dementiaFlag === 'true';
+      } else if (legacySettings && typeof legacySettings.dementiaMode === 'boolean') {
+        this.dementiaMode = legacySettings.dementiaMode;
+      } else {
+        this.dementiaMode = false;
+      }
+
+      const debugFlag = localStorage.getItem('emma-debug-mode');
+      if (debugFlag !== null) {
+        this.debugMode = debugFlag === 'true';
+      } else if (legacySettings && typeof legacySettings.debugMode === 'boolean') {
+        this.debugMode = legacySettings.debugMode;
+      } else {
+        this.debugMode = false;
+      }
+
+      this.syncVoiceApiKey(true);
+
       // 🎯 LOG RESULTS
       if (this.apiKey) {
         console.log('✅ OpenAI API key found and loaded successfully!');
       } else {
         console.warn('💬 No API key found - Emma will use intelligent fallbacks');
       }
-      
+
     } catch (error) {
       console.warn('💬 Could not load vectorless settings:', error);
     }
@@ -5241,7 +5218,7 @@ RULES:
     try {
       // Generate dynamic response for media requests
       const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
-      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', null, 'response');
+      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', {});
 
       // Create a basic memory from the request
       const memory = {
@@ -5269,8 +5246,36 @@ RULES:
 
     } catch (error) {
       console.error('❌ Error handling media request:', error);
-      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
+      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', {});
     }
+  }
+
+  /**
+   * Classify user intent for message routing
+   */
+  classifyUserIntent(message) {
+    const lowerMsg = message.toLowerCase().trim();
+
+    // People list queries
+    if (/\b(show|list|display|get|who are)\s+(all\s+)?(my\s+)?(people|persons|contacts|friends|family)\b/i.test(lowerMsg) ||
+        /\b(all\s+)?(my\s+)?people\s+(list|I\s+know)\b/i.test(lowerMsg)) {
+      return { type: 'people_list', confidence: 0.9 };
+    }
+
+    // Memory search queries
+    if (/\b(show|find|search|display|get|list)\s+(me\s+)?(all\s+)?(my\s+)?memor(y|ies)\b/i.test(lowerMsg) ||
+        /\bwhat\s+memor(y|ies)\b/i.test(lowerMsg) ||
+        /\bdo\s+I\s+have.*memor(y|ies)\b/i.test(lowerMsg)) {
+      return { type: 'memory_search', confidence: 0.9 };
+    }
+
+    // Person inquiry
+    if (/\b(who\s+is|tell\s+me\s+about|what\s+about|show\s+me)\s+\w+/i.test(lowerMsg)) {
+      return { type: 'person_inquiry', confidence: 0.7 };
+    }
+
+    // General conversation
+    return { type: 'general', confidence: 0.5 };
   }
 
   /**
@@ -5458,7 +5463,11 @@ RULES:
       return;
     }
 
-    // Show memory preview dialog
+    const autoSaved = await this.tryAutoSaveMemory(analysis.memory, analysis.memory?.id, 'chat-detected');
+    if (autoSaved) {
+      return;
+    }
+
     this.showMemoryPreviewDialog(analysis.memory);
   }
 
@@ -5495,6 +5504,7 @@ RULES:
    * Show memory preview dialog
    */
   showMemoryPreviewDialog(memory) {
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(String(s)) : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
     // 🎯 CRITICAL FIX: Store memory in temporary storage for editing
     this.temporaryMemories.set(memory.id, memory);
     console.log('🎯 MOBILE PREVIEW: Stored temporary memory for editing:', memory.id);
@@ -5508,14 +5518,14 @@ RULES:
       <!-- 📱 MOBILE HEADER: Full-width with close button -->
       <div class="mobile-header">
         <div class="header-content">
-          <h2 class="memory-title">${memory.title || 'Beautiful Memory'}</h2>
+          <h2 class="memory-title">${esc(memory.title || 'Beautiful Memory')}</h2>
           <button class="close-btn" onclick="this.closest('.memory-preview-dialog').remove()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
-        <div class="memory-date">${memory.metadata?.date || 'Saturday, August 23, 2025'}</div>
+        <div class="memory-date">${esc(memory.metadata?.date || 'Saturday, August 23, 2025')}</div>
       </div>
 
       <!-- 📸 HERO IMAGE CAROUSEL: Feature photos prominently -->
@@ -5526,7 +5536,7 @@ RULES:
               .filter(att => att.type?.startsWith('image/'))
               .slice(0, 5)
               .map((image, index) => `
-                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${esc(image.data || image.dataUrl || image.url)}')">
                   <div class="image-overlay"></div>
                 </div>
               `).join('')}
@@ -5547,8 +5557,8 @@ RULES:
       <!-- 👥 PEOPLE SECTION: Large touch-friendly avatars -->
       ${peopleList.length > 0 ? `
         <div class="people-section">
-          <h3 class="section-title">👥 People in this memory</h3>
-          <div class="people-grid" id="people-grid-${memory.id}">
+          <h3 class="section-title">People in this memory</h3>
+          <div class="people-grid" id="people-grid-${esc(memory.id)}">
             <!-- People avatars will be loaded here -->
           </div>
         </div>
@@ -5557,15 +5567,15 @@ RULES:
       <!-- 📝 CONTENT SECTION: Story and details -->
       <div class="content-section">
         <div class="memory-story">
-          <p>${memory.content}</p>
+          <p>${esc(memory.content || '')}</p>
         </div>
         
         ${memory.metadata?.emotions?.length > 0 ? `
           <div class="memory-tags">
-            <span class="tag-label">💭</span>
+            <span class="tag-label">Emotions</span>
             <div class="emotions-list">
               ${memory.metadata.emotions.map(emotion => `
-                <span class="emotion-tag">${emotion}</span>
+                <span class="emotion-tag">${esc(emotion)}</span>
               `).join('')}
             </div>
           </div>
@@ -5573,8 +5583,8 @@ RULES:
 
         ${memory.metadata?.location ? `
           <div class="memory-tags">
-            <span class="tag-label">📍</span>
-            <span class="location-tag">${memory.metadata.location}</span>
+            <span class="tag-label">Location</span>
+            <span class="location-tag">${esc(memory.metadata.location)}</span>
           </div>
         ` : ''}
       </div>
@@ -5582,20 +5592,20 @@ RULES:
       <!-- 🎬 MEDIA GRID: Additional media -->
       ${memory.attachments?.length > 1 || hasVideo ? `
         <div class="media-section">
-          <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+          <h3 class="section-title">All Media (${memory.attachments.length})</h3>
           <div class="media-grid">
             ${memory.attachments.map((attachment, index) => `
               <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
                 ${attachment.type?.startsWith('image/') ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                  <img src="${esc(attachment.data || attachment.dataUrl || attachment.url)}" alt="${esc(attachment.name || '')}" />
                 ` : attachment.type?.startsWith('video/') ? `
-                  <video src="${attachment.dataUrl || attachment.url}" muted>
-                    <div class="video-play-overlay">▶️</div>
+                  <video src="${esc(attachment.dataUrl || attachment.url)}" muted>
+                    <div class="video-play-overlay">Play</div>
                   </video>
                 ` : `
                   <div class="file-item">
-                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
-                    <div class="file-name">${attachment.name}</div>
+                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'Audio' : 'File'}</div>
+                    <div class="file-name">${esc(attachment.name || '')}</div>
                   </div>
                 `}
               </div>
@@ -5633,7 +5643,7 @@ RULES:
         }
         
         .responsive-memory-container {
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+          background: linear-gradient(135deg, rgba(111, 99, 217, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
           border-radius: clamp(16px, 3vw, 24px);
           max-width: 95vw;
           max-height: 95vh;
@@ -5814,7 +5824,7 @@ RULES:
           border: 3px solid rgba(255, 255, 255, 0.9);
           overflow: hidden;
           position: relative;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -5825,13 +5835,13 @@ RULES:
           transition: all 0.3s ease;
           cursor: pointer;
           text-align: center;
-          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
         }
         
         .memory-person-avatar:hover {
           transform: scale(1.05);
           border-color: white;
-          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+          box-shadow: 0 6px 20px rgba(111, 99, 217, 0.5);
         }
         
         .memory-person-avatar img {
@@ -5951,7 +5961,7 @@ RULES:
         
         .action-btn.primary {
           background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-          color: #8b5cf6;
+          color: #6f63d9;
           border: 2px solid rgba(255, 255, 255, 0.3);
         }
         
@@ -5995,7 +6005,7 @@ RULES:
                 .filter(att => att.type?.startsWith('image/'))
                 .slice(0, 5)
                 .map((image, index) => `
-                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${esc(image.data || image.dataUrl || image.url)}')">
                     <div class="image-overlay"></div>
                   </div>
                 `).join('')}
@@ -6016,8 +6026,8 @@ RULES:
         <!-- PEOPLE SECTION -->
         ${peopleList.length > 0 ? `
           <div class="people-section">
-            <h3 class="section-title">👥 People in this memory</h3>
-            <div class="people-grid" id="people-grid-${memory.id}">
+            <h3 class="section-title">People in this memory</h3>
+            <div class="people-grid" id="people-grid-${esc(memory.id)}">
               <!-- People avatars will be loaded here -->
             </div>
           </div>
@@ -6026,15 +6036,15 @@ RULES:
         <!-- CONTENT -->
         <div class="content-section">
           <div class="memory-story">
-            <p>${memory.content}</p>
+            <p>${esc(memory.content || '')}</p>
           </div>
           
           ${memory.metadata?.emotions?.length > 0 ? `
             <div class="memory-tags">
-              <span class="tag-label">💭</span>
+              <span class="tag-label">Emotions</span>
               <div class="emotions-list">
                 ${memory.metadata.emotions.map(emotion => `
-                  <span class="emotion-tag">${emotion}</span>
+                  <span class="emotion-tag">${esc(emotion)}</span>
                 `).join('')}
               </div>
             </div>
@@ -6042,8 +6052,8 @@ RULES:
 
           ${memory.metadata?.location ? `
             <div class="memory-tags">
-              <span class="tag-label">📍</span>
-              <span class="location-tag">${memory.metadata.location}</span>
+              <span class="tag-label">Location</span>
+              <span class="location-tag">${esc(memory.metadata.location)}</span>
             </div>
           ` : ''}
         </div>
@@ -6051,7 +6061,7 @@ RULES:
         <!-- MEDIA GRID -->
         ${memory.attachments?.length > 1 || hasVideo ? `
           <div class="media-section">
-            <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+            <h3 class="section-title">All Media (${memory.attachments.length})</h3>
             <div class="media-grid">
               ${memory.attachments.map((attachment, index) => `
                 <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
@@ -6059,11 +6069,11 @@ RULES:
                     <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
                   ` : attachment.type?.startsWith('video/') ? `
                     <video src="${attachment.dataUrl || attachment.url}" muted>
-                    <div class="video-play-overlay">▶️</div>
+                    <div class="video-play-overlay">Play</div>
                     </video>
                   ` : `
                     <div class="file-item">
-                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'Audio' : 'File'}</div>
                       <div class="file-name">${attachment.name}</div>
                     </div>
                   `}
@@ -6076,10 +6086,10 @@ RULES:
         <!-- ACTION BUTTONS -->
         <div class="action-buttons">
           <button class="action-btn primary" onclick="window.chatExperience.saveMemoryToVault('${memory.id}')">
-            ✨ Save to Vault
+            Save to Vault
           </button>
           <button class="action-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
-            ✏️ Edit Memory
+            Edit Memory
           </button>
         </div>
       </div>
@@ -6261,7 +6271,7 @@ RULES:
       <style>
         .memory-person-avatar {
           width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
-          overflow: hidden; position: relative; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          overflow: hidden; position: relative; background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
           font-weight: 600; color: white; transition: all 0.3s ease; cursor: pointer;
         }
@@ -6269,12 +6279,12 @@ RULES:
         .memory-person-avatar img { width: 100%; height: 100%; object-fit: cover; }
         
         .emma-drop-zone {
-          border: 2px dashed rgba(139, 92, 246, 0.6); border-radius: 16px; padding: 40px;
-          text-align: center; background: rgba(139, 92, 246, 0.1); cursor: pointer;
+          border: 2px dashed rgba(111, 99, 217, 0.6); border-radius: 16px; padding: 40px;
+          text-align: center; background: rgba(111, 99, 217, 0.1); cursor: pointer;
           transition: all 0.3s ease; margin: 20px 0;
         }
-        .emma-drop-zone:hover { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
-        .emma-drop-zone.drag-over { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.3); transform: scale(1.02); }
+        .emma-drop-zone:hover { border-color: #6f63d9; background: rgba(111, 99, 217, 0.2); }
+        .emma-drop-zone.drag-over { border-color: #6f63d9; background: rgba(111, 99, 217, 0.3); transform: scale(1.02); }
         
         .people-selection-grid {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0;
@@ -6284,7 +6294,7 @@ RULES:
           padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease;
         }
         .person-select-card:hover { background: rgba(255, 255, 255, 0.1); }
-        .person-select-card.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
+        .person-select-card.selected { border-color: #6f63d9; background: rgba(111, 99, 217, 0.2); }
         
         .media-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
         .media-preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
@@ -6295,7 +6305,7 @@ RULES:
       <div class="dialog-content" style="position: relative; z-index: 10001 !important; max-width: 600px; max-height: 80vh; overflow-y: auto;">
         <div class="dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
           <h3 style="margin: 0; color: white;">📷 Create Photo Memory</h3>
-          <button class="dialog-close" onclick="this.closest('.memory-preview-dialog').remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+          <button class="dialog-close" onclick="this.closest('.memory-preview-dialog').remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
         
         <div class="dialog-body">
@@ -6330,7 +6340,7 @@ RULES:
           <!-- Action Buttons -->
           <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <button onclick="this.closest('.memory-preview-dialog').remove()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
-            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
+            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #6f63d9, #d06fa8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
           </div>
         </div>
       </div>
@@ -6474,9 +6484,9 @@ RULES:
           avatar.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.5)';
         } else {
           // EXISTING person styling (consistent with constellation)
-          avatar.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+          avatar.style.background = 'linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%)';
           avatar.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-          avatar.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
+          avatar.style.boxShadow = '0 2px 8px rgba(111, 99, 217, 0.3)';
         }
 
         // 🎯 CTO CRITICAL: ENHANCED PHOTO LOADING WITH DEBUGGING
@@ -6670,160 +6680,86 @@ RULES:
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: rgba(0, 0, 0, 0.95) !important;
+      background: rgba(var(--emma-neutral-inverse-rgb, 15, 15, 23), 0.94) !important;
       backdrop-filter: blur(20px) !important;
       overflow: hidden !important;
       overscroll-behavior: contain !important;
       touch-action: none !important;
     `;
 
+    const titleInputId = `edit-title-${memory.id}`;
+    const contentInputId = `edit-content-${memory.id}`;
+
     editModal.innerHTML = `
-      <div class="edit-modal-content" style="
-        background: linear-gradient(135deg, rgba(147, 112, 219, 0.95), rgba(123, 104, 238, 0.95));
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        overscroll-behavior: contain !important;
-        -webkit-overflow-scrolling: touch !important;
-        color: white;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        position: relative !important;
-        z-index: 15001 !important;
-        pointer-events: auto !important;
-        touch-action: pan-y !important;
-        scroll-behavior: smooth !important;
-      ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">✏️ Edit Memory</h2>
-          <button class="close-edit-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+      <div class="edit-modal-content">
+        <div class="edit-modal-header">
+          <h2>Edit Memory</h2>
+          <button class="close-edit-btn" type="button" aria-label="Close edit memory modal">&times;</button>
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Title:</label>
-          <input type="text" class="edit-title-input" value="${memory.metadata?.title || memory.title || ''}" style="
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-          " placeholder="Enter memory title...">
+        <div class="edit-modal-field">
+          <label class="edit-modal-label" for="${titleInputId}">Title:</label>
+          <input
+            type="text"
+            id="${titleInputId}"
+            class="edit-title-input"
+            value="${memory.metadata?.title || memory.title || ''}"
+            placeholder="Enter memory title..."
+          >
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Content:</label>
-          <textarea class="edit-content-textarea" style="
-            width: 100%;
-            min-height: 120px;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: vertical;
-            box-sizing: border-box;
-          " placeholder="Describe this memory...">${memory.content || ''}</textarea>
+        <div class="edit-modal-field">
+          <label class="edit-modal-label" for="${contentInputId}">Content:</label>
+          <textarea
+            id="${contentInputId}"
+            class="edit-content-textarea"
+            placeholder="Describe this memory..."
+          >${memory.content || ''}</textarea>
         </div>
 
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">👥 Who is in this memory?</label>
-          <div class="people-picker-container" style="
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-          ">
-            <div class="people-picker-grid" style="
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-              gap: 15px;
-              margin-bottom: 15px;
-            ">
+        <div class="edit-modal-section">
+          <label class="edit-modal-label">&#128101; Who is in this memory?</label>
+          <div class="people-picker-container">
+            <div class="people-picker-grid">
               <!-- People will be loaded here -->
             </div>
-            <div style="text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+            <div class="people-picker-loading">
               Loading people from vault...
             </div>
           </div>
         </div>
 
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">📎 Attachments (${memory.attachments?.length || 0}):</label>
-          <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
+        <div class="edit-modal-section">
+          <label class="edit-modal-label">&#128206; Attachments (${memory.attachments?.length || 0}):</label>
+          <div class="edit-attachments-grid">
             ${(memory.attachments || []).map((attachment, index) => `
-              <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
+              <div class="attachment-card">
                 ${(attachment.data || attachment.dataUrl || attachment.url) ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;\\'>📷</div>'">
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div class=&quot;attachment-fallback&quot;>&#128247;</div>'">
                 ` : `
-                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;">📷</div>
+                  <div class="attachment-fallback">&#128247;</div>
                 `}
-                <button class="remove-attachment-btn" data-index="${index}" style="
-                  position: absolute;
-                  top: 4px;
-                  right: 4px;
-                  background: rgba(255, 0, 0, 0.8);
-                  border: none;
-                  color: white;
-                  width: 20px;
-                  height: 20px;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  font-size: 12px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                ">×</button>
+                <button class="remove-attachment-btn" type="button" data-index="${index}">&times;</button>
               </div>
             `).join('')}
-            <div style="
-              aspect-ratio: 1;
-              border: 2px dashed rgba(255, 255, 255, 0.4);
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              background: rgba(255, 255, 255, 0.05);
-              transition: all 0.3s ease;
-            " class="add-media-btn">
-              <span style="font-size: 24px; color: rgba(255, 255, 255, 0.6);">+</span>
+            <div class="add-media-btn" role="button" tabindex="0">
+              <span class="add-media-icon">+</span>
+              <span class="add-media-label">Add media</span>
             </div>
           </div>
-          <input type="file" class="media-file-input" multiple accept="image/*,video/*" style="display: none;">
+          <input type="file" class="media-file-input" multiple accept="image/*,video/*" hidden>
         </div>
 
-        <div style="display: flex; gap: 15px; justify-content: flex-end;">
-          <button class="cancel-edit-btn" style="
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-          ">Cancel</button>
-          <button class="save-edit-btn" style="
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-          ">💾 Save Changes</button>
+        <div class="edit-modal-actions">
+          <button class="delete-memory-btn" type="button">&#128465; Delete Memory</button>
+          <div class="edit-modal-actions-right">
+            <button class="cancel-edit-btn" type="button">Cancel</button>
+            <button class="save-edit-btn" type="button">&#128190; Save Changes</button>
+          </div>
         </div>
       </div>
     `;
+
 
     document.body.appendChild(editModal);
     
@@ -6851,21 +6787,29 @@ RULES:
     }, { passive: false, capture: false });
     
     // 📱 MOBILE: Handle touch events for mobile/tablet scrolling
-    let touchStartY = 0;
-    
-    editModal.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    
-    editModal.addEventListener('touchmove', (e) => {
-      // If touch is on content area, allow normal scrolling
-      if (content && (e.target === content || content.contains(e.target))) {
-        return; // Allow normal touch scrolling on content
+    const isTouchWithinContent = (node) => {
+      if (!content || !node) return false;
+      if (node === content) return true;
+      if (node.nodeType !== 1) {
+        return isTouchWithinContent(node.parentNode);
       }
-      
+      return node.closest('.edit-modal-content') === content;
+    };
+
+    editModal.addEventListener('touchmove', (e) => {
+      // Allow natural scrolling when the gesture originates inside the modal
+      if (isTouchWithinContent(e.target)) {
+        return;
+      }
+
       // Otherwise, prevent background scrolling
       e.preventDefault();
     }, { passive: false });
+
+    content.addEventListener('touchmove', (e) => {
+      // Keep scroll gestures inside the modal body
+      e.stopPropagation();
+    }, { passive: true });
     
     // Block body scroll completely while modal is open
     const originalOverflow = document.body.style.overflow;
@@ -6917,6 +6861,7 @@ RULES:
     const closeBtn = editModal.querySelector('.close-edit-btn');
     const addMediaBtn = editModal.querySelector('.add-media-btn');
     const fileInput = editModal.querySelector('.media-file-input');
+    const deleteBtn = editModal.querySelector('.delete-memory-btn');
 
     // Close handlers (use the enhanced closeModal from above)
     closeBtn.addEventListener('click', closeModal);
@@ -6967,6 +6912,31 @@ RULES:
       }
     });
 
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        const confirmed = window.confirm('Are you sure you want to delete this memory from your vault?');
+        if (!confirmed) {
+          return;
+        }
+
+        const originalText = deleteBtn.textContent;
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+          await this.deleteMemoryRecord(memoryId, { memory });
+          closeModal();
+          this.showToast('🗑️ Memory deleted from your vault.', 'success');
+        } catch (error) {
+          console.error('🗑️ DELETE MEMORY ERROR:', error);
+          this.showToast('❌ Failed to delete memory', 'error');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = originalText;
+          return;
+        }
+      });
+    }
+
     // Remove attachment handlers
     editModal.querySelectorAll('.remove-attachment-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -7000,7 +6970,18 @@ RULES:
       // Update memory object
       memory.metadata = memory.metadata || {};
       memory.metadata.title = title;
-      memory.metadata.people = selectedPeople;
+      const selectedIds = Array.from(new Set(selectedPeople
+        .map(person => person.id ? person.id.trim() : '')
+        .filter(Boolean)));
+      const selectedNames = Array.from(new Set(selectedPeople
+        .map(person => person.name ? person.name.trim() : '')
+        .filter(Boolean)));
+      memory.metadata.people = selectedIds;
+      if (selectedNames.length > 0) {
+        memory.metadata.peopleNames = selectedNames;
+      } else if (memory.metadata.peopleNames) {
+        delete memory.metadata.peopleNames;
+      }
       memory.title = title;
       memory.content = content;
       
@@ -7022,7 +7003,6 @@ RULES:
             
             // NOW close the dialog after successful save
             closeModal();
-            this.showToast('✅ Memory saved to vault!', 'success');
             
             // 🎯 TRIGGER CONSTELLATION REFRESH
             console.log('🔄 EDIT: Triggering constellation refresh after vault save...');
@@ -7043,9 +7023,64 @@ RULES:
         }, 500);
       } else {
         // Regular edit flow - close immediately and refresh preview
-        this.showToast('💾 Changes saved!', 'success');
         closeModal();
-        
+
+        if (this.shouldSkipMemoryPreview(memory)) {
+          console.log('[Emma] Auto-save editing flow active - updating vault immediately');
+          try {
+            this.showToast('💾 Saving changes to your vault...', 'info');
+
+            const memoryToSave = this.prepareMemoryForVault(memory);
+            const webVault = window.emmaWebVault;
+
+            if (!webVault || !webVault.isOpen) {
+              throw new Error('Vault not unlocked');
+            }
+
+            const isExisting = !!(memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+            if (isExisting && typeof webVault.updateMemory === 'function') {
+              const updates = {
+                content: memoryToSave.content,
+                metadata: memoryToSave.metadata
+              };
+              if (typeof memoryToSave.title === 'string') {
+                updates.title = memoryToSave.title;
+              }
+              if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+                updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+              }
+
+              await webVault.updateMemory(memoryToSave.id, updates);
+            } else {
+              await webVault.addMemory(memoryToSave);
+            }
+
+            this.temporaryMemories.delete(memory.id);
+            window.dispatchEvent(new CustomEvent('emmaMemoryUpdated', {
+              detail: {
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now()
+              }
+            }));
+            window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+              detail: {
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now(),
+                action: 'refresh_constellation'
+              }
+            }));
+
+            return;
+          } catch (error) {
+            console.error('💾 EDIT: Auto-save update failed, falling back to preview', error);
+            this.showToast('Auto-save failed, please review and save manually.', 'error');
+          }
+        } else {
+          this.showToast('💾 Changes saved!', 'success');
+        }
+
         setTimeout(() => {
           this.showMemoryPreviewDialog(memory);
         }, 300);
@@ -7054,6 +7089,69 @@ RULES:
 
     // Focus title input
     setTimeout(() => titleInput.focus(), 100);
+  }
+
+  async deleteMemoryRecord(memoryId, { memory } = {}) {
+    const targetId = memoryId || memory?.id;
+    if (!targetId) {
+      throw new Error('Memory id required for deletion');
+    }
+
+    const webVault = window.emmaWebVault;
+    let deletedFromVault = false;
+
+    if (webVault && typeof webVault.deleteMemory === 'function' && webVault.isOpen && webVault.vaultData?.content?.memories?.[targetId]) {
+      await webVault.deleteMemory(targetId);
+      deletedFromVault = true;
+    } else if (webVault && webVault.vaultData?.content?.memories?.[targetId]) {
+      delete webVault.vaultData.content.memories[targetId];
+      deletedFromVault = true;
+    } else if (this.temporaryMemories.has(targetId)) {
+      this.temporaryMemories.delete(targetId);
+    }
+
+    this.temporaryMemories.delete(targetId);
+    this.enrichmentState.delete(targetId);
+
+    window.dispatchEvent(new CustomEvent('emmaMemoryDeleted', {
+      detail: {
+        memoryId: targetId,
+        source: 'emma-chat-edit',
+        timestamp: Date.now(),
+        deletedFromVault
+      }
+    }));
+
+    window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+      detail: {
+        memoryId: targetId,
+        source: 'emma-chat-edit',
+        timestamp: Date.now(),
+        action: 'delete'
+      }
+    }));
+
+    if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+      if (window.emmaDashboard.isConstellationMode) {
+        setTimeout(() => {
+          try {
+            window.emmaDashboard.enterMemoryConstellation();
+          } catch (error) {
+            console.warn('emmaDashboard constellation refresh failed:', error);
+          }
+        }, 250);
+      }
+    } else if (typeof window.loadConstellationView === 'function') {
+      setTimeout(() => {
+        try {
+          window.loadConstellationView();
+        } catch (error) {
+          console.warn('Constellation refresh failed:', error);
+        }
+      }, 250);
+    }
+
+    return { deletedFromVault };
   }
 
   /**
@@ -7147,7 +7245,22 @@ RULES:
       }
 
       // Get currently selected people
-      const selectedPeopleIds = (memory.metadata?.people || []).map(p => p.id);
+      const selectedPeopleIds = (memory.metadata?.people || [])
+        .map(personRef => {
+          if (!personRef) return null;
+          if (typeof personRef === 'string' || typeof personRef === 'number') {
+            const trimmed = String(personRef).trim();
+            return trimmed || null;
+          }
+          if (typeof personRef === 'object') {
+            const candidate = personRef.id ?? personRef.personId ?? personRef.personID ?? personRef.person_id;
+            if (candidate === undefined || candidate === null) return null;
+            const trimmed = String(candidate).trim();
+            return trimmed || null;
+          }
+          return null;
+        })
+        .filter(Boolean);
       
       if (people.length === 0) {
         loadingText.textContent = 'No people in vault yet. Add people first!';
@@ -7173,8 +7286,8 @@ RULES:
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        background: rgba(139, 92, 246, 0.15);
-        border: 2px dashed #8b5cf6;
+        background: rgba(111, 99, 217, 0.15);
+        border: 2px dashed #6f63d9;
         position: relative;
       `;
       
@@ -7184,13 +7297,13 @@ RULES:
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: rgba(139, 92, 246, 0.2);
-        border: 3px dashed #8b5cf6;
+        background: rgba(111, 99, 217, 0.2);
+        border: 3px dashed #6f63d9;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 32px;
-        color: #8b5cf6;
+        color: #6f63d9;
         margin-bottom: 8px;
         transition: all 0.3s ease;
       `;
@@ -7202,7 +7315,7 @@ RULES:
       addLabel.style.cssText = `
         font-size: 14px;
         font-weight: 600;
-        color: #8b5cf6;
+        color: #6f63d9;
         text-align: center;
         margin-bottom: 4px;
       `;
@@ -7212,7 +7325,7 @@ RULES:
       instructionLabel.textContent = 'Click to create';
       instructionLabel.style.cssText = `
         font-size: 12px;
-        color: rgba(139, 92, 246, 0.8);
+        color: rgba(111, 99, 217, 0.8);
         text-align: center;
       `;
       
@@ -7227,16 +7340,16 @@ RULES:
       
       // Add hover effects
       addPersonItem.addEventListener('mouseenter', () => {
-        addPersonItem.style.background = 'rgba(139, 92, 246, 0.25)';
+        addPersonItem.style.background = 'rgba(111, 99, 217, 0.25)';
         addPersonItem.style.transform = 'scale(1.02)';
-        addAvatar.style.background = 'rgba(139, 92, 246, 0.3)';
+        addAvatar.style.background = 'rgba(111, 99, 217, 0.3)';
         addAvatar.style.transform = 'scale(1.1)';
       });
       
       addPersonItem.addEventListener('mouseleave', () => {
-        addPersonItem.style.background = 'rgba(139, 92, 246, 0.15)';
+        addPersonItem.style.background = 'rgba(111, 99, 217, 0.15)';
         addPersonItem.style.transform = 'scale(1)';
-        addAvatar.style.background = 'rgba(139, 92, 246, 0.2)';
+        addAvatar.style.background = 'rgba(111, 99, 217, 0.2)';
         addAvatar.style.transform = 'scale(1)';
       });
       
@@ -7270,7 +7383,7 @@ RULES:
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -7492,7 +7605,7 @@ RULES:
 
     addPersonDialog.innerHTML = `
       <div class="add-person-modal-content" style="
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(124, 58, 237, 0.95));
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.95), rgba(124, 58, 237, 0.95));
         border-radius: 20px;
         padding: 30px;
         max-width: 500px;
@@ -7507,7 +7620,7 @@ RULES:
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
           <h2 style="margin: 0; font-size: 24px; font-weight: 600;">👤 Add New Person</h2>
-          <button class="close-add-person-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+          <button class="close-add-person-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
         </div>
 
         <div style="margin-bottom: 20px;">
@@ -7567,13 +7680,13 @@ RULES:
           <button class="save-person-btn" style="
             background: linear-gradient(135deg, #ffffff, #f3f4f6);
             border: none;
-            color: #8b5cf6;
+            color: #6f63d9;
             padding: 12px 24px;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 700;
             font-size: 16px;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
           ">✨ Add Person</button>
         </div>
       </div>
@@ -7670,11 +7783,21 @@ RULES:
           
           // Auto-select the new person in the memory
           memory.metadata = memory.metadata || {};
-          memory.metadata.people = memory.metadata.people || [];
-          memory.metadata.people.push({
-            id: personId,
-            name: name
-          });
+          memory.metadata.people = Array.isArray(memory.metadata.people) ? memory.metadata.people : [];
+          const trimmedPersonId = personId ? String(personId).trim() : '';
+          if (trimmedPersonId && !memory.metadata.people.includes(trimmedPersonId)) {
+            memory.metadata.people.push(trimmedPersonId);
+          }
+
+          if (name) {
+            const trimmedName = name.trim();
+            if (trimmedName) {
+              memory.metadata.peopleNames = Array.isArray(memory.metadata.peopleNames) ? memory.metadata.peopleNames : [];
+              if (!memory.metadata.peopleNames.includes(trimmedName)) {
+                memory.metadata.peopleNames.push(trimmedName);
+              }
+            }
+          }
 
           this.showToast(`✨ ${name} added to vault and memory!`, 'success');
           closeDialog();
@@ -7722,7 +7845,7 @@ RULES:
       for (const [id, state] of this.enrichmentState) {
         if (state.memory && state.memory.id === memoryId) {
           enrichmentState = state;
-          
+
           // CRITICAL FIX: Build enriched memory with all collected data
           memory = {
             ...state.memory,
@@ -7736,7 +7859,7 @@ RULES:
             },
             content: state.collectedData.enrichedContent || state.memory.content
           };
-          
+
           console.log('💾 EMMA CHAT: Using ENRICHED memory with people:', memory.metadata.people);
           break;
         }
@@ -7762,16 +7885,16 @@ RULES:
       const newPeople = memory.metadata.newPeopleDetected || [];
       const existingPeople = memory.metadata.people || [];
       const peopleNames = memory.metadata.peopleNames || [];
-      
+
       console.log('👥 EMMA CHAT: Memory people analysis:', {
         newPeople,
-        existingPeople, 
+        existingPeople,
         peopleNames,
         hasNewPeople: newPeople.length > 0
       });
-      
+
       console.log('🚨 DEBUG: confirmSaveMemory called with memoryId:', memoryId);
-      
+
       if (newPeople.length > 0) {
         console.log('👥 EMMA CHAT: New people detected, starting onboarding flow:', newPeople);
         await this.startNewPersonOnboarding(memoryId, newPeople);
@@ -7782,7 +7905,7 @@ RULES:
       await this.finalizeMemorySave(memory, memoryId);
     } catch (error) {
       console.error('💾 EMMA CHAT: Error in confirmSaveMemory:', error);
-      this.showToast('❌ Failed to save memory', 'error');
+      this.showToast('Failed to save memory', 'error');
     }
   }
 
@@ -7794,9 +7917,9 @@ RULES:
     this.captureSession = this.captureSession || {};
     this.captureSession.pendingNewPeople = [...newPeople]; // Copy array
     this.captureSession.memoryId = memoryId;
-    
+
     console.log('👥 EMMA CHAT: Starting onboarding for ALL new people:', newPeople);
-    
+
     // Start with the first person
     await this.processNextNewPerson();
   }
@@ -7817,13 +7940,13 @@ RULES:
 
     const personName = this.captureSession.pendingNewPeople.shift(); // Remove first person from queue
     const remaining = this.captureSession.pendingNewPeople.length;
-    
+
     let message = `Great! Let me add ${personName} to your vault first.`;
     if (remaining > 0) {
       message += ` After ${personName}, I'll ask about ${remaining} more ${remaining === 1 ? 'person' : 'people'}.`;
     }
     message += ` What's your relationship with ${personName}?`;
-    
+
     this.addMessage(message, 'emma', {
       isNewPersonPrompt: true,
       memoryId: this.captureSession.memoryId,
@@ -7838,7 +7961,7 @@ RULES:
   async addPersonToVault(memoryId, personName, relationship) {
     try {
       console.log(`👥 ADDING PERSON: ${personName} as ${relationship}`);
-      
+
       // CRITICAL: Check vault access first
       if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
         throw new Error('Vault is not accessible');
@@ -7875,11 +7998,11 @@ RULES:
         // Try to save anyway with basic memory structure
         await this.fallbackMemorySave(memoryId, personName);
       }
-      
+
     } catch (error) {
       console.error('❌ CRITICAL: Failed to add person to vault:', error);
       this.addMessage(`I had trouble adding ${personName} to your vault (${error.message}), but let me save your memory anyway.`, 'emma');
-      
+
       // Always try to save the memory even if person addition fails
       const state = this.enrichmentState.get(memoryId);
       if (state && state.memory) {
@@ -7895,7 +8018,7 @@ RULES:
    */
   async skipPersonAddition(memoryId) {
     this.addMessage("No worries! Let me create your memory capsule...", 'emma');
-    
+
     const state = this.enrichmentState.get(memoryId);
     if (state && state.memory) {
       await this.finalizeMemorySave(state.memory, memoryId);
@@ -7908,7 +8031,7 @@ RULES:
   async fallbackMemorySave(memoryId, personName = null) {
     try {
       console.log('🚨 FALLBACK: Attempting to save memory without enrichment state');
-      
+
       // Try to find the memory in detected memories
       let memory = null;
       for (const [msgId, analysis] of this.detectedMemories) {
@@ -7933,7 +8056,7 @@ RULES:
       }
       
       await this.finalizeMemorySave(memory, memoryId);
-      
+
     } catch (error) {
       console.error('❌ FALLBACK SAVE FAILED:', error);
       this.addMessage("I'm having trouble saving your memory. Please try again.", 'emma');
@@ -7958,15 +8081,26 @@ RULES:
       if (newPerson) {
         // Replace temp ID with real ID
         const tempId = `temp_${personName.toLowerCase()}`;
-        const peopleIds = state.memory.metadata.people || [];
+        const peopleIds = Array.isArray(state.memory.metadata.people) ? state.memory.metadata.people : [];
         const updatedPeopleIds = peopleIds.map(id => id === tempId ? newPerson.id : id);
-        
+
         state.memory.metadata.people = updatedPeopleIds;
+        
+        const existingNames = Array.isArray(state.memory.metadata.peopleNames) ? state.memory.metadata.peopleNames : [];
+        const filteredNames = existingNames.filter(name => name.toLowerCase() !== personName.toLowerCase());
+        if (newPerson.name) {
+          filteredNames.push(newPerson.name);
+        }
+        if (filteredNames.length > 0) {
+          state.memory.metadata.peopleNames = Array.from(new Set(filteredNames));
+        } else if (state.memory.metadata.peopleNames) {
+          delete state.memory.metadata.peopleNames;
+        }
         
         // Remove from newPeopleDetected
         state.memory.metadata.newPeopleDetected = (state.memory.metadata.newPeopleDetected || [])
           .filter(name => name.toLowerCase() !== personName.toLowerCase());
-          
+
         console.log('✅ Updated memory with real person ID:', newPerson.id);
         console.log('💾 FINAL MEMORY PEOPLE:', state.memory.metadata.people);
       }
@@ -7975,13 +8109,162 @@ RULES:
     }
   }
 
+  isAutoSaveReady() {
+    const webVault = window.emmaWebVault;
+    if (!webVault || !webVault.isOpen) {
+      console.log('[Emma] isAutoSaveReady -> false (vault closed or missing)', {
+        hasVault: !!webVault,
+        isOpen: webVault?.isOpen
+      });
+      return false;
+    }
+
+    const sessionActive = typeof sessionStorage !== 'undefined' &&
+      sessionStorage.getItem('emmaVaultActive') === 'true';
+    const localActive = typeof localStorage !== 'undefined' &&
+      localStorage.getItem('emmaVaultActive') === 'true';
+    if (!webVault.isWebappPrimary && !sessionActive && !localActive) {
+      console.log('[Emma] isAutoSaveReady -> false (no active session markers)', {
+        webappPrimary: webVault.isWebappPrimary,
+        sessionActive,
+        localActive
+      });
+      return false;
+    }
+
+    if (webVault.needsFileReauth && !webVault.isWebappPrimary) {
+      console.log('[Emma] isAutoSaveReady -> false (needs file reauth)', {
+        webappPrimary: webVault.isWebappPrimary,
+        needsFileReauth: webVault.needsFileReauth
+      });
+      return false;
+    }
+
+    const autoSavePreference = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('emmaVaultAutoSaveEnabled')
+      : null;
+    const prefersAutoSave = autoSavePreference !== 'false';
+    if (!prefersAutoSave) {
+      console.log('[Emma] isAutoSaveReady -> false (autosave disabled by preference)');
+      return false;
+    }
+
+    const hasFileHandle = !!webVault.fileHandle;
+    const extensionSync = !!webVault.extensionAvailable && webVault.extensionSyncEnabled !== false;
+    const webAppPrimary = !!webVault.isWebappPrimary || !!webVault.useWebappPrimary;
+    const hasAutoSaveCapability = hasFileHandle || extensionSync || webAppPrimary;
+    if (!hasAutoSaveCapability) {
+      console.log('[Emma] isAutoSaveReady -> false (no autosave capability)', {
+        hasFileHandle,
+        extensionSync,
+        webAppPrimary
+      });
+      return false;
+    }
+
+    console.log('[Emma] isAutoSaveReady -> true', {
+      sessionActive,
+      localActive,
+      hasFileHandle,
+      extensionSync,
+      webAppPrimary
+    });
+    return true;
+  }
+
+  shouldSkipMemoryPreview(memory) {
+    const manualPreview = localStorage.getItem('emmaVaultManualPreview') === 'true';
+    if (manualPreview) return false;
+
+    const webVault = window.emmaWebVault;
+    console.log('[Emma] shouldSkipMemoryPreview state', {
+      manualPreview,
+      hasVault: !!webVault,
+      isOpen: webVault?.isOpen,
+      isWebappPrimary: webVault?.isWebappPrimary,
+      autoSaveEnabled: webVault?.autoSaveEnabled,
+      needsFileReauth: webVault?.needsFileReauth
+    });
+    if (webVault?.isWebappPrimary && webVault.isOpen) {
+      const autoSaveEnabled = webVault.autoSaveEnabled !== false;
+      const hasVaultData = !!webVault.vaultData?.content;
+      if (autoSaveEnabled) {
+        console.log('[Emma] Webapp-primary autosave ready - skipping preview', {
+          hasVaultData,
+          needsFileReauth: webVault.needsFileReauth,
+          autoSaveEnabled
+        });
+        return true;
+      }
+    }
+
+    if (!this.isAutoSaveReady()) return false;
+
+    return true;
+  }
+
+  async tryAutoSaveMemory(memory, memoryId = null, context = 'default') {
+    if (!memory) {
+      return false;
+    }
+
+    if (!this.shouldSkipMemoryPreview(memory)) {
+      return false;
+    }
+
+    const targetId = memoryId || memory.id || `memory_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    if (!memory.id) {
+      memory.id = targetId;
+    }
+
+    console.log('[Emma] Auto-save ready - skipping preview', {
+      context,
+      memoryId: targetId,
+      autoSaveEnabled: window.emmaWebVault?.autoSaveEnabled,
+      isWebappPrimary: window.emmaWebVault?.isWebappPrimary,
+      needsFileReauth: window.emmaWebVault?.needsFileReauth
+    });
+
+    const saved = await this.saveMemoryDirectly(memory, targetId);
+    return !!saved;
+  }
+
+  prepareMemoryForVault(memory) {
+    const hasContent = memory && typeof memory.content === 'string';
+    const content = hasContent ? memory.content : '';
+    const baseMetadata = memory && memory.metadata ? { ...memory.metadata } : {};
+    if (!baseMetadata.created) {
+      baseMetadata.created = new Date().toISOString();
+    }
+    if (!baseMetadata.title) {
+      const trimmed = hasContent ? content.trim() : '';
+      baseMetadata.title = trimmed ? trimmed.substring(0, 50) + (trimmed.length > 50 ? '...' : '') : 'Untitled Memory';
+    }
+
+    return {
+      id: memory && memory.id ? memory.id : undefined,
+      title: memory && memory.title ? memory.title : baseMetadata.title,
+      content,
+      metadata: baseMetadata,
+      attachments: memory && Array.isArray(memory.attachments)
+        ? memory.attachments.map(att => ({ ...att }))
+        : []
+    };
+  }
+
   /**
    * Finalize memory save and create capsule - SHOW PREVIEW
    */
   async finalizeMemorySave(memory, memoryId) {
     try {
       console.log('💾 EMMA CHAT: Creating memory capsule preview for:', memoryId);
-      
+
+      if (this.shouldSkipMemoryPreview(memory)) {
+        console.log('[Emma] Auto-save enabled - skipping preview; saving directly');
+        await this.saveMemoryDirectly(memory, memoryId);
+        return;
+      }
+
       // Create beautiful memory capsule with people avatars
       this.addMessage(`Perfect! Let me show you your beautiful memory capsule before we save it to your vault! 💜`, 'emma');
       
@@ -8022,21 +8305,33 @@ RULES:
       console.log('💾 EMMA CHAT: Saving memory to vault from preview:', memoryId);
       
       // Prepare memory for vault
-      const memoryToSave = {
-        content: memory.content,
-        metadata: {
-          ...memory.metadata,
-          created: new Date().toISOString(),
-          title: memory.content.substring(0, 50) + (memory.content.length > 50 ? '...' : '')
-        },
-        attachments: memory.attachments || []
-      };
+      const memoryToSave = this.prepareMemoryForVault(memory);
       
-      // Save to vault
-      const result = await window.emmaWebVault.addMemory(memoryToSave);
+      const webVault = window.emmaWebVault;
+      if (!webVault || typeof webVault.addMemory !== 'function') {
+        throw new Error('Vault service unavailable');
+      }
+      const isExistingMemory = !!(webVault && memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+
+      let result;
+      if (isExistingMemory && typeof webVault.updateMemory === 'function') {
+        const updates = {
+          content: memoryToSave.content,
+          metadata: memoryToSave.metadata
+        };
+        if (typeof memoryToSave.title === 'string') {
+          updates.title = memoryToSave.title;
+        }
+        if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+          updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+        }
+
+        result = await webVault.updateMemory(memoryToSave.id, updates);
+      } else {
+        result = await webVault.addMemory(memoryToSave);
+      }
       
-      if (result.success) {
-        this.showToast('✅ Memory saved to vault!', 'success');
+      if (result && result.success) {
         
         // Clear enrichment state
         this.enrichmentState.delete(memoryId);
@@ -8087,12 +8382,13 @@ RULES:
         }, 500);
         
       } else {
-        throw new Error(result.error || 'Failed to save memory');
+        const errorMessage = result && result.error ? result.error : 'Failed to save memory';
+        throw new Error(errorMessage);
       }
       
     } catch (error) {
       console.error('💾 EMMA CHAT: Error saving memory to vault:', error);
-      this.showToast('❌ Failed to save memory', 'error');
+      this.showToast('Failed to save memory', 'error');
       this.addMessage(`I had trouble saving your memory to the vault. Please try again! 🤗`, 'emma');
     }
   }
@@ -8101,17 +8397,36 @@ RULES:
    * Save memory directly to vault (fallback or final save)
    */
   async saveMemoryDirectly(memory, memoryId) {
+    let saved = false;
     try {
-      // Save to vault (webapp-only mode)
-      if (window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true') {
-        console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
-        await window.emmaWebVault.addMemory({
-          content: memory.content,
-          metadata: memory.metadata,
-          attachments: memory.attachments || []
-        });
+      const webVault = window.emmaWebVault;
+      const sessionActive = typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem('emmaVaultActive') === 'true';
+      const localActive = typeof localStorage !== 'undefined' &&
+        localStorage.getItem('emmaVaultActive') === 'true';
 
-        this.showToast('✅ Memory saved to vault successfully!', 'success');
+      if (webVault && webVault.isOpen && (webVault.isWebappPrimary || sessionActive || localActive)) {
+        console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
+        const memoryToSave = this.prepareMemoryForVault(memory);
+        const isExistingMemory = !!(memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+
+        if (isExistingMemory && typeof webVault.updateMemory === 'function') {
+          const updates = {
+            content: memoryToSave.content,
+            metadata: memoryToSave.metadata
+          };
+          if (typeof memoryToSave.title === 'string') {
+            updates.title = memoryToSave.title;
+          }
+          if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+            updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+          }
+
+          await webVault.updateMemory(memoryToSave.id, updates);
+        } else {
+          await webVault.addMemory(memoryToSave);
+        }
+
         
         // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
         this.temporaryMemories.delete(memoryId);
@@ -8169,16 +8484,31 @@ RULES:
 
       } else {
         console.warn('💾 EMMA CHAT: Vault save failed - debugging info:');
-        console.warn('💾 DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
-        console.warn('💾 DEBUG: emmaWebVault.isOpen?', window.emmaWebVault?.isOpen);
-        console.warn('💾 DEBUG: sessionStorage active?', sessionStorage.getItem('emmaVaultActive'));
-        this.showToast('❌ Vault not unlocked - please unlock your .emma vault first', 'error');
+        console.warn('[Emma] emmaWebVault exists?', !!webVault);
+        console.warn('[Emma] emmaWebVault.isOpen?', webVault?.isOpen);
+        console.warn('[Emma] sessionStorage active?', sessionActive);
+        console.warn('[Emma] localStorage active?', localActive);
+        this.showToast('Vault not unlocked - please unlock your .emma vault first', 'error');
       }
 
     } catch (error) {
-      console.error('💾 SAVE: Error saving memory:', error);
-      this.showToast('❌ Failed to save memory', 'error');
+      console.error('[Emma] Error saving memory:', error);
+      const needsManualSave = error && typeof error.message === 'string' &&
+        (/direct save required/i.test(error.message) || /vault access required/i.test(error.message));
+
+      if (needsManualSave) {
+        this.showToast('Direct vault save needs your attention. Please review and save manually.', 'warning');
+        const existingDialog = document.querySelector('.memory-preview-dialog');
+        if (!existingDialog) {
+          this.showMemoryPreviewDialog(memory);
+        }
+      } else {
+        this.showToast('Failed to save memory', 'error');
+      }
+      return false;
     }
+
+    return saved;
   }
 
   /**
@@ -8442,6 +8772,12 @@ RULES:
 
     if (this.debugMode) {
 
+    }
+
+    const autoSaved = await this.tryAutoSaveMemory(enrichedMemory, memoryId, 'enrichment-complete');
+    if (autoSaved) {
+      this.enrichmentState.delete(memoryId);
+      return;
     }
 
     // Show preview dialog for final confirmation
@@ -8810,9 +9146,13 @@ RULES:
     if (result.continue && result.nextPrompt) {
       this.addMessage(result.nextPrompt.text, 'emma', { type: 'memory-prompt' });
     } else if (result.complete) {
-      // Show final memory preview
-      this.showMemoryPreviewDialog(result.memory);
+      const autoSaved = await this.tryAutoSaveMemory(result.memory, result.memory?.id, 'capture-complete');
       this.activeCapture = null;
+      if (autoSaved) {
+        return;
+      }
+
+      this.showMemoryPreviewDialog(result.memory);
     }
   }
 
@@ -9058,6 +9398,43 @@ RULES:
     if (previewArea && previewArea.children.length === 0) {
       previewArea.style.display = 'none';
     }
+  }
+
+  /**
+   * Allow Emma's agent tools to resolve uploaded media by id
+   */
+  lookupMediaUpload(uploadId) {
+    if (!uploadId) return null;
+
+    try {
+      if (this.enrichmentState && typeof this.enrichmentState.values === 'function') {
+        for (const state of this.enrichmentState.values()) {
+          const mediaItems = state?.collectedData?.media;
+          if (Array.isArray(mediaItems)) {
+            const found = mediaItems.find(item => item.id === uploadId);
+            if (found) {
+              return { ...found };
+            }
+          }
+        }
+      }
+
+      if (this.temporaryMemories && typeof this.temporaryMemories.values === 'function') {
+        for (const memory of this.temporaryMemories.values()) {
+          const attachments = memory?.attachments;
+          if (Array.isArray(attachments)) {
+            const found = attachments.find(item => item.id === uploadId);
+            if (found) {
+              return { ...found };
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('📷 CHAT: lookupMediaUpload error:', error);
+    }
+
+    return null;
   }
 
   /**
@@ -9599,6 +9976,8 @@ Just the question:`;
     // Disable focus mode
     this.disableFocusMode();
 
+    this.voiceToggleButton = null;
+
     super.cleanup();
   }
 
@@ -9621,7 +10000,7 @@ Just the question:`;
       if (people.length === 0) {
         peopleGrid.innerHTML = `
           <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">
-            No people in vault yet. <button onclick="window.open('/people.html', '_blank')" style="color: #8b5cf6; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
+            No people in vault yet. <button onclick="window.open('/pages/people-emma.html', '_blank')" style="color: #6f63d9; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
           </div>
         `;
         return;
@@ -9632,7 +10011,7 @@ Just the question:`;
         const initials = person.name.charAt(0).toUpperCase();
         return `
           <div class="person-select-card" data-person-id="${person.id}" onclick="window.chatExperience.togglePersonSelection('${person.id}', '${memoryId}')">
-            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
               ${initials}
             </div>
             <div style="color: white; font-weight: 600; margin-bottom: 4px;">${person.name}</div>
@@ -9743,7 +10122,7 @@ Just the question:`;
             `<video src="${url}" muted></video>` : 
             `<img src="${url}" alt="${file.name}">`
           }
-          <button class="media-remove" onclick="window.chatExperience.removeUploadedFile(${index}, '${memoryId}')" title="Remove">×</button>
+          <button class="media-remove" onclick="window.chatExperience.removeUploadedFile(${index}, '${memoryId}')" title="Remove">&times;</button>
         </div>
       `;
     }).join('');
@@ -9852,7 +10231,7 @@ Just the question:`;
         }
         
         // Show success message
-        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', {});
         
         this.showToast("Memory saved successfully! 💝", "success");
         
@@ -9874,317 +10253,3 @@ Just the question:`;
   }
 }
 
-/**
- * 🧠 CTO UNIFIED EMMA INTELLIGENCE SYSTEM
- * Single, intelligent response engine that replaces all pattern-matching hacks
- */
-class EmmaUnifiedIntelligence {
-  constructor(options = {}) {
-    this.options = options;
-    this.conversationHistory = [];
-    this.currentContext = {
-      lastQueriedPerson: null,
-      activeMemoryDiscussion: null,
-      waitingForResponse: null,
-      userEmotionalState: 'neutral'
-    };
-  }
-
-  /**
-   * 🎯 SINGLE ENTRY POINT: Analyze user message and generate intelligent response
-   */
-  async analyzeAndRespond(userMessage, chatInstance) {
-    try {
-      console.log('🧠 UNIFIED INTELLIGENCE: Processing:', userMessage);
-      
-      // Add to conversation history
-      this.addToHistory(userMessage, 'user');
-      
-      // Get vault context
-      const vaultContext = this.getVaultContext();
-      
-      // Use LLM for intelligent analysis if available, fallback to smart heuristics
-      const analysis = await this.analyzeUserIntent(userMessage, vaultContext);
-      console.log('🧠 UNIFIED ANALYSIS:', analysis);
-      
-      // Generate single, contextual response
-      const response = await this.generateUnifiedResponse(analysis, chatInstance);
-      
-      // Add Emma's response to history
-      this.addToHistory(response.text, 'emma');
-      
-      return response;
-      
-    } catch (error) {
-      console.error('🧠 UNIFIED INTELLIGENCE ERROR:', error);
-      return {
-        text: "I'm here to listen and help with your memories. What would you like to share?",
-        actions: []
-      };
-    }
-  }
-
-  /**
-   * 🧠 INTELLIGENT INTENT ANALYSIS using LLM reasoning
-   */
-  async analyzeUserIntent(userMessage, vaultContext) {
-    const conversationContext = this.conversationHistory.slice(-5).map(h => 
-      `${h.sender}: ${h.message}`
-    ).join('\n');
-
-    // If we have API access, use LLM for true intelligence
-    if (this.options.apiKey) {
-      return await this.llmAnalyzeIntent(userMessage, vaultContext, conversationContext);
-    }
-    
-    // Fallback to smart heuristic analysis
-    return this.heuristicAnalyzeIntent(userMessage, vaultContext);
-  }
-
-  /**
-   * 🤖 LLM-POWERED INTENT ANALYSIS
-   */
-  async llmAnalyzeIntent(userMessage, vaultContext, conversationContext) {
-    const prompt = `You are Emma's intelligence system. Analyze this user message and determine the appropriate response type.
-
-CONVERSATION CONTEXT:
-${conversationContext}
-
-USER MESSAGE: "${userMessage}"
-
-VAULT CONTEXT:
-- ${vaultContext.memoryCount} memories
-- ${vaultContext.peopleCount} people: ${vaultContext.peopleNames.join(', ')}
-- Recent topics: ${vaultContext.recentTopics.join(', ')}
-
-DEMENTIA CARE MODE: Always validate, never contradict, use warm validation therapy.
-
-Analyze the user's intent and respond with JSON:
-{
-  "intent": "vault_query|memory_sharing|photo_request|conversation|confusion",
-  "confidence": 0.95,
-  "targetPerson": "person name if relevant",
-  "memoryContent": "if sharing a memory",
-  "emotionalTone": "positive|neutral|confused|sad",
-  "suggestedResponse": "brief Emma response",
-  "recommendedActions": ["show_person", "display_memories", "trigger_photo_upload", "create_memory"]
-}`;
-
-    try {
-      const response = await this.callLLM(prompt);
-      return JSON.parse(response);
-    } catch (error) {
-      console.warn('🧠 LLM analysis failed, using heuristic fallback');
-      return this.heuristicAnalyzeIntent(userMessage, vaultContext);
-    }
-  }
-
-  /**
-   * 🎯 SMART HEURISTIC ANALYSIS (LLM fallback)
-   */
-  heuristicAnalyzeIntent(userMessage, vaultContext) {
-    const lower = userMessage.toLowerCase().trim();
-    
-    // Vault queries
-    if (lower.includes('who') && vaultContext.peopleNames.some(name => 
-        lower.includes(name.toLowerCase()))) {
-      const targetPerson = vaultContext.peopleNames.find(name => lower.includes(name.toLowerCase()));
-      return {
-        intent: 'vault_query',
-        confidence: 0.9,
-        targetPerson: targetPerson,
-        recommendedActions: ['show_person']
-      };
-    }
-    
-    // Photo requests
-    if ((lower.includes('add') || lower.includes('yes')) && 
-        (lower.includes('picture') || lower.includes('photo') || this.isPhotoContext())) {
-      return {
-        intent: 'photo_request',
-        confidence: 0.9,
-        targetPerson: this.currentContext.lastQueriedPerson,
-        recommendedActions: ['trigger_photo_upload']
-      };
-    }
-    
-    // Memory sharing (in person context)
-    if (this.currentContext.lastQueriedPerson && this.isLikelyMemorySharing(lower)) {
-      return {
-        intent: 'memory_sharing',
-        confidence: 0.8,
-        targetPerson: this.currentContext.lastQueriedPerson,
-        memoryContent: userMessage,
-        suggestedResponse: this.generateMemoryValidation(userMessage, this.currentContext.lastQueriedPerson)
-      };
-    }
-    
-    return {
-      intent: 'conversation',
-      confidence: 0.5,
-      suggestedResponse: "I'm here to help with your memories. What would you like to explore?"
-    };
-  }
-
-  /**
-   * 🎯 GENERATE UNIFIED RESPONSE - NO DUPLICATES!
-   */
-  async generateUnifiedResponse(analysis, chatInstance) {
-    // Update context based on analysis
-    if (analysis.targetPerson) {
-      this.currentContext.lastQueriedPerson = analysis.targetPerson;
-    }
-
-    switch (analysis.intent) {
-      case 'vault_query':
-        return await this.handleVaultQuery(analysis, chatInstance);
-        
-      case 'photo_request':
-        return await this.handlePhotoRequest(analysis, chatInstance);
-        
-      case 'memory_sharing':
-        return this.handleMemorySharing(analysis);
-        
-      case 'confusion':
-        return this.handleConfusion(analysis);
-        
-      default:
-        return {
-          text: analysis.suggestedResponse || "I'm here to listen. What would you like to share?",
-          actions: []
-        };
-    }
-  }
-
-  // Helper methods
-  addToHistory(message, sender) {
-    this.conversationHistory.push({ message, sender, timestamp: Date.now() });
-    if (this.conversationHistory.length > 10) {
-      this.conversationHistory.shift();
-    }
-  }
-
-  getVaultContext() {
-    const vault = this.options.vaultAccess();
-    return {
-      memoryCount: vault?.memories ? Object.keys(vault.memories).length : 0,
-      peopleCount: vault?.people ? Object.keys(vault.people).length : 0,
-      peopleNames: vault?.people ? Object.values(vault.people).map(p => p.name).filter(Boolean) : [],
-      recentTopics: []
-    };
-  }
-
-  isPhotoContext() {
-    // Check if Emma recently asked about photos
-    const recentEmmaMessages = this.conversationHistory
-      .filter(h => h.sender === 'emma')
-      .slice(-2)
-      .map(h => h.message);
-    
-    return recentEmmaMessages.some(msg => 
-      msg.includes('photo') || msg.includes('picture')
-    );
-  }
-
-  isLikelyMemorySharing(lowerMessage) {
-    const memoryIndicators = [
-      'mowing', 'cooking', 'cleaning', 'always', 'usually', 'every day',
-      'fell', 'went', 'did', 'was', 'had', 'saw', 'met', 'talked',
-      'lawn', 'tree', 'house', 'school', 'work', 'funny', 'sad'
-    ];
-    return memoryIndicators.some(word => lowerMessage.includes(word)) ||
-           lowerMessage.length < 20; // Short responses in person context likely memory-related
-  }
-
-  generateMemoryValidation(message, person) {
-    const lower = message.toLowerCase();
-    
-    if (lower.includes('mowing') || lower.includes('lawn')) {
-      return `Oh, ${person} and lawn mowing! That sounds like such a regular part of life together. I can picture those times. What made those moments special?`;
-    }
-    
-    if (lower.includes('always')) {
-      return `That sounds like such a meaningful pattern with ${person}! Those regular moments together can be so precious. Tell me more about those times.`;
-    }
-    
-    return `That sounds like a special memory with ${person}! I love hearing about moments like that. What else do you remember about it?`;
-  }
-
-  // 🎯 HANDLE VAULT QUERIES (person lookups)
-  async handleVaultQuery(analysis, chatInstance) {
-    const person = await chatInstance.findPersonInVault(analysis.targetPerson);
-    
-    if (!person) {
-      return {
-        text: `I don't see ${analysis.targetPerson} in your vault yet. Would you like to add them?`,
-        actions: []
-      };
-    }
-    
-    // Generate contextual person response
-    const memories = await chatInstance.getPersonMemories(person);
-    const memoryText = memories.length > 0 ? 
-      `I have ${memories.length} ${memories.length === 1 ? 'memory' : 'memories'} about them.` :
-      `I don't see any memories with them yet.`;
-    
-    return {
-      text: `${analysis.targetPerson} - they're ${person.relationship || 'someone special'}! ${memoryText} Would you like me to share what I know?`,
-      actions: ['show_person'],
-      analysis: analysis
-    };
-  }
-
-  // 📷 HANDLE PHOTO REQUESTS  
-  async handlePhotoRequest(analysis, chatInstance) {
-    return {
-      text: `Wonderful! I'd love to help you add photos with ${analysis.targetPerson}. You can drag and drop photos here, or click to browse your files.`,
-      actions: ['trigger_photo_upload'],
-      analysis: analysis
-    };
-  }
-
-  // 💝 HANDLE MEMORY SHARING
-  handleMemorySharing(analysis) {
-    return {
-      text: analysis.suggestedResponse,
-      actions: ['offer_memory_save'],
-      analysis: analysis
-    };
-  }
-
-  // 🤔 HANDLE CONFUSION
-  handleConfusion(analysis) {
-    const person = this.currentContext.lastQueriedPerson;
-    return {
-      text: person ? 
-        `I'm sorry if I confused you! You were telling me about ${person}. Would you like to continue sharing about them?` :
-        `I'm here to help! What would you like to talk about?`,
-      actions: []
-    };
-  }
-
-  async callLLM(prompt) {
-    if (!this.options.apiKey) throw new Error('No API key available');
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.options.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 300,
-        temperature: 0.7
-      })
-    });
-    
-    const data = await response.json();
-    return data.choices[0].message.content;
-  }
-}
-
-// Export for use in other modules
-window.EmmaChatExperience = EmmaChatExperience;
-console.log('💬 Emma Chat Experience: Module loaded successfully');

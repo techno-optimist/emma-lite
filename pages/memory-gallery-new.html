@@ -12,11 +12,11 @@
   <style>
     /* Emma Brand Variables */
     :root {
-      --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
       --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
       --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
       --emma-purple: #764ba2;
-      --emma-pink: #f093fb;
+      --emma-pink: #deb3e4;
       --emma-dark: #1a1033;
       --emma-card-bg: rgba(255, 255, 255, 0.05);
       --emma-border: rgba(255, 255, 255, 0.1);
@@ -52,7 +52,7 @@
       width: 200%;
       height: 200%;
       background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.3) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(222, 179, 228, 0.3) 0%, transparent 50%),
                   radial-gradient(circle at 40% 60%, rgba(118, 75, 162, 0.2) 0%, transparent 50%);
       animation: float 20s ease-in-out infinite;
       z-index: -1;
@@ -72,7 +72,7 @@
     .gallery-title {
       font-size: 3.5rem;
       font-weight: 300;
-      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #06b6d4 100%);
+      background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 50%, #06b6d4 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -271,8 +271,8 @@
       height: 100%;
       background: linear-gradient(
         135deg,
-        rgba(139, 92, 246, 0.25) 0%,
-        rgba(236, 72, 153, 0.20) 50%,
+        rgba(111, 99, 217, 0.25) 0%,
+        rgba(208, 111, 168, 0.20) 50%,
         rgba(6, 182, 212, 0.25) 100%
       );
       mix-blend-mode: soft-light;
@@ -292,7 +292,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+      background: linear-gradient(135deg, rgba(111, 99, 217, 0.1) 0%, rgba(208, 111, 168, 0.1) 100%);
       opacity: 0;
       transition: opacity 0.3s ease;
       border-radius: 20px;
@@ -304,10 +304,10 @@
 
     .memory-card:hover {
       transform: translateY(-8px) scale(1.02);
-      border-color: rgba(139, 92, 246, 0.3);
+      border-color: rgba(111, 99, 217, 0.3);
       box-shadow:
-        0 20px 40px rgba(139, 92, 246, 0.2),
-        0 0 0 1px rgba(139, 92, 246, 0.1);
+        0 20px 40px rgba(111, 99, 217, 0.2),
+        0 0 0 1px rgba(111, 99, 217, 0.1);
     }
 
     /* Memory Card Layout - Photo-focused with full coverage */
@@ -349,7 +349,7 @@
       border: 2px solid rgba(255, 255, 255, 0.8);
       overflow: hidden;
       position: relative;
-      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -424,8 +424,8 @@
     }
 
     .memory-tag:hover {
-      background: rgba(139, 92, 246, 0.4);
-      border-color: rgba(139, 92, 246, 0.6);
+      background: rgba(111, 99, 217, 0.4);
+      border-color: rgba(111, 99, 217, 0.6);
       transform: translateY(-1px);
     }
 
@@ -477,7 +477,7 @@
     }
 
     .empty-state-card:hover {
-      border-color: rgba(240, 147, 251, 0.4);
+      border-color: rgba(222, 179, 228, 0.4);
       background: rgba(255,255,255,0.08);
     }
 
@@ -496,7 +496,7 @@
 
     .empty-cta-box:hover {
       background: rgba(255,255,255,0.15);
-      border-color: rgba(240, 147, 251, 0.3);
+      border-color: rgba(222, 179, 228, 0.3);
     }
 
     .empty-cta-icon {
@@ -618,8 +618,8 @@
       padding: 24px;
       margin: 20px auto;
       max-width: 600px;
-      background: rgba(240, 147, 251, 0.1);
-      border: 1px solid rgba(240, 147, 251, 0.3);
+      background: rgba(222, 179, 228, 0.1);
+      border: 1px solid rgba(222, 179, 228, 0.3);
       border-radius: 16px;
       color: var(--emma-text-secondary);
       font-style: italic;
@@ -690,33 +690,33 @@
 
   <!-- Emma Orb System -->
   <!-- CRITICAL: Load vault system for memory saving -->
-  <script src="../js/emma-input-modal.js"></script>
-  <script src="../js/clean-password-modal.js"></script>
-  <script src="../js/emma-web-vault.js"></script>
-  <script src="../js/web-vault-status.js"></script>
-  <script src="../js/vault-control-panel.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-input-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/clean-password-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-web-vault.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/web-vault-status.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/vault-control-panel.js"></script>
   
-  <script src="../js/emma-orb.js"></script>
-  <script src="../js/settings-service.js"></script> 
-  <script src="../js/orb-experience-manager.js"></script>
-  <script src="../js/experience-popup-base.js"></script>
-  <script src="../js/assistant-experience-popup.js"></script>
-  <script src="../js/dementia-experience-popup.js"></script>
-  <script src="../js/mirror-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script> 
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/assistant-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/dementia-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/mirror-experience-popup.js"></script>
   
   <!-- CTO Enhancement: Unified Memory Wizard -->
   <link rel="stylesheet" href="../css/unified-memory-wizard.css">
   
   <!-- CTO Intelligence Layer: Memory Context & Question Engine -->
-  <script src="../js/memory-context-analyzer.js"></script>
-  <script src="../js/emma-question-engine.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/memory-context-analyzer.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-question-engine.js"></script>
   
-  <script src="../js/unified-memory-wizard.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/unified-memory-wizard.js"></script>
   
-  <script src="../js/universal-emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-emma-orb.js"></script>
   
   <!-- Initialize Universal Orb -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL: Initialize vault system for memory saving
@@ -820,13 +820,13 @@
   </script>
 
   <!-- Universal Vault Modal -->
-  <script src="../js/universal-vault-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-vault-modal.js"></script>
   
   <!-- Gallery Script -->
-  <script src="../js/gallery.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/gallery.js"></script>
   
   <!-- Home Navigation Script -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🏠 HOME NAV: Setting up home button...');
       const homeBtn = document.getElementById('home-nav-button');

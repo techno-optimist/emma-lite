@@ -48,7 +48,7 @@ body {
 .logo-gradient {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  background: linear-gradient(135deg, #6F63D9 0%, #D06FA8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -102,9 +102,9 @@ body {
   width: 84px;
   height: 84px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B, #10B981);
+  background: linear-gradient(135deg, #6F63D9, #D06FA8, #F59E0B, #10B981);
   margin: 0 auto;
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 30px rgba(111, 99, 217, 0.4);
 }
 
 .drop-zone-title {
@@ -142,7 +142,7 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  background: linear-gradient(135deg, #6F63D9 0%, #D06FA8 100%);
   color: white;
 }
 

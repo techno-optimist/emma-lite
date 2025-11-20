@@ -6,11 +6,11 @@
 
 /* Emma Brand CSS Variables - EXACT from web app */
 :root {
-  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
   --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
   --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
   --emma-purple: #764ba2;
-  --emma-pink: #f093fb;
+  --emma-pink: #deb3e4;
   --emma-dark: #1a1033;
   --emma-card-bg: rgba(255, 255, 255, 0.05);
   --emma-border: rgba(255, 255, 255, 0.1);
@@ -21,7 +21,7 @@
   --emma-error: #f87171;
   --emma-warning: #fbbf24;
   --emma-glass: rgba(255, 255, 255, 0.1);
-  --emma-glow: 0 8px 32px rgba(139, 92, 246, 0.15);
+  --emma-glow: 0 8px 32px rgba(111, 99, 217, 0.15);
 }
 
 /* Kill ALL animations to prevent shaking */
@@ -75,7 +75,7 @@ body {
   width: 100%;
   height: 100%;
   background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.2) 0%, transparent 50%),
-              radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.2) 0%, transparent 50%);
+              radial-gradient(circle at 80% 80%, rgba(222, 179, 228, 0.2) 0%, transparent 50%);
   z-index: 0;
   pointer-events: none;
 }
@@ -395,14 +395,14 @@ body {
 /* Emma Orb Button */
 .emma-orb-btn {
   background: var(--emma-gradient-2);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  border: 2px solid rgba(111, 99, 217, 0.3);
+  box-shadow: 0 4px 16px rgba(111, 99, 217, 0.2);
 }
 
 .emma-orb-btn:hover {
   background: var(--emma-gradient-1);
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+  border-color: rgba(111, 99, 217, 0.5);
+  box-shadow: 0 6px 20px rgba(111, 99, 217, 0.3);
 }
 
 .action-orb {

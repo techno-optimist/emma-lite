@@ -95,9 +95,9 @@ function setupUniversalNavigationHandlers() {
 
     try {
       if (window.chrome && chrome.tabs) {
-        chrome.tabs.create({ url: chrome.runtime.getURL('dashboard-new.html') });
+        chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
       } else if (window.emmaAPI) {
-        window.location.href = 'dashboard-new.html';
+        window.location.href = '../dashboard.html';
       } else if (action === 'back') {
         window.history.back();
       } else {
@@ -105,7 +105,7 @@ function setupUniversalNavigationHandlers() {
       }
     } catch (err) {
       console.error('Navigation failed:', err);
-      window.location.href = 'dashboard-new.html';
+      window.location.href = '../dashboard.html';
     }
   };
 
@@ -259,19 +259,19 @@ function openVaultQRModal(qrResult) {
       max-width: 500px;
       background: linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(30, 30, 40, 0.98));
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(134, 88, 255, 0.3);
+      border: 1px solid rgba(111, 99, 217, 0.3);
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     ">
       <div class="modal-header" style="
         padding: 24px 32px 16px 32px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.1), rgba(222, 179, 228, 0.1));
       ">
         <div style="display: flex; align-items: center; gap: 16px;">
           <div style="
             width: 48px; height: 48px;
-            background: linear-gradient(135deg, #8658ff, #f093fb);
+            background: linear-gradient(135deg, #6f63d9, #deb3e4);
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px;
@@ -314,7 +314,7 @@ function openVaultQRModal(qrResult) {
 
         <div style="display: flex; gap: 12px; justify-content: center;">
           <button id="download-vault-qr" style="
-            background: linear-gradient(135deg, #8658ff, #f093fb);
+            background: linear-gradient(135deg, #6f63d9, #deb3e4);
             border: none; color: white; padding: 12px 24px;
             border-radius: 8px; cursor: pointer; font-weight: 600;
           ">📥 Download QR</button>
@@ -375,19 +375,19 @@ function openQRScannerModal() {
       max-width: 600px;
       background: linear-gradient(135deg, rgba(20, 20, 30, 0.98), rgba(30, 30, 40, 0.98));
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(134, 88, 255, 0.3);
+      border: 1px solid rgba(111, 99, 217, 0.3);
       border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     ">
       <div class="modal-header" style="
         padding: 24px 32px 16px 32px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: linear-gradient(135deg, rgba(134, 88, 255, 0.1), rgba(240, 147, 251, 0.1));
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.1), rgba(222, 179, 228, 0.1));
       ">
         <div style="display: flex; align-items: center; gap: 16px;">
           <div style="
             width: 48px; height: 48px;
-            background: linear-gradient(135deg, #8658ff, #f093fb);
+            background: linear-gradient(135deg, #6f63d9, #deb3e4);
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px;
@@ -423,7 +423,7 @@ function openQRScannerModal() {
 
           <div style="display: flex; gap: 12px; justify-content: center;">
             <button id="start-camera-scan" style="
-              background: linear-gradient(135deg, #8658ff, #f093fb);
+              background: linear-gradient(135deg, #6f63d9, #deb3e4);
               border: none; color: white; padding: 12px 24px;
               border-radius: 8px; cursor: pointer; font-weight: 600;
             ">📷 Use Camera</button>
@@ -442,7 +442,7 @@ function openQRScannerModal() {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             padding: 16px;
-            border-left: 4px solid #8658ff;
+            border-left: 4px solid #6f63d9;
           "></div>
         </div>
       </div>
@@ -527,6 +527,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   await updateStats();
   attachEventListeners();
   setupOrbManager();
+  if (window.EmmaThemeUI) {
+    window.EmmaThemeUI.init({
+      themeContainerId: 'theme-gallery',
+      backgroundContainerId: 'background-options'
+    });
+  }
   // Wire exit buttons with enhanced navigation
   try {
     const backBtn = document.getElementById('settings-back');
@@ -555,17 +561,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           if (window.chrome && chrome.tabs) {
             // Extension environment
-            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard-new.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
           } else if (window.emmaAPI) {
             // Electron environment
-            window.location.href = 'dashboard-new.html';
+            window.location.href = '../dashboard.html';
           } else {
             // Fallback
             window.history.back();
           }
         } catch (err) {
           console.error('Navigation failed:', err);
-          window.location.href = 'dashboard-new.html';
+          window.location.href = '../dashboard.html';
         }
       };
 
@@ -586,15 +592,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.stopPropagation();
         try {
           if (window.chrome && chrome.tabs) {
-            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard-new.html') });
+            chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
           } else if (window.emmaAPI) {
-            window.location.href = 'dashboard-new.html';
+            window.location.href = '../dashboard.html';
           } else {
             window.close();
           }
         } catch (err) {
           console.error('Close failed:', err);
-          window.location.href = 'dashboard-new.html';
+          window.location.href = '../dashboard.html';
         }
       };
 
@@ -895,7 +901,7 @@ async function saveSettings() {
     const orbSettings = {
       [`orb.persona:${vid}`]: getElementValue('orb-persona', 'default'),
       [`orb.colorTheme:${vid}`]: getElementValue('orb-color-theme', 'default'),
-      [`orb.customColor:${vid}`]: getElementValue('orb-custom-color', '#8b5cf6'),
+      [`orb.customColor:${vid}`]: getElementValue('orb-custom-color', '#6f63d9'),
       [`orb.size:${vid}`]: parseInt(getElementValue('orb-size', '72')),
       [`orb.position:${vid}`]: getElementValue('orb-position', 'bottom-right'),
       [`orb.autoHide:${vid}`]: getElementValue('orb-auto-hide', false),
@@ -1828,7 +1834,7 @@ async function loadOrbSettings() {
     const $ = (id) => document.getElementById(id);
     if ($('orb-persona')) $('orb-persona').value = store[keys[0]] || 'default';
     if ($('orb-color-theme')) $('orb-color-theme').value = store[keys[1]] || 'default';
-    if ($('orb-custom-color')) $('orb-custom-color').value = store[keys[2]] || '#8b5cf6';
+    if ($('orb-custom-color')) $('orb-custom-color').value = store[keys[2]] || '#6f63d9';
     if ($('orb-size')) {
       $('orb-size').value = store[keys[3]] || 72;
       $('orb-size-value').textContent = (store[keys[3]] || 72) + 'px';
@@ -2140,7 +2146,7 @@ function applySettingsToDialog(store, vid, orbType) {
     opt.classList.toggle('active', opt.dataset.color === colorTheme);
   });
 
-  const customColor = store[`orb.customColor:${vid}`] || '#8b5cf6';
+  const customColor = store[`orb.customColor:${vid}`] || '#6f63d9';
   document.getElementById('dialog-custom-color').value = customColor;
   document.getElementById('dialog-custom-color').style.display = colorTheme === 'custom' ? 'block' : 'none';
 
@@ -2306,7 +2312,7 @@ async function saveDialogSettings() {
       // Update localStorage for dementia companion
       if (currentDialogOrb === 'dementia') {
         localStorage.setItem('dementia.settings.bump', Date.now().toString());
-        window.postMessage({ type: 'DEMENTIA_SETTINGS_CHANGED', settings }, '*');
+        window.postMessage({ type: 'DEMENTIA_SETTINGS_CHANGED', settings }, window.location.origin);
       }
     }
 

@@ -1,9 +1,9 @@
 /**
  * 🧠 Emma Memory Context Analyzer
- * 
+ *
  * Analyzes existing memories to generate contextual, personalized questions
  * CTO Quality Standard: Production-grade AI-powered memory intelligence
- * 
+ *
  * Core Intelligence:
  * - Pattern recognition across memory themes
  * - People and relationship mapping
@@ -16,7 +16,7 @@ class MemoryContextAnalyzer {
     this.memoryCache = [];
     this.analysisCache = null;
     this.lastAnalysisTime = null;
-    
+
     console.log('🧠 MemoryContextAnalyzer: Initialized');
   }
 
@@ -27,10 +27,10 @@ class MemoryContextAnalyzer {
   async analyzeExistingMemories() {
     try {
       console.log('🔍 MemoryContextAnalyzer: Starting memory analysis...');
-      
+
       // Load all memories from vault
       const memories = await this.loadAllMemories();
-      
+
       if (!memories || memories.length === 0) {
         console.log('🔍 No existing memories found - using standard questions');
         return this.getStandardAnalysis();
@@ -80,9 +80,9 @@ class MemoryContextAnalyzer {
 
       // Fallback to extension storage
       if (window.chrome?.runtime) {
-        const result = await chrome.runtime.sendMessage({ 
-          action: 'memory.list', 
-          limit: 1000 
+        const result = await chrome.runtime.sendMessage({
+          action: 'memory.list',
+          limit: 1000
         });
         if (result?.success && result?.memories) {
           return result.memories;
@@ -110,19 +110,19 @@ class MemoryContextAnalyzer {
   analyzeThemes(memories) {
     const themes = {};
     const commonThemes = [
-      'family', 'travel', 'holidays', 'childhood', 'school', 'work', 
+      'family', 'travel', 'holidays', 'childhood', 'school', 'work',
       'friends', 'love', 'achievement', 'loss', 'celebration', 'tradition',
       'home', 'food', 'music', 'nature', 'pets', 'hobbies'
     ];
 
     memories.forEach(memory => {
       const text = `${memory.title || ''} ${memory.description || ''} ${memory.content || ''}`.toLowerCase();
-      
+
       // Check for theme keywords
       commonThemes.forEach(theme => {
         const themeKeywords = this.getThemeKeywords(theme);
         const matches = themeKeywords.filter(keyword => text.includes(keyword)).length;
-        
+
         if (matches > 0) {
           themes[theme] = (themes[theme] || 0) + matches;
         }
@@ -177,7 +177,7 @@ class MemoryContextAnalyzer {
 
     memories.forEach(memory => {
       const text = `${memory.title || ''} ${memory.description || ''} ${memory.content || ''}`;
-      
+
       namePatterns.forEach(pattern => {
         const matches = text.match(pattern) || [];
         matches.forEach(name => {
@@ -235,7 +235,7 @@ class MemoryContextAnalyzer {
 
     memories.forEach(memory => {
       const text = `${memory.title || ''} ${memory.description || ''} ${memory.content || ''}`.toLowerCase();
-      
+
       Object.entries(emotionKeywords).forEach(([emotion, keywords]) => {
         const matches = keywords.filter(keyword => text.includes(keyword)).length;
         emotions[emotion] += matches;
@@ -262,7 +262,7 @@ class MemoryContextAnalyzer {
 
     memories.forEach(memory => {
       const text = `${memory.title || ''} ${memory.description || ''} ${memory.content || ''}`.toLowerCase();
-      
+
       // Check for childhood indicators
       if (text.includes('child') || text.includes('young') || text.includes('kid')) {
         patterns.childhoodMemories++;
@@ -302,7 +302,7 @@ class MemoryContextAnalyzer {
     const totalLength = memories.reduce((sum, memory) => {
       return sum + (memory.content?.length || 0) + (memory.description?.length || 0);
     }, 0);
-    
+
     style.averageLength = Math.round(totalLength / memories.length);
 
     // Determine detail level
@@ -449,7 +449,7 @@ class MemoryContextAnalyzer {
    */
   async getAnalysis() {
     // Return cached analysis if recent (within 5 minutes)
-    if (this.analysisCache && this.lastAnalysisTime && 
+    if (this.analysisCache && this.lastAnalysisTime &&
         (Date.now() - this.lastAnalysisTime) < 300000) {
       console.log('🧠 Using cached memory analysis');
       return this.analysisCache;

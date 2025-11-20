@@ -56,7 +56,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8B5CF6, #F093FB);
+  background: linear-gradient(135deg, #6F63D9, #DEB3E4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -159,8 +159,8 @@
 }
 
 .emma-message[data-voice="true"] {
-  border-left: 4px solid #8b5cf6;
-  background: rgba(139, 92, 246, 0.1);
+  border-left: 4px solid #6f63d9;
+  background: rgba(111, 99, 217, 0.1);
 }
 
 .emma-message[data-voice="true"]::before {

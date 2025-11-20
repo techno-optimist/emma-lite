@@ -16,13 +16,13 @@ function addDementiaStyles() {
       bottom: 100px;
       right: 20px;
       width: 380px;
-      background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(111, 99, 217, 0.95) 0%, rgba(124, 58, 237, 0.95) 100%);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 20px;
       backdrop-filter: blur(20px);
       box-shadow: 
-        0 20px 25px -5px rgba(139, 92, 246, 0.25),
-        0 10px 10px -5px rgba(139, 92, 246, 0.1),
+        0 20px 25px -5px rgba(111, 99, 217, 0.25),
+        0 10px 10px -5px rgba(111, 99, 217, 0.1),
         0 1px 3px rgba(255, 255, 255, 0.2) inset;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
       z-index: 10001;

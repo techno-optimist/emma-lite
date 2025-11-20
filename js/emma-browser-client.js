@@ -23,6 +23,12 @@ class EmmaBrowserClient {
     
     // Privacy-first tools (for local execution)
     this.tools = new EmmaVoiceTools();
+
+    this.apiKey = typeof this.options.apiKey === 'string' && this.options.apiKey.trim()
+      ? this.options.apiKey.trim()
+      : null;
+    this._lastSentApiKey = undefined;
+    this.voicePlaybackEnabled = true;
     
     console.log('🎙️ Emma Browser Client initialized');
 
@@ -32,6 +38,17 @@ class EmmaBrowserClient {
     this.synth = window.speechSynthesis || null;
     this.audioWorkletNode = null;
     this.audioContext = null;
+    this.mediaStream = null;
+    this._audioSinkNode = null;
+    this._audioWorkletModuleUrl = null;
+    this._realtimeStream = null;
+    this._audioSourceNode = null;
+    this._sinkConnected = false;
+    this._realtimeProcessor = null;
+    this._realtimeSource = null;
+    this._realtimeAudioContext = null;
+    this._realtimeSinkNode = null;
+    this._disableRecognition = false;
     this.lastEmmaText = '';
   }
 
@@ -40,6 +57,7 @@ class EmmaBrowserClient {
    */
   async startVoiceSession() {
     try {
+      this._disableRecognition = false;
       this.setState('connecting');
       
       // Connect to Emma backend
@@ -74,12 +92,44 @@ class EmmaBrowserClient {
    */
   async setupPcmStreaming(mediaStream) {
     try {
-      if (!window.AudioWorkletNode || !window.AudioContext) return;
-      this.audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
-      const source = this.audioContext.createMediaStreamSource(mediaStream);
+      if (!mediaStream) {
+        return;
+      }
 
-      // Inline processor via AudioWorklet
-      const processorCode = `
+      this.mediaStream = mediaStream;
+
+      if (!window.AudioWorkletNode || !window.AudioContext) {
+        return;
+      }
+
+      this.audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+      if (!this.audioContext) {
+        return;
+      }
+
+      if (this._audioSourceNode) {
+        try {
+          this._audioSourceNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._audioSourceNode = null;
+      }
+
+      if (this.audioWorkletNode) {
+        try {
+          this.audioWorkletNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this.audioWorkletNode = null;
+      }
+
+      this._audioSourceNode = this.audioContext.createMediaStreamSource(mediaStream);
+
+      if (!this._audioWorkletModuleUrl) {
+        // Inline processor via AudioWorklet (loaded once per context)
+        const processorCode = `
         class EmmaPcmProcessor extends AudioWorkletProcessor {
           constructor() {
             super();
@@ -130,17 +180,31 @@ class EmmaBrowserClient {
         registerProcessor('emma-pcm', EmmaPcmProcessor);
       `;
 
-      const blob = new Blob([processorCode], { type: 'application/javascript' });
-      const url = URL.createObjectURL(blob);
-      await this.audioContext.audioWorklet.addModule(url);
+        const blob = new Blob([processorCode], { type: 'application/javascript' });
+        this._audioWorkletModuleUrl = URL.createObjectURL(blob);
+        await this.audioContext.audioWorklet.addModule(this._audioWorkletModuleUrl);
+      }
+
       this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'emma-pcm');
       this.audioWorkletNode.port.onmessage = (e) => {
         if (e.data?.type === 'chunk') {
           this.sendToAgent({ type: 'user_audio_chunk', chunk: e.data.data });
         }
       };
-      source.connect(this.audioWorkletNode);
-      this.audioWorkletNode.connect(this.audioContext.destination);
+
+      this._audioSinkNode = this._audioSinkNode || this.audioContext.createGain();
+      if (this._audioSinkNode) {
+        this._audioSinkNode.gain.value = 0;
+      }
+
+      this._audioSourceNode.connect(this.audioWorkletNode);
+      if (this._audioSinkNode) {
+        this.audioWorkletNode.connect(this._audioSinkNode);
+        if (!this._sinkConnected) {
+          this._audioSinkNode.connect(this.audioContext.destination);
+          this._sinkConnected = true;
+        }
+      }
     } catch (e) {
       console.warn('🎙️ PCM streaming not available:', e?.message || e);
     }
@@ -151,13 +215,31 @@ class EmmaBrowserClient {
    */
   async connectToEmmaAgent() {
     try {
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'ws://localhost:3001' 
-        : 'wss://emma-voice-backend.onrender.com';
-      
-      const wsUrl = `${backendUrl}/voice`;
-      
-      console.log('🔗 Connecting to Emma agent...');
+      const wsUrl = (typeof window.getEmmaBackendWsUrl === 'function')
+        ? window.getEmmaBackendWsUrl()
+        : 'wss://emma-lite-optimized.onrender.com/voice';
+
+      // FORCE debug logging bypassing production suppression
+      const forceLog = (...args) => Function.prototype.call.call(console.log, console, ...args);
+
+      forceLog('🔗 ===== EMMA WEBSOCKET CONNECTION DEBUG =====');
+      forceLog('   wsUrl:', wsUrl);
+      forceLog('   window.location.href:', window.location.href);
+      forceLog('   window.location.hostname:', window.location.hostname);
+      forceLog('   window.location.port:', window.location.port);
+      forceLog('   window.location.protocol:', window.location.protocol);
+      forceLog('   window.EMMA_ENV:', window.EMMA_ENV);
+      forceLog('   window.EMMA_DEBUG:', window.EMMA_DEBUG);
+      forceLog('   window.EMMA_BACKEND_ORIGIN:', window.EMMA_BACKEND_ORIGIN);
+      forceLog('   typeof getEmmaBackendWsUrl:', typeof window.getEmmaBackendWsUrl);
+      forceLog('   typeof getEmmaBackendOrigin:', typeof window.getEmmaBackendOrigin);
+      if (typeof window.getEmmaBackendOrigin === 'function') {
+        forceLog('   getEmmaBackendOrigin() result:', window.getEmmaBackendOrigin());
+      }
+      if (typeof window.getEmmaBackendWsUrl === 'function') {
+        forceLog('   getEmmaBackendWsUrl() result:', window.getEmmaBackendWsUrl());
+      }
+      forceLog('==============================================');
       
       this.websocket = new WebSocket(wsUrl);
       this.setupWebSocketHandlers();
@@ -172,7 +254,9 @@ class EmmaBrowserClient {
           clearTimeout(timeout);
           console.log('✅ Connected to Emma agent');
           this.isConnected = true;
-          
+
+          this.sendRuntimeApiKey({ force: Boolean(this.apiKey) });
+
           // Notify chat of connection
           if (this.chatInstance) {
             this.chatInstance.addMessage('system', '🔗 Connected to Emma backend');
@@ -297,7 +381,7 @@ class EmmaBrowserClient {
    */
   speak(text) {
     try {
-      if (!this.synth) return;
+      if (!this.synth || !this.voicePlaybackEnabled) return;
       // Stop any queued utterances for snappy response
       this.synth.cancel();
       const utter = new SpeechSynthesisUtterance(text);
@@ -323,11 +407,14 @@ class EmmaBrowserClient {
           case 'emma_ready':
             this.setState('listening');
             if (this.chatInstance) {
+              if (typeof this.chatInstance.markAgentReady === 'function') {
+                this.chatInstance.markAgentReady();
+              }
               this.chatInstance.addMessage('system', '✅ Emma is ready to talk!');
               this.chatInstance.addMessage('system', '🎤 Say something to Emma - transcription will appear here');
             }
             break;
-            
+
           case 'user_transcription':
             // Display user's speech in chat
             if (this.chatInstance && message.transcript) {
@@ -338,7 +425,11 @@ class EmmaBrowserClient {
           case 'emma_transcription':
             // Display Emma's speech in chat
             if (this.chatInstance && message.transcript) {
-              this.chatInstance.addMessage(message.transcript, 'emma', { isVoice: true });
+              const isVoice = message.source === 'voice';
+              this.chatInstance.addMessage(message.transcript, 'emma', { isVoice });
+              if (typeof this.chatInstance.hideTypingIndicator === 'function') {
+                this.chatInstance.hideTypingIndicator();
+              }
             }
             // Store text for fallback and wait for server audio
             this.lastEmmaText = message.transcript;
@@ -348,6 +439,10 @@ class EmmaBrowserClient {
           case 'emma_audio':
             // High-quality server-synthesized audio (mp3 base64) - PRIORITY PLAYBACK
             if (message.audio && message.encoding === 'base64/mp3') {
+              if (!this.voicePlaybackEnabled) {
+                console.log('🔇 Voice playback muted - skipping server audio');
+                return;
+              }
               try {
                 console.log('🎤 Playing OpenAI TTS audio (Alloy voice)');
                 
@@ -375,6 +470,15 @@ class EmmaBrowserClient {
             
           case 'state_change':
             this.setState(message.state);
+            if (this.chatInstance) {
+              if (message.state === 'thinking' && typeof this.chatInstance.showTypingIndicator === 'function') {
+                this.chatInstance.showTypingIndicator();
+              }
+              if ((message.state === 'speaking' || message.state === 'listening') &&
+                  typeof this.chatInstance.hideTypingIndicator === 'function') {
+                this.chatInstance.hideTypingIndicator();
+              }
+            }
             break;
             
           case 'tool_request':
@@ -409,6 +513,9 @@ class EmmaBrowserClient {
       console.log('🔇 Emma agent connection closed');
       this.isConnected = false;
       this.setState('idle');
+      if (this.chatInstance && typeof this.chatInstance.markAgentDisconnected === 'function') {
+        this.chatInstance.markAgentDisconnected();
+      }
     };
   }
 
@@ -450,20 +557,31 @@ class EmmaBrowserClient {
    */
   displayToolResult(toolName, params, result) {
     if (!this.chatInstance) return;
-    
+
+    if (result && result.error) {
+      this.chatInstance.addMessage(`⚠️ ${result.error}`, 'system');
+      return;
+    }
+
     switch (toolName) {
       case 'get_people':
         if (result.people && result.people.length > 0) {
           this.chatInstance.displayPeopleResults(result.people);
         }
         break;
-        
+
       case 'get_memories':
         if (result.memories && result.memories.length > 0) {
           this.chatInstance.displayMemoryResults(result.memories);
         }
         break;
-        
+
+      case 'summarize_memory':
+        if (result.summary) {
+          this.chatInstance.addMessage(`📝 Here's a gentle summary: ${result.summary}`, 'emma');
+        }
+        break;
+
       case 'create_memory_from_voice':
         if (result.success) {
           this.chatInstance.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
@@ -472,7 +590,17 @@ class EmmaBrowserClient {
           });
         }
         break;
-        
+
+      case 'create_memory_capsule':
+        if (result.success) {
+          const label = result.title || params.title || params.content?.substring(0, 50) || 'New memory';
+          this.chatInstance.addMessage('system', `💾 Saved memory: "${label}"`, {
+            type: 'memory-created',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
       case 'update_person':
         if (result.success) {
           this.chatInstance.addMessage('system', `👤 Updated ${result.personName} with new details`, {
@@ -480,7 +608,84 @@ class EmmaBrowserClient {
           });
         }
         break;
+
+      case 'create_person_profile':
+        if (result.success) {
+          this.chatInstance.addMessage('system', `👤 Added ${result.personName} to your people`, {
+            type: 'person-created',
+            personId: result.personId
+          });
+        }
+        break;
+
+      case 'update_memory_capsule':
+        if (result.success) {
+          const fields = result.updatedFields?.length
+            ? result.updatedFields.join(', ')
+            : 'memory details';
+          this.chatInstance.addMessage('system', `📝 Updated ${fields} for your memory`, {
+            type: 'memory-updated',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'attach_memory_media':
+        if (result.success) {
+          const count = result.attachmentCount ?? (params.media?.length || 0);
+          this.chatInstance.addMessage('system', `📎 Added ${count} new ${count === 1 ? 'attachment' : 'attachments'} to your memory`, {
+            type: 'memory-media-added',
+            memoryId: result.memoryId
+          });
+        }
+        break;
     }
+  }
+
+  /**
+   * Update runtime API key (shared with server-side agent)
+   */
+  setApiKey(apiKey, { silent = false } = {}) {
+    const normalized = typeof apiKey === 'string' ? apiKey.trim() : '';
+    const nextValue = normalized || null;
+    const changed = nextValue !== this.apiKey;
+
+    this.apiKey = nextValue;
+    if (changed) {
+      this._lastSentApiKey = undefined;
+    }
+
+    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+      this.sendRuntimeApiKey({ force: changed });
+    } else if (!silent && this.apiKey) {
+      console.log('🔐 Stored OpenAI key for next Emma connection');
+    }
+  }
+
+  /**
+   * Send current API key to Emma server (if connected)
+   */
+  sendRuntimeApiKey({ force = false } = {}) {
+    if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    const normalized = typeof this.apiKey === 'string' ? this.apiKey.trim() : '';
+    const payload = normalized || null;
+
+    if (!force && payload === this._lastSentApiKey) {
+      return;
+    }
+
+    if (!payload && !force) {
+      return;
+    }
+
+    this._lastSentApiKey = payload;
+    this.sendToAgent({
+      type: 'set_api_key',
+      apiKey: payload
+    });
   }
 
   /**
@@ -515,12 +720,12 @@ class EmmaBrowserClient {
       };
       
       const message = statusMessages[newState];
-      if (message && this.chatInstance.typingIndicator) {
+      if (this.chatInstance.typingIndicator) {
         const span = this.chatInstance.typingIndicator.querySelector('span');
-        if (span) {
+        if (span && message) {
           span.textContent = message;
-          this.chatInstance.typingIndicator.style.display = message ? 'block' : 'none';
         }
+        this.chatInstance.typingIndicator.style.display = message ? 'flex' : 'none';
       }
     }
   }
@@ -545,11 +750,124 @@ class EmmaBrowserClient {
    */
   async stopVoiceSession() {
     try {
+      this._disableRecognition = true;
       this.isConnected = false;
       this.setState('idle');
       
       // Send stop message to agent
       this.sendToAgent({ type: 'stop_session' });
+
+      if (this.recognition) {
+        try {
+          this.recognition.onend = null;
+          this.recognition.onerror = null;
+          this.recognition.onresult = null;
+          this.recognition.onstart = null;
+          this.recognition.stop();
+        } catch (e) {
+          // Ignore recognition stop errors
+        }
+        this.recognition = null;
+      }
+      this.isListening = false;
+
+      if (this.mediaStream) {
+        try {
+          this.mediaStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          // Ignore track stop errors
+        }
+        this.mediaStream = null;
+      }
+
+      if (this._audioSourceNode) {
+        try {
+          this._audioSourceNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._audioSourceNode = null;
+      }
+
+      if (this.audioWorkletNode) {
+        try {
+          this.audioWorkletNode.port.onmessage = null;
+          this.audioWorkletNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this.audioWorkletNode = null;
+      }
+
+      if (this._audioSinkNode) {
+        try {
+          this._audioSinkNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._audioSinkNode = null;
+        this._sinkConnected = false;
+      }
+
+      if (this.audioContext) {
+        try {
+          this.audioContext.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+        this.audioContext = null;
+      }
+
+      if (this._audioWorkletModuleUrl) {
+        URL.revokeObjectURL(this._audioWorkletModuleUrl);
+        this._audioWorkletModuleUrl = null;
+      }
+
+      if (this._realtimeProcessor) {
+        try {
+          this._realtimeProcessor.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeProcessor.onaudioprocess = null;
+        this._realtimeProcessor = null;
+      }
+
+      if (this._realtimeSource) {
+        try {
+          this._realtimeSource.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeSource = null;
+      }
+
+      if (this._realtimeSinkNode) {
+        try {
+          this._realtimeSinkNode.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeSinkNode = null;
+      }
+
+      if (this._realtimeAudioContext) {
+        try {
+          this._realtimeAudioContext.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+        this._realtimeAudioContext = null;
+      }
+
+      if (this._realtimeStream) {
+        try {
+          this._realtimeStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+          // Ignore track stop errors
+        }
+        this._realtimeStream = null;
+      }
       
       // Close WebSocket
       if (this.websocket) {
@@ -610,14 +928,38 @@ class EmmaBrowserClient {
         }
       });
 
+      this._realtimeStream = stream;
+
       // Create audio context for real-time processing
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-      const source = this.audioContext.createMediaStreamSource(stream);
+      this._realtimeAudioContext = this._realtimeAudioContext || new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      if (!this._realtimeAudioContext) {
+        return;
+      }
+
+      if (this._realtimeSource) {
+        try {
+          this._realtimeSource.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeSource = null;
+      }
+
+      if (this._realtimeProcessor) {
+        try {
+          this._realtimeProcessor.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        this._realtimeProcessor = null;
+      }
+
+      this._realtimeSource = this._realtimeAudioContext.createMediaStreamSource(stream);
       
       // Create a script processor for real-time audio chunks
-      const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+      this._realtimeProcessor = this._realtimeAudioContext.createScriptProcessor(4096, 1, 1);
       
-      processor.onaudioprocess = (event) => {
+      this._realtimeProcessor.onaudioprocess = (event) => {
         if (!this.isConnected) return;
         
         const inputBuffer = event.inputBuffer;
@@ -645,8 +987,16 @@ class EmmaBrowserClient {
         });
       };
       
-      source.connect(processor);
-      processor.connect(this.audioContext.destination);
+      this._realtimeSource.connect(this._realtimeProcessor);
+
+      this._realtimeSinkNode = this._realtimeSinkNode || this._realtimeAudioContext.createGain();
+      if (this._realtimeSinkNode) {
+        this._realtimeSinkNode.gain.value = 0;
+        this._realtimeProcessor.connect(this._realtimeSinkNode);
+        this._realtimeSinkNode.connect(this._realtimeAudioContext.destination);
+      } else {
+        this._realtimeProcessor.connect(this._realtimeAudioContext.destination);
+      }
       
       console.log('✅ Real-time audio streaming active');
       
@@ -656,6 +1006,9 @@ class EmmaBrowserClient {
   }
 
   playAudioFallback(base64Audio) {
+    if (!this.voicePlaybackEnabled) {
+      return;
+    }
     try {
       console.log('🎤 Trying Blob URL fallback for audio playback');
       
@@ -691,6 +1044,22 @@ class EmmaBrowserClient {
       // Final fallback to browser TTS
       this.speak(this.lastEmmaText || 'I\'m having trouble with my voice right now.');
     }
+  }
+
+  setVoicePlaybackEnabled(enabled) {
+    const normalized = Boolean(enabled);
+    if (this.voicePlaybackEnabled === normalized) {
+      return;
+    }
+    this.voicePlaybackEnabled = normalized;
+    if (!this.voicePlaybackEnabled && this.synth) {
+      try {
+        this.synth.cancel();
+      } catch (_) {
+        // ignore cancellation errors
+      }
+    }
+    console.log(`🔊 Emma voice playback ${this.voicePlaybackEnabled ? 'enabled' : 'muted'}`);
   }
 }
 

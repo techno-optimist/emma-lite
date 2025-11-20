@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma - Chat</title>
+
+  <!-- Emma Vault System -->
+  <script src="js/emma-env.js"></script>
+  <script src="js/emma-logger.js"></script>
+  <script src="js/emma-input-modal.js"></script>
+  <script src="js/clean-password-modal.js"></script>
+  <script src="js/modal-helpers.js"></script>
+  <script src="js/emma-feature-flags.js"></script>
+  <script src="js/emma-vault-primary.js"></script>
+  <script src="js/emma-web-vault.js"></script>
+  <script src="js/web-vault-status.js"></script>
+
+  <link rel="stylesheet" href="css/emma-chat-clean.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+    .chat-container {
+      width: 100%;
+      max-width: 600px;
+      height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-messages" id="chat-messages">
+      <div id="welcome-message">
+        <h2>Welcome to Emma Chat</h2>
+        <p>Start a conversation below.</p>
+      </div>
+    </div>
+    <div id="typing-indicator" class="typing-indicator">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chat-input" placeholder="Talk to Emma..." onkeydown="emmaWsChat.handleKeyPress(event)"></textarea>
+      <button onclick="emmaWsChat.sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Initialize Emma Web Vault -->
+  <script>
+    // Ensure Emma Web Vault is initialized before ws-chat.js uses it
+    (async function initializeVault() {
+      if (typeof EmmaWebVault === 'undefined') {
+        console.error('EmmaWebVault class not loaded!');
+        return;
+      }
+
+      if (!window.emmaWebVault) {
+        window.emmaWebVault = new EmmaWebVault();
+        console.log('✓ EmmaWebVault initialized for chat interface');
+      }
+    })();
+  </script>
+
+  <script src="js/ws-chat.js"></script>
+</body>
+</html>

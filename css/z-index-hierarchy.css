@@ -269,13 +269,13 @@ body:has(.edit-memory-modal) .memories-container {
 ============================================================================= */
 
 /* CRITICAL FIX: Add Person button needs white background for visibility */
-button[style*="background: #8658ff"],
-button[style*="background:#8658ff"],
+button[style*="background: #6f63d9"],
+button[style*="background:#6f63d9"],
 .add-person-btn,
 button:contains("Add Person") {
   background: white !important;
-  color: #8658ff !important;
-  border: 2px solid #8658ff !important;
+  color: #6f63d9 !important;
+  border: 2px solid #6f63d9 !important;
   font-weight: 600 !important;
   text-shadow: none !important;
 }
@@ -285,8 +285,8 @@ button:contains("Add Person") {
 .person-add-button,
 [style*="border: 2px dashed"] {
   background: white !important;
-  color: #8658ff !important;
-  border: 2px dashed #8658ff !important;
+  color: #6f63d9 !important;
+  border: 2px dashed #6f63d9 !important;
   font-weight: 600 !important;
   opacity: 1 !important;
 }
@@ -296,8 +296,8 @@ button[title*="Add"],
 button[aria-label*="Add"],
 *[onclick*="addPerson"] {
   background: white !important;
-  color: #8658ff !important;
-  border: 2px solid #8658ff !important;
+  color: #6f63d9 !important;
+  border: 2px solid #6f63d9 !important;
   font-weight: 600 !important;
 }
 

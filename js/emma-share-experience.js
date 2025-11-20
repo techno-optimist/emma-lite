@@ -612,7 +612,7 @@ class EmmaShareExperience extends ExperiencePopup {
     const gradient = ctx.createLinearGradient(0, 0, 256, 256);
     gradient.addColorStop(0, '#667eea');
     gradient.addColorStop(0.5, '#764ba2');
-    gradient.addColorStop(1, '#f093fb');
+    gradient.addColorStop(1, '#deb3e4');
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 256, 256);

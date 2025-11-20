@@ -1843,7 +1843,7 @@ class EmmaQuestionEngine {
 
 #### **EMMA BRANDING PRINCIPLES** 📐
 1. **Color Palette**: 
-   - Primary: `--emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)`
+   - Primary: `--emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%)`
    - Background: `--emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%)`
    - Cards: `rgba(255, 255, 255, 0.05)` with `backdrop-filter: blur(20px)`
 

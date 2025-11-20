@@ -7,7 +7,7 @@
  * - Extension becomes pure crypto service
  * - Zero data loss on service worker restart
  * 
- * FOR DEBBE: Every memory preserved with absolute reliability ❤️
+ * FOR DEBBE: Every memory preserved with absolute reliability.
  */
 
 class EmmaVaultPrimary {
@@ -16,17 +16,27 @@ class EmmaVaultPrimary {
     this.isOpen = false;
     this.passphrase = null;
     this.fileHandle = null; // Direct File System Access API
-    this.autoSaveEnabled = true;
+    try {
+      const stored = localStorage.getItem('emmaVaultAutoSaveEnabled');
+      this.autoSaveEnabled = stored === 'false' ? false : true;
+    } catch (error) {
+      console.warn('[EmmaVaultPrimary] Unable to read auto-save preference:', error);
+      this.autoSaveEnabled = true;
+    }
     this.saveDebounceTimer = null;
     
     // Feature flag for gradual migration
     this.useWebAppPrimary = localStorage.getItem('USE_WEBAPP_PRIMARY') === 'true';
     
-    console.log('🚀 EmmaVaultPrimary initialized - Web App Primary Architecture');
-    console.log('🔧 Feature flag USE_WEBAPP_PRIMARY:', this.useWebAppPrimary);
+    console.log('[VaultPrimary] EmmaVaultPrimary initialized - Web App Primary Architecture');
+    console.log('[VaultPrimary] Feature flag USE_WEBAPP_PRIMARY:', this.useWebAppPrimary);
     
     // Auto-restore vault state on construction
     this.restoreVaultState();
+  }
+
+  setAutoSaveEnabled(enabled) {
+    this.autoSaveEnabled = !!enabled;
   }
 
   /**
@@ -786,3 +796,4 @@ if (localStorage.getItem('USE_WEBAPP_PRIMARY') === 'true') {
 
 // Global access for debugging
 window.EmmaVaultPrimary = EmmaVaultPrimary;
+

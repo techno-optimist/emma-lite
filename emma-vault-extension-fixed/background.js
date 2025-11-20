@@ -70,7 +70,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   console.log('Emma Vault Extension installed - Ready to preserve memories');
   
   // Set initial badge
-  chrome.action.setBadgeBackgroundColor({ color: '#8B5CF6' });
+  chrome.action.setBadgeBackgroundColor({ color: '#6F63D9' });
   chrome.action.setBadgeText({ text: '' });
   
   // Initialize storage

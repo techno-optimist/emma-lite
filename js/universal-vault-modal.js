@@ -369,7 +369,7 @@ class UniversalVaultModal {
         height: 80px;
         margin: 0 auto;
         border-radius: 50%;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -382,7 +382,7 @@ class UniversalVaultModal {
         position: absolute;
         inset: -4px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         opacity: 0.3;
         animation: vaultGlow 2s ease-in-out infinite alternate;
       }
@@ -407,7 +407,7 @@ class UniversalVaultModal {
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 12px;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -454,8 +454,8 @@ class UniversalVaultModal {
 
       .universal-vault-input:focus {
         outline: none;
-        border-color: rgba(139, 92, 246, 0.6);
-        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        border-color: rgba(111, 99, 217, 0.6);
+        box-shadow: 0 0 0 3px rgba(111, 99, 217, 0.1);
         background: rgba(255, 255, 255, 0.15);
       }
 
@@ -510,7 +510,7 @@ class UniversalVaultModal {
       }
 
       .universal-vault-session-label input[type="checkbox"]:checked + .checkmark {
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         border-color: transparent;
       }
 
@@ -573,14 +573,14 @@ class UniversalVaultModal {
       }
 
       .universal-vault-btn-primary {
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         color: white;
         border: none;
       }
 
       .universal-vault-btn-primary:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        box-shadow: 0 10px 30px rgba(111, 99, 217, 0.3);
       }
 
       .btn-loading {

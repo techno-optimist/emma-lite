@@ -1471,10 +1471,14 @@ class AssistantExperience extends ExperiencePopup {
 
     const avatar = sender === 'user' ? '👤' : '👩‍💼';
 
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'));
+
     messageEl.innerHTML = `
       <div class="message-avatar">${avatar}</div>
       <div class="message-content">
-        <p>${message}</p>
+        <p>${esc(message)}</p>
       </div>
     `;
 
@@ -1679,7 +1683,7 @@ class AssistantExperience extends ExperiencePopup {
 
     // Navigate to the new dashboard
 
-    window.location.href = 'dashboard-new.html';
+    window.location.href = 'dashboard.html';
 
     // Close after a delay
     setTimeout(() => {
