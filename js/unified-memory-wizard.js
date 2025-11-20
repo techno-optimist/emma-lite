@@ -6,11 +6,10 @@
  */
 
 class UnifiedMemoryWizard extends ExperiencePopup {
-  constructor(orchestrator, position, settings = {}) {
+  constructor(position, settings = {}) {
     super(position, settings);
 
     // Core state management
-    this.orchestrator = orchestrator;
     this.currentStep = 1;
     this.totalSteps = 7;
     this.responses = [];
@@ -921,20 +920,31 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   }
 
   /**
-   * Load people data from vault via the orchestrator
+   * Load people data from vault
    */
   async loadPeopleData() {
     try {
-      const result = await this.orchestrator.getPeople();
-      if (result && Array.isArray(result.people)) {
-        this.availablePeople = result.people;
+
+      if (window.emmaAPI && window.emmaAPI.people && window.emmaAPI.people.list) {
+        const result = await window.emmaAPI.people.list();
+
+        if (result && result.success && Array.isArray(result.items)) {
+          this.availablePeople = result.items;
+
+        } else {
+          this.availablePeople = [];
+
+        }
       } else {
+        console.warn('👥 People API not available');
         this.availablePeople = [];
       }
+
       // Initialize selected people array
       this.selectedPeople = [];
+
     } catch (error) {
-      console.error('👥 Error loading people via orchestrator:', error);
+      console.error('👥 Error loading people:', error);
       this.availablePeople = [];
       this.selectedPeople = [];
     }
@@ -1729,10 +1739,11 @@ class UnifiedMemoryWizard extends ExperiencePopup {
   }
 
   /**
-   * Save memory capsule to Emma's vault using the orchestrator
+   * Save memory capsule to Emma's vault
    */
   async saveMemoryToVault() {
     try {
+
       // Show saving state
       const saveBtn = document.querySelector('.wizard-btn-save');
       if (saveBtn) {
@@ -1745,39 +1756,117 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         `;
       }
 
-      // Prepare attachments by ensuring they have data URLs
-      const attachments = await Promise.all(this.mediaItems.map(async (item) => {
-        // Use the fileToDataUrl helper which is still in the class
-        const dataUrl = item.preview.url || await this.fileToDataUrl(item.file);
-        return {
-          name: item.name,
-          type: item.type,
-          size: item.size,
-          dataUrl: dataUrl,
-        };
-      }));
+      // First, save media files to vault if any exist
+      const processedMediaItems = await this.saveMediaToVault();
 
-      // Create the complete memory object
+      // Create memory capsule object with vault-processed media
       const memoryCapsule = {
+        id: `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         title: this.generateMemoryTitle(),
-        content: this.generateMemoryStory(),
-        people: this.selectedPeople, // Array of person IDs
-        attachments: attachments,
+        content: this.generateMemoryStory(), // Use 'content' instead of 'story' to match gallery
+        story: this.generateMemoryStory(), // Keep both for compatibility
+        responses: this.responses,
+        mediaItems: processedMediaItems,
+        inputMethod: this.inputMethod,
+        createdAt: new Date().toISOString(),
         date: new Date().toISOString(),
+        category: this.detectCategory(),
         tags: this.generateTags()
       };
 
-      // Update the orchestrator with the final memory details
-      this.orchestrator.updateActiveMemory(memoryCapsule);
+      // Save to .emma web vault using our web vault system      console.log('💾 VAULT DEBUG: sessionStorage emmaVaultActive:', sessionStorage.getItem('emmaVaultActive'));
+      if (window.webVaultStatus) {
 
-      // Save the memory through the orchestrator, which now handles all backend communication
-      await this.orchestrator.saveActiveMemory();
+      }
 
-      this.showSuccessMessage('Memory saved successfully! 🎉');
-      setTimeout(() => this.close(), 1500);
+      // SIMPLIFIED: Check if vault is available
+      if (window.emmaWebVault && sessionStorage.getItem('emmaVaultActive') === 'true') {
+
+        if (!window.emmaWebVault.isOpen) {
+
+          window.emmaWebVault.isOpen = true;
+        }
+      }
+
+      // CRITICAL: Check for webapp-only vault unlock (no extension needed)
+      const webappVaultUnlocked = window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true';
+
+      if (webappVaultUnlocked) {
+        try {
+          console.log('💾 Using emmaWebVault.addMemory() for .emma vault');
+          // Convert media items to vault format
+          const vaultAttachments = [];
+          for (const mediaItem of this.mediaItems || []) {
+            if (mediaItem.file) {
+              // FIXED: Convert File object to data URL for proper processing
+              const dataUrl = await this.fileToDataUrl(mediaItem.file);
+              vaultAttachments.push({
+                type: mediaItem.type,
+                name: mediaItem.name,
+                data: dataUrl  // Always use data property with converted file
+              });
+            } else if (mediaItem.preview && mediaItem.preview.url) {
+              vaultAttachments.push({
+                type: mediaItem.type,
+                name: mediaItem.name,
+                data: mediaItem.preview.url
+              });
+            }
+          }
+
+          console.log('👥 WIZARD: Saving memory with people connections:', this.selectedPeople);
+
+          const result = await window.emmaWebVault.addMemory({
+            content: memoryCapsule.content || memoryCapsule.story,
+            metadata: {
+              title: memoryCapsule.title,
+              category: memoryCapsule.category,
+              tags: memoryCapsule.tags,
+              createdAt: memoryCapsule.createdAt,
+              inputMethod: memoryCapsule.inputMethod,
+              responses: memoryCapsule.responses,
+              people: this.selectedPeople || [] // CRITICAL FIX: Save selected people
+            },
+            attachments: vaultAttachments
+          });
+
+          console.log('✅ WIZARD: Memory saved with people connections:', this.selectedPeople?.length || 0);
+
+          this.showSuccessMessage('Memory capsule saved to your secure .emma vault! 🎉');
+
+          // Close wizard and refresh gallery
+          setTimeout(() => {
+            this.close();
+
+            // Refresh gallery if we're on the gallery page
+            if (window.location.pathname.includes('memory-gallery')) {
+
+              // Wait for extension to complete saving, then refresh
+              setTimeout(() => {
+                if (window.refreshMemoryGallery) {
+                  window.refreshMemoryGallery();
+                } else if (window.loadMemories) {
+                  window.loadMemories();
+                }
+              }, 500);
+            }
+          }, 2000);
+          return;
+
+        } catch (vaultError) {
+          console.error('💾 .emma vault save failed:', vaultError);
+        }
+      } else {
+        console.warn('💾 Web vault not available or locked - cannot save memory');
+        console.warn('💾 DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
+        console.warn('💾 DEBUG: emmaWebVault.isOpen?', window.emmaWebVault?.isOpen);
+        console.warn('💾 DEBUG: sessionStorage active?', sessionStorage.getItem('emmaVaultActive'));
+        this.showErrorMessage('Vault is not unlocked. Please unlock your .emma vault file first from the dashboard.');
+        return;
+      }
 
     } catch (error) {
-      console.error('💾 Error saving memory via orchestrator:', error);
+      console.error('💾 Error saving memory:', error);
       this.showErrorMessage('Error saving memory. Please try again.');
 
       // Reset save button
@@ -1792,6 +1881,129 @@ class UnifiedMemoryWizard extends ExperiencePopup {
         `;
       }
     }
+  }
+
+  /**
+   * Save to local storage as fallback
+   */
+  saveToLocalStorage(memoryCapsule) {
+    try {
+      // Add a unique ID for the memory
+      memoryCapsule.id = `memory-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      const existingMemories = JSON.parse(localStorage.getItem('emma_memories') || '[]');
+      existingMemories.push(memoryCapsule);
+      localStorage.setItem('emma_memories', JSON.stringify(existingMemories));
+
+      this.showSuccessMessage('Memory capsule saved! Refreshing gallery... 💾');
+
+      // Close wizard and refresh gallery
+      setTimeout(() => {
+        this.close();
+        // Try to refresh the gallery if possible
+        if (window.location.pathname.includes('memory-gallery')) {
+
+          window.location.reload();
+        }
+      }, 1500);
+
+    } catch (error) {
+      console.error('💾 Local storage failed:', error);
+      this.showErrorMessage('Failed to save memory. Please try again.');
+    }
+  }
+
+  /**
+   * CTO Critical Fix: Save media files to vault first
+   */
+  async saveMediaToVault() {
+    if (!this.mediaItems || this.mediaItems.length === 0) {
+
+      return [];
+    }
+
+    const processedMediaItems = [];
+
+    for (const mediaItem of this.mediaItems) {
+      try {
+        let vaultAttachmentId = null;
+
+        // Try to save to vault using attachment API
+        if (window.emmaAPI && window.emmaAPI.vault && window.emmaAPI.vault.attachment && window.emmaAPI.vault.attachment.add) {
+
+          // Convert file to data URL if not already done
+          let dataUrl = mediaItem.preview.url;
+          if (mediaItem.file && !dataUrl) {
+            dataUrl = await this.fileToDataUrl(mediaItem.file);
+          }
+
+          const vaultResult = await window.emmaAPI.vault.attachment.add({
+            name: mediaItem.name,
+            type: mediaItem.type,
+            data: dataUrl,
+            size: mediaItem.size
+          });
+
+          if (vaultResult && vaultResult.success && vaultResult.id) {
+            vaultAttachmentId = vaultResult.id;
+
+          } else {
+            console.error(`📷 MEDIA: Vault save failed for ${mediaItem.name}:`, vaultResult);
+          }
+        } else {
+          console.warn('📷 MEDIA: Using direct web vault addMedia API');
+          // Fallback to direct web vault API
+          if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+            vaultAttachmentId = await window.emmaWebVault.addMedia({
+              name: mediaItem.name,
+              type: mediaItem.type,
+              file: mediaItem.file || mediaItem.preview.url
+            });
+
+          }
+        }
+
+        // Create processed media item
+        const processedItem = {
+          id: mediaItem.id,
+          name: mediaItem.name,
+          type: mediaItem.type,
+          size: mediaItem.size,
+          vaultId: vaultAttachmentId,
+          uploadedAt: new Date().toISOString(),
+          isPersisted: !!vaultAttachmentId,
+          // Keep dataUrl for local display if vault save failed
+          url: vaultAttachmentId ? null : mediaItem.preview.url,
+          dataUrl: vaultAttachmentId ? null : mediaItem.preview.url
+        };
+
+        processedMediaItems.push(processedItem);
+
+      } catch (error) {
+        console.error(`📷 MEDIA: Error processing ${mediaItem.name}:`, error);
+
+        // Add as local-only item if vault processing fails
+        processedMediaItems.push({
+          id: mediaItem.id,
+          name: mediaItem.name,
+          type: mediaItem.type,
+          size: mediaItem.size,
+          vaultId: null,
+          uploadedAt: new Date().toISOString(),
+          isPersisted: false,
+          url: mediaItem.preview.url,
+          dataUrl: mediaItem.preview.url
+        });
+      }
+    }
+
+    console.log(`💾 Processed ${processedMediaItems.length} media items:`, processedMediaItems.map(item => ({
+      name: item.name,
+      isPersisted: item.isPersisted,
+      vaultId: item.vaultId
+    })));
+
+    return processedMediaItems;
   }
 
   /**

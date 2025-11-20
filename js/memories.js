@@ -363,50 +363,183 @@ async function loadMemories() {
   const container = document.getElementById('memory-grid');
   const emptyState = document.getElementById('empty-state');
   const vaultBanner = document.getElementById('vault-banner');
+  const vaultFilterEl = document.getElementById('vault-filter');
 
   try {
     // Show loading state
-    container.innerHTML = `<div class="loading-gallery">...</div>`; // Simplified loading state
+    container.innerHTML = `
+      <div class="loading-gallery">
+        <div class="loading-capsule">
+          <div class="loading-header"></div>
+          <div class="loading-content">
+            <div class="loading-line"></div>
+            <div class="loading-line"></div>
+            <div class="loading-line"></div>
+          </div>
+        </div>
+        <div class="loading-capsule">
+          <div class="loading-header"></div>
+          <div class="loading-content">
+            <div class="loading-line"></div>
+            <div class="loading-line"></div>
+            <div class="loading-line"></div>
+          </div>
+        </div>
+        <div class="loading-capsule">
+          <div class="loading-header"></div>
+          <div class="loading-content">
+            <div class="loading-line"></div>
+            <div class="loading-line"></div>
+            <div class="loading-line"></div>
+          </div>
+        </div>
+      </div>
+    `;
 
-    // Reset pagination state for a fresh load
-    currentOffset = 0;
-    hasMoreMemories = true;
-    isLoadingMore = false;
-    const limit = 50;
+    // VaultGuardian will check status in the next section - no redundant calls needed
 
-    // Use the orchestrator to get memories
-    const response = await window.memoryOrchestrator.getMemories({ limit, offset: currentOffset });
+    // Always handle vault filter if present, populate with shared vaults if available
+    try {
+      if (vaultFilterEl) {
+        // Try to get accessible vaults
+        let vaults = [];
+        if (window.vaultApi?.getAccessibleVaults) {
+          vaults = await window.vaultApi.getAccessibleVaults() || [];
+        }
 
-    const memories = response.memories || [];
-    allMemories = memories;
-    filteredMemories = [...allMemories];
+        // Always populate the filter (shows "My Vault" at minimum)
+        const prev = vaultFilterEl.value || 'current';
+        vaultFilterEl.innerHTML = '<option value="current">My Vault</option>' +
+          (vaults.length > 0 ? vaults.map(v => `<option value="${v.id}">Shared: ${v.name}</option>`).join('') : '');
+        vaultFilterEl.value = prev;
+        currentVaultFilter = vaultFilterEl.value || 'current';
 
-    // Update pagination state
-    currentOffset = allMemories.length;
-    hasMoreMemories = memories.length === limit;
+        // Attach change listener once
+        if (!vaultFilterEl.dataset.bound) {
+          vaultFilterEl.addEventListener('change', async (e) => {
+            currentVaultFilter = e.target.value;
+            await loadMemories();
+          });
+          vaultFilterEl.dataset.bound = '1';
+        }
 
-    if (allMemories.length > 0) {
-      displayMemories(filteredMemories);
-      updateResultsCount();
-      addLoadMoreButton(); // This function will only add the button if hasMoreMemories is true
+      }
+    } catch (e) {
+      console.warn('Failed to populate vault filter:', e);
+    }
 
+    // ✅ VAULT-ONLY ACCESS - Single source of truth via VaultGuardian
+
+    try {
+      // Use EmmaWebVault instead of legacy VaultGuardian
+      if (!window.emmaWebVault || !window.emmaWebVault.isOpen) {
+        console.warn('🔸 EmmaWebVault not available for vault status');
+        return { available: false, reason: 'Vault not unlocked' };
+      }
+
+      // Get vault status from EmmaWebVault (already checked above)
+
+      // CRITICAL FIX: Check vault status using new extension FSM system
+      const vaultUnlocked = localStorage.getItem('emmaVaultActive') === 'true' ||
+                           sessionStorage.getItem('emmaVaultActive') === 'true' ||
+                           (window.currentVaultStatus && window.currentVaultStatus.isUnlocked);
+
+      if (!vaultUnlocked) {
+
+        // Vault banner hidden - user can see lock status in header
+        if (vaultBanner) {
+          vaultBanner.style.display = 'none';
+        }
+        showEmptyState();
+        const emptyMessageText = document.getElementById('empty-message-text');
+        if (emptyMessageText) {
+          emptyMessageText.textContent = 'No memories found. Create your first memory to get started.';
+        }
+        return;
+      }
+
+      // Reset pagination state for fresh load
+      currentOffset = 0;
+      hasMoreMemories = true;
+      isLoadingMore = false;
+
+      // Load memories from vault only - NO FALLBACKS
+      const response = isDesktopVault
+        ? await window.emma.vault.listCapsules({ limit: 50, offset: currentOffset })
+        : await chrome.runtime.sendMessage({ action: 'vault.listCapsules', limit: 50, offset: currentOffset });
+
+      const items = Array.isArray(response) ? response : (response && response.items) ? response.items : [];
+      const memories = Array.isArray(items) ? items.map(it => ({
+        id: it.id,
+        title: it.title,
+        timestamp: it.ts,
+        source: it.source,
+        _attachmentCount: it.attachmentCount,
+        _previewThumb: it.previewThumb
+      })) : [];
+
+      allMemories = memories;
+      await enrichMemoriesWithAttachments(allMemories);
+      filteredMemories = [...allMemories];
+
+      // Update pagination state
+      currentOffset = allMemories.length;
+      hasMoreMemories = memories.length === 50; // Has more if we got a full page
+
+      if (allMemories.length > 0) {
+        displayMemories(filteredMemories);
+        updateResultsCount();
+
+        // Add load more button if there are more memories
+        addLoadMoreButton();
+
+        // Update banner to show vault success
+        if (vaultBanner) {
+          vaultBanner.style.display = 'block';
+          vaultBanner.style.background = 'rgba(16,185,129,0.15)';
+          vaultBanner.style.border = '1px solid rgba(16,185,129,0.3)';
+          vaultBanner.textContent = `🛡️ Vault Guardian · ${allMemories.length} memories loaded${hasMoreMemories ? ' (more available)' : ''}`;
+        }
+
+        console.log(`✅ VaultGuardian: Loaded ${allMemories.length} memories (hasMore: ${hasMoreMemories})`);
+      } else {
+        showEmptyState();
+
+        if (vaultBanner) {
+          vaultBanner.style.display = 'block';
+          vaultBanner.style.background = 'rgba(16,185,129,0.15)';
+          vaultBanner.style.border = '1px solid rgba(16,185,129,0.3)';
+          vaultBanner.textContent = '🛡️ Vault Guardian · Ready to store memories';
+        }
+      }
+
+    } catch (error) {
+      console.error('🚨 VaultGuardian access failed:', error);
+
+      // Show error state
       if (vaultBanner) {
         vaultBanner.style.display = 'block';
-        vaultBanner.textContent = `🛡️ ${allMemories.length} memories loaded from your vault.`;
+        vaultBanner.style.background = 'rgba(239,68,68,0.15)';
+        vaultBanner.style.border = '1px solid rgba(239,68,68,0.3)';
+        vaultBanner.textContent = '⚠️ Vault Error · Check vault status';
       }
-    } else {
+
       showEmptyState();
-      if (vaultBanner) {
-        vaultBanner.textContent = '🛡️ Your vault is ready. Create your first memory!';
+      const emptyMessageText = document.getElementById('empty-message-text');
+      if (emptyMessageText) {
+        emptyMessageText.textContent = 'Unable to load memories from vault. Check vault status.';
       }
     }
   } catch (error) {
-    console.error('🧠 Failed to load memories via orchestrator:', error);
-    container.innerHTML = `<div class="error-state">Failed to load memories.</div>`;
-    if (vaultBanner) {
-      vaultBanner.textContent = '⚠️ Could not connect to your vault.';
-      vaultBanner.style.background = 'rgba(239,68,68,0.15)';
-    }
+    console.error('🧠 Failed to load memories:', error);
+    container.innerHTML = `
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <h3>Failed to load memories</h3>
+        <p>${error.message}</p>
+        <button onclick="loadMemories()" class="btn-secondary">Try Again</button>
+      </div>
+    `;
   }
 }
 

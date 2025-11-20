@@ -55,7 +55,7 @@ const allowedOriginSet = new Set(allowedOrigins);
 console.log('Emma Voice Service allowed origins:', allowedOrigins.length ? allowedOrigins.join(', ') : '(none)');
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3000;
 
 const vaultService = new VaultService();
 // Security hardening
@@ -66,7 +66,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "blob:", "https://cdn.jsdelivr.net", "https://unpkg.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
@@ -127,10 +127,13 @@ app.get('/dashboard.html', (req, res) => res.sendFile(path.join(__dirname, 'dash
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 [
   'add-person.html',
-  'emma-cloud.html'
+  'emma-cloud.html',
+  'chat.html'
 ].forEach((file) => {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(__dirname, file)));
 });
+
+app.get('/chat', (req, res) => res.sendFile(path.join(__dirname, 'chat.html')));
 
 // Rate limiting for token endpoint
 const tokenLimiter = new RateLimiterMemory({
@@ -317,6 +320,7 @@ const wss = new WebSocket.Server({
 const ALLOWED_WS_ORIGINS = new Set(allowedOrigins.map(normalizeOrigin));
 const ipConnCount = new Map();
 const MAX_WS_PER_IP = parseInt(process.env.MAX_WS_PER_IP || '5', 10);
+const chatHistories = new Map();
 
 /**
  * Emma Voice WebSocket Server
@@ -338,15 +342,7 @@ wss.on('connection', (browserWs, request) => {
   }
   ipConnCount.set(ip, curr + 1);
 
-  // Create Emma agent for this session
-  const emmaAgent = new EmmaServerAgent({
-    voice: 'alloy',
-    speed: 1.0,
-    tone: 'caring',
-    pacing: 2.5,
-    validationMode: true,
-    vaultService
-  });
+  let emmaAgent;
 
   // Handle messages from browser
   browserWs.on('message', async (data) => {
@@ -354,6 +350,23 @@ wss.on('connection', (browserWs, request) => {
       const message = JSON.parse(data);
       switch (message.type) {
         case 'start_session':
+          const sessionId = message.sessionId || `session_${Date.now()}`;
+          let history = chatHistories.get(sessionId);
+          if (!history) {
+            history = [];
+            chatHistories.set(sessionId, history);
+          }
+
+          emmaAgent = new EmmaServerAgent({
+            voice: 'alloy',
+            speed: 1.0,
+            tone: 'caring',
+            pacing: 2.5,
+            validationMode: true,
+            vaultService,
+            chatHistory: history
+          });
+
           await emmaAgent.startSession(browserWs);
           break;
         case 'user_text':

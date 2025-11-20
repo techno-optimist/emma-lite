@@ -3469,6 +3469,35 @@ window.emmaAPI = {
   }
 };
 
+EmmaWebVault.prototype.executeTool = async function(toolName, params) {
+  switch (toolName) {
+    case 'get_people':
+      return this.listPeople();
+    case 'get_memories':
+      return this.listMemories(params.limit);
+    case 'summarize_memory':
+      // This is a placeholder, as there is no summarizeMemory function in the vault
+      return { summary: `Summary of memory ${params.memoryId}` };
+    case 'create_memory_from_voice':
+    case 'create_memory_capsule':
+      return this.addMemory({ content: params.content, metadata: { people: params.people } });
+    case 'update_person':
+    case 'create_person_profile':
+      return this.addPerson({ name: params.name, relation: params.relationship });
+    case 'update_memory_capsule':
+      return this.updateMemory(params.memoryId, { content: params.content });
+    case 'attach_memory_media':
+      // Placeholder
+      return { success: true };
+    case 'delete_memory':
+      return this.deleteMemory(params.memoryId);
+    case 'delete_person':
+      return this.deletePerson(params.personId);
+    default:
+      throw new Error(`Unsupported tool: ${toolName}`);
+  }
+};
+
 EmmaWebVault.prototype.setAutoSaveEnabled = function(enabled) {
   this.autoSaveEnabled = !!enabled;
   if (!this.autoSaveEnabled) {
