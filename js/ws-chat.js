@@ -26,9 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function getWebSocketUrl() {
-  const fallbackUrls = [
-    'wss://emma-lite-optimized.onrender.com/voice',
-    'wss://emma-hjjc.onrender.com/voice'
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const fallbackHosts = [
+    'emma-lite-optimized.onrender.com',
+    'emma-hjjc.onrender.com'
   ];
 
   const seen = new Set();
@@ -41,17 +42,35 @@ function getWebSocketUrl() {
     }
   };
 
-  pushCandidate(lastKnownWsUrl);
+  const buildWsUrl = (hostOrUrl) => {
+    if (!hostOrUrl) return null;
+    try {
+      const maybeUrl = new URL(hostOrUrl, window.location.href);
+      // If caller passed a full ws/wss URL, keep it as is
+      if (maybeUrl.protocol === 'ws:' || maybeUrl.protocol === 'wss:') {
+        return maybeUrl.toString();
+      }
+      // Otherwise, assume host-like input
+      return `${protocol}//${hostOrUrl.replace(/^\/*/, '')}/voice`;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  pushCandidate(buildWsUrl(lastKnownWsUrl));
+
+  // Prefer the current page host, which also keeps local development working.
+  pushCandidate(buildWsUrl(window.location.host));
 
   if (typeof window.getEmmaBackendWsUrl === 'function') {
     try {
-      pushCandidate(window.getEmmaBackendWsUrl());
+      pushCandidate(buildWsUrl(window.getEmmaBackendWsUrl()));
     } catch (e) {
       console.warn('💬 Emma WS Chat: backend URL resolution failed', e);
     }
   }
 
-  fallbackUrls.forEach(pushCandidate);
+  fallbackHosts.forEach((host) => pushCandidate(buildWsUrl(host)));
 
   return candidates;
 }
