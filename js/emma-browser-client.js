@@ -29,6 +29,16 @@ class EmmaBrowserClient {
       : null;
     this._lastSentApiKey = undefined;
     this.voicePlaybackEnabled = true;
+    this.socketGeneration = 0;
+    this.heartbeatInterval = null;
+    this.failedWsUrls = new Set();
+    this.lastKnownWsUrl = (() => {
+      try {
+        return sessionStorage.getItem('emma-last-ws-url');
+      } catch (_) {
+        return null;
+      }
+    })();
     
     console.log('🎙️ Emma Browser Client initialized');
 
@@ -223,11 +233,14 @@ class EmmaBrowserClient {
     const wsCandidates = [];
 
     const pushCandidate = (url) => {
-      if (url && !seen.has(url)) {
+      if (url && !seen.has(url) && !this.failedWsUrls.has(url)) {
         seen.add(url);
         wsCandidates.push(url);
       }
     };
+
+    // Sticky preference for last known good URL
+    pushCandidate(this.lastKnownWsUrl);
 
     // Preferred runtime override
     pushCandidate(options.wsUrl);
@@ -273,9 +286,11 @@ class EmmaBrowserClient {
 
       try {
         await this._attemptWebSocketConnection(candidate);
+        try { sessionStorage.setItem('emma-last-ws-url', candidate); } catch (_) {}
         return; // Successful connection
       } catch (error) {
         lastError = error;
+        this.failedWsUrls.add(candidate);
         console.warn(`⚠️ WebSocket connect failed for ${candidate}:`, error?.message || error);
       }
     }
@@ -290,6 +305,7 @@ class EmmaBrowserClient {
       try {
         const websocket = new WebSocket(wsUrl);
         let resolved = false;
+        const socketId = ++this.socketGeneration;
 
         const cleanup = (err) => {
           if (resolved) return;
@@ -312,7 +328,8 @@ class EmmaBrowserClient {
           }
 
           this.websocket = websocket;
-          this.setupWebSocketHandlers();
+          this.setupWebSocketHandlers(websocket, socketId);
+          this.startHeartbeat();
 
           console.log('✅ Connected to Emma agent', wsUrl);
           this.isConnected = true;
@@ -459,8 +476,11 @@ class EmmaBrowserClient {
   /**
    * Setup WebSocket event handlers
    */
-  setupWebSocketHandlers() {
-    this.websocket.onmessage = async (event) => {
+  setupWebSocketHandlers(websocket, socketId) {
+    const isStaleSocket = () => socketId !== this.socketGeneration;
+
+    websocket.onmessage = async (event) => {
+      if (isStaleSocket()) return;
       try {
         const message = JSON.parse(event.data);
         console.log('📨 Emma message:', message.type);
@@ -566,12 +586,15 @@ class EmmaBrowserClient {
       }
     };
 
-    this.websocket.onerror = (error) => {
+    websocket.onerror = (error) => {
+      if (isStaleSocket()) return;
       console.error('❌ WebSocket error:', error);
       this.showError('Connection error', 'Lost connection to Emma');
     };
 
-    this.websocket.onclose = () => {
+    websocket.onclose = () => {
+      if (isStaleSocket()) return;
+      this.stopHeartbeat();
       console.log('🔇 Emma agent connection closed');
       this.isConnected = false;
       this.setState('idle');
@@ -579,6 +602,22 @@ class EmmaBrowserClient {
         this.chatInstance.markAgentDisconnected();
       }
     };
+  }
+
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+        this.sendToAgent({ type: 'ping', timestamp: Date.now() });
+      }
+    }, 15000);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   /**
