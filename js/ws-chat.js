@@ -4,6 +4,8 @@ console.log('💬 Emma WS Chat: Initializing...');
 // WebSocket state
 let ws;
 let isProcessing = false;
+let reconnectTimer = null;
+const RECONNECT_DELAY_MS = 2000;
 
 // Initialize chat
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,8 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
   chatInput.focus();
 });
 
+function getWebSocketUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${protocol}://${window.location.host}/voice`;
+}
+
 function connectWebSocket() {
-  const wsUrl = `ws://${window.location.host}/voice`;
+  clearTimeout(reconnectTimer);
+
+  const wsUrl = getWebSocketUrl();
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
@@ -36,7 +45,7 @@ function connectWebSocket() {
 
   ws.onclose = () => {
     console.log('💬 Emma WS Chat: Disconnected');
-    // Optional: attempt to reconnect
+    scheduleReconnect();
   };
 
   ws.onerror = (error) => {
@@ -59,15 +68,29 @@ function handleServerMessage(message) {
     case 'emma_transcription':
       displayMessage('emma', message.transcript, Date.now(), true);
       break;
+    case 'emma_audio':
+      playAudioResponse(message);
+      break;
     case 'tool_request':
       handleToolRequest(message);
       break;
     case 'session_ended':
       console.log('Session ended');
       break;
+    case 'error':
+      displayMessage('system', `❌ ${message.message || 'Emma ran into an issue.'}`);
+      break;
     default:
       console.warn('Unhandled server message type:', message.type);
   }
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectWebSocket();
+  }, RECONNECT_DELAY_MS);
 }
 
 async function handleToolRequest(request) {
@@ -77,6 +100,9 @@ async function handleToolRequest(request) {
   try {
     // For now, we'll just use the vault service directly on the client-side
     // This is a temporary solution until the architecture is unified
+    if (!window.emmaWebVault) {
+      throw new Error('Emma vault not initialized in browser');
+    }
     result = await window.emmaWebVault.executeTool(tool_name, parameters);
   } catch (error) {
     result = { error: error.message };
@@ -134,6 +160,21 @@ function displayMessage(sender, content, timestamp = Date.now(), animate = true)
 
   messagesContainer.appendChild(messageDiv);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function playAudioResponse(message) {
+  if (!message?.audio || message.encoding !== 'base64/mp3') {
+    return;
+  }
+
+  try {
+    const audioUrl = `data:audio/mp3;base64,${message.audio}`;
+    const audio = new Audio(audioUrl);
+    audio.volume = 0.9;
+    await audio.play();
+  } catch (error) {
+    console.warn('Failed to play Emma audio:', error);
+  }
 }
 
 function showTypingIndicator() {
