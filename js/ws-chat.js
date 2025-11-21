@@ -14,16 +14,37 @@ let lastKnownWsUrl = (() => {
     return null;
   }
 })();
+let connectionStatusEl;
+let connectionState = 'connecting';
+let pendingMessages = [];
+let fallbackIntelligence = null;
 
 // Initialize chat
 document.addEventListener('DOMContentLoaded', () => {
   console.log('💬 Emma WS Chat: DOM loaded');
+  connectionStatusEl = document.getElementById('chat-connection-status');
+  initializeFallbackIntelligence();
+  updateConnectionStatus('connecting', 'Connecting to Emma…');
   connectWebSocket();
 
   const chatInput = document.getElementById('chat-input');
   chatInput.addEventListener('input', autoResizeTextarea);
   chatInput.focus();
 });
+
+function initializeFallbackIntelligence() {
+  if (typeof EmmaUnifiedIntelligence !== 'function') {
+    console.warn('💬 Emma WS Chat: Unified intelligence unavailable; offline responses disabled.');
+    return;
+  }
+
+  fallbackIntelligence = new EmmaUnifiedIntelligence({
+    dementiaMode: true,
+    validationTherapy: true,
+    apiKey: window.EMMA_OPENAI_KEY || null,
+    vaultAccess: () => window.emmaWebVault?.vaultData?.content
+  });
+}
 
 function getWebSocketUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -81,16 +102,61 @@ function getWebSocketUrl() {
   return candidates;
 }
 
+function updateConnectionStatus(state, label) {
+  connectionState = state;
+
+  if (connectionStatusEl) {
+    connectionStatusEl.textContent = label;
+    connectionStatusEl.classList.remove('connected', 'offline', 'connecting');
+    connectionStatusEl.classList.add(state);
+  }
+
+  const chatInput = document.getElementById('chat-input');
+  const sendButton = document.querySelector('.chat-input-area button');
+  const disable = state === 'connecting';
+  if (chatInput) chatInput.disabled = disable;
+  if (sendButton) sendButton.disabled = disable;
+}
+
+function flushPendingMessages() {
+  if (!pendingMessages.length || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+  const queue = [...pendingMessages];
+  pendingMessages = [];
+
+  queue.forEach((text) => {
+    ws.send(JSON.stringify({ type: 'user_text', text }));
+  });
+}
+
+async function respondWithFallback(userMessage) {
+  if (!fallbackIntelligence) return;
+
+  try {
+    const response = await fallbackIntelligence.analyzeAndRespond(userMessage, null);
+    if (response?.text) {
+      displayMessage('emma', response.text);
+    } else {
+      displayMessage('system', 'Emma is offline but keeping notes.');
+    }
+  } catch (error) {
+    console.warn('💬 Emma WS Chat: Fallback response failed', error);
+    displayMessage('system', 'Emma is offline right now. Your message has been saved.');
+  }
+}
+
 function connectWebSocket() {
   clearTimeout(reconnectTimer);
 
   const candidates = getWebSocketUrl();
+  updateConnectionStatus('connecting', 'Connecting to Emma…');
 
   const tryCandidate = (index = 0) => {
     const wsUrl = candidates[index];
 
     if (!wsUrl) {
       console.error('💬 Emma WS Chat: No WebSocket candidates available');
+      updateConnectionStatus('offline', 'Unable to find an Emma server. Retrying…');
       scheduleReconnect();
       return;
     }
@@ -100,6 +166,7 @@ function connectWebSocket() {
 
     ws.onopen = () => {
       console.log('💬 Emma WS Chat: Connected');
+      updateConnectionStatus('connected', 'Connected to Emma');
       let sessionId = sessionStorage.getItem('emma-session-id');
       if (!sessionId) {
         sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -109,6 +176,7 @@ function connectWebSocket() {
       lastKnownWsUrl = wsUrl;
       failedWsUrls.delete(wsUrl);
       ws.send(JSON.stringify({ type: 'start_session', sessionId }));
+      flushPendingMessages();
     };
 
     ws.onmessage = (event) => {
@@ -118,11 +186,13 @@ function connectWebSocket() {
 
     ws.onclose = () => {
       console.log('💬 Emma WS Chat: Disconnected');
+      updateConnectionStatus('offline', 'Connection lost. Reconnecting…');
       scheduleReconnect();
     };
 
     ws.onerror = (error) => {
       console.error('💬 Emma WS Chat: Error', error);
+      updateConnectionStatus('offline', 'Unable to reach Emma. Trying next server…');
       failedWsUrls.add(wsUrl);
       if (index + 1 < candidates.length) {
         try { ws.close(); } catch (_) {}
@@ -170,6 +240,7 @@ function handleServerMessage(message) {
 
 function scheduleReconnect() {
   if (reconnectTimer) return;
+  updateConnectionStatus('connecting', 'Reconnecting to Emma…');
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     connectWebSocket();
@@ -202,7 +273,7 @@ async function sendMessage() {
   const input = document.getElementById('chat-input');
   const message = input.value.trim();
 
-  if (!message || isProcessing || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!message || isProcessing) return;
 
   input.value = '';
   autoResizeTextarea({ target: input });
@@ -210,7 +281,14 @@ async function sendMessage() {
   document.getElementById('welcome-message').style.display = 'none';
   displayMessage('user', message);
 
-  ws.send(JSON.stringify({ type: 'user_text', text: message }));
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'user_text', text: message }));
+  } else {
+    pendingMessages.push(message);
+    updateConnectionStatus('offline', 'Offline — using local Emma until reconnection');
+    respondWithFallback(message);
+    scheduleReconnect();
+  }
 }
 
 function displayMessage(sender, content, timestamp = Date.now(), animate = true) {

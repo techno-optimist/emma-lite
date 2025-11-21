@@ -15,6 +15,7 @@
   <script src="js/emma-vault-primary.js"></script>
   <script src="js/emma-web-vault.js"></script>
   <script src="js/web-vault-status.js"></script>
+  <script src="js/emma-unified-intelligence.js"></script>
 
   <link rel="stylesheet" href="css/emma-chat-clean.css">
   <style>
@@ -32,10 +33,36 @@
       display: flex;
       flex-direction: column;
     }
+
+    .chat-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #f4f3ff;
+      border: 1px solid #d9d6ff;
+      color: #4534ac;
+      border-radius: 10px;
+      font-weight: 600;
+      margin: 0 0 10px 0;
+    }
+
+    .chat-status.offline {
+      background: #fff6f6;
+      border-color: #ffd6d6;
+      color: #9b1c1c;
+    }
+
+    .chat-status.connected {
+      background: #eefcf3;
+      border-color: #b9e6c9;
+      color: #1b6b35;
+    }
   </style>
 </head>
 <body>
   <div class="chat-container">
+    <div id="chat-connection-status" class="chat-status">Connecting to Emma…</div>
     <div class="chat-messages" id="chat-messages">
       <div id="welcome-message">
         <h2>Welcome to Emma Chat</h2>
