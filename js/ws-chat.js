@@ -46,18 +46,24 @@ function getWebSocketUrl() {
     if (!hostOrUrl) return null;
     try {
       const maybeUrl = new URL(hostOrUrl, window.location.href);
-      // If caller passed a full ws/wss URL, keep it as is
       if (maybeUrl.protocol === 'ws:' || maybeUrl.protocol === 'wss:') {
         return maybeUrl.toString();
       }
-      // Otherwise, assume host-like input
-      return `${protocol}//${hostOrUrl.replace(/^\/*/, '')}/voice`;
+
+      const host = maybeUrl.host || hostOrUrl;
+      const path = maybeUrl.pathname && maybeUrl.pathname !== '/' ? maybeUrl.pathname : '/voice';
+      return `${protocol}//${host.replace(/^\/*/, '')}${path}`;
     } catch (_) {
       return null;
     }
   };
 
   pushCandidate(buildWsUrl(lastKnownWsUrl));
+
+  // Allow explicit overrides to avoid repeated merge conflicts across environments.
+  if (window.EMMA_WS_URL) {
+    pushCandidate(buildWsUrl(window.EMMA_WS_URL));
+  }
 
   // Prefer the current page host, which also keeps local development working.
   pushCandidate(buildWsUrl(window.location.host));
