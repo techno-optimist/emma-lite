@@ -72,6 +72,8 @@ class EmmaChatExperience extends ExperiencePopup {
     this.vectorlessEngine = null;
     this.apiKey = null;
     this.isVectorlessEnabled = false;
+    this.vectorlessReadyPromise = null;
+    this.vectorlessReadyState = 'idle';
 
     // 🧠 CTO REBUILD: UNIFIED EMMA INTELLIGENCE SYSTEM
     this.unifiedIntelligence = new EmmaUnifiedIntelligence({
@@ -88,6 +90,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
+    this.captureFallbackQueue = this.loadQueuedCaptures();
     
     // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
     this.temporaryMemories = new Map(); // Store preview memories before vault save
@@ -129,13 +132,13 @@ class EmmaChatExperience extends ExperiencePopup {
    */
   async initializeEmmaIntelligence() {
     console.log('🧠 Initializing Emma Intelligence Systems...');
-    
+
     try {
       // Load vectorless settings (includes API key detection)
       this.loadVectorlessSettings();
-      
+
       // Initialize vectorless engine for memory search
-      await this.initializeVectorlessEngine();
+      await this.ensureVectorlessReady();
       
       // Log the intelligence status
       this.logIntelligenceStatus();
@@ -190,7 +193,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
-    await this.initializeVectorlessEngine();
+    await this.ensureVectorlessReady();
 
     // 💝 Initialize Intelligent Memory Capture
     await this.initializeIntelligentCapture();
@@ -4308,6 +4311,83 @@ class EmmaChatExperience extends ExperiencePopup {
 
   // 🧠 VECTORLESS AI INTEGRATION METHODS
 
+  ensureVectorlessReady() {
+    if (this.vectorlessReadyPromise) {
+      return this.vectorlessReadyPromise;
+    }
+
+    this.vectorlessReadyState = 'loading';
+    this.vectorlessReadyPromise = this.initializeVectorlessEngine()
+      .then(() => {
+        this.vectorlessReadyState = this.isVectorlessEnabled ? 'ready' : 'fallback';
+        this.flushQueuedCaptures();
+        return this.vectorlessEngine;
+      })
+      .catch((error) => {
+        this.vectorlessReadyState = 'failed';
+        throw error;
+      });
+
+    return this.vectorlessReadyPromise;
+  }
+
+  loadQueuedCaptures() {
+    try {
+      const stored = localStorage.getItem('emma-capture-queue');
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn('Failed to load capture queue from storage:', error);
+      return [];
+    }
+  }
+
+  persistQueuedCaptures() {
+    try {
+      localStorage.setItem('emma-capture-queue', JSON.stringify(this.captureFallbackQueue || []));
+    } catch (error) {
+      console.warn('Failed to persist capture queue:', error);
+    }
+  }
+
+  enqueueCaptureFallback(memoryDraft) {
+    if (!memoryDraft || !memoryDraft.content) return;
+    const payload = {
+      ...memoryDraft,
+      queuedAt: new Date().toISOString()
+    };
+
+    this.captureFallbackQueue.push(payload);
+    this.persistQueuedCaptures();
+
+    this.addMessage(
+      "I'm holding onto this memory locally and will save it once everything is back online.",
+      'emma'
+    );
+  }
+
+  async flushQueuedCaptures() {
+    if (!this.captureFallbackQueue.length || !window.emmaWebVault?.addMemory) {
+      return;
+    }
+
+    const pending = [...this.captureFallbackQueue];
+    this.captureFallbackQueue = [];
+    this.persistQueuedCaptures();
+
+    for (const entry of pending) {
+      try {
+        await window.emmaWebVault.addMemory(entry);
+      } catch (error) {
+        console.warn('Failed to flush queued memory capture:', error);
+        this.captureFallbackQueue.push(entry);
+      }
+    }
+
+    this.persistQueuedCaptures();
+  }
+
   /**
    * Initialize the Vectorless AI Engine with vault data
    */
@@ -4762,7 +4842,8 @@ class EmmaChatExperience extends ExperiencePopup {
       apiKeyInput.onchange = (e) => {
         this.apiKey = e.target.value;
         if (this.apiKey) {
-          this.initializeVectorlessEngine();
+          this.vectorlessReadyPromise = null;
+          this.ensureVectorlessReady();
         }
       };
     }
@@ -4849,7 +4930,8 @@ class EmmaChatExperience extends ExperiencePopup {
 
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
-      this.initializeVectorlessEngine();
+      this.vectorlessReadyPromise = null;
+      this.ensureVectorlessReady();
     }
 
     this.showToast('✅ Settings saved successfully!', 'success');
@@ -5218,7 +5300,7 @@ class EmmaChatExperience extends ExperiencePopup {
     try {
       // Generate dynamic response for media requests
       const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
-      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', null, 'response');
+      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', {});
 
       // Create a basic memory from the request
       const memory = {
@@ -5240,13 +5322,22 @@ class EmmaChatExperience extends ExperiencePopup {
       this.temporaryMemories.set(memory.id, memory);
       console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
       console.log('🎯 MEDIA REQUEST: Memory metadata:', memory.metadata);
+
+      if (!this.isVectorlessEnabled) {
+        this.enqueueCaptureFallback({
+          title: memory.title,
+          content: memory.content,
+          attachments: memory.attachments,
+          metadata: memory.metadata
+        });
+      }
       
       // Show the much better edit dialog we just perfected!
       this.editMemoryDetails(memory.id);
 
     } catch (error) {
       console.error('❌ Error handling media request:', error);
-      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
+      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', {});
     }
   }
 
@@ -10231,7 +10322,7 @@ Just the question:`;
         }
         
         // Show success message
-        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', {});
         
         this.showToast("Memory saved successfully! 💝", "success");
         

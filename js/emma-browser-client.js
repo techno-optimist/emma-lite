@@ -29,6 +29,16 @@ class EmmaBrowserClient {
       : null;
     this._lastSentApiKey = undefined;
     this.voicePlaybackEnabled = true;
+    this.socketGeneration = 0;
+    this.heartbeatInterval = null;
+    this.failedWsUrls = new Set();
+    this.lastKnownWsUrl = (() => {
+      try {
+        return sessionStorage.getItem('emma-last-ws-url');
+      } catch (_) {
+        return null;
+      }
+    })();
     
     console.log('🎙️ Emma Browser Client initialized');
 
@@ -213,46 +223,115 @@ class EmmaBrowserClient {
   /**
    * Connect to server-side Emma agent
    */
-  async connectToEmmaAgent() {
+  async connectToEmmaAgent(options = {}) {
+    const fallbackUrls = this.options.wsFallbackUrls || [
+      'wss://emma-lite-optimized.onrender.com/voice',
+      'wss://emma-hjjc.onrender.com/voice'
+    ];
+
+    const seen = new Set();
+    const wsCandidates = [];
+
+    const pushCandidate = (url) => {
+      if (url && !seen.has(url) && !this.failedWsUrls.has(url)) {
+        seen.add(url);
+        wsCandidates.push(url);
+      }
+    };
+
+    // Sticky preference for last known good URL
+    pushCandidate(this.lastKnownWsUrl);
+
+    // Preferred runtime override
+    pushCandidate(options.wsUrl);
+
+    // Primary resolution from environment helper
     try {
-      const wsUrl = (typeof window.getEmmaBackendWsUrl === 'function')
-        ? window.getEmmaBackendWsUrl()
-        : 'wss://emma-lite-optimized.onrender.com/voice';
-
-      // FORCE debug logging bypassing production suppression
-      const forceLog = (...args) => Function.prototype.call.call(console.log, console, ...args);
-
-      forceLog('🔗 ===== EMMA WEBSOCKET CONNECTION DEBUG =====');
-      forceLog('   wsUrl:', wsUrl);
-      forceLog('   window.location.href:', window.location.href);
-      forceLog('   window.location.hostname:', window.location.hostname);
-      forceLog('   window.location.port:', window.location.port);
-      forceLog('   window.location.protocol:', window.location.protocol);
-      forceLog('   window.EMMA_ENV:', window.EMMA_ENV);
-      forceLog('   window.EMMA_DEBUG:', window.EMMA_DEBUG);
-      forceLog('   window.EMMA_BACKEND_ORIGIN:', window.EMMA_BACKEND_ORIGIN);
-      forceLog('   typeof getEmmaBackendWsUrl:', typeof window.getEmmaBackendWsUrl);
-      forceLog('   typeof getEmmaBackendOrigin:', typeof window.getEmmaBackendOrigin);
-      if (typeof window.getEmmaBackendOrigin === 'function') {
-        forceLog('   getEmmaBackendOrigin() result:', window.getEmmaBackendOrigin());
-      }
       if (typeof window.getEmmaBackendWsUrl === 'function') {
-        forceLog('   getEmmaBackendWsUrl() result:', window.getEmmaBackendWsUrl());
+        pushCandidate(window.getEmmaBackendWsUrl());
       }
-      forceLog('==============================================');
-      
-      this.websocket = new WebSocket(wsUrl);
-      this.setupWebSocketHandlers();
-      
-      // Wait for connection
-      return new Promise((resolve, reject) => {
+    } catch (e) {
+      console.warn('⚠️ Failed to resolve primary Emma backend URL', e);
+    }
+
+    // Static fallbacks for Render deployments
+    fallbackUrls.forEach(pushCandidate);
+
+    // FORCE debug logging bypassing production suppression
+    const forceLog = (...args) => Function.prototype.call.call(console.log, console, ...args);
+
+    forceLog('🔗 ===== EMMA WEBSOCKET CONNECTION DEBUG =====');
+    forceLog('   candidates:', wsCandidates);
+    forceLog('   window.location.href:', window.location.href);
+    forceLog('   window.location.hostname:', window.location.hostname);
+    forceLog('   window.location.port:', window.location.port);
+    forceLog('   window.location.protocol:', window.location.protocol);
+    forceLog('   window.EMMA_ENV:', window.EMMA_ENV);
+    forceLog('   window.EMMA_DEBUG:', window.EMMA_DEBUG);
+    forceLog('   window.EMMA_BACKEND_ORIGIN:', window.EMMA_BACKEND_ORIGIN);
+    forceLog('   typeof getEmmaBackendWsUrl:', typeof window.getEmmaBackendWsUrl);
+    forceLog('   typeof getEmmaBackendOrigin:', typeof window.getEmmaBackendOrigin);
+    if (typeof window.getEmmaBackendOrigin === 'function') {
+      forceLog('   getEmmaBackendOrigin() result:', window.getEmmaBackendOrigin());
+    }
+    if (typeof window.getEmmaBackendWsUrl === 'function') {
+      forceLog('   getEmmaBackendWsUrl() result:', window.getEmmaBackendWsUrl());
+    }
+    forceLog('==============================================');
+
+    let lastError = null;
+
+    for (const candidate of wsCandidates) {
+      if (!candidate) continue;
+
+      try {
+        await this._attemptWebSocketConnection(candidate);
+        try { sessionStorage.setItem('emma-last-ws-url', candidate); } catch (_) {}
+        return; // Successful connection
+      } catch (error) {
+        lastError = error;
+        this.failedWsUrls.add(candidate);
+        console.warn(`⚠️ WebSocket connect failed for ${candidate}:`, error?.message || error);
+      }
+    }
+
+    const finalError = lastError || new Error('No WebSocket candidates resolved');
+    console.error('❌ Emma agent connection failed:', finalError);
+    throw finalError;
+  }
+
+  _attemptWebSocketConnection(wsUrl) {
+    return new Promise((resolve, reject) => {
+      try {
+        const websocket = new WebSocket(wsUrl);
+        let resolved = false;
+        const socketId = ++this.socketGeneration;
+
+        const cleanup = (err) => {
+          if (resolved) return;
+          resolved = true;
+          try { websocket.close(); } catch (_) {}
+          reject(err);
+        };
+
         const timeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
+          cleanup(new Error(`Connection timeout (${wsUrl})`));
         }, 10000);
-        
-        this.websocket.onopen = () => {
+
+        websocket.onopen = () => {
+          if (resolved) return;
           clearTimeout(timeout);
-          console.log('✅ Connected to Emma agent');
+
+          // Replace any existing socket before wiring handlers
+          if (this.websocket && this.websocket !== websocket) {
+            try { this.websocket.close(); } catch (_) {}
+          }
+
+          this.websocket = websocket;
+          this.setupWebSocketHandlers(websocket, socketId);
+          this.startHeartbeat();
+
+          console.log('✅ Connected to Emma agent', wsUrl);
           this.isConnected = true;
 
           this.sendRuntimeApiKey({ force: Boolean(this.apiKey) });
@@ -261,7 +340,7 @@ class EmmaBrowserClient {
           if (this.chatInstance) {
             this.chatInstance.addMessage('system', '🔗 Connected to Emma backend');
           }
-          
+
           // Start Emma session
           this.sendToAgent({
             type: 'start_session',
@@ -272,20 +351,20 @@ class EmmaBrowserClient {
               pacing: this.options.pacing
             }
           });
-          
+
+          resolved = true;
           resolve();
         };
-        
-        this.websocket.onerror = (error) => {
+
+        websocket.onerror = (error) => {
+          if (resolved) return;
           clearTimeout(timeout);
-          reject(new Error('WebSocket connection failed'));
+          cleanup(new Error(`WebSocket connection failed (${wsUrl})`));
         };
-      });
-      
-    } catch (error) {
-      console.error('❌ Emma agent connection failed:', error);
-      throw error;
-    }
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   /**
@@ -397,8 +476,11 @@ class EmmaBrowserClient {
   /**
    * Setup WebSocket event handlers
    */
-  setupWebSocketHandlers() {
-    this.websocket.onmessage = async (event) => {
+  setupWebSocketHandlers(websocket, socketId) {
+    const isStaleSocket = () => socketId !== this.socketGeneration;
+
+    websocket.onmessage = async (event) => {
+      if (isStaleSocket()) return;
       try {
         const message = JSON.parse(event.data);
         console.log('📨 Emma message:', message.type);
@@ -504,12 +586,15 @@ class EmmaBrowserClient {
       }
     };
 
-    this.websocket.onerror = (error) => {
+    websocket.onerror = (error) => {
+      if (isStaleSocket()) return;
       console.error('❌ WebSocket error:', error);
       this.showError('Connection error', 'Lost connection to Emma');
     };
 
-    this.websocket.onclose = () => {
+    websocket.onclose = () => {
+      if (isStaleSocket()) return;
+      this.stopHeartbeat();
       console.log('🔇 Emma agent connection closed');
       this.isConnected = false;
       this.setState('idle');
@@ -517,6 +602,22 @@ class EmmaBrowserClient {
         this.chatInstance.markAgentDisconnected();
       }
     };
+  }
+
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(() => {
+      if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+        this.sendToAgent({ type: 'ping', timestamp: Date.now() });
+      }
+    }, 15000);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   /**
@@ -583,8 +684,9 @@ class EmmaBrowserClient {
         break;
 
       case 'create_memory_from_voice':
-        if (result.success) {
-          this.chatInstance.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
+        if (result.success || result.memoryId) {
+          const snippet = params.content?.substring(0, 50) || result.title || 'New memory';
+          this.chatInstance.addMessage('system', `💭 New memory created: "${snippet}..."`, {
             type: 'memory-created',
             memoryId: result.memoryId
           });
@@ -592,7 +694,7 @@ class EmmaBrowserClient {
         break;
 
       case 'create_memory_capsule':
-        if (result.success) {
+        if (result.success || result.memoryId) {
           const label = result.title || params.title || params.content?.substring(0, 50) || 'New memory';
           this.chatInstance.addMessage('system', `💾 Saved memory: "${label}"`, {
             type: 'memory-created',
@@ -636,6 +738,24 @@ class EmmaBrowserClient {
           this.chatInstance.addMessage('system', `📎 Added ${count} new ${count === 1 ? 'attachment' : 'attachments'} to your memory`, {
             type: 'memory-media-added',
             memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'delete_memory':
+        if (result.success || result.memoryId) {
+          this.chatInstance.addMessage('system', '🗑️ Memory removed from your vault.', {
+            type: 'memory-deleted',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'delete_person':
+        if (result.success || result.personId) {
+          this.chatInstance.addMessage('system', '👥 Removed that person from your vault.', {
+            type: 'person-deleted',
+            personId: result.personId
           });
         }
         break;

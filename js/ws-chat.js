@@ -4,10 +4,29 @@ console.log('💬 Emma WS Chat: Initializing...');
 // WebSocket state
 let ws;
 let isProcessing = false;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+const RECONNECT_BASE_DELAY_MS = 2000;
+const RECONNECT_MAX_DELAY_MS = 15000;
+const failedWsUrls = new Set();
+let lastKnownWsUrl = (() => {
+  try {
+    return sessionStorage.getItem('emma-last-ws-url');
+  } catch (_) {
+    return null;
+  }
+})();
+let connectionStatusEl;
+let connectionState = 'connecting';
+let pendingMessages = [];
+let fallbackIntelligence = null;
 
 // Initialize chat
 document.addEventListener('DOMContentLoaded', () => {
   console.log('💬 Emma WS Chat: DOM loaded');
+  connectionStatusEl = document.getElementById('chat-connection-status');
+  initializeFallbackIntelligence();
+  updateConnectionStatus('connecting', 'Connecting to Emma…');
   connectWebSocket();
 
   const chatInput = document.getElementById('chat-input');
@@ -15,33 +34,194 @@ document.addEventListener('DOMContentLoaded', () => {
   chatInput.focus();
 });
 
-function connectWebSocket() {
-  const wsUrl = `ws://${window.location.host}/voice`;
-  ws = new WebSocket(wsUrl);
+function initializeFallbackIntelligence() {
+  if (typeof EmmaUnifiedIntelligence !== 'function') {
+    console.warn('💬 Emma WS Chat: Unified intelligence unavailable; offline responses disabled.');
+    return;
+  }
 
-  ws.onopen = () => {
-    console.log('💬 Emma WS Chat: Connected');
-    let sessionId = sessionStorage.getItem('emma-session-id');
-    if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      sessionStorage.setItem('emma-session-id', sessionId);
+  fallbackIntelligence = new EmmaUnifiedIntelligence({
+    dementiaMode: true,
+    validationTherapy: true,
+    apiKey: window.EMMA_OPENAI_KEY || null,
+    vaultAccess: () => window.emmaWebVault?.vaultData?.content
+  });
+}
+
+function getWebSocketUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const fallbackHosts = [
+    'emma-lite-optimized.onrender.com',
+    'emma-hjjc.onrender.com'
+  ];
+
+  const seen = new Set();
+  const candidates = [];
+
+  const normalizeUrl = (hostOrUrl) => {
+    if (!hostOrUrl) return null;
+    try {
+      const maybeUrl = new URL(hostOrUrl, window.location.href);
+      const isWs = maybeUrl.protocol === 'ws:' || maybeUrl.protocol === 'wss:';
+      const host = maybeUrl.host || hostOrUrl;
+      const path = maybeUrl.pathname && maybeUrl.pathname !== '/' ? maybeUrl.pathname : '/voice';
+      const base = isWs ? maybeUrl.protocol : protocol;
+      return `${base}//${host.replace(/^\/*/, '')}${path}`;
+    } catch (_) {
+      return null;
     }
-    ws.send(JSON.stringify({ type: 'start_session', sessionId }));
   };
 
-  ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    handleServerMessage(message);
+  const pushCandidate = (url, reason) => {
+    if (!url) return;
+    if (failedWsUrls.has(url)) return;
+    if (seen.has(url)) return;
+    seen.add(url);
+    candidates.push({ url, reason });
   };
 
-  ws.onclose = () => {
-    console.log('💬 Emma WS Chat: Disconnected');
-    // Optional: attempt to reconnect
+  pushCandidate(normalizeUrl(lastKnownWsUrl), 'last-known');
+
+  // Allow explicit overrides to avoid repeated merge conflicts across environments.
+  if (window.EMMA_WS_URL) {
+    pushCandidate(normalizeUrl(window.EMMA_WS_URL), 'override');
+  }
+
+  // Prefer the current page host, which also keeps local development working.
+  pushCandidate(normalizeUrl(window.location.host), 'page-host');
+
+  if (typeof window.getEmmaBackendWsUrl === 'function') {
+    try {
+      pushCandidate(normalizeUrl(window.getEmmaBackendWsUrl()), 'backend');
+    } catch (e) {
+      console.warn('💬 Emma WS Chat: backend URL resolution failed', e);
+    }
+  }
+
+  fallbackHosts.forEach((host) => pushCandidate(normalizeUrl(host), 'fallback'));
+
+  return candidates;
+}
+
+function updateConnectionStatus(state, label) {
+  connectionState = state;
+
+  if (connectionStatusEl) {
+    connectionStatusEl.textContent = label;
+    connectionStatusEl.classList.remove('connected', 'offline', 'connecting');
+    connectionStatusEl.classList.add(state);
+  }
+
+  const chatInput = document.getElementById('chat-input');
+  const sendButton = document.querySelector('.chat-input-area button');
+  const disable = state === 'connecting';
+  if (chatInput) chatInput.disabled = disable;
+  if (sendButton) sendButton.disabled = disable;
+}
+
+function flushPendingMessages() {
+  if (!pendingMessages.length || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+  const queue = [...pendingMessages];
+  pendingMessages = [];
+
+  queue.forEach((text) => {
+    ws.send(JSON.stringify({ type: 'user_text', text }));
+  });
+}
+
+async function respondWithFallback(userMessage) {
+  if (!fallbackIntelligence) {
+    displayMessage('system', 'Emma is offline right now. Your message will be retried when she reconnects.');
+    return;
+  }
+
+  try {
+    const response = await fallbackIntelligence.analyzeAndRespond(userMessage, null);
+    if (response?.text) {
+      displayMessage('emma', response.text);
+    } else {
+      displayMessage('system', 'Emma is offline but keeping notes.');
+    }
+  } catch (error) {
+    console.warn('💬 Emma WS Chat: Fallback response failed', error);
+    displayMessage('system', 'Emma is offline right now. Your message has been saved.');
+  }
+}
+
+function connectWebSocket() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    try { ws.close(); } catch (_) {}
+  }
+
+  const candidates = getWebSocketUrl();
+  updateConnectionStatus('connecting', 'Connecting to Emma…');
+
+  const tryCandidate = (index = 0) => {
+    const candidate = candidates[index];
+    const wsUrl = candidate?.url;
+
+    if (!wsUrl) {
+      console.error('💬 Emma WS Chat: No WebSocket candidates available');
+      updateConnectionStatus('offline', 'Unable to find an Emma server. Retrying…');
+      scheduleReconnect();
+      return;
+    }
+
+    console.log('💬 Emma WS Chat: Connecting to', wsUrl, candidate?.reason ? `(${candidate.reason})` : '');
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      const hostLabel = (() => {
+        try { return new URL(wsUrl).host || wsUrl; } catch (_) { return wsUrl; }
+      })();
+      console.log('💬 Emma WS Chat: Connected');
+      reconnectAttempts = 0;
+      updateConnectionStatus('connected', `Connected to Emma (${hostLabel})`);
+      let sessionId = sessionStorage.getItem('emma-session-id');
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        sessionStorage.setItem('emma-session-id', sessionId);
+      }
+      try { sessionStorage.setItem('emma-last-ws-url', wsUrl); } catch (_) {}
+      lastKnownWsUrl = wsUrl;
+      failedWsUrls.delete(wsUrl);
+      ws.send(JSON.stringify({ type: 'start_session', sessionId }));
+      flushPendingMessages();
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        handleServerMessage(message);
+      } catch (err) {
+        console.warn('💬 Emma WS Chat: Failed to parse server message', err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('💬 Emma WS Chat: Disconnected');
+      updateConnectionStatus('offline', 'Connection lost. Reconnecting…');
+      scheduleReconnect();
+    };
+
+    ws.onerror = (error) => {
+      console.error('💬 Emma WS Chat: Error', error);
+      updateConnectionStatus('offline', 'Unable to reach Emma. Trying next server…');
+      failedWsUrls.add(wsUrl);
+      if (index + 1 < candidates.length) {
+        try { ws.close(); } catch (_) {}
+        tryCandidate(index + 1);
+        return;
+      }
+      scheduleReconnect();
+    };
   };
 
-  ws.onerror = (error) => {
-    console.error('💬 Emma WS Chat: Error', error);
-  };
+  tryCandidate(0);
 }
 
 function handleServerMessage(message) {
@@ -59,15 +239,32 @@ function handleServerMessage(message) {
     case 'emma_transcription':
       displayMessage('emma', message.transcript, Date.now(), true);
       break;
+    case 'emma_audio':
+      playAudioResponse(message);
+      break;
     case 'tool_request':
       handleToolRequest(message);
       break;
     case 'session_ended':
       console.log('Session ended');
       break;
+    case 'error':
+      displayMessage('system', `❌ ${message.message || 'Emma ran into an issue.'}`);
+      break;
     default:
       console.warn('Unhandled server message type:', message.type);
   }
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttempts), RECONNECT_MAX_DELAY_MS);
+  reconnectAttempts += 1;
+  updateConnectionStatus('connecting', `Reconnecting to Emma (retry in ${Math.round(delay / 1000)}s)…`);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectWebSocket();
+  }, delay);
 }
 
 async function handleToolRequest(request) {
@@ -77,9 +274,17 @@ async function handleToolRequest(request) {
   try {
     // For now, we'll just use the vault service directly on the client-side
     // This is a temporary solution until the architecture is unified
+    if (!window.emmaWebVault) {
+      throw new Error('Emma vault not initialized in browser');
+    }
     result = await window.emmaWebVault.executeTool(tool_name, parameters);
   } catch (error) {
     result = { error: error.message };
+  }
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    console.warn('💬 Emma WS Chat: Skipping tool_result, socket not open');
+    return;
   }
 
   ws.send(JSON.stringify({
@@ -93,7 +298,7 @@ async function sendMessage() {
   const input = document.getElementById('chat-input');
   const message = input.value.trim();
 
-  if (!message || isProcessing || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!message || isProcessing) return;
 
   input.value = '';
   autoResizeTextarea({ target: input });
@@ -101,7 +306,14 @@ async function sendMessage() {
   document.getElementById('welcome-message').style.display = 'none';
   displayMessage('user', message);
 
-  ws.send(JSON.stringify({ type: 'user_text', text: message }));
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'user_text', text: message }));
+  } else {
+    pendingMessages.push(message);
+    updateConnectionStatus('offline', 'Offline — using local Emma until reconnection');
+    respondWithFallback(message);
+    scheduleReconnect();
+  }
 }
 
 function displayMessage(sender, content, timestamp = Date.now(), animate = true) {
@@ -134,6 +346,21 @@ function displayMessage(sender, content, timestamp = Date.now(), animate = true)
 
   messagesContainer.appendChild(messageDiv);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function playAudioResponse(message) {
+  if (!message?.audio || message.encoding !== 'base64/mp3') {
+    return;
+  }
+
+  try {
+    const audioUrl = `data:audio/mp3;base64,${message.audio}`;
+    const audio = new Audio(audioUrl);
+    audio.volume = 0.9;
+    await audio.play();
+  } catch (error) {
+    console.warn('Failed to play Emma audio:', error);
+  }
 }
 
 function showTypingIndicator() {
