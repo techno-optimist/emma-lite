@@ -5,7 +5,9 @@ console.log('💬 Emma WS Chat: Initializing...');
 let ws;
 let isProcessing = false;
 let reconnectTimer = null;
-const RECONNECT_DELAY_MS = 2000;
+let reconnectAttempts = 0;
+const RECONNECT_BASE_DELAY_MS = 2000;
+const RECONNECT_MAX_DELAY_MS = 15000;
 const failedWsUrls = new Set();
 let lastKnownWsUrl = (() => {
   try {
@@ -56,48 +58,47 @@ function getWebSocketUrl() {
   const seen = new Set();
   const candidates = [];
 
-  const pushCandidate = (url) => {
-    if (url && !seen.has(url) && !failedWsUrls.has(url)) {
-      seen.add(url);
-      candidates.push(url);
-    }
-  };
-
-  const buildWsUrl = (hostOrUrl) => {
+  const normalizeUrl = (hostOrUrl) => {
     if (!hostOrUrl) return null;
     try {
       const maybeUrl = new URL(hostOrUrl, window.location.href);
-      if (maybeUrl.protocol === 'ws:' || maybeUrl.protocol === 'wss:') {
-        return maybeUrl.toString();
-      }
-
+      const isWs = maybeUrl.protocol === 'ws:' || maybeUrl.protocol === 'wss:';
       const host = maybeUrl.host || hostOrUrl;
       const path = maybeUrl.pathname && maybeUrl.pathname !== '/' ? maybeUrl.pathname : '/voice';
-      return `${protocol}//${host.replace(/^\/*/, '')}${path}`;
+      const base = isWs ? maybeUrl.protocol : protocol;
+      return `${base}//${host.replace(/^\/*/, '')}${path}`;
     } catch (_) {
       return null;
     }
   };
 
-  pushCandidate(buildWsUrl(lastKnownWsUrl));
+  const pushCandidate = (url, reason) => {
+    if (!url) return;
+    if (failedWsUrls.has(url)) return;
+    if (seen.has(url)) return;
+    seen.add(url);
+    candidates.push({ url, reason });
+  };
+
+  pushCandidate(normalizeUrl(lastKnownWsUrl), 'last-known');
 
   // Allow explicit overrides to avoid repeated merge conflicts across environments.
   if (window.EMMA_WS_URL) {
-    pushCandidate(buildWsUrl(window.EMMA_WS_URL));
+    pushCandidate(normalizeUrl(window.EMMA_WS_URL), 'override');
   }
 
   // Prefer the current page host, which also keeps local development working.
-  pushCandidate(buildWsUrl(window.location.host));
+  pushCandidate(normalizeUrl(window.location.host), 'page-host');
 
   if (typeof window.getEmmaBackendWsUrl === 'function') {
     try {
-      pushCandidate(buildWsUrl(window.getEmmaBackendWsUrl()));
+      pushCandidate(normalizeUrl(window.getEmmaBackendWsUrl()), 'backend');
     } catch (e) {
       console.warn('💬 Emma WS Chat: backend URL resolution failed', e);
     }
   }
 
-  fallbackHosts.forEach((host) => pushCandidate(buildWsUrl(host)));
+  fallbackHosts.forEach((host) => pushCandidate(normalizeUrl(host), 'fallback'));
 
   return candidates;
 }
@@ -130,7 +131,10 @@ function flushPendingMessages() {
 }
 
 async function respondWithFallback(userMessage) {
-  if (!fallbackIntelligence) return;
+  if (!fallbackIntelligence) {
+    displayMessage('system', 'Emma is offline right now. Your message will be retried when she reconnects.');
+    return;
+  }
 
   try {
     const response = await fallbackIntelligence.analyzeAndRespond(userMessage, null);
@@ -147,12 +151,18 @@ async function respondWithFallback(userMessage) {
 
 function connectWebSocket() {
   clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    try { ws.close(); } catch (_) {}
+  }
 
   const candidates = getWebSocketUrl();
   updateConnectionStatus('connecting', 'Connecting to Emma…');
 
   const tryCandidate = (index = 0) => {
-    const wsUrl = candidates[index];
+    const candidate = candidates[index];
+    const wsUrl = candidate?.url;
 
     if (!wsUrl) {
       console.error('💬 Emma WS Chat: No WebSocket candidates available');
@@ -161,12 +171,16 @@ function connectWebSocket() {
       return;
     }
 
-    console.log('💬 Emma WS Chat: Connecting to', wsUrl);
+    console.log('💬 Emma WS Chat: Connecting to', wsUrl, candidate?.reason ? `(${candidate.reason})` : '');
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      const hostLabel = (() => {
+        try { return new URL(wsUrl).host || wsUrl; } catch (_) { return wsUrl; }
+      })();
       console.log('💬 Emma WS Chat: Connected');
-      updateConnectionStatus('connected', 'Connected to Emma');
+      reconnectAttempts = 0;
+      updateConnectionStatus('connected', `Connected to Emma (${hostLabel})`);
       let sessionId = sessionStorage.getItem('emma-session-id');
       if (!sessionId) {
         sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -180,8 +194,12 @@ function connectWebSocket() {
     };
 
     ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      handleServerMessage(message);
+      try {
+        const message = JSON.parse(event.data);
+        handleServerMessage(message);
+      } catch (err) {
+        console.warn('💬 Emma WS Chat: Failed to parse server message', err);
+      }
     };
 
     ws.onclose = () => {
@@ -240,11 +258,13 @@ function handleServerMessage(message) {
 
 function scheduleReconnect() {
   if (reconnectTimer) return;
-  updateConnectionStatus('connecting', 'Reconnecting to Emma…');
+  const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttempts), RECONNECT_MAX_DELAY_MS);
+  reconnectAttempts += 1;
+  updateConnectionStatus('connecting', `Reconnecting to Emma (retry in ${Math.round(delay / 1000)}s)…`);
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     connectWebSocket();
-  }, RECONNECT_DELAY_MS);
+  }, delay);
 }
 
 async function handleToolRequest(request) {
@@ -260,6 +280,11 @@ async function handleToolRequest(request) {
     result = await window.emmaWebVault.executeTool(tool_name, parameters);
   } catch (error) {
     result = { error: error.message };
+  }
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    console.warn('💬 Emma WS Chat: Skipping tool_result, socket not open');
+    return;
   }
 
   ws.send(JSON.stringify({
