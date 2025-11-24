@@ -26,6 +26,8 @@ class UnifiedMemoryWizard extends ExperiencePopup {
     // Initialize speech recognition if available
     this.initializeSpeechRecognition();
 
+    // Set global reference immediately for onclick handlers (fixes timing issue)
+    window.unifiedWizardInstance = this;
   }
 
   getTitle() {

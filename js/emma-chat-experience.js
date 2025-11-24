@@ -128,6 +128,8 @@ class EmmaChatExperience extends ExperiencePopup {
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
+    // Set global reference immediately for onclick handlers (fixes timing issue)
+    window.chatExperience = this;
   }
 
   getTitle() {
