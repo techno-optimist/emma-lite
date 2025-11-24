@@ -10726,6 +10726,20 @@ class EmmaUnifiedIntelligence {
       clarificationNeeded: false
     };
 
+    // PHASE 2: Conversation Quality Enhancement
+    this.followUpQuestions = [];
+    this.enrichmentSession = {
+      active: false,
+      memoryDraft: null,
+      questionsAsked: 0,
+      maxQuestions: 3,
+      collectedDetails: {}
+    };
+    this.ambiguityDetection = {
+      enabled: true,
+      threshold: 0.6 // Confidence below this triggers clarification
+    };
+
     // PHASE 1: Conversation State Machine
     this.conversationState = new ConversationStateManager();
 
@@ -10761,29 +10775,51 @@ class EmmaUnifiedIntelligence {
 
   /**
    * 🎯 SINGLE ENTRY POINT: Analyze user message and generate intelligent response
+   * PHASE 2: Enhanced with ambiguity detection and follow-up generation
    */
   async analyzeAndRespond(userMessage, chatInstance) {
     try {
       console.log('🧠 UNIFIED INTELLIGENCE: Processing:', userMessage);
-      
+
       // Add to conversation history
       this.addToHistory(userMessage, 'user');
-      
+
       // Get vault context
       const vaultContext = this.getVaultContext();
-      
+
       // Use LLM for intelligent analysis if available, fallback to smart heuristics
       const analysis = await this.analyzeUserIntent(userMessage, vaultContext);
       console.log('🧠 UNIFIED ANALYSIS:', analysis);
-      
+
+      // PHASE 2: Check for ambiguity and request clarification if needed
+      if (this.ambiguityDetection.enabled &&
+          analysis.confidence < this.ambiguityDetection.threshold &&
+          analysis.intent !== 'clarification') {
+
+        const clarificationResponse = await this.handleAmbiguity(userMessage, analysis, vaultContext);
+        if (clarificationResponse) {
+          this.addToHistory(clarificationResponse.text, 'emma');
+          return clarificationResponse;
+        }
+      }
+
       // Generate single, contextual response
       const response = await this.generateUnifiedResponse(analysis, chatInstance);
-      
+
+      // PHASE 2: Generate follow-up questions if appropriate
+      if (this.shouldGenerateFollowUps(analysis)) {
+        const followUps = await this.generateFollowUpQuestions(analysis, chatInstance);
+        if (followUps && followUps.length > 0) {
+          response.followUpQuestions = followUps;
+          this.followUpQuestions = followUps;
+        }
+      }
+
       // Add Emma's response to history
       this.addToHistory(response.text, 'emma');
-      
+
       return response;
-      
+
     } catch (error) {
       console.error('🧠 UNIFIED INTELLIGENCE ERROR:', error);
       return {
@@ -11664,7 +11700,7 @@ Analyze the user's intent and respond with JSON:
 
   async callLLM(prompt) {
     if (!this.options.apiKey) throw new Error('No API key available');
-    
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -11678,9 +11714,377 @@ Analyze the user's intent and respond with JSON:
         temperature: 0.7
       })
     });
-    
+
     const data = await response.json();
     return data.choices[0].message.content;
+  }
+
+  // ==========================================
+  // PHASE 2: CONVERSATION QUALITY METHODS
+  // ==========================================
+
+  /**
+   * 🔍 PHASE 2: Handle Ambiguous Input
+   * Request clarification when user intent is unclear
+   */
+  async handleAmbiguity(userMessage, analysis, vaultContext) {
+    console.log('🔍 PHASE 2: Ambiguity detected, requesting clarification');
+
+    // Generate possible interpretations
+    const possibleInterpretations = await this.generateInterpretations(userMessage, analysis, vaultContext);
+
+    if (!possibleInterpretations || possibleInterpretations.length === 0) {
+      // No clear interpretations, ask open-ended question
+      return {
+        text: "I want to make sure I understand you correctly. Could you tell me a bit more about what you're looking for?",
+        intent: 'clarification',
+        actions: ['await_clarification'],
+        requiresResponse: true
+      };
+    }
+
+    if (possibleInterpretations.length === 1) {
+      // Single interpretation, confirm it
+      return {
+        text: `Just to confirm - ${possibleInterpretations[0]}?`,
+        intent: 'clarification',
+        actions: ['await_confirmation'],
+        interpretation: possibleInterpretations[0],
+        requiresResponse: true
+      };
+    }
+
+    // Multiple interpretations, let user choose
+    const optionsList = possibleInterpretations
+      .map((interp, idx) => `${idx + 1}. ${interp}`)
+      .join('\n');
+
+    return {
+      text: `I want to make sure I understand. Did you mean:\n\n${optionsList}\n\nOr something else?`,
+      intent: 'clarification',
+      actions: ['await_clarification'],
+      options: possibleInterpretations,
+      requiresResponse: true
+    };
+  }
+
+  /**
+   * 🎯 PHASE 2: Generate Possible Interpretations
+   */
+  async generateInterpretations(userMessage, analysis, vaultContext) {
+    const interpretations = [];
+
+    // Check for person mentions
+    const mentionedPeople = vaultContext.peopleNames.filter(name =>
+      userMessage.toLowerCase().includes(name.toLowerCase())
+    );
+
+    if (mentionedPeople.length > 0) {
+      mentionedPeople.forEach(person => {
+        interpretations.push(`You want to know about ${person}`);
+        interpretations.push(`You want to share a memory with ${person}`);
+      });
+    }
+
+    // Check for time mentions
+    const timeKeywords = ['yesterday', 'last', 'ago', 'when'];
+    if (timeKeywords.some(k => userMessage.toLowerCase().includes(k))) {
+      interpretations.push('You want to explore memories from a specific time');
+    }
+
+    // Check for search intent
+    const searchKeywords = ['show', 'find', 'where'];
+    if (searchKeywords.some(k => userMessage.toLowerCase().includes(k))) {
+      interpretations.push('You want to search for specific memories');
+    }
+
+    // Limit to top 3 most likely
+    return interpretations.slice(0, 3);
+  }
+
+  /**
+   * 💬 PHASE 2: Generate Follow-up Questions
+   * Generate contextual follow-ups to enrich the conversation
+   */
+  async generateFollowUpQuestions(analysis, chatInstance) {
+    try {
+      console.log('💬 PHASE 2: Generating follow-up questions for intent:', analysis.intent);
+
+      // Get conversation context
+      const recentMessages = this.conversationHistory.slice(-5)
+        .map(h => `${h.sender}: ${h.message}`)
+        .join('\n');
+
+      // Use LLM if available
+      if (this.options.apiKey) {
+        return await this.llmGenerateFollowUps(analysis, recentMessages);
+      }
+
+      // Fallback to heuristic follow-ups
+      return this.heuristicFollowUps(analysis);
+
+    } catch (error) {
+      console.error('❌ Follow-up generation error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 🤖 PHASE 2: LLM-Powered Follow-up Generation
+   */
+  async llmGenerateFollowUps(analysis, conversationContext) {
+    const prompt = `You are Emma, a memory companion. Based on this conversation, generate 2-3 natural follow-up questions to enrich the memory or continue the conversation warmly.
+
+CONVERSATION CONTEXT:
+${conversationContext}
+
+CURRENT TOPIC: ${analysis.intent}
+TARGET PERSON: ${analysis.targetPerson || 'none'}
+
+Generate questions that are:
+- Warm and caring (dementia-friendly)
+- Specific to the conversation
+- Designed to elicit more details or memories
+- Not repetitive
+
+Respond with JSON array:
+["Question 1?", "Question 2?", "Question 3?"]`;
+
+    try {
+      const response = await this.callLLM(prompt);
+      const questions = JSON.parse(response);
+      return Array.isArray(questions) ? questions.slice(0, 3) : [];
+    } catch (error) {
+      console.warn('🤖 LLM follow-up generation failed:', error);
+      return this.heuristicFollowUps(analysis);
+    }
+  }
+
+  /**
+   * 🎯 PHASE 2: Heuristic Follow-up Generation
+   */
+  heuristicFollowUps(analysis) {
+    const followUps = [];
+
+    switch (analysis.intent) {
+      case 'memory_sharing':
+        followUps.push(
+          `What made that moment special?`,
+          `Who else was there with you?`,
+          `How did it make you feel?`
+        );
+        break;
+
+      case 'person_inquiry':
+        if (analysis.targetPerson) {
+          followUps.push(
+            `What's your favorite memory with ${analysis.targetPerson}?`,
+            `When did you last see ${analysis.targetPerson}?`,
+            `What makes ${analysis.targetPerson} special to you?`
+          );
+        }
+        break;
+
+      case 'temporal_query':
+        followUps.push(
+          `What stands out most from that time?`,
+          `Are there specific moments you'd like to remember?`,
+          `Would you like to add photos from then?`
+        );
+        break;
+
+      case 'emotion_query':
+        followUps.push(
+          `Tell me more about those feelings.`,
+          `What contributed to feeling that way?`,
+          `Would you like to capture more about that time?`
+        );
+        break;
+
+      case 'memory_search':
+        followUps.push(
+          `Would you like me to show you any of these?`,
+          `Shall we refine the search?`,
+          `Is there something specific you're looking for?`
+        );
+        break;
+
+      default:
+        // Generic warm follow-ups
+        followUps.push(
+          `Tell me more about that.`,
+          `What else would you like to share?`,
+          `I'd love to hear more details.`
+        );
+    }
+
+    return followUps.slice(0, 3);
+  }
+
+  /**
+   * ✅ PHASE 2: Should Generate Follow-ups?
+   * Determine when follow-up questions are appropriate
+   */
+  shouldGenerateFollowUps(analysis) {
+    // Don't generate follow-ups for these intents
+    const skipIntents = ['greeting', 'farewell', 'gratitude', 'clarification'];
+    if (skipIntents.includes(analysis.intent)) {
+      return false;
+    }
+
+    // Don't generate if confidence is too low
+    if (analysis.confidence < 0.5) {
+      return false;
+    }
+
+    // Don't generate if we just asked a follow-up
+    if (this.followUpQuestions.length > 0) {
+      this.followUpQuestions = []; // Clear old ones
+      return false;
+    }
+
+    // Generate for these intents
+    const followUpIntents = [
+      'memory_sharing',
+      'person_inquiry',
+      'temporal_query',
+      'emotion_query',
+      'memory_search',
+      'vault_query'
+    ];
+
+    return followUpIntents.includes(analysis.intent);
+  }
+
+  /**
+   * 🌱 PHASE 2: Start Memory Enrichment Session
+   * Multi-turn conversation to enrich a memory with details
+   */
+  async startEnrichmentSession(memoryDraft, chatInstance) {
+    console.log('🌱 PHASE 2: Starting enrichment session for memory:', memoryDraft.content?.substring(0, 50));
+
+    this.enrichmentSession = {
+      active: true,
+      memoryDraft: memoryDraft,
+      questionsAsked: 0,
+      maxQuestions: 3,
+      collectedDetails: {}
+    };
+
+    this.conversationState.transitionTo('memory_enrichment');
+
+    // Generate first enrichment question
+    const question = await this.generateEnrichmentQuestion(memoryDraft, chatInstance);
+
+    return {
+      text: question,
+      intent: 'memory_enrichment',
+      actions: ['await_enrichment'],
+      enrichmentActive: true
+    };
+  }
+
+  /**
+   * 🔄 PHASE 2: Continue Enrichment Session
+   */
+  async continueEnrichmentSession(userResponse, chatInstance) {
+    if (!this.enrichmentSession.active) {
+      console.warn('🔄 No active enrichment session');
+      return null;
+    }
+
+    // Store the detail
+    const questionKey = `detail_${this.enrichmentSession.questionsAsked}`;
+    this.enrichmentSession.collectedDetails[questionKey] = userResponse;
+    this.enrichmentSession.questionsAsked++;
+
+    // Check if we should ask more questions
+    if (this.enrichmentSession.questionsAsked >= this.enrichmentSession.maxQuestions) {
+      return await this.completeEnrichmentSession(chatInstance);
+    }
+
+    // Ask next question
+    const nextQuestion = await this.generateEnrichmentQuestion(
+      this.enrichmentSession.memoryDraft,
+      chatInstance
+    );
+
+    return {
+      text: nextQuestion,
+      intent: 'memory_enrichment',
+      actions: ['await_enrichment'],
+      enrichmentActive: true
+    };
+  }
+
+  /**
+   * ✅ PHASE 2: Complete Enrichment Session
+   */
+  async completeEnrichmentSession(chatInstance) {
+    console.log('✅ PHASE 2: Completing enrichment session');
+
+    const enrichedMemory = {
+      ...this.enrichmentSession.memoryDraft,
+      content: this.buildEnrichedContent(
+        this.enrichmentSession.memoryDraft.content,
+        this.enrichmentSession.collectedDetails
+      ),
+      metadata: {
+        ...this.enrichmentSession.memoryDraft.metadata,
+        enriched: true,
+        enrichmentDate: Date.now()
+      }
+    };
+
+    // Reset session
+    this.enrichmentSession = {
+      active: false,
+      memoryDraft: null,
+      questionsAsked: 0,
+      maxQuestions: 3,
+      collectedDetails: {}
+    };
+
+    this.conversationState.transitionTo('idle');
+
+    return {
+      text: `Thank you for sharing those details! I've enriched the memory with everything you told me. Would you like to save it now?`,
+      intent: 'memory_enrichment_complete',
+      actions: ['offer_save'],
+      enrichedMemory: enrichedMemory
+    };
+  }
+
+  /**
+   * 📝 PHASE 2: Generate Enrichment Question
+   */
+  async generateEnrichmentQuestion(memoryDraft, chatInstance) {
+    const asked = this.enrichmentSession.questionsAsked;
+
+    // Predefined enrichment questions
+    const questions = [
+      `What feelings or emotions do you associate with this memory?`,
+      `Are there any specific details you remember - sights, sounds, or smells?`,
+      `What made this moment particularly meaningful to you?`,
+      `Is there anything else about this memory you'd like to capture?`
+    ];
+
+    return questions[asked] || questions[questions.length - 1];
+  }
+
+  /**
+   * 🏗️ PHASE 2: Build Enriched Content
+   */
+  buildEnrichedContent(originalContent, collectedDetails) {
+    let enriched = originalContent + '\n\n';
+
+    Object.entries(collectedDetails).forEach(([key, detail]) => {
+      if (detail && detail.trim()) {
+        enriched += `${detail.trim()}\n\n`;
+      }
+    });
+
+    return enriched.trim();
   }
 }
 
