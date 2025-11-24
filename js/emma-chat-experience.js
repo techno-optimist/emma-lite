@@ -125,6 +125,9 @@ class EmmaChatExperience extends ExperiencePopup {
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
 
+    // 🔄 PHASE 5: Initialize connection resilience system
+    this.initializeConnectionResilience();
+
   }
 
   getTitle() {
@@ -356,7 +359,399 @@ class EmmaChatExperience extends ExperiencePopup {
       this.hideTypingIndicator();
     }
     this.addMessage('system', '⚠️ Emma lost connection to the advanced memory tools. Trying to reconnect...');
-    this.connectAgentForChat();
+
+    // PHASE 5: Use resilient connection with backoff
+    this.connectWithResilience();
+  }
+
+  // ==========================================
+  // PHASE 5: VOICE ENHANCEMENT & CONNECTION RESILIENCE
+  // ==========================================
+
+  /**
+   * 🔄 PHASE 5: Initialize Connection Resilience
+   */
+  initializeConnectionResilience() {
+    // Connection resilience state
+    this.connectionResilience = {
+      retryCount: 0,
+      maxRetries: 5,
+      baseDelay: 2000, // 2 seconds
+      maxDelay: 30000, // 30 seconds
+      circuitState: 'closed', // closed | open | half-open
+      circuitOpenTime: null,
+      circuitResetTimeout: 60000, // 1 minute
+      lastConnectionAttempt: null,
+      consecutiveFailures: 0,
+      consecutiveSuccesses: 0
+    };
+
+    // Quality monitoring state
+    this.qualityMonitoring = {
+      enabled: true,
+      latencyHistory: [],
+      maxLatencyHistory: 20,
+      packetLossRate: 0,
+      bitrate: 0,
+      connectionQuality: 'unknown', // excellent | good | fair | poor | unknown
+      lastQualityCheck: null,
+      qualityThresholds: {
+        excellent: 100, // < 100ms latency
+        good: 300,      // < 300ms latency
+        fair: 500,      // < 500ms latency
+        poor: Infinity  // >= 500ms latency
+      }
+    };
+
+    // Audio buffering state
+    this.audioBuffering = {
+      enabled: true,
+      bufferSize: 5, // seconds
+      currentBuffer: 0,
+      underrunCount: 0,
+      overrunCount: 0,
+      lastBufferUpdate: null
+    };
+
+    // Degradation state
+    this.degradationState = {
+      isTextOnlyMode: false,
+      reason: null,
+      canRetryVoice: true,
+      lastVoiceAttempt: null
+    };
+
+    console.log('🔄 PHASE 5: Connection resilience initialized');
+  }
+
+  /**
+   * 🔄 PHASE 5: Connect with Exponential Backoff & Circuit Breaker
+   */
+  async connectWithResilience() {
+    const resilience = this.connectionResilience;
+
+    // Check circuit breaker state
+    if (resilience.circuitState === 'open') {
+      const timeSinceOpen = Date.now() - resilience.circuitOpenTime;
+
+      if (timeSinceOpen < resilience.circuitResetTimeout) {
+        console.log('🔄 PHASE 5: Circuit breaker OPEN - falling back to text mode');
+        this.fallbackToTextMode('circuit_breaker_open');
+        return false;
+      } else {
+        // Try half-open state
+        console.log('🔄 PHASE 5: Circuit breaker entering HALF-OPEN state');
+        resilience.circuitState = 'half-open';
+      }
+    }
+
+    // Calculate backoff delay
+    const delay = Math.min(
+      resilience.baseDelay * Math.pow(2, resilience.retryCount),
+      resilience.maxDelay
+    );
+
+    // Log attempt
+    console.log(`🔄 PHASE 5: Connection attempt ${resilience.retryCount + 1}/${resilience.maxRetries} (delay: ${delay}ms)`);
+    resilience.lastConnectionAttempt = Date.now();
+
+    try {
+      // Wait for backoff delay
+      if (resilience.retryCount > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      // Attempt connection
+      const connected = await this.attemptConnection();
+
+      if (connected) {
+        // Success - reset resilience state
+        resilience.retryCount = 0;
+        resilience.consecutiveFailures = 0;
+        resilience.consecutiveSuccesses++;
+
+        if (resilience.circuitState === 'half-open' && resilience.consecutiveSuccesses >= 2) {
+          // Close circuit after 2 successful connections
+          console.log('🔄 PHASE 5: Circuit breaker CLOSED');
+          resilience.circuitState = 'closed';
+        }
+
+        this.addMessage('system', '✅ Connection restored successfully!');
+        return true;
+      } else {
+        throw new Error('Connection failed');
+      }
+
+    } catch (error) {
+      console.error('🔄 PHASE 5: Connection attempt failed:', error);
+
+      resilience.retryCount++;
+      resilience.consecutiveFailures++;
+      resilience.consecutiveSuccesses = 0;
+
+      // Check if we should open circuit breaker
+      if (resilience.consecutiveFailures >= 3) {
+        console.log('🔄 PHASE 5: Opening circuit breaker due to consecutive failures');
+        resilience.circuitState = 'open';
+        resilience.circuitOpenTime = Date.now();
+        this.fallbackToTextMode('too_many_failures');
+        return false;
+      }
+
+      // Check if max retries reached
+      if (resilience.retryCount >= resilience.maxRetries) {
+        console.log('🔄 PHASE 5: Max retries reached - falling back to text mode');
+        this.fallbackToTextMode('max_retries_exceeded');
+        return false;
+      }
+
+      // Retry with exponential backoff
+      return this.connectWithResilience();
+    }
+  }
+
+  /**
+   * 🔗 PHASE 5: Attempt Single Connection
+   */
+  async attemptConnection() {
+    try {
+      if (!this.emmaVoice) return false;
+
+      const startTime = Date.now();
+
+      if (!this.emmaVoice.isConnected) {
+        await this.emmaVoice.connectToEmmaAgent();
+      }
+
+      const latency = Date.now() - startTime;
+      this.recordLatency(latency);
+
+      this.agentChatEnabled = true;
+      this.agentConnectionNotified = true;
+
+      return true;
+    } catch (error) {
+      console.error('🔗 PHASE 5: Connection attempt error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 📊 PHASE 5: Monitor Connection Quality
+   */
+  async monitorConnectionQuality() {
+    if (!this.qualityMonitoring.enabled) return;
+
+    const monitoring = this.qualityMonitoring;
+
+    try {
+      // Calculate average latency
+      if (monitoring.latencyHistory.length > 0) {
+        const avgLatency = monitoring.latencyHistory.reduce((a, b) => a + b, 0) / monitoring.latencyHistory.length;
+
+        // Determine quality
+        if (avgLatency < monitoring.qualityThresholds.excellent) {
+          monitoring.connectionQuality = 'excellent';
+        } else if (avgLatency < monitoring.qualityThresholds.good) {
+          monitoring.connectionQuality = 'good';
+        } else if (avgLatency < monitoring.qualityThresholds.fair) {
+          monitoring.connectionQuality = 'fair';
+        } else {
+          monitoring.connectionQuality = 'poor';
+        }
+
+        // Take action based on quality
+        if (monitoring.connectionQuality === 'poor') {
+          console.warn('📊 PHASE 5: Connection quality degraded to POOR');
+          this.showQualityWarning();
+
+          // Consider fallback after sustained poor quality
+          if (avgLatency > 1000) {
+            this.fallbackToTextMode('poor_connection_quality');
+          }
+        }
+
+        monitoring.lastQualityCheck = Date.now();
+      }
+
+    } catch (error) {
+      console.error('📊 PHASE 5: Quality monitoring error:', error);
+    }
+  }
+
+  /**
+   * 📝 PHASE 5: Record Latency Measurement
+   */
+  recordLatency(latency) {
+    const monitoring = this.qualityMonitoring;
+
+    monitoring.latencyHistory.push(latency);
+
+    // Keep only recent measurements
+    if (monitoring.latencyHistory.length > monitoring.maxLatencyHistory) {
+      monitoring.latencyHistory.shift();
+    }
+
+    // Trigger quality check
+    this.monitorConnectionQuality();
+  }
+
+  /**
+   * ⚠️ PHASE 5: Show Quality Warning
+   */
+  showQualityWarning() {
+    const monitoring = this.qualityMonitoring;
+
+    // Don't spam warnings
+    if (monitoring.lastQualityCheck && (Date.now() - monitoring.lastQualityCheck) < 30000) {
+      return;
+    }
+
+    const avgLatency = monitoring.latencyHistory.reduce((a, b) => a + b, 0) / monitoring.latencyHistory.length;
+
+    this.showToast(`Connection quality is ${monitoring.connectionQuality} (${Math.round(avgLatency)}ms latency)`, 'warning');
+  }
+
+  /**
+   * 🔇 PHASE 5: Fallback to Text-Only Mode
+   */
+  fallbackToTextMode(reason) {
+    console.log('🔇 PHASE 5: Falling back to text-only mode. Reason:', reason);
+
+    this.degradationState.isTextOnlyMode = true;
+    this.degradationState.reason = reason;
+    this.degradationState.lastVoiceAttempt = Date.now();
+
+    // Disable voice button
+    if (this.voiceButton) {
+      this.voiceButton.disabled = true;
+      this.voiceButton.style.opacity = '0.5';
+      this.voiceButton.title = 'Voice mode temporarily unavailable - using text mode';
+    }
+
+    // Notify user with helpful message
+    const reasonMessages = {
+      'circuit_breaker_open': 'Voice system is temporarily unavailable. Using text mode for reliability.',
+      'too_many_failures': 'Voice connection unstable. Switched to text mode for better experience.',
+      'max_retries_exceeded': 'Unable to establish voice connection. Continuing in text mode.',
+      'poor_connection_quality': 'Connection quality too low for voice. Switched to text mode.',
+      'network_error': 'Network issues detected. Using text mode for reliability.'
+    };
+
+    const message = reasonMessages[reason] || 'Switched to text mode for better experience.';
+    this.addMessage('system', `🔇 ${message}`);
+
+    // Schedule retry after cooldown period
+    setTimeout(() => this.attemptVoiceRecovery(), 60000); // Try again in 1 minute
+  }
+
+  /**
+   * 🔊 PHASE 5: Attempt Voice Recovery
+   */
+  async attemptVoiceRecovery() {
+    if (!this.degradationState.isTextOnlyMode) return;
+    if (!this.degradationState.canRetryVoice) return;
+
+    console.log('🔊 PHASE 5: Attempting voice recovery...');
+
+    // Reset resilience state for fresh attempt
+    this.connectionResilience.retryCount = 0;
+    this.connectionResilience.consecutiveFailures = 0;
+
+    const connected = await this.connectWithResilience();
+
+    if (connected) {
+      // Success - re-enable voice
+      this.degradationState.isTextOnlyMode = false;
+      this.degradationState.reason = null;
+
+      if (this.voiceButton) {
+        this.voiceButton.disabled = false;
+        this.voiceButton.style.opacity = '1';
+        this.voiceButton.title = 'Start voice conversation with Emma';
+      }
+
+      this.showToast('Voice mode restored!', 'success');
+    } else {
+      // Still failing - try again later
+      setTimeout(() => this.attemptVoiceRecovery(), 120000); // Try again in 2 minutes
+    }
+  }
+
+  /**
+   * 🎵 PHASE 5: Audio Buffer Management
+   */
+  updateAudioBuffer(bufferLevel) {
+    const buffering = this.audioBuffering;
+
+    buffering.currentBuffer = bufferLevel;
+    buffering.lastBufferUpdate = Date.now();
+
+    // Detect buffer underrun
+    if (bufferLevel < 1 && buffering.enabled) {
+      buffering.underrunCount++;
+      console.warn('🎵 PHASE 5: Audio buffer underrun detected');
+
+      // Too many underruns - consider fallback
+      if (buffering.underrunCount > 5) {
+        this.fallbackToTextMode('audio_buffering_issues');
+      }
+    }
+
+    // Detect buffer overrun
+    if (bufferLevel > buffering.bufferSize) {
+      buffering.overrunCount++;
+      console.warn('🎵 PHASE 5: Audio buffer overrun detected');
+    }
+  }
+
+  /**
+   * 📊 PHASE 5: Get Connection Status Report
+   */
+  getConnectionStatus() {
+    return {
+      resilience: {
+        circuitState: this.connectionResilience?.circuitState || 'unknown',
+        retryCount: this.connectionResilience?.retryCount || 0,
+        consecutiveFailures: this.connectionResilience?.consecutiveFailures || 0
+      },
+      quality: {
+        connectionQuality: this.qualityMonitoring?.connectionQuality || 'unknown',
+        avgLatency: this.qualityMonitoring?.latencyHistory.length > 0 ?
+          Math.round(this.qualityMonitoring.latencyHistory.reduce((a, b) => a + b, 0) / this.qualityMonitoring.latencyHistory.length) :
+          0,
+        latencyHistory: this.qualityMonitoring?.latencyHistory || []
+      },
+      degradation: {
+        isTextOnlyMode: this.degradationState?.isTextOnlyMode || false,
+        reason: this.degradationState?.reason || null
+      },
+      buffering: {
+        currentBuffer: this.audioBuffering?.currentBuffer || 0,
+        underrunCount: this.audioBuffering?.underrunCount || 0,
+        overrunCount: this.audioBuffering?.overrunCount || 0
+      }
+    };
+  }
+
+  /**
+   * 🔄 PHASE 5: Reset Connection Resilience
+   */
+  resetConnectionResilience() {
+    if (this.connectionResilience) {
+      this.connectionResilience.retryCount = 0;
+      this.connectionResilience.consecutiveFailures = 0;
+      this.connectionResilience.consecutiveSuccesses = 0;
+      this.connectionResilience.circuitState = 'closed';
+      this.connectionResilience.circuitOpenTime = null;
+    }
+
+    if (this.qualityMonitoring) {
+      this.qualityMonitoring.latencyHistory = [];
+      this.qualityMonitoring.connectionQuality = 'unknown';
+    }
+
+    console.log('🔄 PHASE 5: Connection resilience reset');
   }
 
   /**
