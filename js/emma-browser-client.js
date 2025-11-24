@@ -538,6 +538,16 @@ class EmmaBrowserClient {
   displayToolResult(toolName, params, result) {
     if (!this.chatInstance) return;
 
+    // Handle vault-not-open errors with helpful prompt
+    if (result && result.needsVault) {
+      this.chatInstance.addMessage(
+        `💜 ${result.error}\n\n<button class="capsule-btn primary" onclick="window.emmaDashboard?.showVaultPanel?.() || document.querySelector('[data-action=open-vault]')?.click()">Open My Vault</button>`,
+        'emma',
+        { isHtml: true }
+      );
+      return;
+    }
+
     if (result && result.error) {
       this.chatInstance.addMessage(`⚠️ ${result.error}`, 'system');
       return;

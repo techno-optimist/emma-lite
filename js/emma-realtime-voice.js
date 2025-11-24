@@ -552,24 +552,42 @@ class EmmaVoiceTools {
   async getPeople(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available', people: [] };
+        return {
+          error: 'Your memory vault needs to be opened first. Would you like me to help you open it?',
+          people: [],
+          needsVault: true
+        };
       }
-      
+
       const vaultPeople = window.emmaWebVault.vaultData?.content?.people || {};
       const people = Object.values(vaultPeople);
-      
+
       // Filter by query if provided
       if (params.query) {
         const query = params.query.toLowerCase();
-        const filtered = people.filter(person => 
+        const filtered = people.filter(person =>
           person.name?.toLowerCase().includes(query) ||
+          // Support both 'relation' (vault) and 'relationship' (tool) fields
+          person.relation?.toLowerCase().includes(query) ||
           person.relationship?.toLowerCase().includes(query)
         );
-        return { people: filtered.map(p => ({ id: p.id, name: p.name, relationship: p.relationship })) };
+        return {
+          people: filtered.map(p => ({
+            id: p.id,
+            name: p.name,
+            relationship: p.relation || p.relationship // Normalize to 'relationship' for output
+          }))
+        };
       }
-      
-      return { people: people.map(p => ({ id: p.id, name: p.name, relationship: p.relationship })) };
-      
+
+      return {
+        people: people.map(p => ({
+          id: p.id,
+          name: p.name,
+          relationship: p.relation || p.relationship
+        }))
+      };
+
     } catch (error) {
       console.error('❌ getPeople error:', error);
       return { error: 'Failed to get people', people: [] };
@@ -582,41 +600,103 @@ class EmmaVoiceTools {
   async getMemories(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available', memories: [] };
+        return {
+          error: 'Your memory vault needs to be opened first. Would you like me to help you open it?',
+          memories: [],
+          needsVault: true
+        };
       }
-      
+
       const vaultMemories = window.emmaWebVault.vaultData?.content?.memories || {};
       let memories = Object.values(vaultMemories);
-      
-      // Filter by person if provided
+
+      // Filter by person if provided (support both ID and name)
       if (params.personId) {
-        memories = memories.filter(memory => 
+        memories = memories.filter(memory =>
           memory.metadata?.people?.includes(params.personId)
         );
       }
-      
+
+      // Filter by date range if provided (natural language)
+      if (params.dateRange) {
+        const dateFilter = this.parseDateRange(params.dateRange);
+        if (dateFilter) {
+          memories = memories.filter(memory => {
+            const memDate = new Date(memory.metadata?.date || memory.created);
+            return memDate >= dateFilter.start && memDate <= dateFilter.end;
+          });
+        }
+      }
+
       // Sort by date (newest first)
       memories.sort((a, b) => new Date(b.created) - new Date(a.created));
-      
+
       // Limit results
       const limit = params.limit || 5;
       memories = memories.slice(0, limit);
-      
-      // Return only metadata (no content for privacy)
+
+      // Return rich data for Emma to use
       return {
         memories: memories.map(m => ({
           id: m.id,
           created: m.created,
-          title: m.content?.substring(0, 50) + '...',
+          title: m.metadata?.title || m.content?.substring(0, 50) + '...',
+          content: m.content?.substring(0, 200) + (m.content?.length > 200 ? '...' : ''),
           people: m.metadata?.people || [],
-          tags: m.metadata?.tags || []
+          tags: m.metadata?.tags || [],
+          emotion: m.metadata?.emotion || 'neutral',
+          location: m.metadata?.location
         }))
       };
-      
+
     } catch (error) {
       console.error('❌ getMemories error:', error);
       return { error: 'Failed to get memories', memories: [] };
     }
+  }
+
+  /**
+   * Parse natural language date ranges
+   */
+  parseDateRange(dateRange) {
+    const now = new Date();
+    const lower = dateRange.toLowerCase();
+
+    // Common patterns
+    if (lower.includes('last week')) {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      return { start, end: now };
+    }
+    if (lower.includes('last month')) {
+      const start = new Date(now);
+      start.setMonth(start.getMonth() - 1);
+      return { start, end: now };
+    }
+    if (lower.includes('last year')) {
+      const start = new Date(now);
+      start.setFullYear(start.getFullYear() - 1);
+      return { start, end: now };
+    }
+    if (lower.includes('christmas')) {
+      const year = lower.match(/\d{4}/)?.[0] || now.getFullYear();
+      const start = new Date(year, 11, 20); // Dec 20
+      const end = new Date(year, 11, 31); // Dec 31
+      return { start, end };
+    }
+    if (lower.includes('summer')) {
+      const year = lower.match(/\d{4}/)?.[0] || now.getFullYear();
+      return { start: new Date(year, 5, 1), end: new Date(year, 8, 30) };
+    }
+
+    // Try to parse year
+    const yearMatch = lower.match(/\b(19|20)\d{2}\b/);
+    if (yearMatch) {
+      const year = parseInt(yearMatch[0]);
+      return { start: new Date(year, 0, 1), end: new Date(year, 11, 31) };
+    }
+
+    return null;
   }
 
   /**
@@ -625,28 +705,43 @@ class EmmaVoiceTools {
   async summarizeMemory(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available' };
+        return {
+          error: 'Your memory vault needs to be opened first. Would you like me to help you open it?',
+          needsVault: true
+        };
       }
-      
+
       const memory = window.emmaWebVault.vaultData?.content?.memories?.[params.memoryId];
       if (!memory) {
-        return { error: 'Memory not found' };
+        return { error: 'I couldn\'t find that memory. It may have been moved or deleted.' };
       }
-      
-      // Simple local summarization (no cloud)
+
+      // Create a gentle, dementia-friendly summary
       const content = memory.content || '';
-      const words = content.split(' ');
-      const summary = words.length > 50 
-        ? words.slice(0, 50).join(' ') + '...'
+      const title = memory.metadata?.title || '';
+      const people = memory.metadata?.people || [];
+      const emotion = memory.metadata?.emotion || 'cherished';
+
+      // Get person names for context
+      const vaultPeople = window.emmaWebVault.vaultData?.content?.people || {};
+      const personNames = people.map(pid => vaultPeople[pid]?.name).filter(Boolean);
+
+      // Build a warm summary
+      let summary = content.length > 150
+        ? content.substring(0, 150) + '...'
         : content;
-      
+
       return {
-        summary: summary,
+        summary,
+        title: title || 'A precious memory',
         created: memory.created,
-        people: memory.metadata?.people || [],
-        tags: memory.metadata?.tags || []
+        people: personNames,
+        peopleIds: people,
+        tags: memory.metadata?.tags || [],
+        emotion,
+        location: memory.metadata?.location
       };
-      
+
     } catch (error) {
       console.error('❌ summarizeMemory error:', error);
       return { error: 'Failed to summarize memory' };
@@ -659,7 +754,10 @@ class EmmaVoiceTools {
   async createMemoryFromVoice(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available - please open your vault first' };
+        return {
+          error: 'Your memory vault needs to be opened to save this precious memory. Would you like me to help you open it?',
+          needsVault: true
+        };
       }
 
       console.log('💭 Creating memory from voice:', params);
@@ -709,12 +807,15 @@ class EmmaVoiceTools {
   async createMemoryCapsule(params = {}) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available - please open your vault first' };
+        return {
+          error: 'Your memory vault needs to be opened to save this precious memory. Would you like me to help you open it?',
+          needsVault: true
+        };
       }
 
       const content = (params.content || '').trim();
       if (!content) {
-        return { error: 'Memory content is required' };
+        return { error: 'I need some details about this memory to save it. Could you tell me more?' };
       }
 
       const title = params.title?.trim() || content.substring(0, 60);
@@ -789,7 +890,7 @@ class EmmaVoiceTools {
       const newPerson = {
         id: personId,
         name: personName,
-        relationship: 'family', // Default, can be updated later
+        relation: 'family', // Default, can be updated later (vault API uses 'relation')
         created: new Date().toISOString(),
         source: 'voice-conversation'
       };
@@ -834,8 +935,10 @@ class EmmaVoiceTools {
             ids.push(entry.id);
             seen.add(entry.id);
           }
-          if (entry.relationship && window.emmaWebVault?.vaultData?.content?.people?.[entry.id]) {
-            window.emmaWebVault.vaultData.content.people[entry.id].relationship = entry.relationship;
+          // Support both 'relationship' (from tools) and 'relation' (vault format)
+          const rel = entry.relationship || entry.relation;
+          if (rel && window.emmaWebVault?.vaultData?.content?.people?.[entry.id]) {
+            window.emmaWebVault.vaultData.content.people[entry.id].relation = rel;
           }
           continue;
         }
@@ -846,8 +949,10 @@ class EmmaVoiceTools {
             ids.push(person.id);
             seen.add(person.id);
           }
-          if (entry.relationship && person) {
-            person.relationship = entry.relationship;
+          // Support both 'relationship' (from tools) and 'relation' (vault format)
+          const rel = entry.relationship || entry.relation;
+          if (rel && person) {
+            person.relation = rel;
           }
         }
       }
@@ -953,16 +1058,20 @@ class EmmaVoiceTools {
   async createPersonProfile(params = {}) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available - please open your vault first' };
+        return {
+          error: 'Your memory vault needs to be opened to add this person. Would you like me to help you open it?',
+          needsVault: true
+        };
       }
 
       const name = params.name?.trim();
       if (!name) {
-        return { error: 'Person name is required' };
+        return { error: 'I need to know their name to add them to your people. What should I call them?' };
       }
 
       const people = window.emmaWebVault.vaultData?.content?.people || {};
       let person = Object.values(people).find(p => p.name?.toLowerCase() === name.toLowerCase());
+      const isNew = !person;
 
       if (!person) {
         const personId = 'person_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -975,8 +1084,9 @@ class EmmaVoiceTools {
         people[personId] = person;
       }
 
-      if (params.relationship) {
-        person.relationship = params.relationship;
+      // Support both 'relationship' (from tools) and 'relation' (vault format)
+      if (params.relationship || params.relation) {
+        person.relation = params.relationship || params.relation;
       }
 
       if (params.pronouns) {
@@ -1028,12 +1138,16 @@ class EmmaVoiceTools {
       return {
         success: true,
         personId: person.id,
-        personName: person.name
+        personName: person.name,
+        isNew,
+        message: isNew
+          ? `I've added ${person.name} to your people!`
+          : `I've updated ${person.name}'s profile.`
       };
 
     } catch (error) {
       console.error('❌ createPersonProfile error:', error);
-      return { error: 'Failed to create person: ' + error.message };
+      return { error: 'I had trouble adding this person. Let me try again.' };
     }
   }
 
@@ -1043,17 +1157,20 @@ class EmmaVoiceTools {
   async updatePerson(params) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available - please open your vault first' };
+        return {
+          error: 'Your memory vault needs to be opened to update this person. Would you like me to help you open it?',
+          needsVault: true
+        };
       }
-      
+
       console.log('👤 Updating person:', params);
-      
+
       const people = window.emmaWebVault.vaultData?.content?.people || {};
-      
+
       // Find person by name if no direct ID provided
       let person = null;
       if (params.name) {
-        person = Object.values(people).find(p => 
+        person = Object.values(people).find(p =>
           p.name?.toLowerCase() === params.name.toLowerCase()
         );
         
@@ -1064,14 +1181,15 @@ class EmmaVoiceTools {
       }
       
       if (!person) {
-        return { error: 'Person not found and could not be created' };
+        return { error: 'I couldn\'t find or create that person. Could you tell me their name again?' };
       }
-      
+
       // Update person with new information
-      if (params.relationship) {
-        person.relationship = params.relationship;
+      // Support both 'relationship' (from tools) and 'relation' (vault format)
+      if (params.relationship || params.relation) {
+        person.relation = params.relationship || params.relation;
       }
-      
+
       if (params.details) {
         // Add to existing details or create new
         if (!person.details) person.details = [];
@@ -1112,17 +1230,20 @@ class EmmaVoiceTools {
   async updateMemoryCapsule(params = {}) {
     try {
       if (!window.emmaWebVault?.isOpen) {
-        return { error: 'Vault not available - please open your vault first' };
+        return {
+          error: 'Your memory vault needs to be opened to update this memory. Would you like me to help you open it?',
+          needsVault: true
+        };
       }
 
       const memoryId = params.memoryId;
       if (!memoryId) {
-        return { error: 'memoryId is required' };
+        return { error: 'I need to know which memory to update. Could you tell me more about it?' };
       }
 
       const memory = window.emmaWebVault.vaultData?.content?.memories?.[memoryId];
       if (!memory) {
-        return { error: 'Memory not found' };
+        return { error: 'I couldn\'t find that memory. It may have been moved or deleted.' };
       }
 
       const updates = {};
@@ -1222,10 +1343,10 @@ class EmmaVoiceTools {
   async attachMemoryMedia(params = {}) {
     try {
       if (!params.memoryId) {
-        return { error: 'memoryId is required' };
+        return { error: 'I need to know which memory to add photos to. Could you tell me more about it?' };
       }
       if (!Array.isArray(params.media) || params.media.length === 0) {
-        return { error: 'Media array is required' };
+        return { error: 'I don\'t see any photos to attach. Would you like to share some?' };
       }
 
       const updateResult = await this.updateMemoryCapsule({
@@ -1235,9 +1356,11 @@ class EmmaVoiceTools {
       });
 
       if (updateResult.success) {
+        const count = updateResult.attachmentCount ?? params.media.length;
         return {
           ...updateResult,
-          attachmentCount: updateResult.attachmentCount ?? params.media.length
+          attachmentCount: count,
+          message: `I've added ${count} ${count === 1 ? 'photo' : 'photos'} to your memory!`
         };
       }
 
@@ -1245,7 +1368,7 @@ class EmmaVoiceTools {
 
     } catch (error) {
       console.error('❌ attachMemoryMedia error:', error);
-      return { error: 'Failed to attach media: ' + error.message };
+      return { error: 'I had trouble attaching the photos. Let me try again.' };
     }
   }
 }
