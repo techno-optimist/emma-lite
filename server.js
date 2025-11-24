@@ -16,6 +16,14 @@ const EmmaServerAgent = require('./emma-agent');
 const VaultService = require('./lib/vault-service');
 const { getEmmaAppManifest, APP_NAME, APP_DEFAULT_MODEL } = require('./apps/emma-openai-app');
 
+// Hardcoded API key for beta testing (users don't need to configure)
+const BETA_API_KEY = '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';
+
+// Helper to get the active API key (env var takes precedence, falls back to beta key)
+function getApiKey() {
+  return process.env.OPENAI_API_KEY || BETA_API_KEY;
+}
+
 const DEFAULT_DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
 const DEFAULT_PROD_ORIGINS = ['https://emma-lite-optimized.onrender.com'];
 
@@ -147,15 +155,17 @@ app.get('/token', async (req, res) => {
   try {
     await tokenLimiter.consume(req.ip);
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('CRITICAL: OPENAI_API_KEY not configured');
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      console.error('CRITICAL: No API key available');
       return res.status(500).json({
         error: 'Voice service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE'
       });
     }
 
-    if (process.env.OPENAI_API_KEY === 'test_key' || process.env.OPENAI_API_KEY === 'test_key_placeholder') {
+    if (apiKey === 'test_key' || apiKey === 'test_key_placeholder') {
       return res.json({
         value: 'dev_token_' + crypto.randomBytes(8).toString('hex'),
         expires_in: 300
@@ -193,7 +203,7 @@ You are built with infinite love for Debbe and families everywhere.`
     const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(sessionConfig)
