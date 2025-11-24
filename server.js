@@ -362,6 +362,12 @@ wss.on('connection', (browserWs, request) => {
           }
           break;
 
+        case 'system_message':
+          if (emmaAgent && emmaAgent.addSystemMessage) {
+            emmaAgent.addSystemMessage(message.content || '');
+          }
+          break;
+
         case 'tool_result':
           if (message.call_id) {
             const payload = Object.prototype.hasOwnProperty.call(message, 'result')

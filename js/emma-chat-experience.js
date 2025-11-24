@@ -4261,13 +4261,24 @@ RULES:
               return `Photo ${idx + 1}: id="${id}", name="${photo.name}"`;
             }).join(', ');
 
+            const systemMessage = `[SYSTEM] User uploaded ${uploadedPhotoIds.length} photo(s) for ${personName}. Available photo IDs: ${photoContext}. When creating a memory, include these photos as attachments using their IDs (e.g., attachments: [{id: "${uploadedPhotoIds[0]}"}]).`;
+
             // Add hidden system context that Emma can see
             if (this.chatHistory && Array.isArray(this.chatHistory)) {
               this.chatHistory.push({
                 role: 'system',
-                content: `[SYSTEM] User uploaded ${uploadedPhotoIds.length} photo(s) for ${personName}. Available photo IDs: ${photoContext}. When creating a memory, include these photos as attachments using their IDs (e.g., attachments: [{id: "${uploadedPhotoIds[0]}"}]).`
+                content: systemMessage
               });
               console.log(`📷 PHOTO CONTEXT: Added system message to Emma's context about ${uploadedPhotoIds.length} available photos`);
+            }
+
+            // 📷 CRITICAL FIX: Send system message to Emma agent server
+            if (this.emmaVoice && this.emmaVoice.isConnected) {
+              this.emmaVoice.sendToAgent({
+                type: 'system_message',
+                content: systemMessage
+              });
+              console.log(`📷 PHOTO CONTEXT: Sent system message to Emma agent server`);
             }
 
             this.addMessage(`These photos with ${personName} look wonderful! Would you like me to create a memory with them?`, 'emma');

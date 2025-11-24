@@ -92,6 +92,17 @@ class EmmaServerAgent {
   }
 
   /**
+   * Add a system message to chat history (for photo contexts, etc.)
+   */
+  addSystemMessage(content) {
+    const cleanContent = typeof content === 'string' ? content.trim() : '';
+    if (!cleanContent) return;
+
+    this.chatHistory.push({ role: 'system', content: cleanContent });
+    console.log('📷 System message added to agent history:', cleanContent.substring(0, 100));
+  }
+
+  /**
    * Handle tool results sent from the browser.
    */
   handleToolResult(callId, resultPayload) {
