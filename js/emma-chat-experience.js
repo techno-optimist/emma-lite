@@ -5667,7 +5667,13 @@ RULES:
         }
       }
 
-      // 4. Feature toggles (persisted separately, with legacy fallback)
+      // 4. Hardcoded beta key fallback (for beta testing - users don't need to configure)
+      if (!this.apiKey) {
+        this.apiKey = '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';
+        console.log('💬 Using beta API key for Emma responses');
+      }
+
+      // 5. Feature toggles (persisted separately, with legacy fallback)
       const dementiaFlag = localStorage.getItem('emma-dementia-mode');
       if (dementiaFlag !== null) {
         this.dementiaMode = dementiaFlag === 'true';
