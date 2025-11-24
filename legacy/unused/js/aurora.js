@@ -5,7 +5,7 @@ class Aurora {
   constructor(container, options = {}) {
     this.container = container;
     this.options = {
-      colorStops: options.colorStops || ["#9333ea", "#ec4899", "#06b6d4"],
+      colorStops: options.colorStops || ["#9333ea", "#d06fa8", "#06b6d4"],
       amplitude: options.amplitude || 1.0,
       blend: options.blend || 0.6,
       speed: options.speed || 0.3,
@@ -293,7 +293,7 @@ class Aurora {
     // CSS gradient fallback
     this.container.style.background = `
       radial-gradient(circle at 20% 20%, rgba(147, 51, 234, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(208, 111, 168, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 40% 60%, rgba(6, 182, 212, 0.2) 0%, transparent 50%)
     `;
   }

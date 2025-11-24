@@ -36,6 +36,10 @@ class SecurePasswordModal {
         confirmPassword = false
       } = options;
 
+      const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+
       this.currentResolve = resolve;
       this.currentReject = reject;
       this.isOpen = true;
@@ -45,19 +49,19 @@ class SecurePasswordModal {
         <div class="emma-secure-modal-overlay" id="secureModalOverlay">
           <div class="emma-secure-modal">
             <div class="emma-secure-modal-header">
-              <h3 class="emma-secure-modal-title">${title}</h3>
+              <h3 class="emma-secure-modal-title">${esc(title)}</h3>
               <button class="emma-secure-modal-close" onclick="window.securePasswordModal.cancel()">×</button>
             </div>
             
             <div class="emma-secure-modal-body">
-              <p class="emma-secure-modal-message">${message}</p>
+              <p class="emma-secure-modal-message">${esc(message)}</p>
               
               <div class="emma-secure-input-group">
                 <input 
                   type="password" 
                   id="securePasswordInput" 
                   class="emma-secure-input" 
-                  placeholder="${placeholder}"
+                  placeholder="${esc(placeholder)}"
                   autocomplete="new-password"
                 >
                 <div class="emma-password-strength" id="passwordStrength"></div>
@@ -344,7 +348,7 @@ const secureModalStyles = `
 <style>
 /* Emma Brand Variables for Secure Modal */
 :root {
-  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
   --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
   --emma-glass: rgba(255, 255, 255, 0.05);
   --emma-border: rgba(255, 255, 255, 0.1);
@@ -354,7 +358,7 @@ const secureModalStyles = `
   --emma-purple: #764ba2;
   --emma-success: #4ade80;
   --emma-error: #f87171;
-  --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+  --emma-glow: 0 0 40px rgba(111, 99, 217, 0.6);
 }
 .emma-secure-modal-overlay {
   position: fixed;
@@ -459,7 +463,7 @@ const secureModalStyles = `
   outline: none;
   border-color: var(--emma-purple);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(134, 88, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(111, 99, 217, 0.2);
 }
 
 .emma-secure-input::placeholder {
@@ -563,7 +567,7 @@ const secureModalStyles = `
 
 .emma-secure-btn-confirm:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(134, 88, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(111, 99, 217, 0.3);
 }
 
 .emma-secure-error {

@@ -35,6 +35,10 @@ class EmmaInputModal {
         defaultValue = ""
       } = options;
 
+      const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+
       this.currentResolve = resolve;
       this.currentReject = reject;
       this.isOpen = true;
@@ -44,20 +48,20 @@ class EmmaInputModal {
         <div class="emma-input-modal-overlay" id="inputModalOverlay">
           <div class="emma-input-modal">
             <div class="emma-input-modal-header">
-              <h3 class="emma-input-modal-title">${title}</h3>
+              <h3 class="emma-input-modal-title">${esc(title)}</h3>
               <button class="emma-input-modal-close" onclick="window.emmaInputModal.cancel()">×</button>
             </div>
             
             <div class="emma-input-modal-body">
-              <p class="emma-input-modal-message">${message}</p>
+              <p class="emma-input-modal-message">${esc(message)}</p>
               
               <div class="emma-input-group">
                 <input 
                   type="text" 
                   id="emmaTextInput" 
                   class="emma-text-input" 
-                  placeholder="${placeholder}"
-                  value="${defaultValue}"
+                  placeholder="${esc(placeholder)}"
+                  value="${esc(defaultValue)}"
                   autocomplete="off"
                 >
               </div>
@@ -297,7 +301,7 @@ const inputModalStyles = `
   outline: none;
   border-color: var(--emma-purple);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(134, 88, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(111, 99, 217, 0.2);
 }
 
 .emma-text-input::placeholder {
@@ -341,7 +345,7 @@ const inputModalStyles = `
 
 .emma-input-btn-confirm:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(134, 88, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(111, 99, 217, 0.3);
 }
 
 .emma-input-error {

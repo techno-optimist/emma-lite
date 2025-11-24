@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-static-inline'; connect-src 'self';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Memory Capsules - Emma</title>
   <link rel="stylesheet" href="../css/z-index-hierarchy.css">
@@ -121,23 +121,23 @@
   </button>
 
   <!-- HML Sync Initialization (CSP-compliant) -->
-  <script src="../js/modal-manager.js"></script>
-  <script type="module" src="../js/memories-hml-init.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/modal-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" type="module" src="../js/memories-hml-init.js"></script>
 
   <!-- Core Orb System -->
   <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
-  <script src="../js/emma-orb.js"></script>
-  <script src="../js/settings-service.js"></script>
-  <script src="../js/orb-experience-manager.js"></script>
-  <script src="../js/experience-popup-base.js?v=20250814115222"></script>
-  <script src="../js/emma-chat-experience.js"></script>
-  <script src="../js/assistant-experience-popup.js"></script>
-  <script src="../js/dementia-experience-popup.js"></script>
-  <script src="../js/mirror-experience-popup.js"></script>
-  <script src="../js/universal-emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js?v=20250814115222"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-chat-experience.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/assistant-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/dementia-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/mirror-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-emma-orb.js"></script>
 
   <!-- Initialize Universal Orb for Extension Page -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
@@ -148,19 +148,19 @@
   </script>
 
   <!-- Load VaultGuardian first -->
-  <script type="module">
+  <script nonce="c3RhdGljLWlubGluZQ==" type="module">
     import VaultGuardian from '../lib/vault-guardian.js';
     window.VaultGuardian = VaultGuardian;
     await VaultGuardian.initialize();
 
   </script>
 
-  <script src="../js/memories.js?v=20250814115553"
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/memories.js?v=20250814115553"
           onload="console.log('🔥 SCRIPT LOADED: memories.js loaded successfully')"
           onerror="console.error('🚨 SCRIPT ERROR: Failed to load memories.js')"></script>
 
   <!-- Home Navigation Script -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     document.addEventListener('DOMContentLoaded', () => {
 
       const homeBtn = document.getElementById('home-nav-button');
@@ -169,7 +169,7 @@
         homeBtn.addEventListener('click', () => {
 
           // Navigate back to the HTML dashboard
-          window.location.href = 'dashboard-new.html';
+          window.location.href = '../dashboard.html';
         });
 
       } else {

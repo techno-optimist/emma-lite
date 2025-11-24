@@ -2,11 +2,11 @@
 
 /* CSS Variables for Emma Brand Colors */
 :root {
-  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
   --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
   --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
   --emma-purple: #764ba2;
-  --emma-pink: #f093fb;
+  --emma-pink: #deb3e4;
   --emma-dark: #1a1033;
   --emma-card-bg: rgba(255, 255, 255, 0.05);
   --emma-border: rgba(255, 255, 255, 0.1);
@@ -58,7 +58,7 @@ body.no-webgl::before {
   width: 200%;
   height: 200%;
   background: radial-gradient(circle at 20% 20%, rgba(147, 51, 234, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(208, 111, 168, 0.3) 0%, transparent 50%),
               radial-gradient(circle at 40% 60%, rgba(6, 182, 212, 0.2) 0%, transparent 50%);
   animation: float 20s ease-in-out infinite;
   z-index: -1;
@@ -207,7 +207,7 @@ body.no-webgl::before {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 1px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -483,7 +483,7 @@ body.no-webgl::before {
 
 .btn.small { padding: 8px 10px; border-radius: 10px; font-size: 12px; }
 .btn.tiny { padding: 4px 8px; border-radius: 8px; font-size: 11px; }
-.btn.primary { background: linear-gradient(135deg, #8658ff 0%, #6843cc 100%); color: #fff; border: 0; }
+.btn.primary { background: linear-gradient(135deg, #6f63d9 0%, #6843cc 100%); color: #fff; border: 0; }
 
 /* HML Modal Redesign - Enhanced Styles */
 .hml-modal-overlay { 
@@ -533,7 +533,7 @@ body.no-webgl::before {
 .hml-icon-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #6B5CFF 0%, #8658ff 100%);
+  background: linear-gradient(135deg, #6F63D9 0%, #6f63d9 100%);
   border-radius: 10px;
   opacity: 0.2;
   animation: pulse 2s ease-in-out infinite;
@@ -546,7 +546,7 @@ body.no-webgl::before {
 
 .hml-title-icon { 
   font-size: 18px; 
-  color: #8658ff;
+  color: #6f63d9;
   position: relative;
   z-index: 1;
 }
@@ -568,7 +568,7 @@ body.no-webgl::before {
 .hml-status-banner {
   margin: 0 18px 10px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, rgba(107,92,255,0.1) 0%, rgba(134,88,255,0.05) 100%);
+  background: linear-gradient(135deg, rgba(107,92,255,0.1) 0%, rgba(111,99,217,0.05) 100%);
   border: 1px solid rgba(107,92,255,0.2);
   border-radius: 10px;
   display: flex;
@@ -697,7 +697,7 @@ body.no-webgl::before {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #6B5CFF 0%, #8658ff 100%);
+  background: linear-gradient(90deg, #6F63D9 0%, #6f63d9 100%);
 }
 
 .hml-tab-badge {
@@ -767,7 +767,7 @@ body.no-webgl::before {
 .hml-stat-value {
   font-size: 20px;
   font-weight: 700;
-  color: #8658ff;
+  color: #6f63d9;
   margin-bottom: 2px;
   line-height: 1;
 }
@@ -795,7 +795,7 @@ body.no-webgl::before {
 .hml-action-btn {
   background: rgba(107,92,255,0.2);
   border: 1px solid rgba(107,92,255,0.3);
-  color: #8658ff;
+  color: #6f63d9;
   padding: 6px 12px;
   border-radius: 8px;
   display: flex;
@@ -861,7 +861,7 @@ body.no-webgl::before {
 
 /* Peers Tab Styles */
 .hml-identity-card {
-  background: linear-gradient(135deg, rgba(107,92,255,0.1) 0%, rgba(134,88,255,0.05) 100%);
+  background: linear-gradient(135deg, rgba(107,92,255,0.1) 0%, rgba(111,99,217,0.05) 100%);
   border: 1px solid rgba(107,92,255,0.2);
   border-radius: 10px;
   padding: 10px;
@@ -928,7 +928,7 @@ body.no-webgl::before {
 
 .hml-create-id-btn {
   width: 100%;
-  background: linear-gradient(135deg, #6B5CFF 0%, #8658ff 100%);
+  background: linear-gradient(135deg, #6F63D9 0%, #6f63d9 100%);
   border: none;
   color: #fff;
   padding: 12px 20px;
@@ -1023,7 +1023,7 @@ body.no-webgl::before {
 }
 
 .hml-switch input:checked + .hml-switch-slider {
-  background: #6B5CFF;
+  background: #6F63D9;
 }
 
 .hml-switch input:checked + .hml-switch-slider::after {
@@ -1083,7 +1083,7 @@ body.no-webgl::before {
 .hml-text-btn {
   background: none;
   border: none;
-  color: #8658ff;
+  color: #6f63d9;
   font-size: 13px;
   cursor: pointer;
   padding: 8px 0;
@@ -1091,7 +1091,7 @@ body.no-webgl::before {
 }
 
 .hml-text-btn:hover {
-  color: #6B5CFF;
+  color: #6F63D9;
   text-decoration: underline;
 }
 
@@ -1105,7 +1105,7 @@ body.no-webgl::before {
   width: 60px;
   height: 60px;
   margin: 0 auto 14px;
-  background: linear-gradient(135deg, rgba(107,92,255,0.2) 0%, rgba(134,88,255,0.1) 100%);
+  background: linear-gradient(135deg, rgba(107,92,255,0.2) 0%, rgba(111,99,217,0.1) 100%);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -1145,7 +1145,7 @@ body.no-webgl::before {
 
 .hml-feature i {
   font-size: 20px;
-  color: #8658ff;
+  color: #6f63d9;
 }
 
 .hml-feature span {
@@ -1184,7 +1184,7 @@ body.no-webgl::before {
   top: -10px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #6B5CFF 0%, #8658ff 100%);
+  background: linear-gradient(135deg, #6F63D9 0%, #6f63d9 100%);
   color: #fff;
   font-size: 10px;
   font-weight: 600;
@@ -1204,7 +1204,7 @@ body.no-webgl::before {
 .hml-plan-price {
   font-size: 24px;
   font-weight: 700;
-  color: #8658ff;
+  color: #6f63d9;
   margin-bottom: 16px;
 }
 
@@ -1241,7 +1241,7 @@ body.no-webgl::before {
   width: 100%;
   background: rgba(107,92,255,0.2);
   border: 1px solid rgba(107,92,255,0.3);
-  color: #8658ff;
+  color: #6f63d9;
   padding: 10px;
   border-radius: 10px;
   cursor: pointer;
@@ -1257,7 +1257,7 @@ body.no-webgl::before {
 }
 
 .hml-cloud-cta {
-  background: linear-gradient(135deg, #6B5CFF 0%, #8658ff 100%);
+  background: linear-gradient(135deg, #6F63D9 0%, #6f63d9 100%);
   border: none;
   color: #fff;
   padding: 14px 28px;
@@ -2419,7 +2419,7 @@ input:checked + .slider:before {
 }
 
 .action-card.chat {
-  border-left: 3px solid #8b5cf6;
+  border-left: 3px solid #6f63d9;
 }
 
 /* Inline Chat Panel */
@@ -2477,7 +2477,7 @@ input:checked + .slider:before {
 .message-inline { display: flex; gap: 8px; }
 .message-inline.user { justify-content: flex-end; }
 .bubble-inline { background: rgba(255,255,255,0.06); border: 1px solid var(--emma-border); padding: 8px 10px; border-radius: 12px; max-width: 85%; }
-.message-inline.user .bubble-inline { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.4); }
+.message-inline.user .bubble-inline { background: rgba(111,99,217,0.18); border-color: rgba(111,99,217,0.4); }
 
 /* Persona action row - tidy grouped buttons */
 .persona-actions { display:flex; justify-content: space-between; align-items:center; gap:10px; padding: 10px 12px; border-top:1px solid var(--emma-border); }

@@ -1,22 +1,4 @@
-/* Emma Main CSS - Shared styles for all pages */
-
-/* CSS Variables for Emma Brand Colors */
-:root {
-  --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
-  --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
-  --emma-purple: #764ba2;
-  --emma-pink: #f093fb;
-  --emma-dark: #1a1033;
-  --emma-card-bg: rgba(255, 255, 255, 0.05);
-  --emma-border: rgba(255, 255, 255, 0.1);
-  --emma-text: #ffffff;
-  --emma-text-secondary: rgba(255, 255, 255, 0.7);
-  --emma-text-tertiary: rgba(255, 255, 255, 0.5);
-  --emma-success: #4ade80;
-  --emma-error: #f87171;
-  --emma-warning: #fbbf24;
-}
+﻿/* Emma Main CSS - Shared styles for all pages */
 
 /* Reset and Base Styles */
 * {
@@ -34,6 +16,7 @@ body {
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Animated Background */
@@ -45,12 +28,39 @@ body::before {
   width: 200%;
   height: 200%;
   background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(222, 179, 228, 0.3) 0%, transparent 50%),
               radial-gradient(circle at 40% 60%, rgba(118, 75, 162, 0.2) 0%, transparent 50%);
   animation: float 20s ease-in-out infinite;
   z-index: -1;
 }
 
+:root[data-background="aurora"] body::before {
+  background: var(--emma-background-aurora);
+}
+
+:root[data-background="sunrise"] body::before {
+  background: var(--emma-background-sunrise);
+}
+
+:root[data-background="forest"] body::before {
+  background: var(--emma-background-forest);
+}
+
+:root[data-background="ocean"] body::before {
+  background: var(--emma-background-ocean);
+}
+
+:root[data-background="ember"] body::before {
+  background: var(--emma-background-ember);
+}
+
+:root[data-background="blossom"] body::before {
+  background: var(--emma-background-blossom);
+}
+
+:root[data-background="zen"] body::before {
+  background: var(--emma-background-zen);
+}
 @keyframes float {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
   50% { transform: translate(-20px, -20px) rotate(180deg); }
@@ -60,7 +70,7 @@ body::before {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 32px);
 }
 
 /* Glass Card Style */
@@ -69,8 +79,8 @@ body::before {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--emma-border);
-  border-radius: 24px;
-  padding: 32px;
+  border-radius: clamp(20px, 3vw, 28px);
+  padding: clamp(20px, 4vw, 36px);
   margin-bottom: 24px;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
 }
@@ -80,16 +90,16 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 300;
   line-height: 1.2;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  background: linear-gradient(135deg, rgba(var(--emma-neutral-rgb), 1) 0%, rgba(var(--emma-neutral-rgb), 0.8) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-h1 { font-size: 48px; letter-spacing: 2px; }
-h2 { font-size: 36px; }
-h3 { font-size: 28px; }
-h4 { font-size: 24px; }
+h1 { font-size: clamp(32px, 6vw, 48px); letter-spacing: 2px; }
+h2 { font-size: clamp(28px, 4.5vw, 36px); }
+h3 { font-size: clamp(24px, 3.8vw, 28px); }
+h4 { font-size: clamp(20px, 3vw, 24px); }
 
 /* Links */
 a {
@@ -104,6 +114,7 @@ a:hover {
 }
 
 /* Buttons */
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -126,13 +137,13 @@ a:hover {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--emma-neutral-rgb), 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid var(--emma-border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--emma-neutral-rgb), 0.15);
 }
 
 /* Logo */
@@ -263,16 +274,16 @@ a:hover {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--emma-neutral-rgb), 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(var(--emma-neutral-rgb), 0.2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(var(--emma-neutral-rgb), 0.3);
 }
 
 /* Animations */
@@ -304,3 +315,214 @@ a:hover {
     padding: 24px;
   }
 }
+.modal-overlay.invite-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.invite-modal__container {
+  background: linear-gradient(135deg, rgba(40, 30, 60, 0.98) 0%, rgba(30, 20, 50, 0.98) 100%);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(111, 99, 217, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+.invite-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.invite-modal__title {
+  margin: 0;
+  color: var(--emma-text-strong);
+  font-size: 24px;
+}
+
+.invite-modal__close {
+  background: none;
+  border: none;
+  color: var(--emma-text-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.invite-modal__body {
+  margin-bottom: 24px;
+}
+
+.invite-modal__description {
+  color: var(--emma-text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.invite-modal__permissions {
+  background: rgba(111, 99, 217, 0.1);
+  border: 1px solid rgba(111, 99, 217, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.invite-modal__permissions-title {
+  margin: 0 0 8px 0;
+  color: var(--emma-accent-primary);
+}
+
+.invite-modal__permissions-list {
+  margin: 0;
+  color: var(--emma-text-standard);
+}
+
+.invite-modal__meta {
+  color: var(--emma-text-muted);
+  font-size: 12px;
+}
+
+.invite-modal__meta-item {
+  margin: 4px 0;
+}
+
+.invite-modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.invite-modal__button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.invite-modal__button--ghost {
+  background: rgba(var(--emma-neutral-rgb), 0.1);
+  border: 1px solid rgba(var(--emma-neutral-rgb), 0.2);
+  color: var(--emma-text-standard);
+}
+
+.invite-modal__button--primary {
+  background: var(--emma-gradient-primary);
+  border: none;
+  color: var(--emma-text-on-accent);
+}
+
+.text-white {
+  color: var(--emma-text-strong);
+}
+
+.text-accent {
+  color: var(--emma-accent-primary);
+}
+
+/* ---------------------------------------
+   Responsive Utilities & Breakpoints
+--------------------------------------- */
+
+:root {
+  --emma-breakpoint-lg: 1200px;
+  --emma-breakpoint-md: 1024px;
+  --emma-breakpoint-sm: 768px;
+  --emma-breakpoint-xs: 480px;
+  --emma-page-gutter-mobile: clamp(16px, 6vw, 28px);
+}
+
+.responsive-stack {
+  display: flex;
+  gap: 24px;
+}
+
+.responsive-stack.reverse {
+  flex-direction: row-reverse;
+}
+
+.stack-gap-sm {
+  gap: 12px;
+}
+
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.sticky-action-bar {
+  position: sticky;
+  bottom: env(safe-area-inset-bottom, 0);
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(5, 6, 18, 0) 0%, rgba(5, 6, 18, 0.85) 60%);
+  backdrop-filter: blur(16px);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  z-index: 90;
+}
+
+.screen-safe-area {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+}
+
+@media (max-width: 1024px) {
+  .responsive-stack {
+    flex-wrap: wrap;
+  }
+
+  .container {
+    padding: clamp(24px, 4vw, 36px);
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  .responsive-stack,
+  .responsive-stack.reverse {
+    flex-direction: column;
+  }
+
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .glass-card {
+    padding: clamp(20px, 6vw, 28px);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: var(--emma-page-gutter-mobile);
+  }
+
+  .sticky-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+
+

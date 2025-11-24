@@ -399,7 +399,7 @@ class EmmaVaultExtension {
       .unlock-overlay-content {
         position: relative;
         background: rgba(17, 17, 27, 0.98);
-        border: 1px solid rgba(134, 88, 255, 0.3);
+        border: 1px solid rgba(111, 99, 217, 0.3);
         border-radius: 20px;
         padding: 32px;
         max-width: 400px;
@@ -457,7 +457,7 @@ class EmmaVaultExtension {
         width: 100%;
         padding: 16px 20px 16px 50px;
         background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(134, 88, 255, 0.3);
+        border: 1px solid rgba(111, 99, 217, 0.3);
         border-radius: 12px;
         color: white;
         font-size: 16px;
@@ -467,9 +467,9 @@ class EmmaVaultExtension {
       }
       
       .unlock-input:focus {
-        border-color: rgba(134, 88, 255, 0.6);
+        border-color: rgba(111, 99, 217, 0.6);
         background: rgba(255, 255, 255, 0.15);
-        box-shadow: 0 0 20px rgba(134, 88, 255, 0.2);
+        box-shadow: 0 0 20px rgba(111, 99, 217, 0.2);
       }
       
       .unlock-input::placeholder {
@@ -505,13 +505,13 @@ class EmmaVaultExtension {
       }
       
       .unlock-btn.primary {
-        background: linear-gradient(135deg, #8658ff, #f093fb);
+        background: linear-gradient(135deg, #6f63d9, #deb3e4);
         color: white;
       }
       
       .unlock-btn.primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(134, 88, 255, 0.4);
+        box-shadow: 0 8px 25px rgba(111, 99, 217, 0.4);
       }
       
       .unlock-btn.secondary {
@@ -1432,13 +1432,13 @@ class EmmaVaultExtension {
           <h2>🔐 Unlock Vault</h2>
           <p>Enter the passphrase for your encrypted vault:</p>
           <p class="file-name" style="
-            background: rgba(134, 88, 255, 0.2);
+            background: rgba(111, 99, 217, 0.2);
             padding: 8px 16px;
             border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(134, 88, 255, 0.3);
+            border: 1px solid rgba(111, 99, 217, 0.3);
             margin: 8px 0;
           ">${fileName}</p>
         </div>

@@ -15,6 +15,8 @@ class EmmaWebappExtensionBridge {
   setupListeners() {
     // Listen for messages from extension
     window.addEventListener('message', (event) => {
+      // Only accept messages from same origin for safety
+      if (event.origin !== window.location.origin) return;
       if (event.data?.source === 'emma-extension') {
         this.handleExtensionMessage(event.data);
       }
@@ -153,7 +155,7 @@ class EmmaWebappExtensionBridge {
       type: 'EMMA_RESPONSE',
       messageId: messageId,
       ...response
-    }, '*');
+    }, window.location.origin);
   }
 }
 

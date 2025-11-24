@@ -20,6 +20,7 @@ class ExperiencePopup {
 
     this.element = this.createElement();
     document.body.appendChild(this.element);
+    document.body.classList.add('modal-open');
     
     // Animate in
     requestAnimationFrame(() => {
@@ -82,6 +83,9 @@ class ExperiencePopup {
     // Cleanup
     this.cleanup();
     console.log('🔵 SIMPLIFIED Close: Complete');
+    if (!document.querySelector('.emma-experience-popup')) {
+      document.body.classList.remove('modal-open');
+    }
   }
 
   /**
@@ -94,8 +98,10 @@ class ExperiencePopup {
     popup.className = 'emma-experience-popup';
     
     // MOBILE RESPONSIVENESS: Detect mobile and adjust positioning
-    const isMobile = window.innerWidth <= 768;
-    const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+    const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const isMobile = viewportWidth <= 768;
+    const isTablet = viewportWidth > 768 && viewportWidth <= 1024;
     
     let finalPosition = { ...this.position };
     
@@ -104,22 +110,22 @@ class ExperiencePopup {
       finalPosition = {
         left: 12,
         top: 24,
-        width: window.innerWidth - 24,
-        height: window.innerHeight - 48
+        width: viewportWidth - 24,
+        height: viewportHeight - 48
       };
     } else if (isTablet) {
       // Tablet: Larger but not full screen
       finalPosition = {
-        left: Math.max(20, (window.innerWidth - Math.min(this.position.width, 700)) / 2),
-        top: Math.max(20, (window.innerHeight - Math.min(this.position.height, 600)) / 2),
+        left: Math.max(20, (viewportWidth - Math.min(this.position.width, 700)) / 2),
+        top: Math.max(20, (viewportHeight - Math.min(this.position.height, 600)) / 2),
         width: Math.min(this.position.width, 700),
         height: Math.min(this.position.height, 600)
       };
     } else {
       // Desktop: Ensure it fits within viewport
       finalPosition = {
-        left: Math.max(8, Math.min(window.innerWidth - this.position.width - 8, this.position.left)),
-        top: Math.max(8, Math.min(window.innerHeight - this.position.height - 8, this.position.top)),
+        left: Math.max(8, Math.min(viewportWidth - this.position.width - 8, this.position.left)),
+        top: Math.max(8, Math.min(viewportHeight - this.position.height - 8, this.position.top)),
         width: this.position.width,
         height: this.position.height
       };
@@ -134,11 +140,11 @@ class ExperiencePopup {
       top: ${finalPosition.top}px;
       width: ${finalPosition.width}px;
       height: ${finalPosition.height}px;
-      background: linear-gradient(145deg, rgba(139, 92, 246, 0.15), rgba(240, 147, 251, 0.10));
-      border: 2px solid rgba(139, 92, 246, 0.3);
+      background: linear-gradient(145deg, rgba(111, 99, 217, 0.15), rgba(222, 179, 228, 0.10));
+      border: 2px solid rgba(111, 99, 217, 0.3);
       border-radius: ${isMobile ? '16px' : '24px'};
       backdrop-filter: blur(20px);
-      box-shadow: 0 24px 80px rgba(139, 92, 246, 0.4);
+      box-shadow: 0 24px 80px rgba(111, 99, 217, 0.4);
       z-index: 10000;
       opacity: 0;
       transform: translateY(-10px) scale(0.95);
@@ -146,11 +152,15 @@ class ExperiencePopup {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: white;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
       ${isMobile ? '' : 'resize: both;'}
       min-width: ${isMobile ? 'auto' : '400px'};
       min-height: ${isMobile ? 'auto' : '300px'};
       max-width: calc(100vw - ${isMobile ? '24px' : '16px'});
       max-height: calc(100vh - ${isMobile ? '48px' : '16px'});
+      max-height: calc(100dvh - ${isMobile ? '48px' : '16px'});
+      padding-bottom: env(safe-area-inset-bottom, 0);
     `;
 
     // Create header
@@ -171,6 +181,22 @@ class ExperiencePopup {
       font-weight: 600;
     `;
     title.textContent = this.getTitle();
+
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'popup-header-left';
+    headerLeft.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1 1 auto;
+      min-width: 0;
+    `;
+    headerLeft.appendChild(title);
+
+    const headerActions = (this.getHeaderActions() || []).filter(Boolean);
+    for (const action of headerActions) {
+      headerLeft.appendChild(action);
+    }
 
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '×';
@@ -221,17 +247,21 @@ class ExperiencePopup {
       }
     };
 
-    header.appendChild(title);
+    header.appendChild(headerLeft);
     header.appendChild(closeBtn);
 
     // Customize header appearance based on title
     const titleText = this.getTitle();
+    const hasActions = headerActions.length > 0;
     if (!titleText || titleText.trim() === '') {
-      // No title - just show close button with no border/padding
-      header.style.borderBottom = 'none';
-      header.style.padding = '8px 12px 0 0';
-      header.style.justifyContent = 'flex-end';
       title.style.display = 'none';
+      if (!hasActions) {
+        // No title or actions - collapse header to just the close button
+        header.style.borderBottom = 'none';
+        header.style.padding = '8px 12px 0 0';
+        header.style.justifyContent = 'flex-end';
+        headerLeft.style.display = 'none';
+      }
     }
 
     // Create content area
@@ -250,8 +280,10 @@ class ExperiencePopup {
     
     content.style.cssText = `
       padding: ${contentPadding};
-      height: auto;
-      overflow: visible;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
       box-sizing: border-box;
     `;
 
@@ -324,6 +356,10 @@ class ExperiencePopup {
 
   renderContent(contentElement) {
     contentElement.innerHTML = '<p>Experience content goes here</p>';
+  }
+
+  getHeaderActions() {
+    return [];
   }
 
   async initialize() {

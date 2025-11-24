@@ -1,4 +1,4 @@
-// js/memories.js - External JavaScript for memory gallery
+﻿// js/memories.js - External JavaScript for memory gallery
 // Desktop shim: prefer Electron bridge if available
 // eslint-disable-next-line no-unused-vars
 const chrome = (typeof window !== 'undefined' && (window.chromeShim || window.chrome)) || undefined;
@@ -8,11 +8,68 @@ console.log('🔥🔥🔥 CACHE BUST DEBUG: memories.js RELOADED at', new Date()
 // Timer manager will be loaded dynamically to avoid module errors
 let timerManager = null;
 
+let emmaChatLoaderPromise = null;
+
+function resolveEmmaChatScriptUrl() {
+  const existing = document.querySelector('script[src*="emma-chat-experience.js"]');
+  if (existing && existing.src) {
+    return existing.src;
+  }
+
+  try {
+    return new URL('../js/emma-chat-experience.js', window.location.href).href;
+  } catch (_) {
+    return new URL('js/emma-chat-experience.js', window.location.href).href;
+  }
+}
+
+function ensureEmmaChatExperienceLoaded() {
+  if (typeof EmmaChatExperience !== 'undefined') {
+    return Promise.resolve();
+  }
+
+  if (emmaChatLoaderPromise) {
+    return emmaChatLoaderPromise;
+  }
+
+  emmaChatLoaderPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[src*="emma-chat-experience.js"]');
+    if (existing) {
+      const isLoaded = existing.dataset.loaded === 'true' || existing.readyState === 'complete' || existing.readyState === 'loaded';
+      if (isLoaded) {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener('load', () => {
+        existing.dataset.loaded = 'true';
+        resolve();
+      }, { once: true });
+      existing.addEventListener('error', () => reject(new Error('Failed to load EmmaChatExperience script')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = resolveEmmaChatScriptUrl();
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    script.onerror = () => reject(new Error('Failed to load EmmaChatExperience script'));
+    document.head.appendChild(script);
+  }).finally(() => {
+    emmaChatLoaderPromise = null;
+  });
+
+  return emmaChatLoaderPromise;
+}
+
 // Create a simple timer manager for this context
 const simpleTimerManager = {
   timers: new Set(),
   setTimeout(callback, delay, context = 'unknown') {
-    const id = setTimeout(() => {
+    const id = setTimeout(async () => {
       try {
         callback();
       } catch (error) {
@@ -865,7 +922,7 @@ function showNotification(message, type = 'success') {
   notification.textContent = message;
   document.body.appendChild(notification);
 
-  simpleTimerManager.setTimeout(() => {
+  simpleTimerManager.setTimeout(async () => {
     notification.style.animation = 'slideOut 0.3s ease';
     simpleTimerManager.setTimeout(() => notification.remove(), 300, 'notification_remove');
   }, 3000, 'notification_hide');
@@ -895,7 +952,7 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
         showNotification('HML identity created! You can now sync with people.', 'success');
 
         // Now retry the sync offer
-        setTimeout(() => {
+        setTimeout(async () => {
           offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId);
         }, 1000);
 
@@ -972,7 +1029,7 @@ async function offerHMLSyncForTaggedPeople(peopleWithFingerprints, memoryId) {
       showNotification(successMsg, 'success');
 
       // Show helpful next steps
-      setTimeout(() => {
+      setTimeout(async () => {
         alert(`Vault sharing complete! 🎉\n\nNext steps:\n1. The tagged people will receive vault invitations\n2. Once they accept, this memory will sync to their devices\n3. You can collaborate on memories together\n\nNote: Make sure they have added your fingerprint in their HML Sync settings too!`);
       }, 2000);
     }
@@ -1070,6 +1127,14 @@ async function loadConstellationView() {
 
   grid.innerHTML = '';
 
+  try {
+    const touchDevice = (navigator.maxTouchPoints || 0) > 1;
+    const compactViewport = window.matchMedia('(max-width: 900px)').matches;
+    if (touchDevice || compactViewport) {
+      document.body.classList.add('performance-lite');
+    }
+  } catch {}
+
   // Fetch memories using same vault → background → local order
   let items = [];
   try {
@@ -1123,6 +1188,14 @@ async function loadConstellationView() {
     return;
   }
 
+  const isCompactViewport = window.matchMedia('(max-width: 768px)').matches;
+  const MAX_MOBILE_ITEMS = 220;
+  if (isCompactViewport && items.length > MAX_MOBILE_ITEMS) {
+    const step = Math.ceil(items.length / MAX_MOBILE_ITEMS);
+    items = items.filter((_, idx) => idx % step === 0);
+    console.log(`Constellation: trimmed records for mobile viewport using step ${step}`);
+  }
+
   // Sort by time for subtle adjacency edges
   items.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
@@ -1133,12 +1206,12 @@ async function loadConstellationView() {
   const wrap = document.createElement('div');
   wrap.style.position = 'relative';
   wrap.style.width = '100%';
-  wrap.style.height = '68vh';
-  wrap.style.minHeight = '420px';
+  wrap.style.height = isCompactViewport ? '60vh' : '68vh';
+  wrap.style.minHeight = isCompactViewport ? '320px' : '420px';
   wrap.style.border = '1px solid var(--emma-border)';
   wrap.style.borderRadius = '16px';
   wrap.style.background = 'var(--emma-card-bg)';
-  wrap.style.backdropFilter = 'blur(20px)';
+  wrap.style.backdropFilter = isCompactViewport ? 'blur(10px)' : 'blur(20px)';
 
   const canvas = document.createElement('canvas');
   canvas.style.width = '100%';
@@ -1171,7 +1244,7 @@ async function loadConstellationView() {
   controls.style.border = '1px solid var(--emma-border)';
   controls.style.borderRadius = '10px';
   controls.style.padding = '6px 8px';
-  controls.style.backdropFilter = 'blur(8px)';
+  controls.style.backdropFilter = isCompactViewport ? 'blur(4px)' : 'blur(8px)';
   controls.innerHTML = `
     <label style="font-size:12px; color:#e9d5ff; display:flex; align-items:center; gap:6px;">
       Cluster:
@@ -1211,6 +1284,7 @@ async function loadConstellationView() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = Math.max(1, Math.floor(rect.width * dpr));
     canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    layoutDirty = true;
     draw();
   }
   window.addEventListener('resize', resize);
@@ -1222,6 +1296,7 @@ async function loadConstellationView() {
   };
   const nodeRadius = 6;
   const positions = new Map();
+  let layoutDirty = true;
   let clusterMode = 'none';
 
   function groupItems() {
@@ -1248,7 +1323,7 @@ async function loadConstellationView() {
     return { groups: top.map(([key, arr]) => ({ key, items: arr })) };
   }
 
-  function layout() {
+  function computeLayout() {
     positions.clear();
     const n = items.length;
     const minTs = items[0].timestamp || 0;
@@ -1288,6 +1363,12 @@ async function loadConstellationView() {
         positions.set(g.items[j].id, { x, y });
       }
     }
+  }
+
+  function ensureLayout() {
+    if (!layoutDirty) return;
+    computeLayout();
+    layoutDirty = false;
   }
 
   // Edges: connect neighbors by time
@@ -1351,7 +1432,7 @@ async function loadConstellationView() {
     ctx.translate(view.tx, view.ty);
     ctx.scale(view.scale, view.scale);
 
-    layout();
+    ensureLayout();
     const rect = canvas.getBoundingClientRect();
     const c2x = rect.width / 2, c2y = rect.height / 2;
 
@@ -1387,6 +1468,7 @@ async function loadConstellationView() {
   }
 
   function hitTest(mx, my) {
+    ensureLayout();
     const xw = (mx - view.tx);
     const yw = (my - view.ty);
     const wx = xw / view.scale;
@@ -1550,7 +1632,11 @@ async function loadConstellationView() {
   }, { passive: false });
 
   const clusterSelect = controls.querySelector('#cluster-mode');
-  clusterSelect.addEventListener('change', () => { clusterMode = clusterSelect.value; draw(); });
+  clusterSelect.addEventListener('change', () => {
+    clusterMode = clusterSelect.value;
+    layoutDirty = true;
+    draw();
+  });
   
   // 🔍 ZOOM CONTROLS: Simple buttons for dementia-friendly navigation
   const zoomInBtn = controls.querySelector('#zoom-in');
@@ -1598,6 +1684,8 @@ async function loadConstellationView() {
 
   // 🎯 AUTO-FIT: Calculate optimal zoom to show all memories elegantly
   function fitAllMemories() {
+    ensureLayout();
+
     if (items.length === 0) {
       // No memories, just center the view
       view.targetScale = 1;
@@ -1920,7 +2008,14 @@ async function openGuardianshipModal() {
           const input = list.querySelectorAll('input')[idx];
           const w = window.open('', '_blank');
           if (!w) return;
-          w.document.write(`<!doctype html><title>Emma Vault Share #${idx+1}</title><body style=\"font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; padding:24px\"><h2>Emma Vault Recovery Share #${idx+1}</h2><p>Keep this safe. Share only with trusted guardians.</p><pre style=\"white-space:pre-wrap;word-break:break-all;border:1px solid #ccc;padding:12px;border-radius:8px\">${input.value}</pre></body>`);
+          const escapeHtml = (s) => String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+          const safeValue = escapeHtml(input.value);
+          w.document.write(`<!doctype html><title>Emma Vault Share #${idx+1}</title><body style=\"font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; padding:24px\"><h2>Emma Vault Recovery Share #${idx+1}</h2><p>Keep this safe. Share only with trusted guardians.</p><pre style=\"white-space:pre-wrap;word-break:break-all;border:1px solid #ccc;padding:12px;border-radius:8px\">${safeValue}</pre></body>`);
           w.document.close(); w.focus(); w.print();
         }));
         list.querySelectorAll('button.qr').forEach(btn => btn.addEventListener('click', async () => {
@@ -2244,9 +2339,9 @@ function showNotification(message, type = 'info', duration = 3000) {
   setTimeout(() => notification.style.opacity = '1', 10);
 
   // Remove after duration
-  setTimeout(() => {
+  setTimeout(async () => {
     notification.style.opacity = '0';
-    setTimeout(() => {
+    setTimeout(async () => {
       if (notification.parentNode) {
         notification.parentNode.removeChild(notification);
       }
@@ -2362,7 +2457,7 @@ function showResponsiveMemoryDialog(memory) {
       }
       
       .responsive-memory-container {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
         border-radius: clamp(16px, 3vw, 24px);
         max-width: 95vw;
         max-height: 95vh;
@@ -2543,7 +2638,7 @@ function showResponsiveMemoryDialog(memory) {
         border: 3px solid rgba(255, 255, 255, 0.9);
         overflow: hidden;
         position: relative;
-        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -2554,13 +2649,13 @@ function showResponsiveMemoryDialog(memory) {
         transition: all 0.3s ease;
         cursor: pointer;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
       }
       
       .memory-person-avatar:hover {
         transform: scale(1.05);
         border-color: white;
-        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+        box-shadow: 0 6px 20px rgba(111, 99, 217, 0.5);
       }
       
       .memory-person-avatar img {
@@ -2680,7 +2775,7 @@ function showResponsiveMemoryDialog(memory) {
       
       .action-btn.primary {
         background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        color: #8b5cf6;
+        color: #6f63d9;
         border: 2px solid rgba(255, 255, 255, 0.3);
       }
       
@@ -2823,7 +2918,7 @@ function showResponsiveMemoryDialog(memory) {
   document.body.appendChild(dialog);
   
   // Animate in
-  setTimeout(() => {
+  setTimeout(async () => {
     dialog.style.opacity = '1';
     // Load people avatars if needed
     loadConstellationPeopleAvatars(memory);
@@ -2966,28 +3061,30 @@ function editConstellationMemory(memoryId) {
     backgroundDialog.style.transition = 'opacity 0.2s ease';
     
     // Wait for fade-out, then remove and open edit modal
-    setTimeout(() => {
+    setTimeout(async () => {
       backgroundDialog.remove();
       
       // Ensure constellation interactions are properly disabled
       document.body.classList.add('modal-open');
       
-      // Now open edit modal after background is completely gone
-      if (typeof EmmaChatExperience !== 'undefined') {
+      try {
+        await ensureEmmaChatExperienceLoaded();
         const tempChatExperience = new EmmaChatExperience();
         tempChatExperience.editMemoryDetails(memoryId);
-      } else {
-        console.error('❌ EmmaChatExperience not available');
+      } catch (error) {
+        console.error('❌ EmmaChatExperience not available', error);
       }
     }, 200);
   } else {
     // No background dialog - proceed directly
-    if (typeof EmmaChatExperience !== 'undefined') {
-      const tempChatExperience = new EmmaChatExperience();
-      tempChatExperience.editMemoryDetails(memoryId);
-    } else {
-      console.error('❌ EmmaChatExperience not available');
-    }
+    ensureEmmaChatExperienceLoaded()
+      .then(() => {
+        const tempChatExperience = new EmmaChatExperience();
+        tempChatExperience.editMemoryDetails(memoryId);
+      })
+      .catch((error) => {
+        console.error('❌ EmmaChatExperience not available', error);
+      });
   }
 }
 
@@ -3012,7 +3109,7 @@ function shareConstellationMemory(memoryId) {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: rgba(139, 92, 246, 0.95);
+        background: rgba(111, 99, 217, 0.95);
         color: white;
         padding: 12px 20px;
         border-radius: 8px;
@@ -3036,7 +3133,7 @@ function closeMemoryDetail() {
       document.removeEventListener('keydown', modal._escapeHandler);
     }
 
-      setTimeout(() => {
+      setTimeout(async () => {
       modal.remove();
     }, 300);
   }
@@ -3396,7 +3493,7 @@ function renderPeople(list) {
     <div class="people-grid">${list.map(p => {
       const initials = (p.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
       const avatar = p.profilePicture ? `<img src="${p.profilePicture}" style="width:100%; height:100%; object-fit:cover; border-radius:50%"/>` : initials;
-      const perm = p.permission ? `<span class=\"chip\" style=\"margin-left:8px; border:1px solid rgba(134,88,255,.3); background:rgba(134,88,255,.1); color:#8658ff; border-radius:999px; padding:2px 8px; font-size:11px;\">${p.permission}</span>` : '';
+      const perm = p.permission ? `<span class=\"chip\" style=\"margin-left:8px; border:1px solid rgba(111,99,217,.3); background:rgba(111,99,217,.1); color:#6f63d9; border-radius:999px; padding:2px 8px; font-size:11px;\">${p.permission}</span>` : '';
       return `
         <div class=\"person-card clickable-person\" data-person-id=\"${p.id}\" style=\"cursor: pointer; transition: background-color 0.2s ease;\">
           <div class=\"person-avatar\">${avatar}</div>
@@ -3406,9 +3503,9 @@ function renderPeople(list) {
           </div>
         </div>`;
     }).join('')}
-      <div class=\"person-card add-more-people\" style=\"cursor: pointer; transition: background-color 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(134,88,255,0.3); background: rgba(134,88,255,0.05);\">
-        <div style=\"width:50px; height:50px; background:rgba(134,88,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#8658ff; font-size:24px; margin-bottom:8px;\">+</div>
-        <div style=\"font-weight:600; color:#8658ff; text-align:center; font-size:12px;\">Add More People</div>
+      <div class=\"person-card add-more-people\" style=\"cursor: pointer; transition: background-color 0.2s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed rgba(111,99,217,0.3); background: rgba(111,99,217,0.05);\">
+        <div style=\"width:50px; height:50px; background:rgba(111,99,217,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#6f63d9; font-size:24px; margin-bottom:8px;\">+</div>
+        <div style=\"font-weight:600; color:#6f63d9; text-align:center; font-size:12px;\">Add More People</div>
       </div>
     </div>
   `;
@@ -3488,7 +3585,7 @@ function wirePeopleActions(host) {
 
     // Add hover effect
     card.addEventListener('mouseenter', () => {
-      card.style.backgroundColor = 'rgba(134, 88, 255, 0.1)';
+      card.style.backgroundColor = 'rgba(111, 99, 217, 0.1)';
     });
     card.addEventListener('mouseleave', () => {
       card.style.backgroundColor = '';
@@ -3514,12 +3611,12 @@ function wirePeopleActions(host) {
 
     // Add hover effect
     addMorePeopleBtn.addEventListener('mouseenter', () => {
-      addMorePeopleBtn.style.backgroundColor = 'rgba(134, 88, 255, 0.1)';
-      addMorePeopleBtn.style.borderColor = 'rgba(134, 88, 255, 0.5)';
+      addMorePeopleBtn.style.backgroundColor = 'rgba(111, 99, 217, 0.1)';
+      addMorePeopleBtn.style.borderColor = 'rgba(111, 99, 217, 0.5)';
     });
     addMorePeopleBtn.addEventListener('mouseleave', () => {
-      addMorePeopleBtn.style.backgroundColor = 'rgba(134, 88, 255, 0.05)';
-      addMorePeopleBtn.style.borderColor = 'rgba(134, 88, 255, 0.3)';
+      addMorePeopleBtn.style.backgroundColor = 'rgba(111, 99, 217, 0.05)';
+      addMorePeopleBtn.style.borderColor = 'rgba(111, 99, 217, 0.3)';
     });
   }
 }
@@ -3563,7 +3660,7 @@ async function openAddPeopleModal() {
       const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
       const avatar = person.profilePicture
         ? `<img src="${person.profilePicture}" style="width:60px; height:60px; object-fit:cover; border-radius:50%;"/>`
-        : `<div style="width:60px; height:60px; background:#8658ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:600;">${initials}</div>`;
+        : `<div style="width:60px; height:60px; background:#6f63d9; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:600;">${initials}</div>`;
 
       // Show HML sync capability if person has fingerprint
       const hasFingerprint = person.keyFingerprint || person.fingerprint;
@@ -3621,8 +3718,8 @@ async function openAddPeopleModal() {
         } else {
           // Select
           selectedPeople.add(personId);
-          card.style.borderColor = '#8658ff';
-          card.style.backgroundColor = 'rgba(134,88,255,0.1)';
+          card.style.borderColor = '#6f63d9';
+          card.style.backgroundColor = 'rgba(111,99,217,0.1)';
         }
 
         // Update confirm button state
@@ -3640,7 +3737,7 @@ async function openAddPeopleModal() {
       // Add hover effect
       card.addEventListener('mouseenter', () => {
         if (!selectedPeople.has(card.dataset.personId)) {
-          card.style.backgroundColor = 'rgba(134,88,255,0.05)';
+          card.style.backgroundColor = 'rgba(111,99,217,0.05)';
         }
       });
       card.addEventListener('mouseleave', () => {
@@ -3686,7 +3783,7 @@ async function openAddPeopleModal() {
 
           // Offer HML sync if people have fingerprints
           if (peopleWithFingerprints.length > 0) {
-            setTimeout(() => {
+            setTimeout(async () => {
               offerHMLSyncForTaggedPeople(peopleWithFingerprints, window._currentMemoryId);
             }, 1000);
           }
@@ -3743,7 +3840,7 @@ async function openPersonModal(personId) {
     const initials = (person.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
     const avatar = person.profilePicture
       ? `<img src="${person.profilePicture}" style="width:80px; height:80px; object-fit:cover; border-radius:50%; margin-bottom:16px;"/>`
-      : `<div style="width:80px; height:80px; background:#8658ff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:600; margin-bottom:16px;">${initials}</div>`;
+      : `<div style="width:80px; height:80px; background:#6f63d9; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:600; margin-bottom:16px;">${initials}</div>`;
 
     modal.innerHTML = `
       <div class="memory-detail-overlay"></div>
@@ -3763,8 +3860,8 @@ async function openPersonModal(personId) {
           ${person.phone ? `<div style="margin-bottom:12px;"><strong>Phone:</strong> ${escapeHtml(person.phone)}</div>` : ''}
           ${person.notes ? `<div style="margin-bottom:12px;"><strong>Notes:</strong> ${escapeHtml(person.notes)}</div>` : ''}
           ${person.keyFingerprint ? `
-            <div style="margin-top:20px; padding:16px; background:rgba(134,88,255,0.1); border:1px solid rgba(134,88,255,0.3); border-radius:8px;">
-              <strong style="color:#8658ff;">Cryptographic Identity</strong><br/>
+            <div style="margin-top:20px; padding:16px; background:rgba(111,99,217,0.1); border:1px solid rgba(111,99,217,0.3); border-radius:8px;">
+              <strong style="color:#6f63d9;">Cryptographic Identity</strong><br/>
               <code style="font-size:12px; color:#ffffff; word-break:break-all;">${escapeHtml(person.keyFingerprint)}</code>
             </div>
           ` : ''}
@@ -3788,7 +3885,7 @@ async function openPersonModal(personId) {
     const viewFullBtn = modal.querySelector('.person-view-full');
     if (viewFullBtn) {
       viewFullBtn.addEventListener('click', () => {
-        window.open(`people.html#person-${person.id}`, '_blank');
+        window.open(`people-emma.html?person=${person.id}`, '_blank');
       });
     }
 
@@ -4167,7 +4264,7 @@ function closeMemoryDetail() {
       document.removeEventListener('keydown', modal._escapeHandler);
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
       modal.remove();
     }, 300);
   }
@@ -4224,6 +4321,15 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🌟 CONSTELLATION: Person added event received, refreshing...');
     if (isConstellation || window.location.search.includes('constellation')) {
       setTimeout(() => loadConstellationView(), 500);
+    }
+  });
+
+  window.addEventListener('emmaMemoryDeleted', (event) => {
+    console.log('🗑️ CONSTELLATION: Memory deleted event received, refreshing...');
+    if (isConstellation || window.location.search.includes('constellation')) {
+      setTimeout(() => loadConstellationView(), 500);
+    } else {
+      refreshMemories();
     }
   });
 
@@ -4513,7 +4619,7 @@ function openCreateWizardModal() {
       .emma-wiz-body { padding: 16px 16px 8px 16px; max-height: 70vh; overflow: auto; }
       .emma-wiz-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); display:flex; justify-content: space-between; gap: 8px; }
       .emma-wiz-steps { height: 4px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 8px; }
-      .emma-wiz-progress { height: 100%; width: 33%; background: var(--emma-gradient-1, linear-gradient(135deg,#667eea,#764ba2 50%,#f093fb)); transition: width .25s ease; }
+      .emma-wiz-progress { height: 100%; width: 33%; background: var(--emma-gradient-1, linear-gradient(135deg,#667eea,#764ba2 50%,#deb3e4)); transition: width .25s ease; }
       .emma-field { display:grid; gap:6px; margin-bottom: 12px; }
       .emma-field label { font-size: 12px; color: var(--emma-text-secondary, rgba(255,255,255,0.7)); }
       .emma-input, .emma-textarea, .emma-select { border-radius: 10px; border: 1px solid var(--emma-border, rgba(255,255,255,0.12)); background: rgba(255,255,255,0.06); color: var(--emma-text, #fff); padding: 10px 12px; font: inherit; }
@@ -4778,3 +4884,4 @@ function openCreateWizardModal() {
     }
   }
 }
+

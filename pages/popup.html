@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-static-inline'; connect-src 'self' data:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Emma Memory</title>
   <link rel="stylesheet" href="../css/popup.css">
@@ -609,17 +609,17 @@
   </div>
 
   <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
-  <script src="../js/emma-orb.js"></script>
-  <script src="../js/settings-service.js"></script> 
-  <script src="../js/orb-experience-manager.js"></script>
-  <script src="../js/experience-popup-base.js"></script>
-  <script src="../js/assistant-experience-popup.js"></script>
-  <script src="../js/dementia-experience-popup.js"></script>
-  <script src="../js/mirror-experience-popup.js"></script>
-  <script src="../js/universal-emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script> 
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/assistant-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/dementia-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/mirror-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-emma-orb.js"></script>
   
   <!-- Initialize Universal Orb for Extension Page -->
-  <script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
@@ -630,8 +630,8 @@
   </script>
   
   <!-- WEBAPP-FIRST: Load vault status checker before popup -->
-  <script src="../js/vault-status-checker.js"></script>
-  <script src="../js/popup-vault-integration.js"></script>
-  <script src="../js/popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/vault-status-checker.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/popup-vault-integration.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/popup.js"></script>
 </body>
 </html>

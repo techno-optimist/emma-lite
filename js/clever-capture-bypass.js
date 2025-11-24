@@ -409,7 +409,7 @@ class EmmaCleverCaptureBypass {
       z-index: 999999;
       font-family: system-ui;
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      border: 1px solid rgba(111, 99, 217, 0.3);
       min-width: 300px;
     `;
     

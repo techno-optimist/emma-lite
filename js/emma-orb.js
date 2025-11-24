@@ -405,7 +405,7 @@ class EmmaOrb {
       <div style="
         width: 100%;
         height: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
         border-radius: 50%;
         animation: float 3s ease-in-out infinite;
       "></div>

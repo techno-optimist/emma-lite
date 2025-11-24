@@ -1,0 +1,97 @@
+﻿:root {
+  /* Theme metadata */
+  --emma-theme-id: 'aurora-classic';
+  --emma-background-style: aurora;
+
+  /* Core surfaces */
+  --emma-surface-primary: #0a0a0f;
+  --emma-surface-muted: rgba(255, 255, 255, 0.04);
+  --emma-surface-inverse: rgba(255, 255, 255, 0.9);
+
+  /* Gradients and backgrounds */
+  --emma-gradient-primary: linear-gradient(135deg, #5058b4 0%, #5a3f8f 50%, #a468a5 100%);
+  --emma-gradient-secondary: linear-gradient(135deg, #3f3f7d 0%, #5a3f8a 50%, #84528f 100%);
+  --emma-gradient-aurora: linear-gradient(135deg, rgba(80, 88, 180, 0.3) 0%, rgba(90, 63, 143, 0.28) 25%, rgba(164, 104, 165, 0.25) 50%, rgba(67, 132, 187, 0.18) 75%, rgba(80, 88, 180, 0.3) 100%);
+
+  /* Text */
+  --emma-text-strong: #ffffff;
+  --emma-text-standard: rgba(255, 255, 255, 0.85);
+  --emma-text-muted: rgba(255, 255, 255, 0.6);
+  --emma-text-on-accent: #ffffff;
+  --emma-neutral-rgb: 255, 255, 255;
+  --emma-neutral-inverse-rgb: 15, 15, 23;
+
+  /* Accents */
+  --emma-accent-primary: #6f63d9;
+  --emma-accent-secondary: #d06fa8;
+  --emma-accent-primary-rgb: 111, 99, 217;
+  --emma-accent-secondary-rgb: 208, 111, 168;
+  --emma-success: #4ade80;
+  --emma-warning: #fbbf24;
+  --emma-danger: #f87171;
+
+  /* Utility */
+  --emma-border-subtle: rgba(255, 255, 255, 0.1);
+  --emma-border-strong: rgba(255, 255, 255, 0.2);
+  --emma-glow-strong: 0 0 22px rgba(111, 99, 217, 0.32);
+  --emma-shadow-raised: 0 16px 36px rgba(2, 6, 18, 0.35);
+  --emma-button-secondary-bg: rgba(255, 255, 255, 0.1);
+  --emma-button-secondary-border: rgba(255, 255, 255, 0.2);
+  --emma-button-secondary-text: rgba(255, 255, 255, 0.85);
+  --emma-button-secondary-bg-hover: rgba(255, 255, 255, 0.2);
+
+  /* Chat */
+  --emma-chat-user-bubble: linear-gradient(135deg, #6f63d9, #d06fa8);
+  --emma-chat-user-text: #ffffff;
+  --emma-chat-emma-bubble: rgba(37, 38, 65, 0.85);
+  --emma-chat-emma-text: rgba(255, 255, 255, 0.9);
+  --emma-chat-user-meta: rgba(255, 255, 255, 0.7);
+  --emma-chat-emma-meta: rgba(255, 255, 255, 0.6);
+  --emma-chat-surface: rgba(255, 255, 255, 0.05);
+  --emma-chat-surface-strong: rgba(255, 255, 255, 0.1);
+  --emma-chat-border: rgba(255, 255, 255, 0.2);
+  --emma-chat-muted: rgba(255, 255, 255, 0.7);
+  --emma-chat-strong: rgba(255, 255, 255, 0.9);
+  --emma-chat-error: #f87171;
+  --emma-chat-success: #10b981;
+
+  /* Navigation / interactions */
+  --emma-nav-highlight: rgba(var(--emma-accent-primary-rgb), 0.16);
+  --emma-background-aurora: linear-gradient(135deg, rgba(80, 88, 180, 0.25), rgba(90, 63, 143, 0.25));
+  --emma-background-sunrise: linear-gradient(135deg, rgba(255, 176, 124, 0.35), rgba(255, 220, 186, 0.35));
+  --emma-background-forest: linear-gradient(135deg, rgba(58, 149, 138, 0.4), rgba(14, 52, 54, 0.4));
+  --emma-background-ocean: linear-gradient(135deg, rgba(77, 196, 255, 0.2), rgba(14, 84, 120, 0.4));
+  --emma-background-ember: linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(71, 21, 27, 0.45));
+  --emma-background-blossom: linear-gradient(135deg, rgba(252, 179, 255, 0.24), rgba(241, 179, 239, 0.32));
+  --emma-background-zen: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(17, 94, 89, 0.24));
+  --emma-accent-surface: rgba(var(--emma-accent-primary-rgb), 0.14);
+  --emma-accent-surface-strong: rgba(var(--emma-accent-primary-rgb), 0.24);
+  --emma-accent-border: rgba(var(--emma-accent-primary-rgb), 0.3);
+
+  /* Memory constellation */
+  --emma-constellation-node: rgba(var(--emma-accent-primary-rgb), 0.45);
+  --emma-constellation-glow: rgba(var(--emma-accent-primary-rgb), 0.6);
+
+  /* Orb */
+  --emma-orb-hue: 265;
+  --emma-orb-hover-intensity: 0.25;
+
+  /* Legacy aliases */
+  --emma-gradient-1: var(--emma-gradient-primary);
+  --emma-gradient-2: var(--emma-gradient-secondary);
+  --emma-aurora: var(--emma-gradient-aurora);
+  --emma-bg-gradient: linear-gradient(135deg, var(--emma-surface-primary) 0%, #1a1033 50%, #0f0c29 100%);
+  --emma-purple: var(--emma-accent-primary);
+  --emma-pink: var(--emma-accent-secondary);
+  --emma-blue: #667eea;
+  --emma-dark: var(--emma-surface-primary);
+  --emma-card-bg: var(--emma-surface-muted);
+  --emma-glass: rgba(255, 255, 255, 0.05);
+  --emma-border: var(--emma-border-subtle);
+  --emma-text: var(--emma-text-strong);
+  --emma-text-secondary: var(--emma-text-standard);
+  --emma-text-tertiary: var(--emma-text-muted);
+}
+
+
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Emma Chat Experience - Intelligent Memory Companion Chat Interface
  * CTO-approved implementation following Emma's premium design principles
  *
@@ -7,6 +7,46 @@
  */
 
 // Emma Chat Experience - Production Ready
+
+window.metadataIncludesPerson = window.metadataIncludesPerson || ((peopleList, person) => {
+  if (!Array.isArray(peopleList) || !person) return false;
+
+  const targetId = person.id ? String(person.id).trim() : '';
+  if (!targetId) return false;
+
+  const resolveEntryId = (entry) => {
+    if (!entry) return null;
+    if (typeof entry === 'string' || typeof entry === 'number') {
+      const trimmed = String(entry).trim();
+      return trimmed || null;
+    }
+    if (typeof entry === 'object') {
+      const candidate = entry.id ?? entry.personId ?? entry.personID ?? entry.person_id ?? entry.uuid ?? entry.guid;
+      if (candidate === undefined || candidate === null) return null;
+      const trimmed = String(candidate).trim();
+      return trimmed || null;
+    }
+    return null;
+  };
+
+  return peopleList.some(entry => {
+    const entryId = resolveEntryId(entry);
+    return entryId && entryId === targetId;
+  });
+});
+
+window.contentMentionsPerson = window.contentMentionsPerson || ((personName, content) => {
+  if (!personName || !content) return false;
+
+  const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const words = personName.trim().split(/\s+/).filter(Boolean).map(escapeRegex);
+  if (words.length === 0) return false;
+
+  const pattern = `\\b${words.join('\\s+')}\\b(?:'s)?`;
+  const regex = new RegExp(pattern, 'i');
+
+  return regex.test(content);
+});
 
 class EmmaChatExperience extends ExperiencePopup {
   constructor(position, settings = {}) {
@@ -20,6 +60,13 @@ class EmmaChatExperience extends ExperiencePopup {
     this.messageContainer = null;
     this.inputField = null;
     this.sendButton = null;
+    this.voiceIntegrationInitialized = false;
+    this.voiceIntegrationInitializing = false;
+    this.initialWelcomeTimeout = null;
+    this.localWelcomeShown = false;
+    this.remoteGreetingReceived = false;
+    this.voicePlaybackEnabled = false;
+    this.voiceToggleButton = null;
 
     // 🧠 Vectorless AI Engine Integration
     this.vectorlessEngine = null;
@@ -69,6 +116,11 @@ class EmmaChatExperience extends ExperiencePopup {
       tone: "warm, helpful, memory-focused",
       capabilities: ["memory insights", "capture suggestions", "conversation", "vectorless AI"]
     };
+
+    // Agent SDK chat support
+    this.agentChatEnabled = false;
+    this.agentConnectPromise = null;
+    this.agentConnectionNotified = false;
 
     // 🚀 CRITICAL: Initialize AI systems on startup
     this.initializeEmmaIntelligence();
@@ -141,8 +193,8 @@ class EmmaChatExperience extends ExperiencePopup {
     setTimeout(() => this.initializeVoiceIntegration(), 500);
     this.setupKeyboardShortcuts();
 
-    // Add initial Emma welcome message (single clean bubble)
-    await this.addInitialWelcomeMessage();
+    // Add initial Emma welcome message only if remote agent doesn’t greet
+    this.scheduleInitialWelcome();
     this.loadChatHistory();
 
     // 🧠 Initialize Vectorless AI Engine
@@ -167,6 +219,12 @@ class EmmaChatExperience extends ExperiencePopup {
    * Transforms chat into voice-first multimodal experience
    */
   async initializeVoiceIntegration() {
+    if (this.voiceIntegrationInitialized || this.voiceIntegrationInitializing) {
+      return;
+    }
+
+    this.voiceIntegrationInitializing = true;
+
     try {
       console.log('🎙️ Initializing voice-first chat experience...');
 
@@ -177,7 +235,8 @@ class EmmaChatExperience extends ExperiencePopup {
           speed: 1.0,
           tone: 'caring',
           pacing: 2.5,
-          validationMode: true
+          validationMode: true,
+          apiKey: this.apiKey || null
         });
       } else {
         console.warn('⚠️ EmmaBrowserClient not available');
@@ -189,14 +248,23 @@ class EmmaChatExperience extends ExperiencePopup {
       if (this.emmaVoice) {
         // 🔗 CRITICAL: Connect voice system to chat for transcription
         this.emmaVoice.chatInstance = this;
+        if (typeof this.emmaVoice.setVoicePlaybackEnabled === 'function') {
+          this.emmaVoice.setVoicePlaybackEnabled(this.voicePlaybackEnabled);
+        }
+        this.syncVoiceApiKey(true);
 
         // Connect voice button to Emma's voice system
         this.setupVoiceButton();
+
+        this.voiceIntegrationInitialized = true;
 
         // Set up voice event handlers for chat integration (if needed)
         if (this.setupVoiceEventHandlers) {
           this.setupVoiceEventHandlers();
         }
+
+        // Ensure the chat interface connects to the Agent SDK backend
+        this.connectAgentForChat();
 
         console.log('✅ Emma voice client ready!');
       } else {
@@ -205,10 +273,90 @@ class EmmaChatExperience extends ExperiencePopup {
         this.voiceButton.title = 'Voice system not available';
       }
     } catch (error) {
-      console.error('❌ Voice integration failed:', error);
+      console.error('[VOICE] Integration failed:', error);
       this.voiceButton.style.opacity = '0.5';
       this.voiceButton.title = 'Voice system error: ' + error.message;
+    } finally {
+      this.voiceIntegrationInitializing = false;
     }
+  }
+
+  /**
+   * Sync the runtime API key with the voice client (if connected)
+   */
+  syncVoiceApiKey(silent = true) {
+    if (this.emmaVoice && typeof this.emmaVoice.setApiKey === 'function') {
+      this.emmaVoice.setApiKey(this.apiKey, { silent });
+    }
+  }
+
+  /**
+   * Ensure the chat agent connection is established for tool usage
+   */
+  async connectAgentForChat() {
+    try {
+      if (!this.emmaVoice) return;
+      if (this.agentChatEnabled && this.emmaVoice.isConnected) return;
+      if (this.agentConnectPromise) return this.agentConnectPromise;
+
+      this.agentConnectPromise = (async () => {
+        try {
+          if (!this.emmaVoice.isConnected) {
+            await this.emmaVoice.connectToEmmaAgent();
+          }
+        } catch (error) {
+          console.error('❌ Failed to connect Emma agent for chat:', error);
+          this.agentChatEnabled = false;
+          if (!this.agentConnectionNotified) {
+            this.addMessage('system', '⚠️ I could not reach Emma\'s advanced memory tools yet. I\'ll keep helping locally.');
+            this.agentConnectionNotified = true;
+          }
+        } finally {
+          this.agentConnectPromise = null;
+        }
+      })();
+
+      return this.agentConnectPromise;
+    } catch (error) {
+      console.error('❌ Agent connection setup error:', error);
+    }
+  }
+
+  /**
+   * Mark that the Agent SDK connection is active
+   */
+  markAgentReady() {
+    this.remoteGreetingReceived = true;
+    if (this.initialWelcomeTimeout) {
+      clearTimeout(this.initialWelcomeTimeout);
+      this.initialWelcomeTimeout = null;
+    }
+    if (this.agentChatEnabled) {
+      if (typeof this.hideTypingIndicator === 'function') {
+        this.hideTypingIndicator();
+      }
+      return;
+    }
+
+    this.agentChatEnabled = true;
+    this.agentConnectionNotified = true;
+    this.addMessage('system', '🤖 Emma is connected to your memory tools and can use them for you.');
+    if (typeof this.hideTypingIndicator === 'function') {
+      this.hideTypingIndicator();
+    }
+  }
+
+  /**
+   * Handle agent disconnects gracefully
+   */
+  markAgentDisconnected() {
+    this.agentChatEnabled = false;
+    this.agentConnectionNotified = false;
+    if (typeof this.hideTypingIndicator === 'function') {
+      this.hideTypingIndicator();
+    }
+    this.addMessage('system', '⚠️ Emma lost connection to the advanced memory tools. Trying to reconnect...');
+    this.connectAgentForChat();
   }
 
   /**
@@ -383,22 +531,53 @@ class EmmaChatExperience extends ExperiencePopup {
     }
   }
 
+  getHeaderActions() {
+    const toggle = this.createVoiceToggleButton();
+    return toggle ? [toggle] : [];
+  }
+
+  createVoiceToggleButton() {
+    if (this.voiceToggleButton && this.voiceToggleButton.tagName) {
+      return this.voiceToggleButton;
+    }
+
+    const button = document.createElement('button');
+    button.id = 'voice-tts-toggle';
+    button.className = 'voice-toggle is-on';
+    button.setAttribute('aria-pressed', 'true');
+
+    const icon = document.createElement('span');
+    icon.className = 'voice-toggle-icon';
+    icon.textContent = '🔊';
+
+    const label = document.createElement('span');
+    label.className = 'voice-toggle-label';
+    label.textContent = 'Voice On';
+
+    button.append(icon, label);
+    this.voiceToggleButton = button;
+    return button;
+  }
+
   renderContent(contentElement) {
     // CLEAN REDESIGN: Remove inner container styling - let ExperiencePopup handle the container
     // Just set up the content layout without duplicating container styles
     contentElement.style.cssText = `
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 8px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: white;
       position: relative;
       width: 100%;
       height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
       box-sizing: border-box;
       padding: 0;
       background: transparent;
       border: none;
+      overflow: hidden;
     `;
 
     contentElement.innerHTML = `
@@ -412,7 +591,7 @@ class EmmaChatExperience extends ExperiencePopup {
       <!-- Chat Input -->
       <div class="emma-chat-input">
         <div class="input-wrapper">
-          <button class="voice-btn" id="voice-input-btn" title="Voice input">
+          <button class="voice-btn" id="voice-input-btn" title="Voice input" aria-label="Start voice input" type="button">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -420,25 +599,20 @@ class EmmaChatExperience extends ExperiencePopup {
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <textarea
+          <input
+            type="text"
             id="chat-input"
             class="chat-textarea"
             placeholder="Ask Emma about your memories..."
-            rows="1"
             maxlength="2000"
-          ></textarea>
+          />
 
-          <button class="send-btn" id="send-btn" title="Send message">
+          <button class="send-btn" id="send-btn" title="Send message" aria-label="Send message" type="button">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
             </svg>
           </button>
         </div>
-
-
-
-        <!-- Add bottom spacing for input area - match top padding exactly -->
-        <div style="height: 32px;"></div>
       </div>
 
       <!-- Typing Indicator -->
@@ -461,6 +635,7 @@ class EmmaChatExperience extends ExperiencePopup {
     this.sendButton = document.getElementById('send-btn');
     // NO DUPLICATE close button - ExperiencePopup handles this
     this.voiceButton = document.getElementById('voice-input-btn');
+    this.voiceToggleButton = this.voiceToggleButton || document.getElementById('voice-tts-toggle');
     // Settings button removed - clean chat interface
 
     if (!this.messageContainer || !this.inputField || !this.sendButton || !this.voiceButton) {
@@ -476,6 +651,13 @@ class EmmaChatExperience extends ExperiencePopup {
     this.inputField.addEventListener('keydown', (e) => this.handleInputKeydown(e));
     this.sendButton.addEventListener('click', () => this.sendMessage());
     this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
+    if (this.voiceToggleButton && !this.voiceToggleButton.dataset.toggleBound) {
+      this.voiceToggleButton.addEventListener('click', () => this.toggleVoicePlayback());
+      this.voiceToggleButton.dataset.toggleBound = 'true';
+    }
+    this.updateVoiceToggleUI();
+    this.autoResizeTextarea();
+    this.ensureResponsivePlaceholder();
 
     // Settings removed from chat - access via main settings panel
     // NO DUPLICATE close button event listener - ExperiencePopup handles this
@@ -491,6 +673,34 @@ class EmmaChatExperience extends ExperiencePopup {
     
     // 🎯 Setup dynamic quick start prompts
     this.setupQuickStartPrompts();
+  }
+
+  toggleVoicePlayback() {
+    this.voicePlaybackEnabled = !this.voicePlaybackEnabled;
+    if (this.emmaVoice && typeof this.emmaVoice.setVoicePlaybackEnabled === 'function') {
+      this.emmaVoice.setVoicePlaybackEnabled(this.voicePlaybackEnabled);
+    }
+    this.updateVoiceToggleUI();
+    console.log(`🔊 Emma TTS ${this.voicePlaybackEnabled ? 'enabled' : 'muted'}`);
+  }
+
+  updateVoiceToggleUI() {
+    if (!this.voiceToggleButton) {
+      return;
+    }
+
+    const label = this.voiceToggleButton.querySelector('.voice-toggle-label');
+    const icon = this.voiceToggleButton.querySelector('.voice-toggle-icon');
+    this.voiceToggleButton.classList.toggle('is-on', this.voicePlaybackEnabled);
+    this.voiceToggleButton.classList.toggle('is-muted', !this.voicePlaybackEnabled);
+    this.voiceToggleButton.setAttribute('aria-pressed', this.voicePlaybackEnabled ? 'true' : 'false');
+    this.voiceToggleButton.setAttribute('title', this.voicePlaybackEnabled ? 'Emma will speak responses' : 'Emma voice muted');
+    if (label) {
+      label.textContent = this.voicePlaybackEnabled ? 'Voice On' : 'Voice Off';
+    }
+    if (icon) {
+      icon.textContent = this.voicePlaybackEnabled ? '🔊' : '🔇';
+    }
   }
 
   /**
@@ -514,13 +724,13 @@ class EmmaChatExperience extends ExperiencePopup {
       },
       {
         text: "Let's save a new memory",
-        icon: "💝",
+        icon: "📝",
         action: "memory", 
         description: "Create a new memory capsule"
       },
       {
         text: "Ask me about any of your memories",
-        icon: "🧠",
+        icon: "💬",
         action: "explore",
         description: "Explore and reminisce about past memories"
       }
@@ -550,6 +760,10 @@ class EmmaChatExperience extends ExperiencePopup {
     if (promptMessage) {
       promptMessage.classList.add('emma-quick-start-prompts');
       promptMessage.id = 'quick-start-prompts-message';
+      const contentEl = promptMessage.querySelector('.message-content');
+      if (contentEl) {
+        contentEl.classList.add('quick-prompts-wrapper');
+      }
     }
 
     // Apply beautiful Emma-branded styling
@@ -573,6 +787,11 @@ class EmmaChatExperience extends ExperiencePopup {
       <style id="emma-quick-prompt-styles">
         .emma-quick-start-prompts {
           animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .quick-prompts-wrapper {
+          width: 100%;
+          max-width: none;
         }
         
         .quick-prompts-text {
@@ -696,6 +915,11 @@ class EmmaChatExperience extends ExperiencePopup {
             justify-content: center;
             min-height: 48px;
             font-size: 15px;
+          }
+
+          .emma-quick-prompt .prompt-text {
+            white-space: normal;
+            text-align: center;
           }
         }
 
@@ -1228,26 +1452,17 @@ class EmmaChatExperience extends ExperiencePopup {
       
       if (window.emmaWebVault?.vaultData?.content?.memories) {
         const vaultMemories = window.emmaWebVault.vaultData.content.memories;
+        const personForMatching = { id: person.id, name: person.name };
         
         for (const [memoryId, memory] of Object.entries(vaultMemories)) {
-          // Check if person is in memory's people metadata
-          if (memory.metadata && memory.metadata.people && 
-              Array.isArray(memory.metadata.people) && 
-              memory.metadata.people.includes(person.id)) {
-            connectedMemories.push({ ...memory, id: memoryId });
+          const normalizedMemory = { ...memory, id: memory.id || memoryId };
+
+          if (window.metadataIncludesPerson(memory.metadata?.people, personForMatching)) {
+            connectedMemories.push(normalizedMemory);
+            continue;
           }
           
-          // Also check if person's name is mentioned in content
-          if (person.name && memory.content) {
-            const personName = person.name.toLowerCase();
-            const memoryContent = memory.content.toLowerCase();
-            if (memoryContent.includes(personName)) {
-              // Avoid duplicates
-              if (!connectedMemories.find(m => m.id === memoryId)) {
-                connectedMemories.push({ ...memory, id: memoryId });
-              }
-            }
-          }
+          // Content-based inference removed; rely on explicit metadata associations only
         }
       }
 
@@ -1625,7 +1840,7 @@ class EmmaChatExperience extends ExperiencePopup {
         <div class="emma-image-modal" id="emma-image-modal" onclick="this.remove()">
           <div class="image-modal-content" onclick="event.stopPropagation()">
             <button class="modal-close-btn" onclick="document.getElementById('emma-image-modal').remove()">
-              ×
+              &times;
             </button>
             <div class="image-container">
               <img src="${imageUrl}" alt="Memory photo" id="modal-image" />
@@ -1864,9 +2079,39 @@ class EmmaChatExperience extends ExperiencePopup {
 
   autoResizeTextarea() {
     const textarea = this.inputField;
+    if (!textarea) return;
+
+    if (textarea.tagName === 'INPUT') {
+      const computed = window.getComputedStyle(textarea);
+      const baseHeight = parseFloat(computed.lineHeight) || 34;
+      textarea.style.height = `${baseHeight}px`;
+      textarea.style.overflow = 'hidden';
+      return;
+    }
+
     textarea.style.height = 'auto';
+    const needsScroll = textarea.scrollHeight > 120;
     const scrollHeight = Math.min(textarea.scrollHeight, 120); // Max 5 lines
     textarea.style.height = scrollHeight + 'px';
+    textarea.style.overflowY = needsScroll ? 'auto' : 'hidden';
+  }
+
+  ensureResponsivePlaceholder() {
+    if (!this.inputField) return;
+    if (!this.placeholderUpdateHandler) {
+      this.placeholderUpdateHandler = () => {
+        if (!this.inputField) return;
+        const isMobile = window.innerWidth <= 480;
+        const desiredPlaceholder = isMobile
+          ? 'Chat with Emma...'
+          : 'Ask Emma about your memories...';
+        if (this.inputField.placeholder !== desiredPlaceholder) {
+          this.inputField.placeholder = desiredPlaceholder;
+        }
+      };
+      window.addEventListener('resize', this.placeholderUpdateHandler);
+    }
+    this.placeholderUpdateHandler();
   }
 
   initializeVoiceRecognition() {
@@ -2065,57 +2310,77 @@ class EmmaChatExperience extends ExperiencePopup {
     const message = this.inputField.value.trim();
     if (!message) return;
 
-    // Hide quick start prompts when user starts typing their own messages
     if (this.hasQuickPromptsShowing) {
       this.hideQuickStartPrompts();
     }
 
-    // Add user message
     const messageId = this.addMessage(message, 'user');
     this.inputField.value = '';
     this.autoResizeTextarea();
     this.handleInputChange();
 
-    // 🎯 ENRICHMENT FSM: Check if this is a response to an enrichment question
-    const activeEnrichment = this.findActiveEnrichmentForResponse();
-    if (activeEnrichment) {
-      await this.processEnrichmentResponse(activeEnrichment, message);
+    if (this.emmaVoice) {
+      await this.connectAgentForChat();
+    }
+
+    const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
+    const localHandled = await this.processLocalChatMessage(message, messageId, {
+      allowDefaultResponse: !canUseAgent
+    });
+
+    if (localHandled) {
       return;
     }
 
-    // 🎯 CTO OPTIMIZATION: VAULT OPERATIONS FIRST - Complete intent hierarchy
-    // This prevents ALL vault queries from being captured as memories
+    if (canUseAgent) {
+      if (typeof this.showTypingIndicator === 'function') {
+        this.showTypingIndicator();
+      }
+      this.emmaVoice.sendToAgent({ type: 'user_text', text: message, source: 'chat' });
+      return;
+    }
+
+    await this.respondAsEmma(message);
+  }
+
+
+
+
+  async processLocalChatMessage(message, messageId, { allowDefaultResponse = true } = {}) {
+    const activeEnrichment = this.findActiveEnrichmentForResponse();
+    if (activeEnrichment) {
+      await this.processEnrichmentResponse(activeEnrichment, message);
+      return true;
+    }
+
     const intent = this.classifyUserIntent(message);
-    
-    // VAULT OPERATIONS have HIGHEST PRIORITY
     if (intent.type === 'people_list' || intent.type === 'memory_search' || intent.type === 'person_inquiry') {
       console.log('🎯 CTO: VAULT OPERATION DETECTED - Bypassing memory capture for:', intent.type, message);
       this.showTypingIndicator();
       setTimeout(() => {
         this.respondAsEmma(message);
       }, 1000 + Math.random() * 1500);
-      return;
+      return true;
     }
 
-    // 💝 Check for memory detection (new messages only)
     if (this.intelligentCapture) {
       const analysisResult = await this.analyzeForMemory(message, messageId);
-      // If intelligent capture already produced a response (unified prompt), stop here
       if (analysisResult && analysisResult.handled) {
-        return;
+        return true;
       }
-    } else {
-      // ... existing code ...
     }
 
-    // Show typing indicator
-    this.showTypingIndicator();
+    if (!allowDefaultResponse) {
+      return false;
+    }
 
-    // Simulate Emma thinking and respond
+    this.showTypingIndicator();
     setTimeout(() => {
       this.respondAsEmma(message);
-    }, 1000 + Math.random() * 1500); // 1-2.5s realistic delay
+    }, 1000 + Math.random() * 1500);
+    return true;
   }
+
 
   addMessage(content, sender, options = {}) {
     // Defensive argument handling: many call sites mistakenly pass (sender, content).
@@ -2224,11 +2489,11 @@ class EmmaChatExperience extends ExperiencePopup {
           console.warn('⚠️ Emma orb fallback for message avatar');
           // High-quality fallback gradient
           orbContainer.style.cssText = `
-            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #f093fb);
+            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4);
             border-radius: 50%;
             width: 100%;
             height: 100%;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
           `;
         }
       }
@@ -2257,8 +2522,12 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   formatMessageContent(content) {
-    // Basic formatting for Emma's responses
-    return content
+    // Escape HTML, then apply basic formatting for Emma's responses
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
+    const safe = esc(content || '');
+    return safe
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
       .replace(/\n/g, '<br>'); // Line breaks
@@ -2954,7 +3223,8 @@ RULES:
         setTimeout(() => {
           this.startPersonEnrichmentFlow(personName);
         }, 1500);
-        
+
+        saved = true;
       } else {
         console.error('❌ Vault not available:', { 
           hasWebVault: !!window.emmaWebVault, 
@@ -3920,9 +4190,9 @@ RULES:
         
         // Create a photo preview message
         const photoPreview = `
-          <div style="margin: 10px 0; padding: 15px; background: rgba(134, 88, 255, 0.1); border-radius: 12px; border: 2px dashed rgba(134, 88, 255, 0.3);">
+          <div style="margin: 10px 0; padding: 15px; background: rgba(111, 99, 217, 0.1); border-radius: 12px; border: 2px dashed rgba(111, 99, 217, 0.3);">
             <img src="${imageData}" style="max-width: 200px; max-height: 200px; border-radius: 8px; object-fit: cover;">
-            <div style="margin-top: 8px; font-size: 14px; color: #8658ff;">
+            <div style="margin-top: 8px; font-size: 14px; color: #6f63d9;">
               📷 Photo with ${personName} - Ready to save!
             </div>
           </div>
@@ -4741,6 +5011,10 @@ RULES:
    * DYNAMIC & PERSONAL: Different greetings based on time, vault content, recent activity
    */
   async addInitialWelcomeMessage() {
+    if (this.remoteGreetingReceived || this.localWelcomeShown) {
+      return;
+    }
+    this.localWelcomeShown = true;
 
     // Get current session context
     const hour = new Date().getHours();
@@ -4789,6 +5063,18 @@ RULES:
 
     this.addMessage(welcomeMessage, 'emma');
     console.log('💬 UNIQUE WELCOME GENERATED:', welcomeMessage.substring(0, 50) + '...');
+  }
+
+  scheduleInitialWelcome() {
+    if (this.initialWelcomeTimeout || this.localWelcomeShown) {
+      return;
+    }
+    this.initialWelcomeTimeout = setTimeout(() => {
+      this.initialWelcomeTimeout = null;
+      if (!this.remoteGreetingReceived) {
+        this.addInitialWelcomeMessage();
+      }
+    }, 1200);
   }
 
   // Chat settings modal removed - access via main settings panel
@@ -4922,6 +5208,8 @@ RULES:
     this.debugMode = debugMode;
     this.dementiaMode = dementiaMode;
 
+    this.syncVoiceApiKey(false);
+
     // Reinitialize vectorless engine if API key changed
     if (apiKey) {
       this.initializeVectorlessEngine();
@@ -5027,6 +5315,8 @@ RULES:
     this.dementiaMode = newDementiaMode;
     this.debugMode = newDebugMode;
 
+    this.syncVoiceApiKey(false);
+
     // Save to localStorage
     const settings = {
       apiKey: this.apiKey,
@@ -5084,37 +5374,87 @@ RULES:
    */
   loadVectorlessSettings() {
     try {
-          // 🚀 DEMO SECURITY: API keys disabled for family demo
-    
-    // 1. SECURITY LOCKDOWN: No API key access for demo safety
-    this.apiKey = null; // DEMO MODE: API keys disabled for security
-      
-      // 2. Check old vectorless settings format (backup)
-      if (!this.apiKey) {
-        const stored = localStorage.getItem('emma-vectorless-settings');
-        if (stored) {
-          const settings = JSON.parse(stored);
-          this.apiKey = settings.apiKey || null;
+      const normalizeApiKey = (value) => {
+        if (!value || typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+      };
+
+      this.apiKey = null;
+      let legacySettings = null;
+
+      // 1. Primary source: redesigned settings page
+      const generalSettingsRaw = localStorage.getItem('emmaSettings');
+      if (generalSettingsRaw) {
+        try {
+          const generalSettings = JSON.parse(generalSettingsRaw);
+          const modernKey = normalizeApiKey(generalSettings?.apiKey);
+          if (modernKey) {
+            this.apiKey = modernKey;
+          }
+        } catch (settingsError) {
+          if (window.EMMA_DEBUG) {
+            console.warn('emmaSettings parse failed:', settingsError);
+          }
         }
       }
-      
-      // 3. Check global API key (backup)
-      if (!this.apiKey && window.API_KEY) {
-        this.apiKey = window.API_KEY;
-        console.log('💬 Using global API key for Emma responses');
+
+      // 2. Legacy storage fallback (vectorless modal)
+      const legacyRaw = localStorage.getItem('emma-vectorless-settings');
+      if (legacyRaw) {
+        try {
+          legacySettings = JSON.parse(legacyRaw);
+          if (!this.apiKey) {
+            const legacyKey = normalizeApiKey(legacySettings.apiKey);
+            if (legacyKey) {
+              this.apiKey = legacyKey;
+            }
+          }
+        } catch (legacyError) {
+          if (window.EMMA_DEBUG) {
+            console.warn('Legacy vectorless settings parse failed:', legacyError);
+          }
+          legacySettings = null;
+        }
       }
-      
-      // 🔧 Load other settings
-      this.dementiaMode = localStorage.getItem('emma-dementia-mode') === 'true';
-      this.debugMode = localStorage.getItem('emma-debug-mode') === 'true';
-      
+
+      // 3. Global fallback for embedded demos or manual overrides
+      if (!this.apiKey && window.API_KEY) {
+        const globalKey = normalizeApiKey(window.API_KEY);
+        if (globalKey) {
+          this.apiKey = globalKey;
+          console.log('💬 Using global API key for Emma responses');
+        }
+      }
+
+      // 4. Feature toggles (persisted separately, with legacy fallback)
+      const dementiaFlag = localStorage.getItem('emma-dementia-mode');
+      if (dementiaFlag !== null) {
+        this.dementiaMode = dementiaFlag === 'true';
+      } else if (legacySettings && typeof legacySettings.dementiaMode === 'boolean') {
+        this.dementiaMode = legacySettings.dementiaMode;
+      } else {
+        this.dementiaMode = false;
+      }
+
+      const debugFlag = localStorage.getItem('emma-debug-mode');
+      if (debugFlag !== null) {
+        this.debugMode = debugFlag === 'true';
+      } else if (legacySettings && typeof legacySettings.debugMode === 'boolean') {
+        this.debugMode = legacySettings.debugMode;
+      } else {
+        this.debugMode = false;
+      }
+
+      this.syncVoiceApiKey(true);
+
       // 🎯 LOG RESULTS
       if (this.apiKey) {
         console.log('✅ OpenAI API key found and loaded successfully!');
       } else {
         console.warn('💬 No API key found - Emma will use intelligent fallbacks');
       }
-      
+
     } catch (error) {
       console.warn('💬 Could not load vectorless settings:', error);
     }
@@ -5458,7 +5798,11 @@ RULES:
       return;
     }
 
-    // Show memory preview dialog
+    const autoSaved = await this.tryAutoSaveMemory(analysis.memory, analysis.memory?.id, 'chat-detected');
+    if (autoSaved) {
+      return;
+    }
+
     this.showMemoryPreviewDialog(analysis.memory);
   }
 
@@ -5495,6 +5839,7 @@ RULES:
    * Show memory preview dialog
    */
   showMemoryPreviewDialog(memory) {
+    const esc = (s) => (window.escapeHtml ? window.escapeHtml(String(s)) : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'));
     // 🎯 CRITICAL FIX: Store memory in temporary storage for editing
     this.temporaryMemories.set(memory.id, memory);
     console.log('🎯 MOBILE PREVIEW: Stored temporary memory for editing:', memory.id);
@@ -5508,14 +5853,14 @@ RULES:
       <!-- 📱 MOBILE HEADER: Full-width with close button -->
       <div class="mobile-header">
         <div class="header-content">
-          <h2 class="memory-title">${memory.title || 'Beautiful Memory'}</h2>
+          <h2 class="memory-title">${esc(memory.title || 'Beautiful Memory')}</h2>
           <button class="close-btn" onclick="this.closest('.memory-preview-dialog').remove()">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
         </div>
-        <div class="memory-date">${memory.metadata?.date || 'Saturday, August 23, 2025'}</div>
+        <div class="memory-date">${esc(memory.metadata?.date || 'Saturday, August 23, 2025')}</div>
       </div>
 
       <!-- 📸 HERO IMAGE CAROUSEL: Feature photos prominently -->
@@ -5526,7 +5871,7 @@ RULES:
               .filter(att => att.type?.startsWith('image/'))
               .slice(0, 5)
               .map((image, index) => `
-                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${esc(image.data || image.dataUrl || image.url)}')">
                   <div class="image-overlay"></div>
                 </div>
               `).join('')}
@@ -5547,8 +5892,8 @@ RULES:
       <!-- 👥 PEOPLE SECTION: Large touch-friendly avatars -->
       ${peopleList.length > 0 ? `
         <div class="people-section">
-          <h3 class="section-title">👥 People in this memory</h3>
-          <div class="people-grid" id="people-grid-${memory.id}">
+          <h3 class="section-title">People in this memory</h3>
+          <div class="people-grid" id="people-grid-${esc(memory.id)}">
             <!-- People avatars will be loaded here -->
           </div>
         </div>
@@ -5557,15 +5902,15 @@ RULES:
       <!-- 📝 CONTENT SECTION: Story and details -->
       <div class="content-section">
         <div class="memory-story">
-          <p>${memory.content}</p>
+          <p>${esc(memory.content || '')}</p>
         </div>
         
         ${memory.metadata?.emotions?.length > 0 ? `
           <div class="memory-tags">
-            <span class="tag-label">💭</span>
+            <span class="tag-label">Emotions</span>
             <div class="emotions-list">
               ${memory.metadata.emotions.map(emotion => `
-                <span class="emotion-tag">${emotion}</span>
+                <span class="emotion-tag">${esc(emotion)}</span>
               `).join('')}
             </div>
           </div>
@@ -5573,8 +5918,8 @@ RULES:
 
         ${memory.metadata?.location ? `
           <div class="memory-tags">
-            <span class="tag-label">📍</span>
-            <span class="location-tag">${memory.metadata.location}</span>
+            <span class="tag-label">Location</span>
+            <span class="location-tag">${esc(memory.metadata.location)}</span>
           </div>
         ` : ''}
       </div>
@@ -5582,20 +5927,20 @@ RULES:
       <!-- 🎬 MEDIA GRID: Additional media -->
       ${memory.attachments?.length > 1 || hasVideo ? `
         <div class="media-section">
-          <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+          <h3 class="section-title">All Media (${memory.attachments.length})</h3>
           <div class="media-grid">
             ${memory.attachments.map((attachment, index) => `
               <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
                 ${attachment.type?.startsWith('image/') ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
+                  <img src="${esc(attachment.data || attachment.dataUrl || attachment.url)}" alt="${esc(attachment.name || '')}" />
                 ` : attachment.type?.startsWith('video/') ? `
-                  <video src="${attachment.dataUrl || attachment.url}" muted>
-                    <div class="video-play-overlay">▶️</div>
+                  <video src="${esc(attachment.dataUrl || attachment.url)}" muted>
+                    <div class="video-play-overlay">Play</div>
                   </video>
                 ` : `
                   <div class="file-item">
-                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
-                    <div class="file-name">${attachment.name}</div>
+                    <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'Audio' : 'File'}</div>
+                    <div class="file-name">${esc(attachment.name || '')}</div>
                   </div>
                 `}
               </div>
@@ -5633,7 +5978,7 @@ RULES:
         }
         
         .responsive-memory-container {
-          background: linear-gradient(135deg, rgba(139, 92, 246, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
+          background: linear-gradient(135deg, rgba(111, 99, 217, 0.95) 0%, rgba(124, 58, 237, 0.95) 50%, rgba(109, 40, 217, 0.95) 100%);
           border-radius: clamp(16px, 3vw, 24px);
           max-width: 95vw;
           max-height: 95vh;
@@ -5814,7 +6159,7 @@ RULES:
           border: 3px solid rgba(255, 255, 255, 0.9);
           overflow: hidden;
           position: relative;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -5825,13 +6170,13 @@ RULES:
           transition: all 0.3s ease;
           cursor: pointer;
           text-align: center;
-          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
         }
         
         .memory-person-avatar:hover {
           transform: scale(1.05);
           border-color: white;
-          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+          box-shadow: 0 6px 20px rgba(111, 99, 217, 0.5);
         }
         
         .memory-person-avatar img {
@@ -5951,7 +6296,7 @@ RULES:
         
         .action-btn.primary {
           background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-          color: #8b5cf6;
+          color: #6f63d9;
           border: 2px solid rgba(255, 255, 255, 0.3);
         }
         
@@ -5995,7 +6340,7 @@ RULES:
                 .filter(att => att.type?.startsWith('image/'))
                 .slice(0, 5)
                 .map((image, index) => `
-                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${image.data || image.dataUrl || image.url}')">
+                  <div class="hero-image ${index === 0 ? 'active' : ''}" style="background-image: url('${esc(image.data || image.dataUrl || image.url)}')">
                     <div class="image-overlay"></div>
                   </div>
                 `).join('')}
@@ -6016,8 +6361,8 @@ RULES:
         <!-- PEOPLE SECTION -->
         ${peopleList.length > 0 ? `
           <div class="people-section">
-            <h3 class="section-title">👥 People in this memory</h3>
-            <div class="people-grid" id="people-grid-${memory.id}">
+            <h3 class="section-title">People in this memory</h3>
+            <div class="people-grid" id="people-grid-${esc(memory.id)}">
               <!-- People avatars will be loaded here -->
             </div>
           </div>
@@ -6026,15 +6371,15 @@ RULES:
         <!-- CONTENT -->
         <div class="content-section">
           <div class="memory-story">
-            <p>${memory.content}</p>
+            <p>${esc(memory.content || '')}</p>
           </div>
           
           ${memory.metadata?.emotions?.length > 0 ? `
             <div class="memory-tags">
-              <span class="tag-label">💭</span>
+              <span class="tag-label">Emotions</span>
               <div class="emotions-list">
                 ${memory.metadata.emotions.map(emotion => `
-                  <span class="emotion-tag">${emotion}</span>
+                  <span class="emotion-tag">${esc(emotion)}</span>
                 `).join('')}
               </div>
             </div>
@@ -6042,8 +6387,8 @@ RULES:
 
           ${memory.metadata?.location ? `
             <div class="memory-tags">
-              <span class="tag-label">📍</span>
-              <span class="location-tag">${memory.metadata.location}</span>
+              <span class="tag-label">Location</span>
+              <span class="location-tag">${esc(memory.metadata.location)}</span>
             </div>
           ` : ''}
         </div>
@@ -6051,7 +6396,7 @@ RULES:
         <!-- MEDIA GRID -->
         ${memory.attachments?.length > 1 || hasVideo ? `
           <div class="media-section">
-            <h3 class="section-title">📷 All Media (${memory.attachments.length})</h3>
+            <h3 class="section-title">All Media (${memory.attachments.length})</h3>
             <div class="media-grid">
               ${memory.attachments.map((attachment, index) => `
                 <div class="media-item ${attachment.type?.startsWith('image/') ? 'image' : attachment.type?.startsWith('video/') ? 'video' : 'file'}">
@@ -6059,11 +6404,11 @@ RULES:
                     <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="${attachment.name}" />
                   ` : attachment.type?.startsWith('video/') ? `
                     <video src="${attachment.dataUrl || attachment.url}" muted>
-                    <div class="video-play-overlay">▶️</div>
+                    <div class="video-play-overlay">Play</div>
                     </video>
                   ` : `
                     <div class="file-item">
-                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? '🎵' : '📄'}</div>
+                      <div class="file-icon">${attachment.type?.startsWith('audio/') ? 'Audio' : 'File'}</div>
                       <div class="file-name">${attachment.name}</div>
                     </div>
                   `}
@@ -6076,10 +6421,10 @@ RULES:
         <!-- ACTION BUTTONS -->
         <div class="action-buttons">
           <button class="action-btn primary" onclick="window.chatExperience.saveMemoryToVault('${memory.id}')">
-            ✨ Save to Vault
+            Save to Vault
           </button>
           <button class="action-btn secondary" onclick="window.chatExperience.editMemoryDetails('${memory.id}')">
-            ✏️ Edit Memory
+            Edit Memory
           </button>
         </div>
       </div>
@@ -6261,7 +6606,7 @@ RULES:
       <style>
         .memory-person-avatar {
           width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8);
-          overflow: hidden; position: relative; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          overflow: hidden; position: relative; background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
           font-weight: 600; color: white; transition: all 0.3s ease; cursor: pointer;
         }
@@ -6269,12 +6614,12 @@ RULES:
         .memory-person-avatar img { width: 100%; height: 100%; object-fit: cover; }
         
         .emma-drop-zone {
-          border: 2px dashed rgba(139, 92, 246, 0.6); border-radius: 16px; padding: 40px;
-          text-align: center; background: rgba(139, 92, 246, 0.1); cursor: pointer;
+          border: 2px dashed rgba(111, 99, 217, 0.6); border-radius: 16px; padding: 40px;
+          text-align: center; background: rgba(111, 99, 217, 0.1); cursor: pointer;
           transition: all 0.3s ease; margin: 20px 0;
         }
-        .emma-drop-zone:hover { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
-        .emma-drop-zone.drag-over { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.3); transform: scale(1.02); }
+        .emma-drop-zone:hover { border-color: #6f63d9; background: rgba(111, 99, 217, 0.2); }
+        .emma-drop-zone.drag-over { border-color: #6f63d9; background: rgba(111, 99, 217, 0.3); transform: scale(1.02); }
         
         .people-selection-grid {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0;
@@ -6284,7 +6629,7 @@ RULES:
           padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s ease;
         }
         .person-select-card:hover { background: rgba(255, 255, 255, 0.1); }
-        .person-select-card.selected { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.2); }
+        .person-select-card.selected { border-color: #6f63d9; background: rgba(111, 99, 217, 0.2); }
         
         .media-preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
         .media-preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
@@ -6295,7 +6640,7 @@ RULES:
       <div class="dialog-content" style="position: relative; z-index: 10001 !important; max-width: 600px; max-height: 80vh; overflow-y: auto;">
         <div class="dialog-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
           <h3 style="margin: 0; color: white;">📷 Create Photo Memory</h3>
-          <button class="dialog-close" onclick="this.closest('.memory-preview-dialog').remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+          <button class="dialog-close" onclick="this.closest('.memory-preview-dialog').remove()" style="z-index: 10002 !important; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
         
         <div class="dialog-body">
@@ -6330,7 +6675,7 @@ RULES:
           <!-- Action Buttons -->
           <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <button onclick="this.closest('.memory-preview-dialog').remove()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
-            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
+            <button onclick="window.chatExperience.saveEnhancedMemory('${memory.id}')" style="padding: 12px 24px; background: linear-gradient(135deg, #6f63d9, #d06fa8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💝 Save Memory</button>
           </div>
         </div>
       </div>
@@ -6474,9 +6819,9 @@ RULES:
           avatar.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.5)';
         } else {
           // EXISTING person styling (consistent with constellation)
-          avatar.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)';
+          avatar.style.background = 'linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%)';
           avatar.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-          avatar.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.3)';
+          avatar.style.boxShadow = '0 2px 8px rgba(111, 99, 217, 0.3)';
         }
 
         // 🎯 CTO CRITICAL: ENHANCED PHOTO LOADING WITH DEBUGGING
@@ -6670,160 +7015,86 @@ RULES:
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      background: rgba(0, 0, 0, 0.95) !important;
+      background: rgba(var(--emma-neutral-inverse-rgb, 15, 15, 23), 0.94) !important;
       backdrop-filter: blur(20px) !important;
       overflow: hidden !important;
       overscroll-behavior: contain !important;
       touch-action: none !important;
     `;
 
+    const titleInputId = `edit-title-${memory.id}`;
+    const contentInputId = `edit-content-${memory.id}`;
+
     editModal.innerHTML = `
-      <div class="edit-modal-content" style="
-        background: linear-gradient(135deg, rgba(147, 112, 219, 0.95), rgba(123, 104, 238, 0.95));
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        overscroll-behavior: contain !important;
-        -webkit-overflow-scrolling: touch !important;
-        color: white;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        position: relative !important;
-        z-index: 15001 !important;
-        pointer-events: auto !important;
-        touch-action: pan-y !important;
-        scroll-behavior: smooth !important;
-      ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">✏️ Edit Memory</h2>
-          <button class="close-edit-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+      <div class="edit-modal-content">
+        <div class="edit-modal-header">
+          <h2>Edit Memory</h2>
+          <button class="close-edit-btn" type="button" aria-label="Close edit memory modal">&times;</button>
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Title:</label>
-          <input type="text" class="edit-title-input" value="${memory.metadata?.title || memory.title || ''}" style="
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            box-sizing: border-box;
-          " placeholder="Enter memory title...">
+        <div class="edit-modal-field">
+          <label class="edit-modal-label" for="${titleInputId}">Title:</label>
+          <input
+            type="text"
+            id="${titleInputId}"
+            class="edit-title-input"
+            value="${memory.metadata?.title || memory.title || ''}"
+            placeholder="Enter memory title..."
+          >
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">Content:</label>
-          <textarea class="edit-content-textarea" style="
-            width: 100%;
-            min-height: 120px;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 14px;
-            line-height: 1.5;
-            resize: vertical;
-            box-sizing: border-box;
-          " placeholder="Describe this memory...">${memory.content || ''}</textarea>
+        <div class="edit-modal-field">
+          <label class="edit-modal-label" for="${contentInputId}">Content:</label>
+          <textarea
+            id="${contentInputId}"
+            class="edit-content-textarea"
+            placeholder="Describe this memory..."
+          >${memory.content || ''}</textarea>
         </div>
 
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">👥 Who is in this memory?</label>
-          <div class="people-picker-container" style="
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-          ">
-            <div class="people-picker-grid" style="
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-              gap: 15px;
-              margin-bottom: 15px;
-            ">
+        <div class="edit-modal-section">
+          <label class="edit-modal-label">&#128101; Who is in this memory?</label>
+          <div class="people-picker-container">
+            <div class="people-picker-grid">
               <!-- People will be loaded here -->
             </div>
-            <div style="text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+            <div class="people-picker-loading">
               Loading people from vault...
             </div>
           </div>
         </div>
 
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">📎 Attachments (${memory.attachments?.length || 0}):</label>
-          <div class="edit-attachments-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px;">
+        <div class="edit-modal-section">
+          <label class="edit-modal-label">&#128206; Attachments (${memory.attachments?.length || 0}):</label>
+          <div class="edit-attachments-grid">
             ${(memory.attachments || []).map((attachment, index) => `
-              <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.1);">
+              <div class="attachment-card">
                 ${(attachment.data || attachment.dataUrl || attachment.url) ? `
-                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;\\'>📷</div>'">
+                  <img src="${attachment.data || attachment.dataUrl || attachment.url}" alt="Attachment ${index + 1}" onerror="this.parentElement.innerHTML='<div class=&quot;attachment-fallback&quot;>&#128247;</div>'">
                 ` : `
-                  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.6);font-size:24px;">📷</div>
+                  <div class="attachment-fallback">&#128247;</div>
                 `}
-                <button class="remove-attachment-btn" data-index="${index}" style="
-                  position: absolute;
-                  top: 4px;
-                  right: 4px;
-                  background: rgba(255, 0, 0, 0.8);
-                  border: none;
-                  color: white;
-                  width: 20px;
-                  height: 20px;
-                  border-radius: 50%;
-                  cursor: pointer;
-                  font-size: 12px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                ">×</button>
+                <button class="remove-attachment-btn" type="button" data-index="${index}">&times;</button>
               </div>
             `).join('')}
-            <div style="
-              aspect-ratio: 1;
-              border: 2px dashed rgba(255, 255, 255, 0.4);
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              background: rgba(255, 255, 255, 0.05);
-              transition: all 0.3s ease;
-            " class="add-media-btn">
-              <span style="font-size: 24px; color: rgba(255, 255, 255, 0.6);">+</span>
+            <div class="add-media-btn" role="button" tabindex="0">
+              <span class="add-media-icon">+</span>
+              <span class="add-media-label">Add media</span>
             </div>
           </div>
-          <input type="file" class="media-file-input" multiple accept="image/*,video/*" style="display: none;">
+          <input type="file" class="media-file-input" multiple accept="image/*,video/*" hidden>
         </div>
 
-        <div style="display: flex; gap: 15px; justify-content: flex-end;">
-          <button class="cancel-edit-btn" style="
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-          ">Cancel</button>
-          <button class="save-edit-btn" style="
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-          ">💾 Save Changes</button>
+        <div class="edit-modal-actions">
+          <button class="delete-memory-btn" type="button">&#128465; Delete Memory</button>
+          <div class="edit-modal-actions-right">
+            <button class="cancel-edit-btn" type="button">Cancel</button>
+            <button class="save-edit-btn" type="button">&#128190; Save Changes</button>
+          </div>
         </div>
       </div>
     `;
+
 
     document.body.appendChild(editModal);
     
@@ -6851,21 +7122,29 @@ RULES:
     }, { passive: false, capture: false });
     
     // 📱 MOBILE: Handle touch events for mobile/tablet scrolling
-    let touchStartY = 0;
-    
-    editModal.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-    
-    editModal.addEventListener('touchmove', (e) => {
-      // If touch is on content area, allow normal scrolling
-      if (content && (e.target === content || content.contains(e.target))) {
-        return; // Allow normal touch scrolling on content
+    const isTouchWithinContent = (node) => {
+      if (!content || !node) return false;
+      if (node === content) return true;
+      if (node.nodeType !== 1) {
+        return isTouchWithinContent(node.parentNode);
       }
-      
+      return node.closest('.edit-modal-content') === content;
+    };
+
+    editModal.addEventListener('touchmove', (e) => {
+      // Allow natural scrolling when the gesture originates inside the modal
+      if (isTouchWithinContent(e.target)) {
+        return;
+      }
+
       // Otherwise, prevent background scrolling
       e.preventDefault();
     }, { passive: false });
+
+    content.addEventListener('touchmove', (e) => {
+      // Keep scroll gestures inside the modal body
+      e.stopPropagation();
+    }, { passive: true });
     
     // Block body scroll completely while modal is open
     const originalOverflow = document.body.style.overflow;
@@ -6917,6 +7196,7 @@ RULES:
     const closeBtn = editModal.querySelector('.close-edit-btn');
     const addMediaBtn = editModal.querySelector('.add-media-btn');
     const fileInput = editModal.querySelector('.media-file-input');
+    const deleteBtn = editModal.querySelector('.delete-memory-btn');
 
     // Close handlers (use the enhanced closeModal from above)
     closeBtn.addEventListener('click', closeModal);
@@ -6967,6 +7247,31 @@ RULES:
       }
     });
 
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        const confirmed = window.confirm('Are you sure you want to delete this memory from your vault?');
+        if (!confirmed) {
+          return;
+        }
+
+        const originalText = deleteBtn.textContent;
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+          await this.deleteMemoryRecord(memoryId, { memory });
+          closeModal();
+          this.showToast('🗑️ Memory deleted from your vault.', 'success');
+        } catch (error) {
+          console.error('🗑️ DELETE MEMORY ERROR:', error);
+          this.showToast('❌ Failed to delete memory', 'error');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = originalText;
+          return;
+        }
+      });
+    }
+
     // Remove attachment handlers
     editModal.querySelectorAll('.remove-attachment-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -7000,7 +7305,18 @@ RULES:
       // Update memory object
       memory.metadata = memory.metadata || {};
       memory.metadata.title = title;
-      memory.metadata.people = selectedPeople;
+      const selectedIds = Array.from(new Set(selectedPeople
+        .map(person => person.id ? person.id.trim() : '')
+        .filter(Boolean)));
+      const selectedNames = Array.from(new Set(selectedPeople
+        .map(person => person.name ? person.name.trim() : '')
+        .filter(Boolean)));
+      memory.metadata.people = selectedIds;
+      if (selectedNames.length > 0) {
+        memory.metadata.peopleNames = selectedNames;
+      } else if (memory.metadata.peopleNames) {
+        delete memory.metadata.peopleNames;
+      }
       memory.title = title;
       memory.content = content;
       
@@ -7022,7 +7338,6 @@ RULES:
             
             // NOW close the dialog after successful save
             closeModal();
-            this.showToast('✅ Memory saved to vault!', 'success');
             
             // 🎯 TRIGGER CONSTELLATION REFRESH
             console.log('🔄 EDIT: Triggering constellation refresh after vault save...');
@@ -7043,9 +7358,64 @@ RULES:
         }, 500);
       } else {
         // Regular edit flow - close immediately and refresh preview
-        this.showToast('💾 Changes saved!', 'success');
         closeModal();
-        
+
+        if (this.shouldSkipMemoryPreview(memory)) {
+          console.log('[Emma] Auto-save editing flow active - updating vault immediately');
+          try {
+            this.showToast('💾 Saving changes to your vault...', 'info');
+
+            const memoryToSave = this.prepareMemoryForVault(memory);
+            const webVault = window.emmaWebVault;
+
+            if (!webVault || !webVault.isOpen) {
+              throw new Error('Vault not unlocked');
+            }
+
+            const isExisting = !!(memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+            if (isExisting && typeof webVault.updateMemory === 'function') {
+              const updates = {
+                content: memoryToSave.content,
+                metadata: memoryToSave.metadata
+              };
+              if (typeof memoryToSave.title === 'string') {
+                updates.title = memoryToSave.title;
+              }
+              if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+                updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+              }
+
+              await webVault.updateMemory(memoryToSave.id, updates);
+            } else {
+              await webVault.addMemory(memoryToSave);
+            }
+
+            this.temporaryMemories.delete(memory.id);
+            window.dispatchEvent(new CustomEvent('emmaMemoryUpdated', {
+              detail: {
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now()
+              }
+            }));
+            window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+              detail: {
+                memoryId: memory.id,
+                source: 'emma-chat-edit',
+                timestamp: Date.now(),
+                action: 'refresh_constellation'
+              }
+            }));
+
+            return;
+          } catch (error) {
+            console.error('💾 EDIT: Auto-save update failed, falling back to preview', error);
+            this.showToast('Auto-save failed, please review and save manually.', 'error');
+          }
+        } else {
+          this.showToast('💾 Changes saved!', 'success');
+        }
+
         setTimeout(() => {
           this.showMemoryPreviewDialog(memory);
         }, 300);
@@ -7054,6 +7424,69 @@ RULES:
 
     // Focus title input
     setTimeout(() => titleInput.focus(), 100);
+  }
+
+  async deleteMemoryRecord(memoryId, { memory } = {}) {
+    const targetId = memoryId || memory?.id;
+    if (!targetId) {
+      throw new Error('Memory id required for deletion');
+    }
+
+    const webVault = window.emmaWebVault;
+    let deletedFromVault = false;
+
+    if (webVault && typeof webVault.deleteMemory === 'function' && webVault.isOpen && webVault.vaultData?.content?.memories?.[targetId]) {
+      await webVault.deleteMemory(targetId);
+      deletedFromVault = true;
+    } else if (webVault && webVault.vaultData?.content?.memories?.[targetId]) {
+      delete webVault.vaultData.content.memories[targetId];
+      deletedFromVault = true;
+    } else if (this.temporaryMemories.has(targetId)) {
+      this.temporaryMemories.delete(targetId);
+    }
+
+    this.temporaryMemories.delete(targetId);
+    this.enrichmentState.delete(targetId);
+
+    window.dispatchEvent(new CustomEvent('emmaMemoryDeleted', {
+      detail: {
+        memoryId: targetId,
+        source: 'emma-chat-edit',
+        timestamp: Date.now(),
+        deletedFromVault
+      }
+    }));
+
+    window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+      detail: {
+        memoryId: targetId,
+        source: 'emma-chat-edit',
+        timestamp: Date.now(),
+        action: 'delete'
+      }
+    }));
+
+    if (window.emmaDashboard && typeof window.emmaDashboard.enterMemoryConstellation === 'function') {
+      if (window.emmaDashboard.isConstellationMode) {
+        setTimeout(() => {
+          try {
+            window.emmaDashboard.enterMemoryConstellation();
+          } catch (error) {
+            console.warn('emmaDashboard constellation refresh failed:', error);
+          }
+        }, 250);
+      }
+    } else if (typeof window.loadConstellationView === 'function') {
+      setTimeout(() => {
+        try {
+          window.loadConstellationView();
+        } catch (error) {
+          console.warn('Constellation refresh failed:', error);
+        }
+      }, 250);
+    }
+
+    return { deletedFromVault };
   }
 
   /**
@@ -7147,7 +7580,22 @@ RULES:
       }
 
       // Get currently selected people
-      const selectedPeopleIds = (memory.metadata?.people || []).map(p => p.id);
+      const selectedPeopleIds = (memory.metadata?.people || [])
+        .map(personRef => {
+          if (!personRef) return null;
+          if (typeof personRef === 'string' || typeof personRef === 'number') {
+            const trimmed = String(personRef).trim();
+            return trimmed || null;
+          }
+          if (typeof personRef === 'object') {
+            const candidate = personRef.id ?? personRef.personId ?? personRef.personID ?? personRef.person_id;
+            if (candidate === undefined || candidate === null) return null;
+            const trimmed = String(candidate).trim();
+            return trimmed || null;
+          }
+          return null;
+        })
+        .filter(Boolean);
       
       if (people.length === 0) {
         loadingText.textContent = 'No people in vault yet. Add people first!';
@@ -7173,8 +7621,8 @@ RULES:
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        background: rgba(139, 92, 246, 0.15);
-        border: 2px dashed #8b5cf6;
+        background: rgba(111, 99, 217, 0.15);
+        border: 2px dashed #6f63d9;
         position: relative;
       `;
       
@@ -7184,13 +7632,13 @@ RULES:
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: rgba(139, 92, 246, 0.2);
-        border: 3px dashed #8b5cf6;
+        background: rgba(111, 99, 217, 0.2);
+        border: 3px dashed #6f63d9;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 32px;
-        color: #8b5cf6;
+        color: #6f63d9;
         margin-bottom: 8px;
         transition: all 0.3s ease;
       `;
@@ -7202,7 +7650,7 @@ RULES:
       addLabel.style.cssText = `
         font-size: 14px;
         font-weight: 600;
-        color: #8b5cf6;
+        color: #6f63d9;
         text-align: center;
         margin-bottom: 4px;
       `;
@@ -7212,7 +7660,7 @@ RULES:
       instructionLabel.textContent = 'Click to create';
       instructionLabel.style.cssText = `
         font-size: 12px;
-        color: rgba(139, 92, 246, 0.8);
+        color: rgba(111, 99, 217, 0.8);
         text-align: center;
       `;
       
@@ -7227,16 +7675,16 @@ RULES:
       
       // Add hover effects
       addPersonItem.addEventListener('mouseenter', () => {
-        addPersonItem.style.background = 'rgba(139, 92, 246, 0.25)';
+        addPersonItem.style.background = 'rgba(111, 99, 217, 0.25)';
         addPersonItem.style.transform = 'scale(1.02)';
-        addAvatar.style.background = 'rgba(139, 92, 246, 0.3)';
+        addAvatar.style.background = 'rgba(111, 99, 217, 0.3)';
         addAvatar.style.transform = 'scale(1.1)';
       });
       
       addPersonItem.addEventListener('mouseleave', () => {
-        addPersonItem.style.background = 'rgba(139, 92, 246, 0.15)';
+        addPersonItem.style.background = 'rgba(111, 99, 217, 0.15)';
         addPersonItem.style.transform = 'scale(1)';
-        addAvatar.style.background = 'rgba(139, 92, 246, 0.2)';
+        addAvatar.style.background = 'rgba(111, 99, 217, 0.2)';
         addAvatar.style.transform = 'scale(1)';
       });
       
@@ -7270,7 +7718,7 @@ RULES:
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+          background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -7492,7 +7940,7 @@ RULES:
 
     addPersonDialog.innerHTML = `
       <div class="add-person-modal-content" style="
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(124, 58, 237, 0.95));
+        background: linear-gradient(135deg, rgba(111, 99, 217, 0.95), rgba(124, 58, 237, 0.95));
         border-radius: 20px;
         padding: 30px;
         max-width: 500px;
@@ -7507,7 +7955,7 @@ RULES:
       ">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
           <h2 style="margin: 0; font-size: 24px; font-weight: 600;">👤 Add New Person</h2>
-          <button class="close-add-person-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">×</button>
+          <button class="close-add-person-btn" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 20px;">&times;</button>
         </div>
 
         <div style="margin-bottom: 20px;">
@@ -7567,13 +8015,13 @@ RULES:
           <button class="save-person-btn" style="
             background: linear-gradient(135deg, #ffffff, #f3f4f6);
             border: none;
-            color: #8b5cf6;
+            color: #6f63d9;
             padding: 12px 24px;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 700;
             font-size: 16px;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
           ">✨ Add Person</button>
         </div>
       </div>
@@ -7670,11 +8118,21 @@ RULES:
           
           // Auto-select the new person in the memory
           memory.metadata = memory.metadata || {};
-          memory.metadata.people = memory.metadata.people || [];
-          memory.metadata.people.push({
-            id: personId,
-            name: name
-          });
+          memory.metadata.people = Array.isArray(memory.metadata.people) ? memory.metadata.people : [];
+          const trimmedPersonId = personId ? String(personId).trim() : '';
+          if (trimmedPersonId && !memory.metadata.people.includes(trimmedPersonId)) {
+            memory.metadata.people.push(trimmedPersonId);
+          }
+
+          if (name) {
+            const trimmedName = name.trim();
+            if (trimmedName) {
+              memory.metadata.peopleNames = Array.isArray(memory.metadata.peopleNames) ? memory.metadata.peopleNames : [];
+              if (!memory.metadata.peopleNames.includes(trimmedName)) {
+                memory.metadata.peopleNames.push(trimmedName);
+              }
+            }
+          }
 
           this.showToast(`✨ ${name} added to vault and memory!`, 'success');
           closeDialog();
@@ -7782,7 +8240,7 @@ RULES:
       await this.finalizeMemorySave(memory, memoryId);
     } catch (error) {
       console.error('💾 EMMA CHAT: Error in confirmSaveMemory:', error);
-      this.showToast('❌ Failed to save memory', 'error');
+      this.showToast('Failed to save memory', 'error');
     }
   }
 
@@ -7958,10 +8416,21 @@ RULES:
       if (newPerson) {
         // Replace temp ID with real ID
         const tempId = `temp_${personName.toLowerCase()}`;
-        const peopleIds = state.memory.metadata.people || [];
+        const peopleIds = Array.isArray(state.memory.metadata.people) ? state.memory.metadata.people : [];
         const updatedPeopleIds = peopleIds.map(id => id === tempId ? newPerson.id : id);
         
         state.memory.metadata.people = updatedPeopleIds;
+        
+        const existingNames = Array.isArray(state.memory.metadata.peopleNames) ? state.memory.metadata.peopleNames : [];
+        const filteredNames = existingNames.filter(name => name.toLowerCase() !== personName.toLowerCase());
+        if (newPerson.name) {
+          filteredNames.push(newPerson.name);
+        }
+        if (filteredNames.length > 0) {
+          state.memory.metadata.peopleNames = Array.from(new Set(filteredNames));
+        } else if (state.memory.metadata.peopleNames) {
+          delete state.memory.metadata.peopleNames;
+        }
         
         // Remove from newPeopleDetected
         state.memory.metadata.newPeopleDetected = (state.memory.metadata.newPeopleDetected || [])
@@ -7975,13 +8444,162 @@ RULES:
     }
   }
 
+  isAutoSaveReady() {
+    const webVault = window.emmaWebVault;
+    if (!webVault || !webVault.isOpen) {
+      console.log('[Emma] isAutoSaveReady -> false (vault closed or missing)', {
+        hasVault: !!webVault,
+        isOpen: webVault?.isOpen
+      });
+      return false;
+    }
+
+    const sessionActive = typeof sessionStorage !== 'undefined' &&
+      sessionStorage.getItem('emmaVaultActive') === 'true';
+    const localActive = typeof localStorage !== 'undefined' &&
+      localStorage.getItem('emmaVaultActive') === 'true';
+    if (!webVault.isWebappPrimary && !sessionActive && !localActive) {
+      console.log('[Emma] isAutoSaveReady -> false (no active session markers)', {
+        webappPrimary: webVault.isWebappPrimary,
+        sessionActive,
+        localActive
+      });
+      return false;
+    }
+
+    if (webVault.needsFileReauth && !webVault.isWebappPrimary) {
+      console.log('[Emma] isAutoSaveReady -> false (needs file reauth)', {
+        webappPrimary: webVault.isWebappPrimary,
+        needsFileReauth: webVault.needsFileReauth
+      });
+      return false;
+    }
+
+    const autoSavePreference = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('emmaVaultAutoSaveEnabled')
+      : null;
+    const prefersAutoSave = autoSavePreference !== 'false';
+    if (!prefersAutoSave) {
+      console.log('[Emma] isAutoSaveReady -> false (autosave disabled by preference)');
+      return false;
+    }
+
+    const hasFileHandle = !!webVault.fileHandle;
+    const extensionSync = !!webVault.extensionAvailable && webVault.extensionSyncEnabled !== false;
+    const webAppPrimary = !!webVault.isWebappPrimary || !!webVault.useWebappPrimary;
+    const hasAutoSaveCapability = hasFileHandle || extensionSync || webAppPrimary;
+    if (!hasAutoSaveCapability) {
+      console.log('[Emma] isAutoSaveReady -> false (no autosave capability)', {
+        hasFileHandle,
+        extensionSync,
+        webAppPrimary
+      });
+      return false;
+    }
+
+    console.log('[Emma] isAutoSaveReady -> true', {
+      sessionActive,
+      localActive,
+      hasFileHandle,
+      extensionSync,
+      webAppPrimary
+    });
+    return true;
+  }
+
+  shouldSkipMemoryPreview(memory) {
+    const manualPreview = localStorage.getItem('emmaVaultManualPreview') === 'true';
+    if (manualPreview) return false;
+
+    const webVault = window.emmaWebVault;
+    console.log('[Emma] shouldSkipMemoryPreview state', {
+      manualPreview,
+      hasVault: !!webVault,
+      isOpen: webVault?.isOpen,
+      isWebappPrimary: webVault?.isWebappPrimary,
+      autoSaveEnabled: webVault?.autoSaveEnabled,
+      needsFileReauth: webVault?.needsFileReauth
+    });
+    if (webVault?.isWebappPrimary && webVault.isOpen) {
+      const autoSaveEnabled = webVault.autoSaveEnabled !== false;
+      const hasVaultData = !!webVault.vaultData?.content;
+      if (autoSaveEnabled) {
+        console.log('[Emma] Webapp-primary autosave ready - skipping preview', {
+          hasVaultData,
+          needsFileReauth: webVault.needsFileReauth,
+          autoSaveEnabled
+        });
+        return true;
+      }
+    }
+
+    if (!this.isAutoSaveReady()) return false;
+
+    return true;
+  }
+
+  async tryAutoSaveMemory(memory, memoryId = null, context = 'default') {
+    if (!memory) {
+      return false;
+    }
+
+    if (!this.shouldSkipMemoryPreview(memory)) {
+      return false;
+    }
+
+    const targetId = memoryId || memory.id || `memory_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    if (!memory.id) {
+      memory.id = targetId;
+    }
+
+    console.log('[Emma] Auto-save ready - skipping preview', {
+      context,
+      memoryId: targetId,
+      autoSaveEnabled: window.emmaWebVault?.autoSaveEnabled,
+      isWebappPrimary: window.emmaWebVault?.isWebappPrimary,
+      needsFileReauth: window.emmaWebVault?.needsFileReauth
+    });
+
+    const saved = await this.saveMemoryDirectly(memory, targetId);
+    return !!saved;
+  }
+
+  prepareMemoryForVault(memory) {
+    const hasContent = memory && typeof memory.content === 'string';
+    const content = hasContent ? memory.content : '';
+    const baseMetadata = memory && memory.metadata ? { ...memory.metadata } : {};
+    if (!baseMetadata.created) {
+      baseMetadata.created = new Date().toISOString();
+    }
+    if (!baseMetadata.title) {
+      const trimmed = hasContent ? content.trim() : '';
+      baseMetadata.title = trimmed ? trimmed.substring(0, 50) + (trimmed.length > 50 ? '...' : '') : 'Untitled Memory';
+    }
+
+    return {
+      id: memory && memory.id ? memory.id : undefined,
+      title: memory && memory.title ? memory.title : baseMetadata.title,
+      content,
+      metadata: baseMetadata,
+      attachments: memory && Array.isArray(memory.attachments)
+        ? memory.attachments.map(att => ({ ...att }))
+        : []
+    };
+  }
+
   /**
    * Finalize memory save and create capsule - SHOW PREVIEW
    */
   async finalizeMemorySave(memory, memoryId) {
     try {
       console.log('💾 EMMA CHAT: Creating memory capsule preview for:', memoryId);
-      
+
+      if (this.shouldSkipMemoryPreview(memory)) {
+        console.log('[Emma] Auto-save enabled - skipping preview; saving directly');
+        await this.saveMemoryDirectly(memory, memoryId);
+        return;
+      }
+
       // Create beautiful memory capsule with people avatars
       this.addMessage(`Perfect! Let me show you your beautiful memory capsule before we save it to your vault! 💜`, 'emma');
       
@@ -8022,21 +8640,33 @@ RULES:
       console.log('💾 EMMA CHAT: Saving memory to vault from preview:', memoryId);
       
       // Prepare memory for vault
-      const memoryToSave = {
-        content: memory.content,
-        metadata: {
-          ...memory.metadata,
-          created: new Date().toISOString(),
-          title: memory.content.substring(0, 50) + (memory.content.length > 50 ? '...' : '')
-        },
-        attachments: memory.attachments || []
-      };
+      const memoryToSave = this.prepareMemoryForVault(memory);
       
-      // Save to vault
-      const result = await window.emmaWebVault.addMemory(memoryToSave);
+      const webVault = window.emmaWebVault;
+      if (!webVault || typeof webVault.addMemory !== 'function') {
+        throw new Error('Vault service unavailable');
+      }
+      const isExistingMemory = !!(webVault && memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+
+      let result;
+      if (isExistingMemory && typeof webVault.updateMemory === 'function') {
+        const updates = {
+          content: memoryToSave.content,
+          metadata: memoryToSave.metadata
+        };
+        if (typeof memoryToSave.title === 'string') {
+          updates.title = memoryToSave.title;
+        }
+        if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+          updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+        }
+
+        result = await webVault.updateMemory(memoryToSave.id, updates);
+      } else {
+        result = await webVault.addMemory(memoryToSave);
+      }
       
-      if (result.success) {
-        this.showToast('✅ Memory saved to vault!', 'success');
+      if (result && result.success) {
         
         // Clear enrichment state
         this.enrichmentState.delete(memoryId);
@@ -8087,12 +8717,13 @@ RULES:
         }, 500);
         
       } else {
-        throw new Error(result.error || 'Failed to save memory');
+        const errorMessage = result && result.error ? result.error : 'Failed to save memory';
+        throw new Error(errorMessage);
       }
       
     } catch (error) {
       console.error('💾 EMMA CHAT: Error saving memory to vault:', error);
-      this.showToast('❌ Failed to save memory', 'error');
+      this.showToast('Failed to save memory', 'error');
       this.addMessage(`I had trouble saving your memory to the vault. Please try again! 🤗`, 'emma');
     }
   }
@@ -8101,17 +8732,36 @@ RULES:
    * Save memory directly to vault (fallback or final save)
    */
   async saveMemoryDirectly(memory, memoryId) {
+    let saved = false;
     try {
-      // Save to vault (webapp-only mode)
-      if (window.emmaWebVault && window.emmaWebVault.isOpen && sessionStorage.getItem('emmaVaultActive') === 'true') {
-        console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
-        await window.emmaWebVault.addMemory({
-          content: memory.content,
-          metadata: memory.metadata,
-          attachments: memory.attachments || []
-        });
+      const webVault = window.emmaWebVault;
+      const sessionActive = typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem('emmaVaultActive') === 'true';
+      const localActive = typeof localStorage !== 'undefined' &&
+        localStorage.getItem('emmaVaultActive') === 'true';
 
-        this.showToast('✅ Memory saved to vault successfully!', 'success');
+      if (webVault && webVault.isOpen && (webVault.isWebappPrimary || sessionActive || localActive)) {
+        console.log('💾 EMMA CHAT: Saving curated memory to webapp-only vault');
+        const memoryToSave = this.prepareMemoryForVault(memory);
+        const isExistingMemory = !!(memoryToSave.id && webVault.vaultData?.content?.memories?.[memoryToSave.id]);
+
+        if (isExistingMemory && typeof webVault.updateMemory === 'function') {
+          const updates = {
+            content: memoryToSave.content,
+            metadata: memoryToSave.metadata
+          };
+          if (typeof memoryToSave.title === 'string') {
+            updates.title = memoryToSave.title;
+          }
+          if (Array.isArray(memoryToSave.attachments) && memoryToSave.attachments.length > 0) {
+            updates.attachments = memoryToSave.attachments.map(att => ({ ...att }));
+          }
+
+          await webVault.updateMemory(memoryToSave.id, updates);
+        } else {
+          await webVault.addMemory(memoryToSave);
+        }
+
         
         // 🎯 CRITICAL FIX: Clean up temporary memory after successful save
         this.temporaryMemories.delete(memoryId);
@@ -8169,16 +8819,31 @@ RULES:
 
       } else {
         console.warn('💾 EMMA CHAT: Vault save failed - debugging info:');
-        console.warn('💾 DEBUG: emmaWebVault exists?', !!window.emmaWebVault);
-        console.warn('💾 DEBUG: emmaWebVault.isOpen?', window.emmaWebVault?.isOpen);
-        console.warn('💾 DEBUG: sessionStorage active?', sessionStorage.getItem('emmaVaultActive'));
-        this.showToast('❌ Vault not unlocked - please unlock your .emma vault first', 'error');
+        console.warn('[Emma] emmaWebVault exists?', !!webVault);
+        console.warn('[Emma] emmaWebVault.isOpen?', webVault?.isOpen);
+        console.warn('[Emma] sessionStorage active?', sessionActive);
+        console.warn('[Emma] localStorage active?', localActive);
+        this.showToast('Vault not unlocked - please unlock your .emma vault first', 'error');
       }
 
     } catch (error) {
-      console.error('💾 SAVE: Error saving memory:', error);
-      this.showToast('❌ Failed to save memory', 'error');
+      console.error('[Emma] Error saving memory:', error);
+      const needsManualSave = error && typeof error.message === 'string' &&
+        (/direct save required/i.test(error.message) || /vault access required/i.test(error.message));
+
+      if (needsManualSave) {
+        this.showToast('Direct vault save needs your attention. Please review and save manually.', 'warning');
+        const existingDialog = document.querySelector('.memory-preview-dialog');
+        if (!existingDialog) {
+          this.showMemoryPreviewDialog(memory);
+        }
+      } else {
+        this.showToast('Failed to save memory', 'error');
+      }
+      return false;
     }
+
+    return saved;
   }
 
   /**
@@ -8442,6 +9107,12 @@ RULES:
 
     if (this.debugMode) {
 
+    }
+
+    const autoSaved = await this.tryAutoSaveMemory(enrichedMemory, memoryId, 'enrichment-complete');
+    if (autoSaved) {
+      this.enrichmentState.delete(memoryId);
+      return;
     }
 
     // Show preview dialog for final confirmation
@@ -8810,9 +9481,13 @@ RULES:
     if (result.continue && result.nextPrompt) {
       this.addMessage(result.nextPrompt.text, 'emma', { type: 'memory-prompt' });
     } else if (result.complete) {
-      // Show final memory preview
-      this.showMemoryPreviewDialog(result.memory);
+      const autoSaved = await this.tryAutoSaveMemory(result.memory, result.memory?.id, 'capture-complete');
       this.activeCapture = null;
+      if (autoSaved) {
+        return;
+      }
+
+      this.showMemoryPreviewDialog(result.memory);
     }
   }
 
@@ -9058,6 +9733,43 @@ RULES:
     if (previewArea && previewArea.children.length === 0) {
       previewArea.style.display = 'none';
     }
+  }
+
+  /**
+   * Allow Emma's agent tools to resolve uploaded media by id
+   */
+  lookupMediaUpload(uploadId) {
+    if (!uploadId) return null;
+
+    try {
+      if (this.enrichmentState && typeof this.enrichmentState.values === 'function') {
+        for (const state of this.enrichmentState.values()) {
+          const mediaItems = state?.collectedData?.media;
+          if (Array.isArray(mediaItems)) {
+            const found = mediaItems.find(item => item.id === uploadId);
+            if (found) {
+              return { ...found };
+            }
+          }
+        }
+      }
+
+      if (this.temporaryMemories && typeof this.temporaryMemories.values === 'function') {
+        for (const memory of this.temporaryMemories.values()) {
+          const attachments = memory?.attachments;
+          if (Array.isArray(attachments)) {
+            const found = attachments.find(item => item.id === uploadId);
+            if (found) {
+              return { ...found };
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('📷 CHAT: lookupMediaUpload error:', error);
+    }
+
+    return null;
   }
 
   /**
@@ -9599,6 +10311,8 @@ Just the question:`;
     // Disable focus mode
     this.disableFocusMode();
 
+    this.voiceToggleButton = null;
+
     super.cleanup();
   }
 
@@ -9621,7 +10335,7 @@ Just the question:`;
       if (people.length === 0) {
         peopleGrid.innerHTML = `
           <div style="color: white; opacity: 0.8; grid-column: 1 / -1; text-align: center; padding: 20px;">
-            No people in vault yet. <button onclick="window.open('/people.html', '_blank')" style="color: #8b5cf6; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
+            No people in vault yet. <button onclick="window.open('/pages/people-emma.html', '_blank')" style="color: #6f63d9; background: none; border: none; text-decoration: underline; cursor: pointer;">Add people first</button>
           </div>
         `;
         return;
@@ -9632,7 +10346,7 @@ Just the question:`;
         const initials = person.name.charAt(0).toUpperCase();
         return `
           <div class="person-select-card" data-person-id="${person.id}" onclick="window.chatExperience.togglePersonSelection('${person.id}', '${memoryId}')">
-            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 50%; background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
               ${initials}
             </div>
             <div style="color: white; font-weight: 600; margin-bottom: 4px;">${person.name}</div>
@@ -9743,7 +10457,7 @@ Just the question:`;
             `<video src="${url}" muted></video>` : 
             `<img src="${url}" alt="${file.name}">`
           }
-          <button class="media-remove" onclick="window.chatExperience.removeUploadedFile(${index}, '${memoryId}')" title="Remove">×</button>
+          <button class="media-remove" onclick="window.chatExperience.removeUploadedFile(${index}, '${memoryId}')" title="Remove">&times;</button>
         </div>
       `;
     }).join('');

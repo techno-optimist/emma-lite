@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,7 @@
   
   <!-- Z-Index Hierarchy Fix - Prevents modal conflicts -->
   <link rel="stylesheet" href="css/z-index-hierarchy.css">
+  <link rel="stylesheet" href="css/theme-tokens.css">
 
   <!-- Environment bootstrap (must load first) -->
   <script src="js/emma-env.js"></script>
@@ -55,13 +56,15 @@
     <script src="js/base-orb.js"></script>
     <script src="js/emma-orb.js"></script>
 
-  <style>
-    /* Emma Brand Variables */
+    <style>
     :root {
-            --emma-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            --emma-purple: #8B5CF6;
-            --emma-pink: #F093FB;
-      --emma-glow: 0 0 40px rgba(134, 88, 255, 0.6);
+      --emma-gradient: radial-gradient(circle at 20% 20%, #3d2b75 0%, #0d0823 55%, #050111 100%);
+      --emma-card: rgba(13, 9, 38, 0.72);
+      --emma-border: rgba(255, 255, 255, 0.14);
+      --emma-text-strong: #ffffff;
+      --emma-text-muted: rgba(255, 255, 255, 0.68);
+      --emma-accent-primary: #6f63d9;
+      --emma-accent-secondary: #d06fa8;
     }
 
     * {
@@ -71,59 +74,202 @@
     }
 
     body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--emma-gradient);
-            color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--emma-bg-gradient, var(--emma-gradient));
+      color: var(--emma-text-strong);
       min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-      overflow: hidden;
-        }
+      line-height: 1.5;
+      padding: clamp(24px, 4vw, 80px);
+    }
 
-        .emma-container {
-            text-align: center;
-            position: relative;
-        }
+    .page-shell {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-        .emma-title {
-            font-size: 48px;
-            font-weight: 300;
-            margin-bottom: 16px;
-            opacity: 0.9;
-        }
+    .emma-container {
+      /* background: var(--landing-card, var(--emma-card));
+      border: 1px solid var(--landing-border, var(--emma-border));
+      border-radius: 40px; */
+      padding: clamp(28px, 5vw, 64px);
+      /* box-shadow: 0 40px 90px rgba(3, 2, 20, 0.6); */
+      display: flex;
+      flex-direction: column;
+      gap: clamp(32px, 5vw, 64px);
+    }
 
-        .emma-subtitle {
-            font-size: 18px;
-            opacity: 0.7;
-            margin-bottom: 60px;
-        }
+    .hero-grid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(32px, 5vw, 56px);
+      text-align: center;
+    }
 
-        /* Clean Emma Orb */
+    @media (min-width: 900px) {
+      .hero-grid {
+        max-width: 100%;
+      }
+    }
+    @media (min-width: 900px) {
+      .hero-primary {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(24px, 4vw, 32px);
+      width: 100%;
+    }
+    }
+
+    .hero-primary {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(24px, 4vw, 32px);
+      width: 100%;
+    }
+
+    .cta-panel {
+      background: linear-gradient(145deg, rgba(24, 16, 58, 0.95), rgba(9, 8, 24, 0.85));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 36px;
+      padding: clamp(24px, 4vw, 40px);
+      box-shadow: 0 30px 90px rgba(4, 2, 20, 0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      margin: 0;
+    }
+
+    .cta-body {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .cta-heading {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 0.75rem;
+      color: var(--emma-text-muted);
+    }
+
+    .cta-title {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .cta-desc {
+      color: rgba(255, 255, 255, 0.85);
+      max-width: 520px;
+    }
+
+    .hero-info {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      padding: clamp(18px, 3vw, 28px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: left;
+      margin: 0;
+    }
+
+    .emma-title {
+      text-transform: lowercase;
+      font-size: clamp(36px, 7vw, 54px);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-subline {
+      font-size: 1rem;
+      color: var(--emma-text-muted);
+    }
+
+    .hero-lede {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .hero-checklist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--emma-text-muted);
+    }
+
+    .hero-checklist li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .hero-checklist li::before {
+      content: "\2713";
+      color: var(--emma-accent-secondary);
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-tag {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-visual {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      width: min(420px, 100%);
+    }
+
     .emma-orb-container {
       position: relative;
-      width: 200px;
-      height: 200px;
-            margin: 0 auto 40px;
+      width: clamp(220px, 28vw, 320px);
+      height: clamp(220px, 28vw, 320px);
+      margin: 0 auto;
       cursor: pointer;
       transition: transform 0.3s ease;
     }
 
     .emma-orb-container:hover {
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
     .emma-orb-webgl {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, var(--emma-purple), #4f46e5, var(--emma-pink));
-      box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
-            animation: orb-pulse 4s ease-in-out infinite;
-      position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+      background: radial-gradient(circle at 30% 30%, var(--emma-accent-secondary), #4f46e5, var(--emma-accent-primary));
+      box-shadow: 0 0 35px rgba(111, 99, 217, 0.45), inset 0 0 40px rgba(255, 255, 255, 0.12);
+      animation: orb-pulse 4s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       overflow: hidden;
     }
 
@@ -136,174 +282,570 @@
     @keyframes orb-pulse {
       0%, 100% {
         transform: scale(1);
-                box-shadow: var(--emma-glow), inset 0 0 40px rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 28px rgba(111, 99, 217, 0.35), inset 0 0 32px rgba(255, 255, 255, 0.12);
       }
       50% {
-                transform: scale(1.02);
-                box-shadow: 0 0 60px rgba(134, 88, 255, 0.8), inset 0 0 40px rgba(255, 255, 255, 0.2);
-            }
-        }
+        transform: scale(1.03);
+        box-shadow: 0 0 50px rgba(111, 99, 217, 0.55), inset 0 0 28px rgba(255, 255, 255, 0.2);
+      }
+    }
 
-        /* Vault Lock State */
-        .vault-locked .emma-orb::after {
-            content: '🔒';
-            font-size: 48px;
-      position: absolute;
-            top: 50%;
-      left: 50%;
-            transform: translate(-50%, -50%);
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-        }
-
-        /* Clean Vault Controls */
-        .vault-controls {
+    .vault-status {
+      padding: 20px 24px;
+      background: radial-gradient(circle at 20% 20%, rgba(111, 99, 217, 0.4), rgba(18, 13, 41, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 26px;
+      backdrop-filter: blur(18px);
       display: flex;
-      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 26px 52px rgba(6, 5, 25, 0.55);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .vault-status::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.18), transparent 60%);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .vault-status > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .vault-status.unlocked {
+      background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.3), rgba(9, 14, 30, 0.9));
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 35px 65px rgba(16, 185, 129, 0.35);
+    }
+
+    .vault-status .status-main {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      text-align: left;
+      flex: 1 1 280px;
+    }
+
+    .vault-status .status-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 20px;
+      background: rgba(111, 99, 217, 0.2);
+      display: flex;
+      align-items: center;
       justify-content: center;
-            margin-top: 40px;
-        }
+      font-size: 32px;
+      box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.1);
+      color: var(--emma-text-strong);
+    }
 
-        .vault-btn {
-      background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 16px 32px;
-      border-radius: 16px;
-      font-size: 16px;
+    .vault-status.unlocked .status-icon {
+      background: rgba(16, 185, 129, 0.22);
+      color: #10b981;
+    }
+
+    .vault-status .status-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .vault-status .status-headline {
+      font-size: clamp(1rem, 2vw, 1.25rem);
       font-weight: 600;
+      color: var(--emma-text-strong);
+    }
+
+    .vault-status .status-subtext {
+      font-size: 0.92rem;
+      color: var(--emma-text-muted);
+    }
+
+    .sync-status {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(111, 99, 217, 0.15);
+      border: 1px solid rgba(111, 99, 217, 0.35);
+      color: var(--emma-text-strong);
+      box-shadow: 0 12px 26px rgba(2, 6, 23, 0.4);
+    }
+
+    .sync-status-icon {
+      font-size: 1.2rem;
+    }
+
+    .vault-actions,
+    .vault-utilities {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .vault-utilities {
+      gap: 14px;
+    }
+
+    .vault-btn {
+      appearance: none;
+      border: none;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+      color: var(--emma-text-strong);
+      padding: 22px;
+      border-radius: 26px;
+      backdrop-filter: blur(18px);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      text-align: left;
       cursor: pointer;
-      transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+      min-height: 112px;
+      box-shadow: 0 18px 42px rgba(5, 6, 20, 0.35);
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
 
-        .vault-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-      transform: translateY(-2px);
-        }
+    .vault-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.12), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
 
-        .vault-btn.primary {
-            background: rgba(139, 92, 246, 0.3);
-      border-color: var(--emma-purple);
-        }
+    .vault-btn:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
 
-        .vault-btn.primary:hover {
-            background: rgba(139, 92, 246, 0.5);
-        }
+    .vault-btn:hover::after {
+      opacity: 1;
+    }
 
-        .vault-btn.success {
-            background: rgba(16, 185, 129, 0.3);
-            border-color: #10b981;
-        }
+    .vault-btn .btn-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: rgba(111, 99, 217, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.45rem;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+    }
 
-        .vault-btn.success:hover {
-            background: rgba(16, 185, 129, 0.5);
-        }
+    .vault-btn .btn-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-        /* Drag Drop Zone */
-        .drag-drop-zone {
+    .vault-btn .btn-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .vault-btn .btn-desc {
+      font-size: 0.88rem;
+      color: var(--emma-text-muted);
+    }
+
+    .vault-btn.primary {
+      background: linear-gradient(135deg, rgba(111, 99, 217, 0.95), rgba(208, 111, 168, 0.85));
+      color: #ffffff;
+    }
+
+    .vault-btn.primary .btn-icon {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .vault-btn.primary .btn-desc {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .vault-btn.warning {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(72, 45, 8, 0.9));
+      color: #fcd34d;
+    }
+
+    .vault-btn.warning .btn-icon {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .vault-btn.success {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 34, 28, 0.9));
+      color: #d1fae5;
+    }
+
+    .vault-btn.success .btn-icon {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .cta-footnote {
+      font-size: 0.85rem;
+      color: var(--emma-text-muted);
+      text-align: center;
+    }
+
+    .emma-info-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .info-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      padding: clamp(20px, 3vw, 32px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .info-card h2,
+    .info-card h3 {
+      font-size: clamp(1.15rem, 2vw, 1.4rem);
+    }
+
+    .info-highlights {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .info-highlights li {
+      display: flex;
+      gap: 8px;
+      color: var(--emma-text-muted);
+    }
+
+    .info-highlights li::before {
+      content: "\25C6";
+      color: var(--emma-accent-primary);
+      font-size: 0.7rem;
+      margin-top: 4px;
+    }
+
+    .info-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .info-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 0.8rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .emma-how {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section-header {
+      text-align: left;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .how-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .step-number {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      background: rgba(111, 99, 217, 0.2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .drag-drop-zone {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-            background: rgba(139, 92, 246, 0.1);
-            border: 4px dashed rgba(139, 92, 246, 0.5);
-            display: none;
+      background: rgba(111, 99, 217, 0.15);
+      border: 3px dashed rgba(111, 99, 217, 0.5);
+      display: none;
       align-items: center;
       justify-content: center;
-            z-index: 1000;
+      z-index: 1000;
       backdrop-filter: blur(10px);
-        }
+    }
 
-        .drag-drop-zone.active {
+    .drag-drop-zone.active {
       display: flex;
-        }
+    }
 
-        .drag-drop-message {
-      font-size: 32px;
+    .drag-drop-message {
+      font-size: clamp(1.2rem, 3vw, 2rem);
       font-weight: 600;
-            text-align: center;
-        }
+      text-align: center;
+    }
 
-        /* Vault Status */
-        .vault-status {
-            margin-top: 20px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
+    .hidden {
+      display: none;
+    }
 
-        .vault-status.unlocked {
-            background: rgba(16, 185, 129, 0.2);
-            border: 2px solid rgba(16, 185, 129, 0.5);
-        }
+    @media (max-width: 640px) {
+      body {
+        padding: 0px;
+      }
 
-        /* Hidden file input */
-        .hidden {
-            display: none;
+      .hero-grid {
+        flex-direction: column;
+      }
+
+      .hero-visual {
+        order: 0;
+      }
+
+      .emma-orb-container {
+        width: min(260px, 70vw);
+        height: min(260px, 70vw);
+      }
+
+      .vault-status {
+        flex-direction: column;
+        align-items: flex-start;
+        max-height: 150px;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="page-shell">
     <div class="emma-container">
-        <h1 class="emma-title">emma</h1>
-        <p class="emma-subtitle">Your Intelligent Memory Companion</p>
-
-        <!-- Emma Orb (using existing system) -->
-        <div class="emma-orb-container" id="emmaOrbContainer">
+      <div class="hero-grid">
+        <div class="hero-visual">
+          <div class="emma-orb-container" id="emmaOrbContainer">
             <div class="emma-orb-webgl" id="emmaOrb"></div>
+          </div>
+        </div>
+
+        <div class="hero-primary">
+          <section class="cta-panel" aria-labelledby="vault-actions-heading">
+            <div class="cta-heading">
+              <p class="eyebrow">Start here</p>
+              <h1 id="vault-actions-heading" class="cta-title">Open or create your Emma vault</h1>
+              <p class="cta-desc">Open an .emma file you already have, start a brand-new vault, or restore the automatic browser backup - all in one place.</p>
+            </div>
+
+            <div class="cta-body">
+              <div class="vault-status" id="vaultStatus">
+                <div class="status-main">
+                  <div class="status-icon" id="vaultStatusIcon" aria-hidden="true">🔒</div>
+                  <div class="status-copy">
+                    <div id="vaultStatusText" class="status-headline">No vault loaded</div>
+                    <div id="vaultStatusHelper" class="status-subtext">Connect your .emma vault to get started.</div>
+                  </div>
+                </div>
+                <div class="sync-status" id="syncStatus" aria-live="polite">
+                  <span class="sync-status-icon" id="syncStatusIcon">💾</span>
+                  <span id="syncStatusText" class="sync-status-text">Sync Status</span>
+                </div>
+              </div>
+
+              <div class="vault-actions">
+                <button class="vault-btn primary" id="openVaultBtn">
+                  <span class="btn-icon" aria-hidden="true">🔓</span>
+                  <span class="btn-text">
+                    <span class="btn-title">Open Vault</span>
+                    <span class="btn-desc">Choose an .emma file and jump back into your memories.</span>
+                  </span>
+                </button>
+                <button class="vault-btn" id="createVaultBtn">
+                  <span class="btn-icon" aria-hidden="true">✨</span>
+                  <span class="btn-text">
+                    <span class="btn-title">Create New Vault</span>
+                    <span class="btn-desc">Start a clean, encrypted vault on this device.</span>
+                  </span>
+                </button>
+              </div>
+
+              <div class="vault-utilities">
+                <button class="vault-btn warning" id="recoverVaultBtn">
+                  <span class="btn-icon" aria-hidden="true">🌀</span>
+                  <span class="btn-text">
+                    <span class="btn-title">Recover Backup</span>
+                    <span class="btn-desc">Restore the automatic browser backup Emma keeps for you.</span>
+                  </span>
+                </button>
+                <button class="vault-btn success" id="goToDashboardBtn" style="display: none;">
+                  <span class="btn-icon" aria-hidden="true">➡️</span>
+                  <span class="btn-text">
+                    <span class="btn-title">Go to Dashboard</span>
+                    <span class="btn-desc">Return to your living desktop once the vault unlocks.</span>
+                  </span>
+                </button>
+              </div>
+
+              <p class="cta-footnote">Need to unlock from another browser? Recover your backup or import your .emma file anytime.</p>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <section class="hero-info" aria-labelledby="emma-intro-heading">
+        <p class="eyebrow">Meet the companion</p>
+        <h2 id="emma-intro-heading" class="emma-title">emma</h2>
+        <p class="hero-subline">Your private memory companion</p>
+        <p class="hero-lede">Emma keeps your AI chats, journal notes, and family updates in one encrypted place so you can remember everything with calm confidence.</p>
+        <ul class="hero-checklist">
+          <li>Automatically saves conversations from ChatGPT, Claude, Gemini, Copilot, and Perplexity.</li>
+          <li>Everything lives locally inside encrypted .emma files plus a browser backup.</li>
+          <li>Passphrase protected with auto timeouts - nothing leaves your device.</li>
+        </ul>
+        <div class="hero-tags">
+          <span class="hero-tag">Private by default</span>
+          <span class="hero-tag">Local-first storage</span>
+          <span class="hero-tag">Made for families</span>
+        </div>
+      </section>
+
+      <section class="emma-info-section" aria-labelledby="meet-emma">
+        <article class="info-card">
+          <p class="eyebrow">What Emma remembers</p>
+          <h2 id="meet-emma">Everything you tell your AI</h2>
+          <p>Emma quietly captures your AI chats, notes, and attachments so you never lose a thought.</p>
+          <ul class="info-highlights">
+            <li>Auto-save ChatGPT, Claude, Gemini, Copilot, and Perplexity conversations.</li>
+            <li>Add personal notes, photos, and audio clips whenever inspiration strikes.</li>
+            <li>Emma organizes everything with titles, people, and emotions for quick recall.</li>
+          </ul>
+        </article>
+        <article class="info-card">
+          <p class="eyebrow">Security at a glance</p>
+          <h3>Encrypted and passphrase locked</h3>
+          <p>Every vault uses AES-256-GCM with PBKDF2 key stretching, and your passphrase disappears after a short period of inactivity.</p>
+          <div class="info-pill-row">
+            <span class="info-pill">AES-256-GCM encryption</span>
+            <span class="info-pill">PBKDF2-SHA256 key derivation</span>
+            <span class="info-pill">Auto passphrase timeout</span>
+          </div>
+        </article>
+        <article class="info-card">
+          <p class="eyebrow">Your data, your device</p>
+          <h3>Local-first storage</h3>
+          <p>Your vault lives on this browser. Export it when you want a copy, import it when you're ready to continue.</p>
+          <ul class="info-highlights">
+            <li>.emma files stay wherever you save them - nothing uploads automatically.</li>
+            <li>Browser backups give you a safety net if the tab or laptop restarts.</li>
+            <li>Manual export/import keeps you in control of every copy.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="emma-how" aria-labelledby="how-emma-works">
+        <div class="section-header">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-emma-works">Bring your vault to life in three steps</h2>
+          <p>Follow this simple flow once and Emma will keep everything up to date for you.</p>
+        </div>
+        <div class="how-grid">
+          <article class="how-card">
+            <span class="step-number">1</span>
+            <h3>Capture automatically</h3>
+            <p>Install the Emma Lite extension and chat as usual. Emma quietly saves each conversation, plus any manual notes you drop in.</p>
+          </article>
+          <article class="how-card">
+            <span class="step-number">2</span>
+            <h3>Create or unlock your vault</h3>
+            <p>Start a fresh .emma file or open the one you already use. Emma encrypts everything instantly and keeps a local safety copy.</p>
+          </article>
+          <article class="how-card">
+            <span class="step-number">3</span>
+            <h3>Explore and relive</h3>
+            <p>Unlock the vault to search, edit, and revisit your memories inside the living desktop. Export or restore whenever you want.</p>
+          </article>
+        </div>
+      </section>
+    </div>
   </div>
 
-                <!-- Vault Status -->
-        <div class="vault-status" id="vaultStatus">
-            <div id="vaultStatusText">🔒 No vault loaded</div>
-            <!-- 🔥 CRITICAL: .emma File Sync Status Indicator -->
-            <div id="syncStatus" style="
-                margin-top: 10px;
-                padding: 8px 12px;
-                border-radius: 8px;
-                font-size: 14px;
-                text-align: center;
-                background: rgba(59, 130, 246, 0.2);
-                border: 1px solid rgba(59, 130, 246, 0.5);
-                display: none;
-            ">
-                <span id="syncStatusIcon">💾</span>
-                <span id="syncStatusText">Sync Status</span>
-            </div>
-        </div>
+  <div class="drag-drop-zone" id="dragDropZone">
+    <div class="drag-drop-message">
+      Drop your .emma vault file here
+    </div>
+  </div>
 
-        <!-- Clean Vault Controls -->
-        <div class="vault-controls">
-            <button class="vault-btn primary" id="openVaultBtn">
-                📁 Open Vault
-            </button>
-            <button class="vault-btn" id="createVaultBtn">
-                ✨ Create New Vault
-            </button>
-            <button class="vault-btn success" id="goToDashboardBtn" style="display: none;">
-                🚀 Go to Dashboard
-              </button>
-        </div>
-
-        <!-- Drag & Drop Zone -->
-        <div class="drag-drop-zone" id="dragDropZone">
-            <div class="drag-drop-message">
-                🎯 Drop your .emma vault file here
-              </div>
-            </div>
-
-        <!-- Hidden file input -->
-        <input type="file" id="vaultFileInput" accept=".emma" class="hidden">
-        </div>
-
-  <script>
+  <input type="file" id="vaultFileInput" accept=".emma" class="hidden"><script>
         /**
          * Clean Emma Pure Web App
          * Perfect architecture for Debbe's demo
          */
+
+        async function ensureEmmaWebVault() {
+            if (window.emmaWebVault) return;
+
+            if (typeof EmmaWebVault === 'undefined') {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'js/emma-web-vault.js';
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Failed to load Emma Web Vault script.'));
+                    document.head.appendChild(script);
+                });
+            }
+
+            if (typeof EmmaWebVault === 'undefined') {
+                throw new Error('Emma Web Vault system unavailable.');
+            }
+
+            window.emmaWebVault = new EmmaWebVault();
+        }
+
         class CleanEmmaApp {
       constructor() {
                 this.vaultStatus = 'locked';
@@ -323,8 +865,11 @@
                 this.orb = document.getElementById('emmaOrb');
                 this.vaultStatusDiv = document.getElementById('vaultStatus');
                 this.vaultStatusText = document.getElementById('vaultStatusText');
+                this.vaultStatusIcon = document.getElementById('vaultStatusIcon');
+                this.vaultStatusHelper = document.getElementById('vaultStatusHelper');
                 this.openVaultBtn = document.getElementById('openVaultBtn');
                 this.createVaultBtn = document.getElementById('createVaultBtn');
+                this.recoverVaultBtn = document.getElementById('recoverVaultBtn');
                 this.goToDashboardBtn = document.getElementById('goToDashboardBtn');
                 this.dragDropZone = document.getElementById('dragDropZone');
                 this.fileInput = document.getElementById('vaultFileInput');
@@ -342,7 +887,7 @@
 
           } else {
                         console.warn('⚠️ Emma orb class not available, using CSS fallback');
-                        this.orb.style.background = 'radial-gradient(circle at 30% 30%, #8658ff, #4f46e5, #f093fb)';
+                        this.orb.style.background = 'radial-gradient(circle at 30% 30%, #6f63d9, #4f46e5, #deb3e4)';
                         this.orb.style.animation = 'orb-pulse 4s ease-in-out infinite';
           }
         } catch (error) {
@@ -371,6 +916,11 @@
 
                 // Create vault button
                 this.createVaultBtn.addEventListener('click', () => this.createVault());
+
+                // Recover browser backup
+                if (this.recoverVaultBtn) {
+                    this.recoverVaultBtn.addEventListener('click', () => this.recoverFromBrowserBackup());
+                }
 
                 // Go to dashboard button
                 this.goToDashboardBtn.addEventListener('click', () => this.goToDashboard());
@@ -447,6 +997,7 @@
                     if (!passphrase) return;
 
                     // Create new vault using Emma Web Vault
+                    await ensureEmmaWebVault();
                     const result = await window.emmaWebVault.createVaultFile(vaultName, passphrase);
 
                     if (result.success) {
@@ -467,6 +1018,9 @@
 
                     // Read file data first
                     const fileData = new Uint8Array(await file.arrayBuffer());
+                    if (window.emmaWebVault && typeof window.emmaWebVault.inspectVaultBytes === 'function') {
+                        window.emmaWebVault.inspectVaultBytes(fileData, file.name);
+                    }
 
                     // Use working Emma modal (copied from extension)
                     const passphrase = await this.showEmmaPassphraseModal(file.name);
@@ -474,22 +1028,46 @@
                     if (!passphrase) return;
 
                     // Use EXACT working crypto from extension
+                    await ensureEmmaWebVault();
                     const vaultData = await window.emmaWebVault.exactWorkingDecrypt(fileData, passphrase);
 
                     // Set vault data in Emma Web Vault
                     window.emmaWebVault.vaultData = vaultData;
                     window.emmaWebVault.isOpen = true;
                     window.emmaWebVault.passphrase = passphrase;
+                    if (window.emmaWebVault.cacheSessionPassphrase) {
+                        window.emmaWebVault.cacheSessionPassphrase(passphrase);
+                    }
+                    if (typeof window.emmaWebVault.updateOriginalFileName === 'function') {
+                        window.emmaWebVault.updateOriginalFileName(file.name);
+                    } else {
+                        window.emmaWebVault.originalFileName = file.name;
+                        try {
+                            sessionStorage.setItem('emmaVaultOriginalFileName', file.name);
+                            localStorage.setItem('emmaVaultOriginalFileName', file.name);
+                        } catch (_) {}
+                    }
                     if (fileHandle) {
                         window.emmaWebVault.fileHandle = fileHandle;
                     }
+                    if (!fileHandle && window.emmaWebVault && typeof window.emmaWebVault.ensureDirectFileHandle === 'function') {
+                        try {
+                            await window.emmaWebVault.ensureDirectFileHandle('initial-open', { promptOnFailure: true });
+                        } catch (handleError) {
+                        console.warn('⚠️ Emma Web Vault: Unable to capture direct file access automatically:', handleError);
+                        }
+                    }
+
+                    const normalizedVaultName = window.emmaWebVault.ensureVaultMetadataName(
+                        vaultData.metadata?.name || vaultData.name || file.name
+                    );
 
                     // Set session storage
                     sessionStorage.setItem('emmaVaultActive', 'true');
-                    sessionStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+                    sessionStorage.setItem('emmaVaultName', normalizedVaultName);
                     // SECURITY: Never store passphrase in web storage - keep in memory only
                     localStorage.setItem('emmaVaultActive', 'true');
-                    localStorage.setItem('emmaVaultName', vaultData.metadata?.name || file.name);
+                    localStorage.setItem('emmaVaultName', normalizedVaultName);
 
                     // Save to IndexedDB for persistence (version 2 - clean rebuild)
                     try {
@@ -502,7 +1080,7 @@
 
                     this.vaultStatus = 'unlocked';
                     this.currentVault = {
-                        name: vaultData.metadata?.name || file.name,
+                        name: normalizedVaultName,
                         stats: {
                             memoryCount: Object.keys(vaultData.content?.memories || {}).length,
                             peopleCount: Object.keys(vaultData.content?.people || {}).length
@@ -559,14 +1137,28 @@
                 if (this.vaultStatus === 'unlocked') {
                     this.orbContainer.classList.remove('vault-locked');
                     this.vaultStatusDiv.classList.add('unlocked');
-                    this.vaultStatusText.textContent = `🔓 ${this.currentVault.name} (${this.currentVault.stats?.memoryCount || 0} memories)`;
+                    const vaultName = this.currentVault?.name || 'Vault unlocked';
+                    const memoryCount = this.currentVault?.stats?.memoryCount || 0;
+                    this.vaultStatusText.textContent = `${vaultName} (${memoryCount} memories)`;
+                    if (this.vaultStatusIcon) {
+                        this.vaultStatusIcon.textContent = '\uD83D\uDD13';
+                    }
+                    if (this.vaultStatusHelper) {
+                        this.vaultStatusHelper.textContent = 'Unlocked \u2022 Secure session active in this browser';
+                    }
 
                     // Show dashboard button for mobile users
                     this.goToDashboardBtn.style.display = 'block';
-        } else {
+                } else {
                     this.orbContainer.classList.add('vault-locked');
                     this.vaultStatusDiv.classList.remove('unlocked');
-                    this.vaultStatusText.textContent = '🔒 No vault loaded';
+                    this.vaultStatusText.textContent = 'No vault loaded';
+                    if (this.vaultStatusIcon) {
+                        this.vaultStatusIcon.textContent = '\uD83D\uDD12';
+                    }
+                    if (this.vaultStatusHelper) {
+                        this.vaultStatusHelper.textContent = 'Connect your .emma vault to continue.';
+                    }
 
                     // Hide dashboard button when locked
                     this.goToDashboardBtn.style.display = 'none';
@@ -576,6 +1168,36 @@
             goToDashboard() {
 
                 window.location.href = 'dashboard.html';
+            }
+
+            async recoverFromBrowserBackup() {
+                try {
+                    await ensureEmmaWebVault();
+
+                    if (!window.emmaWebVault || typeof window.emmaWebVault.hasBrowserBackup !== 'function') {
+                        this.showError('Recovery system unavailable in this browser.');
+                        return;
+                    }
+
+                    const hasBackup = await window.emmaWebVault.hasBrowserBackup();
+                    if (!hasBackup) {
+                        this.showError('No browser backup found. Please open your .emma file or create a new vault.');
+                        return;
+                    }
+
+                    const passphrase = await this.showEmmaPassphraseModal('Recovered Vault', true);
+                    if (!passphrase) return;
+
+                    await window.emmaWebVault.recoverFromBrowserBackup(passphrase);
+                    this.vaultStatus = 'unlocked';
+                    this.currentVault = { name: window.emmaWebVault.vaultData?.metadata?.name || 'Recovered Vault' };
+                    this.updateUI();
+                    this.showSuccess('Recovered vault restored. Downloading fresh .emma file...');
+                    await window.emmaWebVault.downloadVaultFile(this.currentVault.name || 'Recovered-Vault');
+                } catch (error) {
+                    console.error('? Recovery failed:', error);
+                    this.showError('Failed to recover from browser backup: ' + (error?.message || error));
+                }
             }
 
             showSuccess(message) {
@@ -638,8 +1260,8 @@
                         padding: 30px;
                         max-width: 400px;
             width: 90%;
-                        border: 2px solid rgba(134, 88, 255, 0.3);
-                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                        border: 2px solid rgba(111, 99, 217, 0.3);
+                        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
                     `;
 
                     // SECURITY: Create DOM elements safely without innerHTML injection
@@ -666,7 +1288,7 @@
                                 <input type="password" id="emmaPassphrase" placeholder="Enter passphrase" required autofocus style="
                                     width: 100%;
                                     padding: 12px 16px;
-                                    border: 2px solid rgba(134, 88, 255, 0.3);
+                                    border: 2px solid rgba(111, 99, 217, 0.3);
                                     border-radius: 10px;
                                     background: rgba(255, 255, 255, 0.1);
                                     color: white;
@@ -678,7 +1300,7 @@
                                 <input type="password" id="emmaPassphraseConfirm" placeholder="Confirm passphrase" required style="
                                     width: 100%;
                                     padding: 12px 16px;
-                                    border: 2px solid rgba(134, 88, 255, 0.3);
+                                    border: 2px solid rgba(111, 99, 217, 0.3);
                                     border-radius: 10px;
                                     background: rgba(255, 255, 255, 0.1);
                                 color: white;
@@ -702,7 +1324,7 @@
                     cursor: pointer;
                                 ">Cancel</button>
                                 <button type="submit" style="
-                                    background: linear-gradient(135deg, #8B5CF6, #F093FB);
+                                    background: linear-gradient(135deg, #6F63D9, #DEB3E4);
                 border: none;
                 color: white;
                                     padding: 10px 20px;
@@ -837,13 +1459,13 @@
                         
                         if (!syncStatusEl) return;
                         
-                        syncStatusEl.style.display = 'block';
+                        syncStatusEl.style.display = 'flex';
                         
                         switch(status) {
                             case 'syncing':
                                 syncStatusEl.style.background = 'rgba(59, 130, 246, 0.2)';
                                 syncStatusEl.style.border = '1px solid rgba(59, 130, 246, 0.5)';
-                                iconEl.textContent = '💾';
+                                iconEl.textContent = '&#9888;&#65039;';
                                 textEl.textContent = message || 'Saving to .emma file...';
                                 break;
                             case 'success':
@@ -885,3 +1507,13 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+

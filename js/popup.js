@@ -277,7 +277,7 @@ function attachEventListeners() {
   }
 
   if (elements.peopleBtn) {
-    elements.peopleBtn.addEventListener('click', () => { try { openPeople(); } catch { try { window.location.href='people.html'; } catch {} } });
+    elements.peopleBtn.addEventListener('click', () => { try { openPeople(); } catch { try { window.location.href='pages/people-emma.html'; } catch {} } });
   }
 
   if (elements.relationshipsBtn) {
@@ -1024,7 +1024,7 @@ function openPeople() {
       return;
     }
   } catch {}
-  try { window.location.href = 'people.html'; } catch {}
+  try { window.location.href = 'pages/people-emma.html'; } catch {}
 }
 
 function openRelationships() {

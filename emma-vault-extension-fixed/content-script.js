@@ -93,7 +93,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       window.postMessage({
         type: 'EMMA_VAULT_CHECK',
         messageId: messageId
-      }, '*');
+      }, window.location.origin);
       
       // Timeout after 1 second
       setTimeout(() => {
@@ -129,7 +129,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             type: 'EMMA_VAULT_SAVE',
             messageId: saveMessageId,
             memoryData: request.memoryData
-          }, '*');
+          }, window.location.origin);
           
           // Timeout after 10 seconds
           setTimeout(() => {
@@ -1396,7 +1396,7 @@ function injectStyles() {
     
     .emma-sync-progress-bar {
       height: 100%;
-      background: linear-gradient(90deg, #8B5CF6, #EC4899);
+      background: linear-gradient(90deg, #6F63D9, #D06FA8);
       border-radius: 2px;
       transition: width 0.3s ease;
     }

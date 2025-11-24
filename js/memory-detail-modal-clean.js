@@ -119,8 +119,8 @@ async function loadPeopleInTab() {
           <div style="text-align: center; color: rgba(255,255,255,0.7); margin: 40px 0;">
             <div style="font-size: 48px; margin-bottom: 16px;">👥</div>
             <p>No people in your vault yet.</p>
-            <button onclick="window.open('/pages/people.html', '_blank')" style="
-              background: linear-gradient(135deg, #8658ff, #f093fb);
+            <button onclick="window.open('/pages/people-emma.html', '_blank')" style="
+              background: linear-gradient(135deg, #6f63d9, #deb3e4);
               border: none;
               color: white;
               padding: 12px 24px;
@@ -149,7 +149,7 @@ async function loadPeopleInTab() {
           : `<div style="
               width: 64px; 
               height: 64px; 
-              background: linear-gradient(135deg, #8658ff, #f093fb); 
+              background: linear-gradient(135deg, #6f63d9, #deb3e4); 
               border-radius: 50%; 
               display: flex; 
               align-items: center; 
@@ -166,10 +166,10 @@ async function loadPeopleInTab() {
                id="person-${person.id}"
                style="
                  padding: 20px; 
-                 border: 2px solid ${isSelected ? '#8658ff' : 'rgba(255, 255, 255, 0.2)'}; 
+                 border: 2px solid ${isSelected ? '#6f63d9' : 'rgba(255, 255, 255, 0.2)'}; 
                  border-radius: 16px;
                  cursor: pointer;
-                 background: ${isSelected ? 'rgba(134, 88, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)'};
+                 background: ${isSelected ? 'rgba(111, 99, 217, 0.1)' : 'rgba(255, 255, 255, 0.05)'};
                  color: white;
                  text-align: center;
                  transition: all 0.2s ease;
@@ -202,7 +202,7 @@ async function loadPeopleInTab() {
         
         <div style="text-align: center; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
           <button onclick="savePeopleSelections()" style="
-            background: linear-gradient(135deg, #8658ff, #f093fb);
+            background: linear-gradient(135deg, #6f63d9, #deb3e4);
             border: none;
             color: white;
             padding: 12px 32px;
@@ -213,7 +213,7 @@ async function loadPeopleInTab() {
             margin-right: 12px;
           ">Save Connections</button>
           
-          <button onclick="window.open('/pages/people.html', '_blank')" style="
+          <button onclick="window.open('/pages/people-emma.html', '_blank')" style="
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
@@ -234,12 +234,12 @@ async function loadPeopleInTab() {
             const personCard = document.getElementById(`person-${person.id}`);
             if (personCard) {
               personCard.classList.add('selected');
-              personCard.style.border = '2px solid #8658ff';
-              personCard.style.background = 'rgba(134, 88, 255, 0.1)';
+              personCard.style.border = '2px solid #6f63d9';
+              personCard.style.background = 'rgba(111, 99, 217, 0.1)';
               
               const checkmark = document.createElement('div');
               checkmark.className = 'selection-checkmark';
-              checkmark.style.cssText = 'position: absolute; top: 8px; right: 8px; color: #8658ff; font-size: 20px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;';
+              checkmark.style.cssText = 'position: absolute; top: 8px; right: 8px; color: #6f63d9; font-size: 20px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;';
               checkmark.innerHTML = '✓';
               personCard.appendChild(checkmark);
             }
@@ -265,14 +265,14 @@ async function loadPeopleInTab() {
         } else {
           // Select
           personCard.classList.add('selected');
-          personCard.style.border = '2px solid #8658ff';
-          personCard.style.background = 'rgba(134, 88, 255, 0.1)';
+          personCard.style.border = '2px solid #6f63d9';
+          personCard.style.background = 'rgba(111, 99, 217, 0.1)';
           // Add checkmark overlay
           const existingCheckmark = personCard.querySelector('.selection-checkmark');
           if (!existingCheckmark) {
             const checkmark = document.createElement('div');
             checkmark.className = 'selection-checkmark';
-            checkmark.style.cssText = 'position: absolute; top: 8px; right: 8px; color: #8658ff; font-size: 20px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;';
+            checkmark.style.cssText = 'position: absolute; top: 8px; right: 8px; color: #6f63d9; font-size: 20px; background: rgba(255,255,255,0.9); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;';
             checkmark.innerHTML = '✓';
             personCard.appendChild(checkmark);
           }
@@ -475,7 +475,7 @@ async function loadPeopleInTab() {
         // Reset button after 2 seconds
         setTimeout(() => {
           saveButton.innerHTML = originalText;
-          saveButton.style.background = 'linear-gradient(135deg, #8658ff, #f093fb)';
+          saveButton.style.background = 'linear-gradient(135deg, #6f63d9, #deb3e4)';
           saveButton.disabled = false;
         }, 2000);
       };
