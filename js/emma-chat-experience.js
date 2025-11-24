@@ -272,8 +272,14 @@ class EmmaChatExperience extends ExperiencePopup {
           this.setupVoiceEventHandlers();
         }
 
-        // Ensure the chat interface connects to the Agent SDK backend
-        this.connectAgentForChat();
+        // 🔗 AUTO-CONNECT: Connect to agent for tool-enabled chat (typed or voice)
+        // This ensures tools work immediately when user types, not just with voice
+        console.log('🔗 Auto-connecting to Emma agent for chat tools...');
+        try {
+          await this.connectAgentForChat();
+        } catch (connErr) {
+          console.warn('⚠️ Initial agent connection failed, will retry on message:', connErr?.message);
+        }
 
         console.log('✅ Emma voice client ready!');
       } else {
@@ -2466,24 +2472,37 @@ class EmmaChatExperience extends ExperiencePopup {
     this.autoResizeTextarea();
     this.handleInputChange();
 
+    // Try to connect to agent if not connected
     if (this.emmaVoice) {
       await this.connectAgentForChat();
     }
 
     const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
-    const localHandled = await this.processLocalChatMessage(message, messageId, {
-      allowDefaultResponse: !canUseAgent
-    });
 
-    if (localHandled) {
-      return;
-    }
-
+    // PRIORITY: When agent is connected, use it for tool-enabled responses
+    // This ensures tools work in typed chat, not just voice
     if (canUseAgent) {
+      // Only handle active enrichment flows locally (they are conversation state)
+      const activeEnrichment = this.findActiveEnrichmentForResponse();
+      if (activeEnrichment) {
+        await this.processEnrichmentResponse(activeEnrichment, message);
+        return;
+      }
+
+      // Send everything else to the agent for tool-enabled processing
       if (typeof this.showTypingIndicator === 'function') {
         this.showTypingIndicator();
       }
       this.emmaVoice.sendToAgent({ type: 'user_text', text: message, source: 'chat' });
+      return;
+    }
+
+    // Fallback: Agent not connected, use local processing
+    const localHandled = await this.processLocalChatMessage(message, messageId, {
+      allowDefaultResponse: true
+    });
+
+    if (localHandled) {
       return;
     }
 
