@@ -10740,6 +10740,25 @@ class EmmaUnifiedIntelligence {
       threshold: 0.6 // Confidence below this triggers clarification
     };
 
+    // PHASE 3: Proactive Intelligence
+    this.proactiveFeatures = {
+      enabled: true,
+      anniversaryCheck: true,
+      patternRecognition: true,
+      gentlePrompts: true,
+      relationshipInsights: true
+    };
+    this.lastProactiveCheck = null;
+    this.proactiveCheckInterval = 1000 * 60 * 60; // 1 hour
+    this.conversationPatterns = {
+      frequentTopics: new Map(),
+      frequentPeople: new Map(),
+      emotionalTrends: [],
+      lastMentioned: new Map()
+    };
+    this.anniversaries = [];
+    this.insights = [];
+
     // PHASE 1: Conversation State Machine
     this.conversationState = new ConversationStateManager();
 
@@ -12085,6 +12104,399 @@ Respond with JSON array:
     });
 
     return enriched.trim();
+  }
+
+  // ==========================================
+  // PHASE 3: PROACTIVE INTELLIGENCE METHODS
+  // ==========================================
+
+  /**
+   * 🎯 PHASE 3: Run Proactive Intelligence Check
+   * Called periodically to generate proactive insights and prompts
+   */
+  async runProactiveIntelligence(chatInstance) {
+    if (!this.proactiveFeatures.enabled) return null;
+
+    const now = Date.now();
+    if (this.lastProactiveCheck && (now - this.lastProactiveCheck) < this.proactiveCheckInterval) {
+      return null; // Too soon for another check
+    }
+
+    console.log('🎯 PHASE 3: Running proactive intelligence check');
+    this.lastProactiveCheck = now;
+
+    const proactiveMessages = [];
+
+    try {
+      // Check for memory anniversaries
+      if (this.proactiveFeatures.anniversaryCheck) {
+        const anniversaries = await this.checkMemoryAnniversaries(chatInstance);
+        if (anniversaries.length > 0) {
+          proactiveMessages.push(...anniversaries);
+        }
+      }
+
+      // Analyze conversation patterns
+      if (this.proactiveFeatures.patternRecognition) {
+        const patterns = await this.analyzeConversationPatterns(chatInstance);
+        if (patterns.length > 0) {
+          proactiveMessages.push(...patterns);
+        }
+      }
+
+      // Generate gentle prompts
+      if (this.proactiveFeatures.gentlePrompts) {
+        const prompts = await this.generateGentlePrompts(chatInstance);
+        if (prompts.length > 0) {
+          proactiveMessages.push(...prompts);
+        }
+      }
+
+      // Relationship insights
+      if (this.proactiveFeatures.relationshipInsights) {
+        const insights = await this.generateRelationshipInsights(chatInstance);
+        if (insights.length > 0) {
+          proactiveMessages.push(...insights);
+        }
+      }
+
+      // Return the most relevant proactive message
+      return proactiveMessages.length > 0 ? proactiveMessages[0] : null;
+
+    } catch (error) {
+      console.error('❌ Proactive intelligence error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 📅 PHASE 3: Check Memory Anniversaries
+   * Detect memories from 1, 5, 10, 20 years ago
+   */
+  async checkMemoryAnniversaries(chatInstance) {
+    console.log('📅 PHASE 3: Checking memory anniversaries');
+
+    const anniversaryMessages = [];
+    const vault = chatInstance.getVaultData();
+    const memories = Object.values(vault?.memories || {});
+
+    const today = new Date();
+    const targetYears = [1, 5, 10, 20, 25, 30];
+
+    memories.forEach(memory => {
+      const memoryDate = new Date(memory.created || memory.timestamp);
+      const yearsDiff = today.getFullYear() - memoryDate.getFullYear();
+
+      // Check if same month and day
+      if (memoryDate.getMonth() === today.getMonth() &&
+          memoryDate.getDate() === today.getDate() &&
+          targetYears.includes(yearsDiff)) {
+
+        const preview = memory.content?.substring(0, 100) || 'this moment';
+        anniversaryMessages.push({
+          type: 'anniversary',
+          priority: yearsDiff === 1 ? 'high' : 'medium',
+          text: `🎂 ${yearsDiff} ${yearsDiff === 1 ? 'year' : 'years'} ago today: "${preview}..." Would you like to revisit this memory?`,
+          memory: memory,
+          yearsAgo: yearsDiff
+        });
+      }
+    });
+
+    this.anniversaries = anniversaryMessages;
+    return anniversaryMessages;
+  }
+
+  /**
+   * 🔍 PHASE 3: Analyze Conversation Patterns
+   * Identify frequent topics and people
+   */
+  async analyzeConversationPatterns(chatInstance) {
+    console.log('🔍 PHASE 3: Analyzing conversation patterns');
+
+    const patternMessages = [];
+    const vault = chatInstance.getVaultData();
+
+    // Analyze recent conversation history (last 20 messages)
+    const recentMessages = this.conversationHistory.slice(-20);
+
+    // Track mentioned people
+    const peopleInVault = Object.values(vault?.people || {});
+    peopleInVault.forEach(person => {
+      const mentionCount = recentMessages.filter(msg =>
+        msg.message.toLowerCase().includes(person.name.toLowerCase())
+      ).length;
+
+      if (mentionCount > 0) {
+        this.conversationPatterns.frequentPeople.set(person.name, mentionCount);
+        this.conversationPatterns.lastMentioned.set(person.name, Date.now());
+      }
+    });
+
+    // Detect people who haven't been mentioned recently
+    const daysSinceLastCheck = this.lastProactiveCheck ?
+      (Date.now() - this.lastProactiveCheck) / (1000 * 60 * 60 * 24) : 0;
+
+    if (daysSinceLastCheck >= 7) { // Check weekly
+      peopleInVault.forEach(person => {
+        const lastMentioned = this.conversationPatterns.lastMentioned.get(person.name);
+        const daysSinceLastMention = lastMentioned ?
+          (Date.now() - lastMentioned) / (1000 * 60 * 60 * 24) : 999;
+
+        if (daysSinceLastMention >= 14) {
+          patternMessages.push({
+            type: 'gentle_prompt',
+            priority: 'low',
+            text: `I noticed you haven't mentioned ${person.name} in a while. Would you like to share a memory with them?`,
+            person: person,
+            daysSince: Math.floor(daysSinceLastMention)
+          });
+        }
+      });
+    }
+
+    return patternMessages;
+  }
+
+  /**
+   * 💭 PHASE 3: Generate Gentle Prompts
+   * Suggest memory capture during quiet periods
+   */
+  async generateGentlePrompts(chatInstance) {
+    console.log('💭 PHASE 3: Generating gentle prompts');
+
+    const promptMessages = [];
+    const vault = chatInstance.getVaultData();
+    const memories = Object.values(vault?.memories || {});
+
+    // Check if user has been inactive
+    const lastMessage = this.conversationHistory[this.conversationHistory.length - 1];
+    if (!lastMessage) return [];
+
+    const timeSinceLastMessage = Date.now() - lastMessage.timestamp;
+    const hoursSince = timeSinceLastMessage / (1000 * 60 * 60);
+
+    // Only prompt if it's been a while (but not TOO long - they need to be active)
+    if (hoursSince >= 24 && hoursSince <= 72) {
+      // Check memory capture rate
+      const recentMemories = memories.filter(m => {
+        const age = Date.now() - (m.created || m.timestamp);
+        return age < (1000 * 60 * 60 * 24 * 7); // Last 7 days
+      });
+
+      if (recentMemories.length === 0) {
+        promptMessages.push({
+          type: 'gentle_prompt',
+          priority: 'low',
+          text: `Hi! 👋 It's been a little while. Have any special moments you'd like to remember from the past few days?`,
+          reason: 'no_recent_memories'
+        });
+      } else if (recentMemories.length < 3) {
+        promptMessages.push({
+          type: 'gentle_prompt',
+          priority: 'low',
+          text: `I'd love to hear what you've been up to lately. Any moments worth remembering?`,
+          reason: 'few_recent_memories'
+        });
+      }
+    }
+
+    return promptMessages;
+  }
+
+  /**
+   * 💝 PHASE 3: Generate Relationship Insights
+   * Analyze relationships and suggest connections
+   */
+  async generateRelationshipInsights(chatInstance) {
+    console.log('💝 PHASE 3: Generating relationship insights');
+
+    const insightMessages = [];
+    const vault = chatInstance.getVaultData();
+    const memories = Object.values(vault?.memories || {});
+    const people = Object.values(vault?.people || {});
+
+    // Find people with many memories
+    const memoryCountByPerson = new Map();
+    memories.forEach(memory => {
+      const memoryPeople = memory.metadata?.people || [];
+      memoryPeople.forEach(personId => {
+        const count = memoryCountByPerson.get(personId) || 0;
+        memoryCountByPerson.set(personId, count + 1);
+      });
+    });
+
+    // Generate insights about important relationships
+    people.forEach(person => {
+      const memoryCount = memoryCountByPerson.get(person.id) || 0;
+
+      if (memoryCount >= 10 && memoryCount % 10 === 0) {
+        insightMessages.push({
+          type: 'relationship_insight',
+          priority: 'medium',
+          text: `You have ${memoryCount} wonderful memories with ${person.name}! They must be very special to you. 💜`,
+          person: person,
+          memoryCount: memoryCount
+        });
+      }
+
+      // Check for recent memory spike
+      const recentMemories = memories.filter(m => {
+        const age = Date.now() - (m.created || m.timestamp);
+        const hasPerson = m.metadata?.people?.includes(person.id);
+        return age < (1000 * 60 * 60 * 24 * 7) && hasPerson;
+      });
+
+      if (recentMemories.length >= 3) {
+        insightMessages.push({
+          type: 'relationship_insight',
+          priority: 'medium',
+          text: `I notice you've been spending a lot of time with ${person.name} lately! That's wonderful. 😊`,
+          person: person,
+          recentCount: recentMemories.length
+        });
+      }
+    });
+
+    // Find lonely memories (no people assigned)
+    const lonelyMemories = memories.filter(m => {
+      const memoryPeople = m.metadata?.people || [];
+      return memoryPeople.length === 0;
+    });
+
+    if (lonelyMemories.length >= 5) {
+      insightMessages.push({
+        type: 'enrichment_suggestion',
+        priority: 'low',
+        text: `You have ${lonelyMemories.length} memories that don't have anyone tagged yet. Would you like to add people to make them more meaningful?`,
+        memories: lonelyMemories.slice(0, 5)
+      });
+    }
+
+    this.insights = insightMessages;
+    return insightMessages;
+  }
+
+  /**
+   * 🌟 PHASE 3: Track Conversation Topics
+   * Update pattern tracking based on current conversation
+   */
+  trackConversationTopic(topic) {
+    if (!topic) return;
+
+    const count = this.conversationPatterns.frequentTopics.get(topic) || 0;
+    this.conversationPatterns.frequentTopics.set(topic, count + 1);
+  }
+
+  /**
+   * 📊 PHASE 3: Get Conversation Insights
+   * Return current conversation patterns and insights
+   */
+  getConversationInsights() {
+    const topPeople = Array.from(this.conversationPatterns.frequentPeople.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    const topTopics = Array.from(this.conversationPatterns.frequentTopics.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([topic, count]) => ({ topic, count }));
+
+    return {
+      topPeople,
+      topTopics,
+      anniversaries: this.anniversaries,
+      insights: this.insights,
+      totalConversations: this.conversationHistory.length
+    };
+  }
+
+  /**
+   * 🎁 PHASE 3: Get Next Proactive Message
+   * Returns the most relevant proactive message to show
+   */
+  getNextProactiveMessage() {
+    // Priority order: anniversaries > insights > prompts
+    if (this.anniversaries.length > 0) {
+      return this.anniversaries[0];
+    }
+
+    if (this.insights.length > 0) {
+      const highPriority = this.insights.find(i => i.priority === 'high');
+      const mediumPriority = this.insights.find(i => i.priority === 'medium');
+      return highPriority || mediumPriority || this.insights[0];
+    }
+
+    return null;
+  }
+
+  /**
+   * 🔔 PHASE 3: Should Show Proactive Message
+   * Determine if it's appropriate to show a proactive message
+   */
+  shouldShowProactiveMessage() {
+    // Don't interrupt active conversations
+    if (this.conversationState.currentState !== 'idle') {
+      return false;
+    }
+
+    // Don't show if recently showed one
+    const timeSinceLastProactive = this.lastProactiveCheck ?
+      Date.now() - this.lastProactiveCheck : Infinity;
+
+    if (timeSinceLastProactive < this.proactiveCheckInterval) {
+      return false;
+    }
+
+    // Check if we have anything to show
+    const nextMessage = this.getNextProactiveMessage();
+    return nextMessage !== null;
+  }
+
+  /**
+   * 🎨 PHASE 3: Format Proactive Message for Display
+   * Convert proactive message into chat-ready format
+   */
+  formatProactiveMessage(message) {
+    if (!message) return null;
+
+    return {
+      text: message.text,
+      type: 'proactive',
+      subtype: message.type,
+      priority: message.priority,
+      actions: this.getProactiveActions(message),
+      metadata: {
+        memory: message.memory,
+        person: message.person,
+        yearsAgo: message.yearsAgo,
+        daysSince: message.daysSince
+      }
+    };
+  }
+
+  /**
+   * 🎬 PHASE 3: Get Proactive Actions
+   * Determine appropriate actions for proactive message
+   */
+  getProactiveActions(message) {
+    switch (message.type) {
+      case 'anniversary':
+        return ['view_memory', 'share_reflection', 'dismiss'];
+
+      case 'gentle_prompt':
+        return ['start_capture', 'remind_later', 'dismiss'];
+
+      case 'relationship_insight':
+        return ['view_memories', 'add_memory', 'dismiss'];
+
+      case 'enrichment_suggestion':
+        return ['enrich_memories', 'remind_later', 'dismiss'];
+
+      default:
+        return ['dismiss'];
+    }
   }
 }
 
