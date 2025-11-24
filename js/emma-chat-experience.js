@@ -2402,10 +2402,22 @@ class EmmaChatExperience extends ExperiencePopup {
     } catch (e) {
       // If anything goes wrong, fall through without swapping
     }
+
+    // PHASE 4: Handle rich message types
+    if (options.messageType && this.renderRichMessage) {
+      return this.renderRichMessage(content, sender, options);
+    }
+
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
     messageDiv.id = messageId;
+
+    // PHASE 4: Add message actions data attribute
+    if (options.allowActions !== false) {
+      messageDiv.setAttribute('data-message-id', messageId);
+      messageDiv.setAttribute('data-sender', sender);
+    }
     
     // 🎙️ VOICE: Add voice indicators for transcribed messages
     if (options.isVoice) {
@@ -10592,6 +10604,553 @@ Just the question:`;
       console.error('❌ Error saving enhanced memory:', error);
       this.showToast("Error saving memory. Please try again.", "error");
     }
+  }
+
+  // ==========================================
+  // PHASE 4: UI/UX ENHANCEMENTS
+  // ==========================================
+
+  /**
+   * 🎨 PHASE 4: Render Rich Message Types
+   * Supports memory cards, person cards, photo grids, timelines, etc.
+   */
+  renderRichMessage(content, sender, options = {}) {
+    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `${sender}-message rich-message`;
+    messageDiv.id = messageId;
+    messageDiv.setAttribute('data-message-id', messageId);
+    messageDiv.setAttribute('data-message-type', options.messageType);
+
+    let richContent = '';
+
+    switch (options.messageType) {
+      case 'memory_card':
+        richContent = this.renderMemoryCard(content, options);
+        break;
+
+      case 'person_card':
+        richContent = this.renderPersonCard(content, options);
+        break;
+
+      case 'photo_grid':
+        richContent = this.renderPhotoGrid(content, options);
+        break;
+
+      case 'timeline':
+        richContent = this.renderTimeline(content, options);
+        break;
+
+      case 'search_results':
+        richContent = this.renderSearchResults(content, options);
+        break;
+
+      case 'suggestion_chips':
+        richContent = this.renderSuggestionChips(content, options);
+        break;
+
+      default:
+        richContent = `<p>${this.formatMessageContent(content)}</p>`;
+    }
+
+    const messageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (sender === 'emma') {
+      messageDiv.innerHTML = `
+        <div class="emma-orb-avatar" id="emma-orb-msg-${messageId}"></div>
+        <div class="message-content rich-content">
+          ${richContent}
+          <span class="message-time">${messageTime}</span>
+        </div>
+      `;
+
+      // Initialize Emma orb
+      setTimeout(() => {
+        const orbContainer = document.getElementById(`emma-orb-msg-${messageId}`);
+        if (orbContainer && window.EmmaOrb) {
+          try {
+            new window.EmmaOrb(orbContainer, {
+              hue: 270,
+              hoverIntensity: 0.2,
+              particleCount: 80,
+              resolution: 2
+            });
+          } catch (error) {
+            orbContainer.style.cssText = `
+              background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4);
+              border-radius: 50%;
+              width: 100%;
+              height: 100%;
+              box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
+            `;
+          }
+        }
+      }, 0);
+    } else {
+      messageDiv.innerHTML = `
+        <div class="message-bubble rich-bubble">
+          ${richContent}
+          <span class="message-time">${messageTime}</span>
+        </div>
+      `;
+    }
+
+    // Animate message in
+    messageDiv.style.opacity = '0';
+    messageDiv.style.transform = 'translateY(10px)';
+    this.messageContainer.appendChild(messageDiv);
+
+    requestAnimationFrame(() => {
+      messageDiv.style.transition = 'all 0.3s ease';
+      messageDiv.style.opacity = '1';
+      messageDiv.style.transform = 'translateY(0)';
+    });
+
+    this.messages.push({
+      id: messageId,
+      content,
+      sender,
+      timestamp: Date.now(),
+      ...options
+    });
+
+    setTimeout(() => this.scrollToBottom(), 200);
+    return messageId;
+  }
+
+  /**
+   * 💝 PHASE 4: Render Memory Card
+   */
+  renderMemoryCard(memory, options = {}) {
+    const preview = memory.content?.substring(0, 150) || 'No content';
+    const people = memory.metadata?.people || [];
+    const emotion = memory.metadata?.emotion || 'neutral';
+    const date = memory.created ? new Date(memory.created).toLocaleDateString() : 'Unknown date';
+
+    const peopleHtml = people.length > 0 ?
+      `<div class="memory-card-people">👥 ${people.length} ${people.length === 1 ? 'person' : 'people'}</div>` :
+      '';
+
+    return `
+      <div class="memory-card" data-memory-id="${memory.id}">
+        <div class="memory-card-header">
+          <span class="memory-card-emotion">${this.getEmotionEmoji(emotion)}</span>
+          <span class="memory-card-date">${date}</span>
+        </div>
+        <div class="memory-card-content">
+          ${preview}${memory.content?.length > 150 ? '...' : ''}
+        </div>
+        ${peopleHtml}
+        <div class="memory-card-actions">
+          <button class="memory-card-btn" onclick="window.chatExperience.viewMemory('${memory.id}')">
+            👁️ View
+          </button>
+          <button class="memory-card-btn" onclick="window.chatExperience.shareMemory('${memory.id}')">
+            💬 Discuss
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * 👤 PHASE 4: Render Person Card
+   */
+  renderPersonCard(person, options = {}) {
+    const initials = person.name ? person.name.charAt(0).toUpperCase() : '?';
+    const relationship = person.relationship || person.relation || 'Unknown';
+    const memoryCount = options.memoryCount || 0;
+
+    return `
+      <div class="person-card" data-person-id="${person.id}">
+        <div class="person-card-avatar">${initials}</div>
+        <div class="person-card-info">
+          <div class="person-card-name">${person.name}</div>
+          <div class="person-card-relationship">${relationship}</div>
+          <div class="person-card-memories">${memoryCount} ${memoryCount === 1 ? 'memory' : 'memories'}</div>
+        </div>
+        <div class="person-card-actions">
+          <button class="person-card-btn" onclick="window.chatExperience.viewPersonMemories('${person.id}')">
+            View Memories
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * 📷 PHASE 4: Render Photo Grid
+   */
+  renderPhotoGrid(photos, options = {}) {
+    if (!Array.isArray(photos) || photos.length === 0) {
+      return '<p>No photos available</p>';
+    }
+
+    const gridHtml = photos.map(photo => `
+      <div class="photo-grid-item" onclick="window.chatExperience.viewPhoto('${photo.id}')">
+        <img src="${photo.url || photo.thumbnail}" alt="${photo.alt || 'Memory photo'}" />
+      </div>
+    `).join('');
+
+    return `
+      <div class="photo-grid">
+        ${gridHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * 📅 PHASE 4: Render Timeline
+   */
+  renderTimeline(memories, options = {}) {
+    if (!Array.isArray(memories) || memories.length === 0) {
+      return '<p>No memories to display</p>';
+    }
+
+    const timelineHtml = memories.map(memory => {
+      const date = memory.created ? new Date(memory.created) : new Date();
+      const preview = memory.content?.substring(0, 100) || 'No content';
+
+      return `
+        <div class="timeline-item" data-memory-id="${memory.id}">
+          <div class="timeline-date">${date.toLocaleDateString()}</div>
+          <div class="timeline-content">
+            <div class="timeline-preview">${preview}${memory.content?.length > 100 ? '...' : ''}</div>
+            <button class="timeline-btn" onclick="window.chatExperience.viewMemory('${memory.id}')">
+              View Full Memory
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="timeline">
+        ${timelineHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * 🔍 PHASE 4: Render Search Results
+   */
+  renderSearchResults(results, options = {}) {
+    if (!Array.isArray(results) || results.length === 0) {
+      return '<p>No results found</p>';
+    }
+
+    const resultsHtml = results.map(result => {
+      const preview = result.content?.substring(0, 120) || 'No content';
+      const relevance = result.relevanceScore ? `${Math.round(result.relevanceScore * 100)}% match` : '';
+
+      return `
+        <div class="search-result" data-memory-id="${result.id}">
+          <div class="search-result-preview">${preview}...</div>
+          ${relevance ? `<div class="search-result-relevance">${relevance}</div>` : ''}
+          <button class="search-result-btn" onclick="window.chatExperience.viewMemory('${result.id}')">
+            View Memory
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="search-results">
+        <div class="search-results-count">${results.length} ${results.length === 1 ? 'result' : 'results'} found</div>
+        ${resultsHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * 💬 PHASE 4: Render Suggestion Chips
+   */
+  renderSuggestionChips(suggestions, options = {}) {
+    if (!Array.isArray(suggestions) || suggestions.length === 0) {
+      return '';
+    }
+
+    const chipsHtml = suggestions.map((suggestion, idx) => `
+      <button class="suggestion-chip" onclick="window.chatExperience.handleSuggestionClick('${this.escapeQuotes(suggestion)}')">
+        ${suggestion}
+      </button>
+    `).join('');
+
+    return `
+      <div class="suggestion-chips">
+        ${chipsHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * 💬 PHASE 4: Show Typing Indicator
+   */
+  showTypingIndicator() {
+    // Remove existing typing indicator
+    this.hideTypingIndicator();
+
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'emma-message typing-indicator-message';
+    typingDiv.id = 'emma-typing-indicator';
+
+    typingDiv.innerHTML = `
+      <div class="emma-orb-avatar" id="emma-orb-typing"></div>
+      <div class="message-content">
+        <div class="typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    `;
+
+    this.messageContainer.appendChild(typingDiv);
+
+    // Initialize Emma orb for typing indicator
+    setTimeout(() => {
+      const orbContainer = document.getElementById('emma-orb-typing');
+      if (orbContainer && window.EmmaOrb) {
+        try {
+          new window.EmmaOrb(orbContainer, {
+            hue: 270,
+            hoverIntensity: 0.3,
+            particleCount: 60,
+            resolution: 2
+          });
+        } catch (error) {
+          orbContainer.style.cssText = `
+            background: radial-gradient(circle at 30% 30%, #8A5EFA, #764ba2, #deb3e4);
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 4px 12px rgba(111, 99, 217, 0.3);
+            animation: pulse 1.5s ease-in-out infinite;
+          `;
+        }
+      }
+    }, 0);
+
+    this.scrollToBottom();
+  }
+
+  /**
+   * 💬 PHASE 4: Hide Typing Indicator
+   */
+  hideTypingIndicator() {
+    const typingIndicator = document.getElementById('emma-typing-indicator');
+    if (typingIndicator) {
+      typingIndicator.remove();
+    }
+  }
+
+  /**
+   * 🎬 PHASE 4: Message Action Handlers
+   */
+  viewMemory(memoryId) {
+    console.log('👁️ PHASE 4: Viewing memory:', memoryId);
+    // Trigger existing memory view logic
+    if (window.emmaWebVault) {
+      const memory = window.emmaWebVault.vaultData?.content?.memories?.[memoryId];
+      if (memory) {
+        this.addMessage(`Here's the full memory:\n\n${memory.content}`, 'emma', {
+          messageType: 'memory_card',
+          memory: memory
+        });
+      }
+    }
+  }
+
+  shareMemory(memoryId) {
+    console.log('💬 PHASE 4: Sharing memory:', memoryId);
+    this.addMessage(`What would you like to share about this memory?`, 'emma');
+  }
+
+  viewPersonMemories(personId) {
+    console.log('👤 PHASE 4: Viewing person memories:', personId);
+    if (window.emmaWebVault) {
+      const person = window.emmaWebVault.vaultData?.content?.people?.[personId];
+      if (person) {
+        const memories = Object.values(window.emmaWebVault.vaultData?.content?.memories || {})
+          .filter(m => m.metadata?.people?.includes(personId));
+
+        if (memories.length > 0) {
+          this.addMessage(`Here are ${memories.length} ${memories.length === 1 ? 'memory' : 'memories'} with ${person.name}:`, 'emma', {
+            messageType: 'timeline',
+            content: memories
+          });
+        } else {
+          this.addMessage(`I don't have any memories with ${person.name} yet. Would you like to create one?`, 'emma');
+        }
+      }
+    }
+  }
+
+  viewPhoto(photoId) {
+    console.log('📷 PHASE 4: Viewing photo:', photoId);
+    // Photo viewer implementation
+  }
+
+  handleSuggestionClick(suggestion) {
+    console.log('💬 PHASE 4: Suggestion clicked:', suggestion);
+    // Simulate user typing the suggestion
+    if (this.inputField) {
+      this.inputField.value = suggestion;
+      this.handleSend();
+    }
+  }
+
+  /**
+   * 🎨 PHASE 4: Helper - Get Emotion Emoji
+   */
+  getEmotionEmoji(emotion) {
+    const emotionMap = {
+      'happy': '😊',
+      'joyful': '😄',
+      'sad': '😢',
+      'peaceful': '😌',
+      'excited': '🎉',
+      'calm': '☮️',
+      'anxious': '😰',
+      'angry': '😠',
+      'loving': '💕',
+      'grateful': '🙏',
+      'nostalgic': '🌅',
+      'neutral': '💭'
+    };
+    return emotionMap[emotion?.toLowerCase()] || '💭';
+  }
+
+  /**
+   * 🎨 PHASE 4: Helper - Escape Quotes
+   */
+  escapeQuotes(str) {
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+  }
+
+  /**
+   * ✏️ PHASE 4: Enable Message Editing
+   */
+  enableMessageActions() {
+    // Add event delegation for message actions
+    this.messageContainer.addEventListener('contextmenu', (e) => {
+      const messageDiv = e.target.closest('[data-message-id]');
+      if (messageDiv && messageDiv.getAttribute('data-sender') === 'user') {
+        e.preventDefault();
+        this.showMessageActions(messageDiv, e.clientX, e.clientY);
+      }
+    });
+
+    // Also add for long press on mobile
+    let longPressTimer;
+    this.messageContainer.addEventListener('touchstart', (e) => {
+      const messageDiv = e.target.closest('[data-message-id]');
+      if (messageDiv && messageDiv.getAttribute('data-sender') === 'user') {
+        longPressTimer = setTimeout(() => {
+          this.showMessageActions(messageDiv, e.touches[0].clientX, e.touches[0].clientY);
+        }, 500);
+      }
+    });
+
+    this.messageContainer.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+    });
+
+    this.messageContainer.addEventListener('touchmove', () => {
+      clearTimeout(longPressTimer);
+    });
+  }
+
+  /**
+   * 📋 PHASE 4: Show Message Actions Menu
+   */
+  showMessageActions(messageDiv, x, y) {
+    // Remove existing menu
+    const existingMenu = document.querySelector('.message-actions-menu');
+    if (existingMenu) existingMenu.remove();
+
+    const messageId = messageDiv.getAttribute('data-message-id');
+    const menu = document.createElement('div');
+    menu.className = 'message-actions-menu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+
+    menu.innerHTML = `
+      <button class="message-action-btn" onclick="window.chatExperience.copyMessage('${messageId}')">
+        📋 Copy
+      </button>
+      <button class="message-action-btn" onclick="window.chatExperience.editMessage('${messageId}')">
+        ✏️ Edit
+      </button>
+      <button class="message-action-btn delete" onclick="window.chatExperience.deleteMessage('${messageId}')">
+        🗑️ Delete
+      </button>
+    `;
+
+    document.body.appendChild(menu);
+
+    // Close menu when clicking outside
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target)) {
+          menu.remove();
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 0);
+  }
+
+  /**
+   * 📋 PHASE 4: Copy Message
+   */
+  copyMessage(messageId) {
+    const message = this.messages.find(m => m.id === messageId);
+    if (message) {
+      navigator.clipboard.writeText(message.content).then(() => {
+        this.showToast('Message copied to clipboard', 'success');
+      });
+    }
+    document.querySelector('.message-actions-menu')?.remove();
+  }
+
+  /**
+   * ✏️ PHASE 4: Edit Message
+   */
+  editMessage(messageId) {
+    const message = this.messages.find(m => m.id === messageId);
+    if (message && this.inputField) {
+      this.inputField.value = message.content;
+      this.inputField.focus();
+
+      // Mark message as being edited
+      const messageDiv = document.getElementById(messageId);
+      if (messageDiv) {
+        messageDiv.style.opacity = '0.5';
+        messageDiv.setAttribute('data-editing', 'true');
+      }
+
+      // Store edit context
+      this.editingMessageId = messageId;
+    }
+    document.querySelector('.message-actions-menu')?.remove();
+  }
+
+  /**
+   * 🗑️ PHASE 4: Delete Message
+   */
+  deleteMessage(messageId) {
+    const messageDiv = document.getElementById(messageId);
+    if (messageDiv) {
+      messageDiv.style.transition = 'all 0.3s ease';
+      messageDiv.style.opacity = '0';
+      messageDiv.style.transform = 'translateX(-20px)';
+
+      setTimeout(() => {
+        messageDiv.remove();
+        this.messages = this.messages.filter(m => m.id !== messageId);
+      }, 300);
+    }
+    document.querySelector('.message-actions-menu')?.remove();
   }
 }
 
