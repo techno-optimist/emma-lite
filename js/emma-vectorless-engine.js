@@ -329,10 +329,10 @@ Respond with only a JSON array of indices: [1, 3, 7, ...]`;
       return { memory, score };
     });
     
-    // Return top scoring memories
+    // Return top scoring memories (increased from 10 to 15 for better coverage)
     return scoredMemories
       .sort((a, b) => b.score - a.score)
-      .slice(0, Math.min(this.options.maxMemories / 2, 10))
+      .slice(0, Math.min(this.options.maxMemories / 2, 15))
       .filter(item => item.score > 0)
       .map(item => item.memory);
   }
@@ -371,7 +371,7 @@ Emotion: ${m.metadata?.emotion || 'neutral'}
 Tags: ${m.metadata?.tags?.join(', ') || 'None'}
 `).join('\n---\n')}
 
-Rank these memories by relevance (1-10 scale) and select the top 5 most relevant.
+Rank these memories by relevance (1-10 scale) and select the top 8 most relevant.
 Consider emotional context, people relationships, temporal connections, and direct content relevance.
 
 Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": "..."}, ...]}`;
@@ -382,7 +382,7 @@ Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": 
       const result = JSON.parse(clean);
       return result.relevantMemories
         .sort((a, b) => b.relevance - a.relevance)
-        .slice(0, 5)
+        .slice(0, 8)
         .map(item => ({
           ...selectedMemories[item.index - 1],
           relevanceScore: item.relevance,
@@ -443,7 +443,7 @@ Respond with JSON: {"relevantMemories": [{"index": 1, "relevance": 9, "reason": 
     
     return scoredMemories
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 5)
+      .slice(0, 8)
       .filter(memory => memory.relevanceScore > 0);
   }
 

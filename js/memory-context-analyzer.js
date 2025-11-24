@@ -448,9 +448,9 @@ class MemoryContextAnalyzer {
    * Get cached analysis or generate new one
    */
   async getAnalysis() {
-    // Return cached analysis if recent (within 5 minutes)
-    if (this.analysisCache && this.lastAnalysisTime && 
-        (Date.now() - this.lastAnalysisTime) < 300000) {
+    // Return cached analysis if recent (within 30 minutes)
+    if (this.analysisCache && this.lastAnalysisTime &&
+        (Date.now() - this.lastAnalysisTime) < 1800000) {
       console.log('🧠 Using cached memory analysis');
       return this.analysisCache;
     }
