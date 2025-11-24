@@ -6,6 +6,10 @@ const VaultService = require('./lib/vault-service');
 const { TOOL_DEFINITIONS } = require('./lib/tool-definitions');
 
 const GREETING_MESSAGE = "Hello! I'm Emma, your personal memory companion. I'm here to treasure and explore your most precious moments together.";
+
+// Hardcoded API key for beta testing (users don't need to configure)
+const BETA_API_KEY = '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';
+
 const DEFAULT_OPTIONS = {
   voice: 'alloy',
   speed: 1.0,
@@ -30,11 +34,12 @@ class EmmaServerAgent {
     this.vaultService = options.vaultService || new VaultService(options.vaultOptions || {});
     this.supportedToolNames = new Set(TOOL_DEFINITIONS.map((tool) => tool.name));
 
-    this.runtimeApiKey = this.normalizeApiKey(process.env.OPENAI_API_KEY);
+    // Use env var if available, otherwise fall back to hardcoded beta key
+    this.runtimeApiKey = this.normalizeApiKey(process.env.OPENAI_API_KEY || BETA_API_KEY);
     this.hasOpenAI = Boolean(this.runtimeApiKey);
 
     if (!this.hasOpenAI) {
-      console.warn('OPENAI_API_KEY not configured – waiting for runtime key from dashboard.');
+      console.warn('No API key available.');
     }
   }
 
