@@ -102,9 +102,12 @@ class EmmaChatExperience extends ExperiencePopup {
     this.activeCapture = null;
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
-    
+
     // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
     this.temporaryMemories = new Map(); // Store preview memories before vault save
+
+    // 📷 PHOTO CACHE: Store uploaded photos for tool access
+    this.uploadedPhotosCache = new Map(); // Cache for photos uploaded via handlePhotoFiles
 
     // 🤔 PERSON ENRICHMENT FLOW STATE
     this.currentPersonEnrichment = null; // Track active person enrichment conversations
@@ -4201,12 +4204,37 @@ RULES:
   // 🎯 CTO CRITICAL: Handle photo files for person
   handlePhotoFiles(files, personName) {
     console.log(`📷 CTO: Processing ${files.length} photos for ${personName}`);
-    
+
+    // Track uploaded photo IDs for this session
+    const uploadedPhotoIds = [];
+
     files.forEach((file, index) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageData = e.target.result;
-        
+
+        // 📷 CRITICAL FIX: Store photo in cache with unique ID
+        const photoId = `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const mediaItem = {
+          id: photoId,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: imageData,
+          data: imageData,
+          uploadedAt: new Date().toISOString(),
+          personName: personName
+        };
+
+        this.uploadedPhotosCache.set(photoId, mediaItem);
+        uploadedPhotoIds.push(photoId);
+
+        console.log(`📷 PHOTO CACHE: Stored photo ${photoId} for ${personName}`, {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
+
         // Create a photo preview message
         const photoPreview = `
           <div style="margin: 10px 0; padding: 15px; background: rgba(111, 99, 217, 0.1); border-radius: 12px; border: 2px dashed rgba(111, 99, 217, 0.3);">
@@ -4216,12 +4244,32 @@ RULES:
             </div>
           </div>
         `;
-        
+
         this.addMessage(photoPreview, 'emma', { isHtml: true });
-        
+
         if (index === files.length - 1) {
           // After last photo, offer to save
           setTimeout(() => {
+            // Store the uploaded photo IDs for Emma to reference
+            this.currentUploadedPhotos = uploadedPhotoIds;
+            console.log(`📷 PHOTO CACHE: ${uploadedPhotoIds.length} photos ready for Emma to save`, uploadedPhotoIds);
+
+            // 📷 CRITICAL FIX: Add system context for Emma about available photos
+            // This allows Emma's AI to reference the photos when creating memories
+            const photoContext = uploadedPhotoIds.map((id, idx) => {
+              const photo = this.uploadedPhotosCache.get(id);
+              return `Photo ${idx + 1}: id="${id}", name="${photo.name}"`;
+            }).join(', ');
+
+            // Add hidden system context that Emma can see
+            if (this.chatHistory && Array.isArray(this.chatHistory)) {
+              this.chatHistory.push({
+                role: 'system',
+                content: `[SYSTEM] User uploaded ${uploadedPhotoIds.length} photo(s) for ${personName}. Available photo IDs: ${photoContext}. When creating a memory, include these photos as attachments using their IDs (e.g., attachments: [{id: "${uploadedPhotoIds[0]}"}]).`
+              });
+              console.log(`📷 PHOTO CONTEXT: Added system message to Emma's context about ${uploadedPhotoIds.length} available photos`);
+            }
+
             this.addMessage(`These photos with ${personName} look wonderful! Would you like me to create a memory with them?`, 'emma');
           }, 1000);
         }
@@ -9761,24 +9809,39 @@ RULES:
     if (!uploadId) return null;
 
     try {
+      // 📷 CRITICAL FIX: Check uploadedPhotosCache first
+      if (this.uploadedPhotosCache && this.uploadedPhotosCache.has(uploadId)) {
+        const media = this.uploadedPhotosCache.get(uploadId);
+        console.log(`📷 PHOTO CACHE: Found photo ${uploadId} in cache`, {
+          name: media.name,
+          type: media.type,
+          hasData: !!media.dataUrl
+        });
+        return { ...media };
+      }
+
+      // Check enrichmentState for enrichment flow photos
       if (this.enrichmentState && typeof this.enrichmentState.values === 'function') {
         for (const state of this.enrichmentState.values()) {
           const mediaItems = state?.collectedData?.media;
           if (Array.isArray(mediaItems)) {
             const found = mediaItems.find(item => item.id === uploadId);
             if (found) {
+              console.log(`📷 ENRICHMENT: Found photo ${uploadId} in enrichment state`);
               return { ...found };
             }
           }
         }
       }
 
+      // Check temporaryMemories for preview photos
       if (this.temporaryMemories && typeof this.temporaryMemories.values === 'function') {
         for (const memory of this.temporaryMemories.values()) {
           const attachments = memory?.attachments;
           if (Array.isArray(attachments)) {
             const found = attachments.find(item => item.id === uploadId);
             if (found) {
+              console.log(`📷 TEMPORARY: Found photo ${uploadId} in temporary memories`);
               return { ...found };
             }
           }
@@ -9788,6 +9851,7 @@ RULES:
       console.error('📷 CHAT: lookupMediaUpload error:', error);
     }
 
+    console.warn(`📷 PHOTO CACHE: Photo ${uploadId} not found in any cache`);
     return null;
   }
 
