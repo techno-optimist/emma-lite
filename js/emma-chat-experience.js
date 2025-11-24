@@ -1249,11 +1249,81 @@ class EmmaChatExperience extends ExperiencePopup {
         }
       }
 
+      // Try fuzzy match using Levenshtein distance (handles typos)
+      const fuzzyMatch = this.findPersonFuzzy(vaultPeople, searchLower);
+      if (fuzzyMatch) {
+        console.log(`👤 CHAT: Fuzzy matched "${searchName}" to "${fuzzyMatch.name}"`);
+        return fuzzyMatch;
+      }
+
       return null;
     } catch (error) {
       console.error('👤 CHAT: Error finding person:', error);
       return null;
     }
+  }
+
+  /**
+   * 🔤 Fuzzy person name matching using Levenshtein distance
+   * Tolerates typos and minor spelling variations
+   */
+  findPersonFuzzy(vaultPeople, searchLower) {
+    let bestMatch = null;
+    let bestScore = Infinity;
+    const maxDistance = Math.max(2, Math.floor(searchLower.length * 0.3)); // Allow up to 30% character errors
+
+    for (const [personId, person] of Object.entries(vaultPeople)) {
+      if (!person.name) continue;
+
+      const nameLower = person.name.toLowerCase();
+      const firstName = nameLower.split(' ')[0];
+
+      // Check full name distance
+      const fullDistance = this.levenshteinDistance(searchLower, nameLower);
+      if (fullDistance <= maxDistance && fullDistance < bestScore) {
+        bestScore = fullDistance;
+        bestMatch = { ...person, id: personId };
+      }
+
+      // Check first name distance (more lenient for short names)
+      const firstNameMaxDist = Math.max(1, Math.floor(firstName.length * 0.3));
+      const firstDistance = this.levenshteinDistance(searchLower, firstName);
+      if (firstDistance <= firstNameMaxDist && firstDistance < bestScore) {
+        bestScore = firstDistance;
+        bestMatch = { ...person, id: personId };
+      }
+    }
+
+    return bestMatch;
+  }
+
+  /**
+   * 📏 Calculate Levenshtein distance between two strings
+   */
+  levenshteinDistance(str1, str2) {
+    const m = str1.length;
+    const n = str2.length;
+
+    // Create distance matrix
+    const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+    // Initialize first row and column
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    // Fill in the rest of the matrix
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,      // deletion
+          dp[i][j - 1] + 1,      // insertion
+          dp[i - 1][j - 1] + cost // substitution
+        );
+      }
+    }
+
+    return dp[m][n];
   }
 
   /**
@@ -11250,6 +11320,7 @@ class ConversationStateManager {
     this.currentState = 'idle';
     this.stateHistory = [];
     this.stateTransitionTime = null;
+    this.storageKey = 'emma_conversation_state';
 
     this.states = {
       'idle': {
@@ -11287,6 +11358,9 @@ class ConversationStateManager {
         allowedTransitions: ['idle']
       }
     };
+
+    // Restore state from sessionStorage on construction
+    this.restore();
   }
 
   /**
@@ -11320,6 +11394,9 @@ class ConversationStateManager {
       this.stateHistory.shift();
     }
 
+    // Persist state to sessionStorage
+    this.save();
+
     return true;
   }
 
@@ -11347,6 +11424,54 @@ class ConversationStateManager {
     this.currentState = 'idle';
     this.stateHistory = [];
     this.stateTransitionTime = Date.now();
+    this.save();
+  }
+
+  /**
+   * 💾 Save conversation state to sessionStorage
+   */
+  save() {
+    try {
+      const stateData = {
+        currentState: this.currentState,
+        stateHistory: this.stateHistory.slice(-10), // Keep last 10 for persistence
+        stateTransitionTime: this.stateTransitionTime,
+        savedAt: Date.now()
+      };
+      sessionStorage.setItem(this.storageKey, JSON.stringify(stateData));
+    } catch (error) {
+      // sessionStorage may not be available (private browsing, etc.)
+      console.warn('🔄 Could not save conversation state:', error.message);
+    }
+  }
+
+  /**
+   * 📂 Restore conversation state from sessionStorage
+   */
+  restore() {
+    try {
+      const saved = sessionStorage.getItem(this.storageKey);
+      if (!saved) return;
+
+      const stateData = JSON.parse(saved);
+
+      // Only restore if saved within last 30 minutes (session still active)
+      const maxAge = 30 * 60 * 1000; // 30 minutes
+      if (stateData.savedAt && (Date.now() - stateData.savedAt) < maxAge) {
+        if (this.states[stateData.currentState]) {
+          this.currentState = stateData.currentState;
+          this.stateHistory = stateData.stateHistory || [];
+          this.stateTransitionTime = stateData.stateTransitionTime;
+          console.log(`🔄 Restored conversation state: ${this.currentState}`);
+        }
+      } else {
+        // Clear stale state
+        sessionStorage.removeItem(this.storageKey);
+      }
+    } catch (error) {
+      // sessionStorage may not be available or data corrupted
+      console.warn('🔄 Could not restore conversation state:', error.message);
+    }
   }
 }
 
@@ -11383,7 +11508,7 @@ class EmmaUnifiedIntelligence {
     };
     this.ambiguityDetection = {
       enabled: true,
-      threshold: 0.6 // Confidence below this triggers clarification
+      threshold: 0.5 // Confidence below this triggers clarification (lowered from 0.6 for less over-clarification)
     };
 
     // PHASE 3: Proactive Intelligence
