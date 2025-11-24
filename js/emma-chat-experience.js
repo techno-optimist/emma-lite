@@ -272,8 +272,14 @@ class EmmaChatExperience extends ExperiencePopup {
           this.setupVoiceEventHandlers();
         }
 
-        // Ensure the chat interface connects to the Agent SDK backend
-        this.connectAgentForChat();
+        // 🔗 AUTO-CONNECT: Connect to agent for tool-enabled chat (typed or voice)
+        // This ensures tools work immediately when user types, not just with voice
+        console.log('🔗 Auto-connecting to Emma agent for chat tools...');
+        try {
+          await this.connectAgentForChat();
+        } catch (connErr) {
+          console.warn('⚠️ Initial agent connection failed, will retry on message:', connErr?.message);
+        }
 
         console.log('✅ Emma voice client ready!');
       } else {
@@ -449,32 +455,93 @@ class EmmaChatExperience extends ExperiencePopup {
    * Display tool results visually in chat
    */
   displayToolResult(toolName, params, result) {
+    // Handle vault-not-open errors with helpful prompt
+    if (result && result.needsVault) {
+      this.addMessage(
+        `${result.error}\n\nPlease open your vault first to access your memories.`,
+        'emma'
+      );
+      return;
+    }
+
+    if (result && result.error) {
+      this.addMessage('system', `${result.error}`);
+      return;
+    }
+
     switch (toolName) {
       case 'get_people':
         if (result.people && result.people.length > 0) {
           this.displayPeopleResults(result.people);
         }
         break;
-        
+
       case 'get_memories':
         if (result.memories && result.memories.length > 0) {
           this.displayMemoryResults(result.memories);
         }
         break;
-        
+
+      case 'summarize_memory':
+        if (result.summary) {
+          this.addMessage('emma', `Here's a gentle summary: ${result.summary}`);
+        }
+        break;
+
       case 'create_memory_from_voice':
         if (result.success) {
-          this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
+          this.addMessage('system', `New memory created: "${params.content?.substring(0, 50) || 'Voice memory'}..."`, {
             type: 'memory-created',
             memoryId: result.memoryId
           });
         }
         break;
-        
+
+      case 'create_memory_capsule':
+        if (result.success) {
+          const label = result.title || params.title || params.content?.substring(0, 50) || 'New memory';
+          this.addMessage('system', `Saved memory: "${label}"`, {
+            type: 'memory-created',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
       case 'update_person':
         if (result.success) {
-          this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
+          this.addMessage('system', `Updated ${result.personName} with new details`, {
             type: 'person-updated'
+          });
+        }
+        break;
+
+      case 'create_person_profile':
+        if (result.success) {
+          this.addMessage('system', `Added ${result.personName} to your people`, {
+            type: 'person-created',
+            personId: result.personId
+          });
+        }
+        break;
+
+      case 'update_memory_capsule':
+        if (result.success) {
+          const fields = result.updatedFields?.length
+            ? result.updatedFields.join(', ')
+            : 'memory details';
+          this.addMessage('system', `Updated ${fields} for your memory`, {
+            type: 'memory-updated',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'attach_memory_media':
+        if (result.success) {
+          const count = result.attachmentCount ?? (params.media?.length || 0);
+          this.addMessage('system', `Added ${count} new ${count === 1 ? 'attachment' : 'attachments'} to your memory`, {
+            type: 'memory-media-added',
+            memoryId: result.memoryId
           });
         }
         break;
@@ -2405,24 +2472,37 @@ class EmmaChatExperience extends ExperiencePopup {
     this.autoResizeTextarea();
     this.handleInputChange();
 
+    // Try to connect to agent if not connected
     if (this.emmaVoice) {
       await this.connectAgentForChat();
     }
 
     const canUseAgent = this.agentChatEnabled && this.emmaVoice && this.emmaVoice.isConnected;
-    const localHandled = await this.processLocalChatMessage(message, messageId, {
-      allowDefaultResponse: !canUseAgent
-    });
 
-    if (localHandled) {
-      return;
-    }
-
+    // PRIORITY: When agent is connected, use it for tool-enabled responses
+    // This ensures tools work in typed chat, not just voice
     if (canUseAgent) {
+      // Only handle active enrichment flows locally (they are conversation state)
+      const activeEnrichment = this.findActiveEnrichmentForResponse();
+      if (activeEnrichment) {
+        await this.processEnrichmentResponse(activeEnrichment, message);
+        return;
+      }
+
+      // Send everything else to the agent for tool-enabled processing
       if (typeof this.showTypingIndicator === 'function') {
         this.showTypingIndicator();
       }
       this.emmaVoice.sendToAgent({ type: 'user_text', text: message, source: 'chat' });
+      return;
+    }
+
+    // Fallback: Agent not connected, use local processing
+    const localHandled = await this.processLocalChatMessage(message, messageId, {
+      allowDefaultResponse: true
+    });
+
+    if (localHandled) {
       return;
     }
 
