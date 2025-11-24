@@ -1197,6 +1197,13 @@ class EmmaChatExperience extends ExperiencePopup {
   }
 
   /**
+   * 🗂️ Get vault data helper (PHASE 1)
+   */
+  getVaultData() {
+    return window.emmaWebVault?.vaultData?.content || { memories: {}, people: {} };
+  }
+
+  /**
    * 🔍 Find person in vault by name (fuzzy matching)
    */
   async findPersonInVault(searchName) {
@@ -10589,46 +10596,230 @@ Just the question:`;
 }
 
 /**
- * 🧠 CTO UNIFIED EMMA INTELLIGENCE SYSTEM
+ * 🔄 CONVERSATION STATE MANAGER
+ * PHASE 1: Multi-turn conversation flow management
+ */
+class ConversationStateManager {
+  constructor() {
+    this.currentState = 'idle';
+    this.stateHistory = [];
+    this.stateTransitionTime = null;
+
+    this.states = {
+      'idle': {
+        description: 'Waiting for user input',
+        allowedTransitions: ['person_discussion', 'memory_enrichment', 'search_active', 'social_exchange']
+      },
+      'person_discussion': {
+        description: 'Discussing a specific person',
+        expects: ['memory_sharing', 'photo_request', 'clarification', 'person_inquiry'],
+        allowedTransitions: ['memory_enrichment', 'search_active', 'idle']
+      },
+      'memory_enrichment': {
+        description: 'Enriching a memory with details',
+        expects: ['confirmation', 'additional_details', 'cancellation'],
+        allowedTransitions: ['idle', 'person_discussion']
+      },
+      'search_active': {
+        description: 'User is searching memories',
+        expects: ['filter_adjustment', 'refinement', 'selection'],
+        allowedTransitions: ['search_refinement', 'memory_enrichment', 'idle']
+      },
+      'search_refinement': {
+        description: 'Refining search parameters',
+        expects: ['confirmation', 'adjustment'],
+        allowedTransitions: ['search_active', 'idle']
+      },
+      'confusion_recovery': {
+        description: 'Recovering from misunderstanding',
+        expects: ['clarification', 'restart', 'confirmation'],
+        allowedTransitions: ['idle', 'person_discussion', 'search_active']
+      },
+      'social_exchange': {
+        description: 'Social greeting or farewell',
+        expects: ['acknowledgment'],
+        allowedTransitions: ['idle']
+      }
+    };
+  }
+
+  /**
+   * Transition to a new conversation state
+   */
+  transitionTo(newState, metadata = {}) {
+    if (!this.states[newState]) {
+      console.warn(`🔄 Unknown state: ${newState}`);
+      return false;
+    }
+
+    const currentStateConfig = this.states[this.currentState];
+    if (currentStateConfig.allowedTransitions &&
+        !currentStateConfig.allowedTransitions.includes(newState)) {
+      console.warn(`🔄 Invalid transition: ${this.currentState} → ${newState}`);
+      // Allow transition anyway in dementia mode (be flexible)
+    }
+
+    this.stateHistory.push({
+      state: this.currentState,
+      timestamp: Date.now(),
+      duration: this.stateTransitionTime ? Date.now() - this.stateTransitionTime : 0
+    });
+
+    console.log(`🔄 State transition: ${this.currentState} → ${newState}`, metadata);
+    this.currentState = newState;
+    this.stateTransitionTime = Date.now();
+
+    // Keep history manageable
+    if (this.stateHistory.length > 20) {
+      this.stateHistory.shift();
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if a given intent is expected in current state
+   */
+  isExpected(intent) {
+    const currentStateConfig = this.states[this.currentState];
+    if (!currentStateConfig.expects) return true; // Allow anything if no expectations
+
+    return currentStateConfig.expects.includes(intent);
+  }
+
+  /**
+   * Get suggested next states based on current state
+   */
+  getSuggestedTransitions() {
+    return this.states[this.currentState]?.allowedTransitions || [];
+  }
+
+  /**
+   * Reset to idle state
+   */
+  reset() {
+    this.currentState = 'idle';
+    this.stateHistory = [];
+    this.stateTransitionTime = Date.now();
+  }
+}
+
+/**
+ * 🧠 CTO UNIFIED EMMA INTELLIGENCE SYSTEM v2.0
+ * PHASE 1 UPGRADE: Expanded intent system, conversation state machine, semantic search
  * Single, intelligent response engine that replaces all pattern-matching hacks
  */
 class EmmaUnifiedIntelligence {
   constructor(options = {}) {
     this.options = options;
     this.conversationHistory = [];
+
+    // PHASE 1: Enhanced context tracking
     this.currentContext = {
       lastQueriedPerson: null,
       activeMemoryDiscussion: null,
       waitingForResponse: null,
-      userEmotionalState: 'neutral'
+      userEmotionalState: 'neutral',
+      conversationThread: [],
+      activeQuestions: [],
+      searchContext: null,
+      clarificationNeeded: false
     };
+
+    // PHASE 2: Conversation Quality Enhancement
+    this.followUpQuestions = [];
+    this.enrichmentSession = {
+      active: false,
+      memoryDraft: null,
+      questionsAsked: 0,
+      maxQuestions: 3,
+      collectedDetails: {}
+    };
+    this.ambiguityDetection = {
+      enabled: true,
+      threshold: 0.6 // Confidence below this triggers clarification
+    };
+
+    // PHASE 1: Conversation State Machine
+    this.conversationState = new ConversationStateManager();
+
+    // PHASE 1: Expanded intent types
+    this.INTENT_TYPES = {
+      // Existing
+      'vault_query': { category: 'search', expects: ['follow_up', 'refinement'] },
+      'memory_sharing': { category: 'creation', expects: ['enrichment', 'confirmation'] },
+      'photo_request': { category: 'media', expects: ['upload', 'selection'] },
+      'conversation': { category: 'chat', expects: ['any'] },
+      'confusion': { category: 'recovery', expects: ['clarification'] },
+
+      // NEW: Search & Discovery
+      'memory_search': { category: 'search', expects: ['refinement', 'display'] },
+      'person_inquiry': { category: 'search', expects: ['memory_list', 'details'] },
+      'relationship_query': { category: 'search', expects: ['explanation', 'list'] },
+      'temporal_query': { category: 'search', expects: ['timeline', 'memories'] },
+      'emotion_query': { category: 'search', expects: ['mood_memories', 'insights'] },
+
+      // NEW: Interaction Management
+      'clarification': { category: 'recovery', expects: ['intent_resolution'] },
+      'memory_edit': { category: 'modification', expects: ['edit_dialog'] },
+      'memory_delete': { category: 'modification', expects: ['confirmation'] },
+
+      // NEW: Social Niceties
+      'gratitude': { category: 'social', expects: ['acknowledgment'] },
+      'greeting': { category: 'social', expects: ['welcome'] },
+      'farewell': { category: 'social', expects: ['goodbye'] }
+    };
+
+    console.log('🧠 Emma Intelligence v2.0 initialized with', Object.keys(this.INTENT_TYPES).length, 'intent types');
   }
 
   /**
    * 🎯 SINGLE ENTRY POINT: Analyze user message and generate intelligent response
+   * PHASE 2: Enhanced with ambiguity detection and follow-up generation
    */
   async analyzeAndRespond(userMessage, chatInstance) {
     try {
       console.log('🧠 UNIFIED INTELLIGENCE: Processing:', userMessage);
-      
+
       // Add to conversation history
       this.addToHistory(userMessage, 'user');
-      
+
       // Get vault context
       const vaultContext = this.getVaultContext();
-      
+
       // Use LLM for intelligent analysis if available, fallback to smart heuristics
       const analysis = await this.analyzeUserIntent(userMessage, vaultContext);
       console.log('🧠 UNIFIED ANALYSIS:', analysis);
-      
+
+      // PHASE 2: Check for ambiguity and request clarification if needed
+      if (this.ambiguityDetection.enabled &&
+          analysis.confidence < this.ambiguityDetection.threshold &&
+          analysis.intent !== 'clarification') {
+
+        const clarificationResponse = await this.handleAmbiguity(userMessage, analysis, vaultContext);
+        if (clarificationResponse) {
+          this.addToHistory(clarificationResponse.text, 'emma');
+          return clarificationResponse;
+        }
+      }
+
       // Generate single, contextual response
       const response = await this.generateUnifiedResponse(analysis, chatInstance);
-      
+
+      // PHASE 2: Generate follow-up questions if appropriate
+      if (this.shouldGenerateFollowUps(analysis)) {
+        const followUps = await this.generateFollowUpQuestions(analysis, chatInstance);
+        if (followUps && followUps.length > 0) {
+          response.followUpQuestions = followUps;
+          this.followUpQuestions = followUps;
+        }
+      }
+
       // Add Emma's response to history
       this.addToHistory(response.text, 'emma');
-      
+
       return response;
-      
+
     } catch (error) {
       console.error('🧠 UNIFIED INTELLIGENCE ERROR:', error);
       return {
@@ -10656,10 +10847,11 @@ class EmmaUnifiedIntelligence {
   }
 
   /**
-   * 🤖 LLM-POWERED INTENT ANALYSIS
+   * 🤖 LLM-POWERED INTENT ANALYSIS v2.0
+   * PHASE 1: Updated with expanded intent types
    */
   async llmAnalyzeIntent(userMessage, vaultContext, conversationContext) {
-    const prompt = `You are Emma's intelligence system. Analyze this user message and determine the appropriate response type.
+    const prompt = `You are Emma's intelligence system v2.0. Analyze this user message and determine the appropriate response type.
 
 CONVERSATION CONTEXT:
 ${conversationContext}
@@ -10671,22 +10863,42 @@ VAULT CONTEXT:
 - ${vaultContext.peopleCount} people: ${vaultContext.peopleNames.join(', ')}
 - Recent topics: ${vaultContext.recentTopics.join(', ')}
 
+CURRENT STATE: ${this.conversationState.currentState}
+
 DEMENTIA CARE MODE: Always validate, never contradict, use warm validation therapy.
+
+AVAILABLE INTENTS:
+- greeting, farewell, gratitude (social)
+- memory_search, person_inquiry, temporal_query, emotion_query (search)
+- vault_query, memory_sharing, photo_request (original)
+- clarification, memory_edit, memory_delete (interaction)
+- conversation, confusion (fallback)
 
 Analyze the user's intent and respond with JSON:
 {
-  "intent": "vault_query|memory_sharing|photo_request|conversation|confusion",
+  "intent": "one of the available intents above",
   "confidence": 0.95,
   "targetPerson": "person name if relevant",
   "memoryContent": "if sharing a memory",
+  "searchQuery": "if searching memories",
+  "timeRange": "if temporal query",
+  "emotion": "if emotion query",
   "emotionalTone": "positive|neutral|confused|sad",
-  "suggestedResponse": "brief Emma response",
-  "recommendedActions": ["show_person", "display_memories", "trigger_photo_upload", "create_memory"]
+  "suggestedResponse": "brief warm Emma response",
+  "recommendedActions": ["action1", "action2"],
+  "stateTransition": "suggested next conversation state"
 }`;
 
     try {
       const response = await this.callLLM(prompt);
-      return JSON.parse(response);
+      const analysis = JSON.parse(response);
+
+      // PHASE 1: Trigger state transition if suggested
+      if (analysis.stateTransition) {
+        this.conversationState.transitionTo(analysis.stateTransition, { intent: analysis.intent });
+      }
+
+      return analysis;
     } catch (error) {
       console.warn('🧠 LLM analysis failed, using heuristic fallback');
       return this.heuristicAnalyzeIntent(userMessage, vaultContext);
@@ -10694,13 +10906,110 @@ Analyze the user's intent and respond with JSON:
   }
 
   /**
-   * 🎯 SMART HEURISTIC ANALYSIS (LLM fallback)
+   * 🎯 SMART HEURISTIC ANALYSIS v2.0 (LLM fallback)
+   * PHASE 1: Enhanced with new intent types
    */
   heuristicAnalyzeIntent(userMessage, vaultContext) {
     const lower = userMessage.toLowerCase().trim();
-    
-    // Vault queries
-    if (lower.includes('who') && vaultContext.peopleNames.some(name => 
+    const words = lower.split(/\s+/);
+
+    // PHASE 1: Social niceties (high priority)
+    if (this.detectGreeting(lower)) {
+      return {
+        intent: 'greeting',
+        confidence: 0.95,
+        suggestedResponse: this.generateGreeting(),
+        recommendedActions: ['welcome']
+      };
+    }
+
+    if (this.detectFarewell(lower)) {
+      return {
+        intent: 'farewell',
+        confidence: 0.95,
+        suggestedResponse: this.generateFarewell(),
+        recommendedActions: ['goodbye']
+      };
+    }
+
+    if (this.detectGratitude(lower)) {
+      return {
+        intent: 'gratitude',
+        confidence: 0.95,
+        suggestedResponse: "You're so welcome! I'm always here for you and your precious memories.",
+        recommendedActions: ['acknowledgment']
+      };
+    }
+
+    // PHASE 1: Conversation repair (detect misunderstandings)
+    if (this.detectMisunderstanding(lower)) {
+      return {
+        intent: 'clarification',
+        confidence: 0.9,
+        suggestedResponse: "I'm sorry, let me try to understand better. Can you tell me more?",
+        recommendedActions: ['clarification_request']
+      };
+    }
+
+    // PHASE 1: Memory modification
+    if (this.detectMemoryEdit(lower)) {
+      return {
+        intent: 'memory_edit',
+        confidence: 0.85,
+        targetMemory: this.currentContext.activeMemoryDiscussion,
+        recommendedActions: ['open_edit_dialog']
+      };
+    }
+
+    if (this.detectMemoryDelete(lower)) {
+      return {
+        intent: 'memory_delete',
+        confidence: 0.85,
+        targetMemory: this.currentContext.activeMemoryDiscussion,
+        recommendedActions: ['confirm_deletion']
+      };
+    }
+
+    // PHASE 1: Advanced search intents
+    if (this.detectMemorySearch(lower)) {
+      return {
+        intent: 'memory_search',
+        confidence: 0.85,
+        searchQuery: this.extractSearchQuery(userMessage, lower),
+        recommendedActions: ['execute_search', 'display_results']
+      };
+    }
+
+    if (this.detectPersonInquiry(lower, vaultContext)) {
+      const targetPerson = this.extractPersonName(lower, vaultContext);
+      return {
+        intent: 'person_inquiry',
+        confidence: 0.9,
+        targetPerson: targetPerson,
+        recommendedActions: ['show_person_details', 'list_memories']
+      };
+    }
+
+    if (this.detectTemporalQuery(lower)) {
+      return {
+        intent: 'temporal_query',
+        confidence: 0.85,
+        timeRange: this.extractTimeRange(lower),
+        recommendedActions: ['search_by_date', 'show_timeline']
+      };
+    }
+
+    if (this.detectEmotionQuery(lower)) {
+      return {
+        intent: 'emotion_query',
+        confidence: 0.85,
+        emotion: this.extractEmotion(lower),
+        recommendedActions: ['search_by_emotion', 'show_mood_memories']
+      };
+    }
+
+    // Original: Vault queries
+    if (lower.includes('who') && vaultContext.peopleNames.some(name =>
         lower.includes(name.toLowerCase()))) {
       const targetPerson = vaultContext.peopleNames.find(name => lower.includes(name.toLowerCase()));
       return {
@@ -10710,9 +11019,9 @@ Analyze the user's intent and respond with JSON:
         recommendedActions: ['show_person']
       };
     }
-    
-    // Photo requests
-    if ((lower.includes('add') || lower.includes('yes')) && 
+
+    // Original: Photo requests
+    if ((lower.includes('add') || lower.includes('yes')) &&
         (lower.includes('picture') || lower.includes('photo') || this.isPhotoContext())) {
       return {
         intent: 'photo_request',
@@ -10721,8 +11030,8 @@ Analyze the user's intent and respond with JSON:
         recommendedActions: ['trigger_photo_upload']
       };
     }
-    
-    // Memory sharing (in person context)
+
+    // Original: Memory sharing (in person context)
     if (this.currentContext.lastQueriedPerson && this.isLikelyMemorySharing(lower)) {
       return {
         intent: 'memory_sharing',
@@ -10732,7 +11041,7 @@ Analyze the user's intent and respond with JSON:
         suggestedResponse: this.generateMemoryValidation(userMessage, this.currentContext.lastQueriedPerson)
       };
     }
-    
+
     return {
       intent: 'conversation',
       confidence: 0.5,
@@ -10740,8 +11049,132 @@ Analyze the user's intent and respond with JSON:
     };
   }
 
+  // PHASE 1: New detection methods
+
+  detectGreeting(lower) {
+    const greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'howdy'];
+    return greetings.some(g => lower.startsWith(g) || lower === g);
+  }
+
+  detectFarewell(lower) {
+    const farewells = ['goodbye', 'bye', 'see you', 'farewell', 'good night', 'take care', 'talk later'];
+    return farewells.some(f => lower.includes(f));
+  }
+
+  detectGratitude(lower) {
+    const gratitudes = ['thank you', 'thanks', 'thank', 'appreciate', 'grateful'];
+    return gratitudes.some(g => lower.includes(g));
+  }
+
+  detectMisunderstanding(lower) {
+    const keywords = ['no', 'not what i meant', 'that\'s wrong', 'actually', 'i meant', 'what i meant was', 'confused'];
+    return keywords.some(k => lower.includes(k)) && lower.length < 100;
+  }
+
+  detectMemoryEdit(lower) {
+    const editKeywords = ['edit', 'change', 'modify', 'update', 'fix', 'correct'];
+    const memoryKeywords = ['memory', 'that', 'this', 'it'];
+    return editKeywords.some(e => lower.includes(e)) && memoryKeywords.some(m => lower.includes(m));
+  }
+
+  detectMemoryDelete(lower) {
+    const deleteKeywords = ['delete', 'remove', 'erase', 'get rid of'];
+    const memoryKeywords = ['memory', 'that', 'this', 'it'];
+    return deleteKeywords.some(d => lower.includes(d)) && memoryKeywords.some(m => lower.includes(m));
+  }
+
+  detectMemorySearch(lower) {
+    const searchKeywords = ['show me', 'find', 'search', 'look for', 'memories about', 'memories with', 'memories from'];
+    return searchKeywords.some(s => lower.includes(s));
+  }
+
+  detectPersonInquiry(lower, vaultContext) {
+    const inquiryKeywords = ['tell me about', 'who is', 'who was', 'what about', 'info on', 'information about'];
+    const hasPerson = vaultContext.peopleNames.some(name => lower.includes(name.toLowerCase()));
+    return inquiryKeywords.some(k => lower.includes(k)) && hasPerson;
+  }
+
+  detectTemporalQuery(lower) {
+    const timeKeywords = [
+      'yesterday', 'last week', 'last month', 'last year',
+      'this week', 'this month', 'this year',
+      'in 20', 'in 19', // decades
+      'summer', 'winter', 'spring', 'fall', 'autumn',
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    return timeKeywords.some(t => lower.includes(t)) &&
+           (lower.includes('show') || lower.includes('find') || lower.includes('what') || lower.includes('when'));
+  }
+
+  detectEmotionQuery(lower) {
+    const emotions = ['happy', 'sad', 'joyful', 'peaceful', 'angry', 'frustrated', 'excited', 'calm', 'anxious'];
+    const queryKeywords = ['when was i', 'show me', 'find', 'memories when'];
+    return emotions.some(e => lower.includes(e)) && queryKeywords.some(q => lower.includes(q));
+  }
+
+  // PHASE 1: Extraction methods
+
+  extractSearchQuery(original, lower) {
+    // Extract meaningful search terms
+    const stopWords = ['show', 'me', 'find', 'search', 'for', 'the', 'a', 'an', 'memories', 'about', 'with', 'from'];
+    const words = lower.split(/\s+/).filter(w => !stopWords.includes(w) && w.length > 2);
+    return {
+      original: original,
+      keywords: words,
+      fullQuery: words.join(' ')
+    };
+  }
+
+  extractPersonName(lower, vaultContext) {
+    return vaultContext.peopleNames.find(name => lower.includes(name.toLowerCase()));
+  }
+
+  extractTimeRange(lower) {
+    // Simple time range extraction
+    if (lower.includes('yesterday')) return { type: 'relative', value: 'yesterday' };
+    if (lower.includes('last week')) return { type: 'relative', value: 'last_week' };
+    if (lower.includes('last month')) return { type: 'relative', value: 'last_month' };
+    if (lower.includes('last year')) return { type: 'relative', value: 'last_year' };
+
+    // Extract year
+    const yearMatch = lower.match(/\b(19\d{2}|20\d{2})\b/);
+    if (yearMatch) return { type: 'year', value: parseInt(yearMatch[1]) };
+
+    // Extract season
+    const seasons = ['summer', 'winter', 'spring', 'fall', 'autumn'];
+    const season = seasons.find(s => lower.includes(s));
+    if (season) return { type: 'season', value: season };
+
+    return { type: 'unknown', value: lower };
+  }
+
+  extractEmotion(lower) {
+    const emotions = ['happy', 'sad', 'joyful', 'peaceful', 'angry', 'frustrated', 'excited', 'calm', 'anxious'];
+    return emotions.find(e => lower.includes(e)) || 'neutral';
+  }
+
+  generateGreeting() {
+    const greetings = [
+      "Hello! I'm Emma, your memory companion. What would you like to explore today?",
+      "Hi there! I'm here to help you treasure and explore your precious memories.",
+      "Good to see you! What memories shall we talk about today?"
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+  }
+
+  generateFarewell() {
+    const farewells = [
+      "Take care! Your memories are safe with me. See you soon!",
+      "Goodbye! I'll be here whenever you want to explore more memories.",
+      "See you later! Thank you for sharing these precious moments with me."
+    ];
+    return farewells[Math.floor(Math.random() * farewells.length)];
+  }
+
   /**
-   * 🎯 GENERATE UNIFIED RESPONSE - NO DUPLICATES!
+   * 🎯 GENERATE UNIFIED RESPONSE v2.0 - NO DUPLICATES!
+   * PHASE 1: Enhanced with new intent handlers and semantic search
    */
   async generateUnifiedResponse(analysis, chatInstance) {
     // Update context based on analysis
@@ -10749,24 +11182,412 @@ Analyze the user's intent and respond with JSON:
       this.currentContext.lastQueriedPerson = analysis.targetPerson;
     }
 
+    // Log analysis for debugging
+    console.log('🧠 Generating response for intent:', analysis.intent, 'confidence:', analysis.confidence);
+
     switch (analysis.intent) {
+      // Original intents
       case 'vault_query':
         return await this.handleVaultQuery(analysis, chatInstance);
-        
+
       case 'photo_request':
         return await this.handlePhotoRequest(analysis, chatInstance);
-        
+
       case 'memory_sharing':
         return this.handleMemorySharing(analysis);
-        
+
       case 'confusion':
         return this.handleConfusion(analysis);
-        
+
+      // PHASE 1: Social intents
+      case 'greeting':
+        this.conversationState.transitionTo('social_exchange');
+        return {
+          text: analysis.suggestedResponse,
+          actions: ['welcome']
+        };
+
+      case 'farewell':
+        this.conversationState.transitionTo('social_exchange');
+        return {
+          text: analysis.suggestedResponse,
+          actions: ['goodbye']
+        };
+
+      case 'gratitude':
+        return {
+          text: analysis.suggestedResponse,
+          actions: ['acknowledgment']
+        };
+
+      // PHASE 1: Search intents
+      case 'memory_search':
+        this.conversationState.transitionTo('search_active');
+        return await this.handleMemorySearch(analysis, chatInstance);
+
+      case 'person_inquiry':
+        this.conversationState.transitionTo('person_discussion');
+        return await this.handlePersonInquiry(analysis, chatInstance);
+
+      case 'temporal_query':
+        this.conversationState.transitionTo('search_active');
+        return await this.handleTemporalQuery(analysis, chatInstance);
+
+      case 'emotion_query':
+        this.conversationState.transitionTo('search_active');
+        return await this.handleEmotionQuery(analysis, chatInstance);
+
+      // PHASE 1: Interaction intents
+      case 'clarification':
+        this.conversationState.transitionTo('confusion_recovery');
+        return this.handleClarification(analysis, chatInstance);
+
+      case 'memory_edit':
+        return this.handleMemoryEdit(analysis, chatInstance);
+
+      case 'memory_delete':
+        return this.handleMemoryDelete(analysis, chatInstance);
+
       default:
         return {
           text: analysis.suggestedResponse || "I'm here to listen. What would you like to share?",
           actions: []
         };
+    }
+  }
+
+  // PHASE 1: New intent handlers
+
+  /**
+   * 🔍 SEMANTIC MEMORY SEARCH
+   * PHASE 1: Use vectorless engine for intelligent memory search
+   */
+  async handleMemorySearch(analysis, chatInstance) {
+    try {
+      const searchQuery = analysis.searchQuery;
+      console.log('🔍 Searching memories for:', searchQuery);
+
+      // Use vectorless engine if available
+      if (chatInstance.vectorlessEngine && chatInstance.isVectorlessEnabled) {
+        const results = await this.searchMemoriesSemantically(
+          searchQuery.fullQuery || searchQuery.original,
+          chatInstance
+        );
+
+        if (results.length > 0) {
+          return {
+            text: `I found ${results.length} ${results.length === 1 ? 'memory' : 'memories'} about "${searchQuery.fullQuery}":`,
+            actions: ['display_search_results'],
+            searchResults: results
+          };
+        } else {
+          return {
+            text: `I couldn't find any memories about "${searchQuery.fullQuery}". Would you like to create one?`,
+            actions: ['offer_memory_creation']
+          };
+        }
+      }
+
+      // Fallback: Simple keyword search
+      const results = await this.simpleKeywordSearch(searchQuery.keywords, chatInstance);
+
+      if (results.length > 0) {
+        return {
+          text: `I found ${results.length} ${results.length === 1 ? 'memory' : 'memories'} matching your search:`,
+          actions: ['display_search_results'],
+          searchResults: results
+        };
+      }
+
+      return {
+        text: `I couldn't find any memories matching "${searchQuery.fullQuery}". Try a different search or tell me about a new memory!`,
+        actions: []
+      };
+
+    } catch (error) {
+      console.error('❌ Memory search error:', error);
+      return {
+        text: "I had trouble searching your memories. Let me try a different approach - what specifically would you like to remember?",
+        actions: []
+      };
+    }
+  }
+
+  /**
+   * 👤 PERSON INQUIRY
+   */
+  async handlePersonInquiry(analysis, chatInstance) {
+    const person = await chatInstance.findPersonInVault(analysis.targetPerson);
+
+    if (!person) {
+      return {
+        text: `I don't have information about ${analysis.targetPerson} yet. Would you like to tell me about them?`,
+        actions: ['offer_person_creation']
+      };
+    }
+
+    const memories = await chatInstance.getPersonMemories(person);
+    const memoryText = memories.length > 0 ?
+      `I have ${memories.length} ${memories.length === 1 ? 'memory' : 'memories'} about ${person.name}.` :
+      `I know ${person.name} is ${person.relationship || 'someone special'}, but I don't have any specific memories yet.`;
+
+    return {
+      text: `${person.name}! ${memoryText} Would you like to explore their memories or add new ones?`,
+      actions: ['show_person_details', 'list_memories'],
+      person: person,
+      memories: memories
+    };
+  }
+
+  /**
+   * 📅 TEMPORAL QUERY
+   */
+  async handleTemporalQuery(analysis, chatInstance) {
+    const timeRange = analysis.timeRange;
+    console.log('📅 Temporal query for:', timeRange);
+
+    const memories = await this.searchMemoriesByTime(timeRange, chatInstance);
+
+    if (memories.length > 0) {
+      const timeDescription = this.describeTimeRange(timeRange);
+      return {
+        text: `I found ${memories.length} ${memories.length === 1 ? 'memory' : 'memories'} from ${timeDescription}:`,
+        actions: ['display_timeline', 'display_search_results'],
+        searchResults: memories,
+        timeRange: timeRange
+      };
+    }
+
+    return {
+      text: `I couldn't find any memories from ${this.describeTimeRange(timeRange)}. Would you like to capture one now?`,
+      actions: ['offer_memory_creation']
+    };
+  }
+
+  /**
+   * 💭 EMOTION QUERY
+   */
+  async handleEmotionQuery(analysis, chatInstance) {
+    const emotion = analysis.emotion;
+    console.log('💭 Emotion query for:', emotion);
+
+    const memories = await this.searchMemoriesByEmotion(emotion, chatInstance);
+
+    if (memories.length > 0) {
+      return {
+        text: `I found ${memories.length} ${emotion} ${memories.length === 1 ? 'memory' : 'memories'}:`,
+        actions: ['display_search_results'],
+        searchResults: memories,
+        emotion: emotion
+      };
+    }
+
+    return {
+      text: `I couldn't find any ${emotion} memories yet. Your emotions and feelings are important - would you like to share one?`,
+      actions: ['offer_memory_creation']
+    };
+  }
+
+  /**
+   * 🔄 CLARIFICATION
+   */
+  handleClarification(analysis, chatInstance) {
+    return {
+      text: analysis.suggestedResponse || "Let me understand better. Can you tell me more about what you're looking for?",
+      actions: ['request_clarification'],
+      clarificationNeeded: true
+    };
+  }
+
+  /**
+   * ✏️ MEMORY EDIT
+   */
+  handleMemoryEdit(analysis, chatInstance) {
+    if (!analysis.targetMemory) {
+      return {
+        text: "Which memory would you like to edit? You can click on any memory to edit it.",
+        actions: ['highlight_memories']
+      };
+    }
+
+    return {
+      text: `Opening the editor for that memory...`,
+      actions: ['open_edit_dialog'],
+      memoryId: analysis.targetMemory
+    };
+  }
+
+  /**
+   * 🗑️ MEMORY DELETE
+   */
+  handleMemoryDelete(analysis, chatInstance) {
+    if (!analysis.targetMemory) {
+      return {
+        text: "Which memory would you like to remove? Please select one first.",
+        actions: ['highlight_memories']
+      };
+    }
+
+    return {
+      text: `Are you sure you want to delete this memory? This cannot be undone.`,
+      actions: ['confirm_deletion'],
+      memoryId: analysis.targetMemory
+    };
+  }
+
+  // PHASE 1: Search helper methods
+
+  /**
+   * Semantic search using vectorless engine
+   */
+  async searchMemoriesSemantically(query, chatInstance) {
+    try {
+      const vault = chatInstance.getVaultData();
+      const memories = Object.values(vault?.memories || {});
+
+      // Use vectorless engine for intelligent ranking
+      const results = memories
+        .map(memory => ({
+          ...memory,
+          relevanceScore: this.calculateRelevance(query, memory)
+        }))
+        .filter(m => m.relevanceScore > 0.3)
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 10);
+
+      return results;
+    } catch (error) {
+      console.error('❌ Semantic search error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Simple keyword search fallback
+   */
+  async simpleKeywordSearch(keywords, chatInstance) {
+    const vault = chatInstance.getVaultData();
+    const memories = Object.values(vault?.memories || {});
+
+    return memories.filter(memory => {
+      const content = (memory.content || '').toLowerCase();
+      const title = (memory.title || '').toLowerCase();
+
+      return keywords.some(keyword =>
+        content.includes(keyword) || title.includes(keyword)
+      );
+    }).slice(0, 10);
+  }
+
+  /**
+   * Search memories by time range
+   */
+  async searchMemoriesByTime(timeRange, chatInstance) {
+    const vault = chatInstance.getVaultData();
+    const memories = Object.values(vault?.memories || {});
+    const now = new Date();
+
+    return memories.filter(memory => {
+      const memoryDate = new Date(memory.created || memory.timestamp);
+
+      switch (timeRange.type) {
+        case 'relative':
+          if (timeRange.value === 'yesterday') {
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            return memoryDate.toDateString() === yesterday.toDateString();
+          }
+          if (timeRange.value === 'last_week') {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return memoryDate >= weekAgo;
+          }
+          if (timeRange.value === 'last_month') {
+            const monthAgo = new Date(now);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return memoryDate >= monthAgo;
+          }
+          if (timeRange.value === 'last_year') {
+            const yearAgo = new Date(now);
+            yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+            return memoryDate >= yearAgo;
+          }
+          break;
+
+        case 'year':
+          return memoryDate.getFullYear() === timeRange.value;
+
+        case 'season':
+          // Simple season matching (Northern Hemisphere)
+          const month = memoryDate.getMonth();
+          if (timeRange.value === 'summer') return month >= 5 && month <= 7;
+          if (timeRange.value === 'winter') return month === 11 || month <= 1;
+          if (timeRange.value === 'spring') return month >= 2 && month <= 4;
+          if (timeRange.value === 'fall' || timeRange.value === 'autumn') return month >= 8 && month <= 10;
+          break;
+      }
+
+      return false;
+    });
+  }
+
+  /**
+   * Search memories by emotion
+   */
+  async searchMemoriesByEmotion(emotion, chatInstance) {
+    const vault = chatInstance.getVaultData();
+    const memories = Object.values(vault?.memories || {});
+
+    return memories.filter(memory => {
+      const memoryEmotion = memory.metadata?.emotion || '';
+      return memoryEmotion.toLowerCase() === emotion.toLowerCase();
+    });
+  }
+
+  /**
+   * Calculate relevance score for semantic search
+   */
+  calculateRelevance(query, memory) {
+    const queryLower = query.toLowerCase();
+    const content = (memory.content || '').toLowerCase();
+    const title = (memory.title || '').toLowerCase();
+    const tags = (memory.metadata?.tags || []).join(' ').toLowerCase();
+
+    let score = 0;
+
+    // Title match (highest weight)
+    if (title.includes(queryLower)) score += 1.0;
+
+    // Content match
+    if (content.includes(queryLower)) score += 0.7;
+
+    // Tag match
+    if (tags.includes(queryLower)) score += 0.8;
+
+    // Word-by-word matching
+    const queryWords = queryLower.split(/\s+/);
+    const matchCount = queryWords.filter(word =>
+      content.includes(word) || title.includes(word) || tags.includes(word)
+    ).length;
+
+    score += (matchCount / queryWords.length) * 0.5;
+
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * Describe time range in natural language
+   */
+  describeTimeRange(timeRange) {
+    switch (timeRange.type) {
+      case 'relative':
+        return timeRange.value.replace('_', ' ');
+      case 'year':
+        return `the year ${timeRange.value}`;
+      case 'season':
+        return `${timeRange.value}`;
+      default:
+        return 'that time';
     }
   }
 
@@ -10879,7 +11700,7 @@ Analyze the user's intent and respond with JSON:
 
   async callLLM(prompt) {
     if (!this.options.apiKey) throw new Error('No API key available');
-    
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -10893,9 +11714,377 @@ Analyze the user's intent and respond with JSON:
         temperature: 0.7
       })
     });
-    
+
     const data = await response.json();
     return data.choices[0].message.content;
+  }
+
+  // ==========================================
+  // PHASE 2: CONVERSATION QUALITY METHODS
+  // ==========================================
+
+  /**
+   * 🔍 PHASE 2: Handle Ambiguous Input
+   * Request clarification when user intent is unclear
+   */
+  async handleAmbiguity(userMessage, analysis, vaultContext) {
+    console.log('🔍 PHASE 2: Ambiguity detected, requesting clarification');
+
+    // Generate possible interpretations
+    const possibleInterpretations = await this.generateInterpretations(userMessage, analysis, vaultContext);
+
+    if (!possibleInterpretations || possibleInterpretations.length === 0) {
+      // No clear interpretations, ask open-ended question
+      return {
+        text: "I want to make sure I understand you correctly. Could you tell me a bit more about what you're looking for?",
+        intent: 'clarification',
+        actions: ['await_clarification'],
+        requiresResponse: true
+      };
+    }
+
+    if (possibleInterpretations.length === 1) {
+      // Single interpretation, confirm it
+      return {
+        text: `Just to confirm - ${possibleInterpretations[0]}?`,
+        intent: 'clarification',
+        actions: ['await_confirmation'],
+        interpretation: possibleInterpretations[0],
+        requiresResponse: true
+      };
+    }
+
+    // Multiple interpretations, let user choose
+    const optionsList = possibleInterpretations
+      .map((interp, idx) => `${idx + 1}. ${interp}`)
+      .join('\n');
+
+    return {
+      text: `I want to make sure I understand. Did you mean:\n\n${optionsList}\n\nOr something else?`,
+      intent: 'clarification',
+      actions: ['await_clarification'],
+      options: possibleInterpretations,
+      requiresResponse: true
+    };
+  }
+
+  /**
+   * 🎯 PHASE 2: Generate Possible Interpretations
+   */
+  async generateInterpretations(userMessage, analysis, vaultContext) {
+    const interpretations = [];
+
+    // Check for person mentions
+    const mentionedPeople = vaultContext.peopleNames.filter(name =>
+      userMessage.toLowerCase().includes(name.toLowerCase())
+    );
+
+    if (mentionedPeople.length > 0) {
+      mentionedPeople.forEach(person => {
+        interpretations.push(`You want to know about ${person}`);
+        interpretations.push(`You want to share a memory with ${person}`);
+      });
+    }
+
+    // Check for time mentions
+    const timeKeywords = ['yesterday', 'last', 'ago', 'when'];
+    if (timeKeywords.some(k => userMessage.toLowerCase().includes(k))) {
+      interpretations.push('You want to explore memories from a specific time');
+    }
+
+    // Check for search intent
+    const searchKeywords = ['show', 'find', 'where'];
+    if (searchKeywords.some(k => userMessage.toLowerCase().includes(k))) {
+      interpretations.push('You want to search for specific memories');
+    }
+
+    // Limit to top 3 most likely
+    return interpretations.slice(0, 3);
+  }
+
+  /**
+   * 💬 PHASE 2: Generate Follow-up Questions
+   * Generate contextual follow-ups to enrich the conversation
+   */
+  async generateFollowUpQuestions(analysis, chatInstance) {
+    try {
+      console.log('💬 PHASE 2: Generating follow-up questions for intent:', analysis.intent);
+
+      // Get conversation context
+      const recentMessages = this.conversationHistory.slice(-5)
+        .map(h => `${h.sender}: ${h.message}`)
+        .join('\n');
+
+      // Use LLM if available
+      if (this.options.apiKey) {
+        return await this.llmGenerateFollowUps(analysis, recentMessages);
+      }
+
+      // Fallback to heuristic follow-ups
+      return this.heuristicFollowUps(analysis);
+
+    } catch (error) {
+      console.error('❌ Follow-up generation error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 🤖 PHASE 2: LLM-Powered Follow-up Generation
+   */
+  async llmGenerateFollowUps(analysis, conversationContext) {
+    const prompt = `You are Emma, a memory companion. Based on this conversation, generate 2-3 natural follow-up questions to enrich the memory or continue the conversation warmly.
+
+CONVERSATION CONTEXT:
+${conversationContext}
+
+CURRENT TOPIC: ${analysis.intent}
+TARGET PERSON: ${analysis.targetPerson || 'none'}
+
+Generate questions that are:
+- Warm and caring (dementia-friendly)
+- Specific to the conversation
+- Designed to elicit more details or memories
+- Not repetitive
+
+Respond with JSON array:
+["Question 1?", "Question 2?", "Question 3?"]`;
+
+    try {
+      const response = await this.callLLM(prompt);
+      const questions = JSON.parse(response);
+      return Array.isArray(questions) ? questions.slice(0, 3) : [];
+    } catch (error) {
+      console.warn('🤖 LLM follow-up generation failed:', error);
+      return this.heuristicFollowUps(analysis);
+    }
+  }
+
+  /**
+   * 🎯 PHASE 2: Heuristic Follow-up Generation
+   */
+  heuristicFollowUps(analysis) {
+    const followUps = [];
+
+    switch (analysis.intent) {
+      case 'memory_sharing':
+        followUps.push(
+          `What made that moment special?`,
+          `Who else was there with you?`,
+          `How did it make you feel?`
+        );
+        break;
+
+      case 'person_inquiry':
+        if (analysis.targetPerson) {
+          followUps.push(
+            `What's your favorite memory with ${analysis.targetPerson}?`,
+            `When did you last see ${analysis.targetPerson}?`,
+            `What makes ${analysis.targetPerson} special to you?`
+          );
+        }
+        break;
+
+      case 'temporal_query':
+        followUps.push(
+          `What stands out most from that time?`,
+          `Are there specific moments you'd like to remember?`,
+          `Would you like to add photos from then?`
+        );
+        break;
+
+      case 'emotion_query':
+        followUps.push(
+          `Tell me more about those feelings.`,
+          `What contributed to feeling that way?`,
+          `Would you like to capture more about that time?`
+        );
+        break;
+
+      case 'memory_search':
+        followUps.push(
+          `Would you like me to show you any of these?`,
+          `Shall we refine the search?`,
+          `Is there something specific you're looking for?`
+        );
+        break;
+
+      default:
+        // Generic warm follow-ups
+        followUps.push(
+          `Tell me more about that.`,
+          `What else would you like to share?`,
+          `I'd love to hear more details.`
+        );
+    }
+
+    return followUps.slice(0, 3);
+  }
+
+  /**
+   * ✅ PHASE 2: Should Generate Follow-ups?
+   * Determine when follow-up questions are appropriate
+   */
+  shouldGenerateFollowUps(analysis) {
+    // Don't generate follow-ups for these intents
+    const skipIntents = ['greeting', 'farewell', 'gratitude', 'clarification'];
+    if (skipIntents.includes(analysis.intent)) {
+      return false;
+    }
+
+    // Don't generate if confidence is too low
+    if (analysis.confidence < 0.5) {
+      return false;
+    }
+
+    // Don't generate if we just asked a follow-up
+    if (this.followUpQuestions.length > 0) {
+      this.followUpQuestions = []; // Clear old ones
+      return false;
+    }
+
+    // Generate for these intents
+    const followUpIntents = [
+      'memory_sharing',
+      'person_inquiry',
+      'temporal_query',
+      'emotion_query',
+      'memory_search',
+      'vault_query'
+    ];
+
+    return followUpIntents.includes(analysis.intent);
+  }
+
+  /**
+   * 🌱 PHASE 2: Start Memory Enrichment Session
+   * Multi-turn conversation to enrich a memory with details
+   */
+  async startEnrichmentSession(memoryDraft, chatInstance) {
+    console.log('🌱 PHASE 2: Starting enrichment session for memory:', memoryDraft.content?.substring(0, 50));
+
+    this.enrichmentSession = {
+      active: true,
+      memoryDraft: memoryDraft,
+      questionsAsked: 0,
+      maxQuestions: 3,
+      collectedDetails: {}
+    };
+
+    this.conversationState.transitionTo('memory_enrichment');
+
+    // Generate first enrichment question
+    const question = await this.generateEnrichmentQuestion(memoryDraft, chatInstance);
+
+    return {
+      text: question,
+      intent: 'memory_enrichment',
+      actions: ['await_enrichment'],
+      enrichmentActive: true
+    };
+  }
+
+  /**
+   * 🔄 PHASE 2: Continue Enrichment Session
+   */
+  async continueEnrichmentSession(userResponse, chatInstance) {
+    if (!this.enrichmentSession.active) {
+      console.warn('🔄 No active enrichment session');
+      return null;
+    }
+
+    // Store the detail
+    const questionKey = `detail_${this.enrichmentSession.questionsAsked}`;
+    this.enrichmentSession.collectedDetails[questionKey] = userResponse;
+    this.enrichmentSession.questionsAsked++;
+
+    // Check if we should ask more questions
+    if (this.enrichmentSession.questionsAsked >= this.enrichmentSession.maxQuestions) {
+      return await this.completeEnrichmentSession(chatInstance);
+    }
+
+    // Ask next question
+    const nextQuestion = await this.generateEnrichmentQuestion(
+      this.enrichmentSession.memoryDraft,
+      chatInstance
+    );
+
+    return {
+      text: nextQuestion,
+      intent: 'memory_enrichment',
+      actions: ['await_enrichment'],
+      enrichmentActive: true
+    };
+  }
+
+  /**
+   * ✅ PHASE 2: Complete Enrichment Session
+   */
+  async completeEnrichmentSession(chatInstance) {
+    console.log('✅ PHASE 2: Completing enrichment session');
+
+    const enrichedMemory = {
+      ...this.enrichmentSession.memoryDraft,
+      content: this.buildEnrichedContent(
+        this.enrichmentSession.memoryDraft.content,
+        this.enrichmentSession.collectedDetails
+      ),
+      metadata: {
+        ...this.enrichmentSession.memoryDraft.metadata,
+        enriched: true,
+        enrichmentDate: Date.now()
+      }
+    };
+
+    // Reset session
+    this.enrichmentSession = {
+      active: false,
+      memoryDraft: null,
+      questionsAsked: 0,
+      maxQuestions: 3,
+      collectedDetails: {}
+    };
+
+    this.conversationState.transitionTo('idle');
+
+    return {
+      text: `Thank you for sharing those details! I've enriched the memory with everything you told me. Would you like to save it now?`,
+      intent: 'memory_enrichment_complete',
+      actions: ['offer_save'],
+      enrichedMemory: enrichedMemory
+    };
+  }
+
+  /**
+   * 📝 PHASE 2: Generate Enrichment Question
+   */
+  async generateEnrichmentQuestion(memoryDraft, chatInstance) {
+    const asked = this.enrichmentSession.questionsAsked;
+
+    // Predefined enrichment questions
+    const questions = [
+      `What feelings or emotions do you associate with this memory?`,
+      `Are there any specific details you remember - sights, sounds, or smells?`,
+      `What made this moment particularly meaningful to you?`,
+      `Is there anything else about this memory you'd like to capture?`
+    ];
+
+    return questions[asked] || questions[questions.length - 1];
+  }
+
+  /**
+   * 🏗️ PHASE 2: Build Enriched Content
+   */
+  buildEnrichedContent(originalContent, collectedDetails) {
+    let enriched = originalContent + '\n\n';
+
+    Object.entries(collectedDetails).forEach(([key, detail]) => {
+      if (detail && detail.trim()) {
+        enriched += `${detail.trim()}\n\n`;
+      }
+    });
+
+    return enriched.trim();
   }
 }
 
