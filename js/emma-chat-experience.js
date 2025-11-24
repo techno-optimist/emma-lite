@@ -5648,7 +5648,7 @@ RULES:
     try {
       // Generate dynamic response for media requests
       const response = await this.generateDynamicEmmaResponse(`The user wants to save photos/media: "${message}"`);
-      await this.addMessage(response || "I'd love to help you save those photos!", 'emma', null, 'response');
+      await this.addMessage(response || "I'd love to help you save those photos!", 'emma');
 
       // Create a basic memory from the request
       const memory = {
@@ -5670,13 +5670,13 @@ RULES:
       this.temporaryMemories.set(memory.id, memory);
       console.log('🎯 MEDIA REQUEST: Created temporary memory for superior edit dialog:', memory.id);
       console.log('🎯 MEDIA REQUEST: Memory metadata:', memory.metadata);
-      
+
       // Show the much better edit dialog we just perfected!
       this.editMemoryDetails(memory.id);
 
     } catch (error) {
       console.error('❌ Error handling media request:', error);
-      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma', null, 'response');
+      await this.addMessage("I'd love to help you save those photos! Let me set that up for you.", 'emma');
     }
   }
 
@@ -10647,10 +10647,10 @@ Just the question:`;
         if (!isExistingMemory && this.enhancedMemoryData?.[memoryId]) {
           delete this.enhancedMemoryData[memoryId];
         }
-        
+
         // Show success message
-        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma', null, 'response');
-        
+        await this.addMessage("Your photo memory has been saved! 📷✨", 'emma');
+
         this.showToast("Memory saved successfully! 💝", "success");
         
         // CRITICAL: Refresh constellation IMMEDIATELY after memory save
