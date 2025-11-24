@@ -103,8 +103,12 @@ class EmmaChatExperience extends ExperiencePopup {
     this.enrichmentState = new Map(); // Track enrichment conversations
     this.debugMode = true; // Enable debug mode to see scoring
 
-    // 🎯 CRITICAL FIX: Add temporary memory storage for preview editing
-    this.temporaryMemories = new Map(); // Store preview memories before vault save
+    // 🎯 CRITICAL FIX: Use shared global temporary memory storage (prevents instance mismatch)
+    // Initialize global storage if it doesn't exist
+    if (!window.emmaTemporaryMemories) {
+      window.emmaTemporaryMemories = new Map();
+    }
+    this.temporaryMemories = window.emmaTemporaryMemories; // Reference shared storage
 
     // 📷 PHOTO CACHE: Store uploaded photos for tool access
     this.uploadedPhotosCache = new Map(); // Cache for photos uploaded via handlePhotoFiles
