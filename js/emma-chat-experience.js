@@ -449,32 +449,93 @@ class EmmaChatExperience extends ExperiencePopup {
    * Display tool results visually in chat
    */
   displayToolResult(toolName, params, result) {
+    // Handle vault-not-open errors with helpful prompt
+    if (result && result.needsVault) {
+      this.addMessage(
+        `${result.error}\n\nPlease open your vault first to access your memories.`,
+        'emma'
+      );
+      return;
+    }
+
+    if (result && result.error) {
+      this.addMessage('system', `${result.error}`);
+      return;
+    }
+
     switch (toolName) {
       case 'get_people':
         if (result.people && result.people.length > 0) {
           this.displayPeopleResults(result.people);
         }
         break;
-        
+
       case 'get_memories':
         if (result.memories && result.memories.length > 0) {
           this.displayMemoryResults(result.memories);
         }
         break;
-        
+
+      case 'summarize_memory':
+        if (result.summary) {
+          this.addMessage('emma', `Here's a gentle summary: ${result.summary}`);
+        }
+        break;
+
       case 'create_memory_from_voice':
         if (result.success) {
-          this.addMessage('system', `💭 New memory created: "${params.content.substring(0, 50)}..."`, {
+          this.addMessage('system', `New memory created: "${params.content?.substring(0, 50) || 'Voice memory'}..."`, {
             type: 'memory-created',
             memoryId: result.memoryId
           });
         }
         break;
-        
+
+      case 'create_memory_capsule':
+        if (result.success) {
+          const label = result.title || params.title || params.content?.substring(0, 50) || 'New memory';
+          this.addMessage('system', `Saved memory: "${label}"`, {
+            type: 'memory-created',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
       case 'update_person':
         if (result.success) {
-          this.addMessage('system', `👤 Updated ${result.personName} with new details`, {
+          this.addMessage('system', `Updated ${result.personName} with new details`, {
             type: 'person-updated'
+          });
+        }
+        break;
+
+      case 'create_person_profile':
+        if (result.success) {
+          this.addMessage('system', `Added ${result.personName} to your people`, {
+            type: 'person-created',
+            personId: result.personId
+          });
+        }
+        break;
+
+      case 'update_memory_capsule':
+        if (result.success) {
+          const fields = result.updatedFields?.length
+            ? result.updatedFields.join(', ')
+            : 'memory details';
+          this.addMessage('system', `Updated ${fields} for your memory`, {
+            type: 'memory-updated',
+            memoryId: result.memoryId
+          });
+        }
+        break;
+
+      case 'attach_memory_media':
+        if (result.success) {
+          const count = result.attachmentCount ?? (params.media?.length || 0);
+          this.addMessage('system', `Added ${count} new ${count === 1 ? 'attachment' : 'attachments'} to your memory`, {
+            type: 'memory-media-added',
+            memoryId: result.memoryId
           });
         }
         break;
