@@ -639,7 +639,7 @@
 
     @media (max-width: 640px) {
       body {
-        padding: 20px;
+        padding: 0px;
       }
 
       .hero-grid {
@@ -658,6 +658,7 @@
       .vault-status {
         flex-direction: column;
         align-items: flex-start;
+        max-height: 150px;
       }
     }
   </style>
@@ -885,12 +886,12 @@
             });
 
           } else {
-                        console.warn('Ã¢Å¡Â Ã¯Â¸Â Emma orb class not available, using CSS fallback');
+                        console.warn('⚠️ Emma orb class not available, using CSS fallback');
                         this.orb.style.background = 'radial-gradient(circle at 30% 30%, #6f63d9, #4f46e5, #deb3e4)';
                         this.orb.style.animation = 'orb-pulse 4s ease-in-out infinite';
           }
         } catch (error) {
-                    console.error('Ã¢ÂÅ’ Failed to initialize Emma orb:', error);
+                    console.error('❌ Failed to initialize Emma orb:', error);
                 }
             }
 
@@ -898,14 +899,14 @@
                 try {
                     // Simple initialization - just create the instance
                     if (typeof EmmaChatExperience !== 'undefined') {
-                        console.log('Ã°Å¸Å¡â‚¬ Creating Emma Chat Experience...');
+                        console.log('🚀 Creating Emma Chat Experience...');
                         new EmmaChatExperience(); // Auto-sets window.chatExperience
-                        console.log('Ã¢Å“â€¦ Emma Chat Experience created!');
+                        console.log('✅ Emma Chat Experience created!');
                     } else {
-                        console.warn('Ã¢Å¡Â Ã¯Â¸Â EmmaChatExperience class not available');
+                        console.warn('⚠️ EmmaChatExperience class not available');
                     }
                 } catch (error) {
-                    console.error('Ã¢ÂÅ’ Failed to create Emma Chat Experience:', error);
+                    console.error('❌ Failed to create Emma Chat Experience:', error);
                 }
             }
 
@@ -963,7 +964,7 @@
 
         } catch (error) {
                     if (error.name !== 'AbortError') {
-          console.error('Ã¢ÂÅ’ Failed to open vault:', error);
+          console.error('❌ Failed to open vault:', error);
                         this.showError('Failed to open vault: ' + error.message);
                     }
                 }
@@ -981,7 +982,7 @@
 
                     if (!vaultName) return;
 
-                    // Ã°Å¸Å½Â¯ BASIC VALIDATION: Ensure vault name is reasonable
+                    // 🎯 BASIC VALIDATION: Ensure vault name is reasonable
                     if (vaultName.trim().length < 2) {
                         window.emmaError("Vault name should be at least 2 characters long.", {
                             title: "Invalid Vault Name",
@@ -1007,7 +1008,7 @@
           }
 
         } catch (error) {
-                    console.error('Ã¢ÂÅ’ Failed to create vault:', error);
+                    console.error('❌ Failed to create vault:', error);
                     this.showError('Failed to create vault: ' + error.message);
                 }
             }
@@ -1053,7 +1054,7 @@
                         try {
                             await window.emmaWebVault.ensureDirectFileHandle('initial-open', { promptOnFailure: true });
                         } catch (handleError) {
-                        console.warn('Ã¢Å¡Â Ã¯Â¸Â Emma Web Vault: Unable to capture direct file access automatically:', handleError);
+                        console.warn('⚠️ Emma Web Vault: Unable to capture direct file access automatically:', handleError);
                         }
                     }
 
@@ -1073,7 +1074,7 @@
                         await window.emmaWebVault.saveToIndexedDB();
 
                     } catch (idbError) {
-                        console.warn('Ã¢Å¡Â Ã¯Â¸Â IndexedDB save failed (non-critical):', idbError);
+                        console.warn('⚠️ IndexedDB save failed (non-critical):', idbError);
                         // Continue without IndexedDB - vault still works
                     }
 
@@ -1094,7 +1095,7 @@
                     }, 2000);
 
         } catch (error) {
-                    console.error('Ã¢ÂÅ’ Failed to process vault:', error);
+                    console.error('❌ Failed to process vault:', error);
                     this.showError('Failed to unlock vault: ' + error.message);
                 }
             }
@@ -1271,7 +1272,7 @@
                     
                     const title = document.createElement('h2');
                     title.style.cssText = 'color: white; margin-bottom: 10px;';
-                    title.textContent = isCreate ? 'Ã°Å¸â€â€™ Secure Your Vault' : 'Ã°Å¸â€Â Unlock Vault';
+                    title.textContent = isCreate ? '🔒 Secure Your Vault' : '🔐 Unlock Vault';
                     
                     const description = document.createElement('p');
                     description.style.cssText = 'color: rgba(255,255,255,0.8); margin-bottom: 15px;';
@@ -1309,7 +1310,7 @@
                                 <div id="passwordMatch" style="margin-top: 5px; font-size: 12px;"></div>
                         ` : ''}
                                 <small style="color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-top: 4px; display: block;">
-                                    Ã°Å¸â€â€™ Your passphrase ${isCreate ? 'secures' : 'decrypts'} your precious memories locally
+                                    🔒 Your passphrase ${isCreate ? 'secures' : 'decrypts'} your precious memories locally
                                 </small>
                       </div>
 
@@ -1330,7 +1331,7 @@
                                     border-radius: 8px;
                 cursor: pointer;
                                     font-weight: 600;
-                                ">${isCreate ? 'Ã°Å¸â€â€™ Create Vault' : 'Ã°Å¸â€â€œ Unlock Vault'}</button>
+                                ">${isCreate ? '🔒 Create Vault' : '🔓 Unlock Vault'}</button>
             </div>
                         </form>
                     `;
@@ -1382,7 +1383,7 @@
                             matchDiv.innerHTML = '';
                             const span = document.createElement('span');
                             span.style.color = matches ? '#10b981' : '#ef4444';
-                            span.textContent = matches ? 'Ã¢Å“â€¦ Passwords match' : 'Ã¢ÂÅ’ Passwords do not match';
+                            span.textContent = matches ? '✅ Passwords match' : '❌ Passwords do not match';
                             matchDiv.appendChild(span);
                         };
 
@@ -1412,25 +1413,25 @@
                 // CRITICAL FIX: Initialize Emma Web Vault first
                 if (typeof EmmaWebVault !== 'undefined') {
                     window.emmaWebVault = new EmmaWebVault();
-                    console.log('Ã¢Å“â€¦ Emma Web Vault initialized');
+                    console.log('✅ Emma Web Vault initialized');
                 } else {
-                    console.error('Ã¢ÂÅ’ EmmaWebVault class not found!');
+                    console.error('❌ EmmaWebVault class not found!');
                 }
                 
                 window.cleanEmmaApp = new CleanEmmaApp();
 
-                // Ã°Å¸Å½Â¯ CHECK URL PARAMETERS FOR DIRECT MEMORY EDITING
+                // 🎯 CHECK URL PARAMETERS FOR DIRECT MEMORY EDITING
                 const urlParams = new URLSearchParams(window.location.search);
                 const memoryIdToEdit = urlParams.get('memory');
                 const mode = urlParams.get('mode');
                 
                 if (memoryIdToEdit && mode === 'chat') {
-                    console.log('Ã°Å¸Å½Â¯ URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
+                    console.log('🎯 URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
                     
                     // Simple polling approach - just wait for window.chatExperience to be available
                     const checkAndOpen = () => {
                         if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
-                            console.log('Ã¢Å“â€¦ Opening enhanced edit dialog for memory:', memoryIdToEdit);
+                            console.log('✅ Opening enhanced edit dialog for memory:', memoryIdToEdit);
                             window.chatExperience.editMemoryDetails(memoryIdToEdit);
                         } else {
                             setTimeout(checkAndOpen, 100); // Check again in 100ms
@@ -1445,11 +1446,11 @@
                     const report = window.emmaBrowserCompatibility.getCompatibilityReport();
 
                     if (report.compatibility.issues.length > 0) {
-                        console.warn('Ã¢Å¡Â Ã¯Â¸Â EMMA: Compatibility issues detected for', report.browser.name);
+                        console.warn('⚠️ EMMA: Compatibility issues detected for', report.browser.name);
                     }
                 }
 
-                // Ã°Å¸â€Â¥ CRITICAL: Initialize .emma file sync status monitoring
+                // 🔥 CRITICAL: Initialize .emma file sync status monitoring
                 window.emmaSyncStatus = {
                     show: function(status, message) {
                         const syncStatusEl = document.getElementById('syncStatus');
@@ -1470,7 +1471,7 @@
                             case 'success':
                                 syncStatusEl.style.background = 'rgba(16, 185, 129, 0.2)';
                                 syncStatusEl.style.border = '1px solid rgba(16, 185, 129, 0.5)';
-                                iconEl.textContent = 'Ã¢Å“â€¦';
+                                iconEl.textContent = '✅';
                                 textEl.textContent = message || '.emma file updated';
                                 // Auto-hide success after 3 seconds
                                 setTimeout(() => this.hide(), 3000);
@@ -1478,13 +1479,13 @@
                             case 'error':
                                 syncStatusEl.style.background = 'rgba(220, 38, 38, 0.2)';
                                 syncStatusEl.style.border = '1px solid rgba(220, 38, 38, 0.5)';
-                                iconEl.textContent = 'Ã°Å¸Å¡Â¨';
+                                iconEl.textContent = '🚨';
                                 textEl.textContent = message || '.emma file sync failed';
                                 break;
                             case 'warning':
                                 syncStatusEl.style.background = 'rgba(245, 158, 11, 0.2)';
                                 syncStatusEl.style.border = '1px solid rgba(245, 158, 11, 0.5)';
-                                iconEl.textContent = 'Ã¢Å¡Â Ã¯Â¸Â';
+                                iconEl.textContent = '⚠️';
                                 textEl.textContent = message || 'Browser storage only - .emma file not updated';
                                 break;
                         }
