@@ -2417,6 +2417,12 @@ class EmmaChatExperience extends ExperiencePopup {
       return this.renderRichMessage(content, sender, options);
     }
 
+    // 🛡️ Guard: If chat UI not rendered, log and return gracefully
+    if (!this.messageContainer) {
+      console.warn('💬 EMMA CHAT: addMessage called but chat UI not visible. Message:', content?.substring?.(0, 50) || content);
+      return null;
+    }
+
     const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const messageDiv = document.createElement('div');
     messageDiv.className = `${sender}-message`;
