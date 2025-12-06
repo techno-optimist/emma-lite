@@ -1,0 +1,11 @@
+{
+  "appId": "com.yourorg.emma",
+  "appName": "emma-lite",
+  "webDir": "mobile/www",
+  "android": {
+    "path": "mobile/android"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

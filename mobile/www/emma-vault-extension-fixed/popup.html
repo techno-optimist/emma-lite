@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma - Your Intelligent Memory Companion</title>
+  <link rel="stylesheet" href="popup-emma-brand.css">
+  <link rel="stylesheet" href="popup-vault-locked.css">
+</head>
+<body>
+  <!-- WEBAPP-FIRST: Vault Locked Overlay -->
+  <div id="vault-locked-overlay" class="vault-locked-overlay">
+    <div class="vault-locked-content">
+      <!-- Emma Orb with Lock -->
+      <div class="vault-locked-orb"></div>
+      
+      <!-- Emma Branding -->
+      <h1 class="vault-locked-title">emma</h1>
+      <p class="vault-locked-subtitle">intelligent memory</p>
+      
+      <!-- Status Message -->
+      <div class="vault-locked-message">
+        <h3>Vault Locked</h3>
+        <p>Open the Emma webapp to unlock your vault and access memory features.</p>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="vault-locked-actions">
+        <button type="button" id="unlock-webapp-btn" class="vault-unlock-btn">
+          🌐 Open Emma Webapp
+        </button>
+        <button type="button" id="vault-help-btn" class="vault-help-btn">
+          ❓ How this works
+        </button>
+      </div>
+      
+      <!-- Status Indicator -->
+      <div id="vault-status-indicator" class="vault-status-indicator checking">
+        <span class="vault-checking-spinner"></span>
+        <span>Checking vault...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-container">
+    <!-- Top spacing for better visual balance -->
+    <div class="popup-header-spacer"></div>
+
+    <!-- Main Interface -->
+    <main class="main-interface" id="mainInterface">
+      
+      <!-- Welcome State (No Vault Open) -->
+      <div class="welcome-state" id="welcomeState">
+        
+        <!-- Vault Drop Zone -->
+        <div class="vault-drop-zone" id="vaultDropZone">
+          <div class="emma-orb-container">
+            <div class="emma-orb" id="emmaOrb"></div>
+          </div>
+          
+          <div class="drop-zone-content">
+            <h2 class="drop-zone-title">Open .emma Vault</h2>
+            <p class="drop-zone-subtitle">Choose your vault file. Emma will save changes automatically.</p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button class="btn-primary" id="createNewVault">
+            <span class="btn-icon">🌟</span>
+            <span class="btn-text">Create New Vault</span>
+          </button>
+          
+          <button class="btn-secondary" id="openExistingVault">
+            <span class="btn-icon">📁</span>
+            <span class="btn-text">Open Existing Vault</span>
+          </button>
+        </div>
+
+        <!-- Recent Vaults -->
+        <div class="recent-vaults" id="recentVaults">
+          <div class="section-header">
+            <span class="section-icon">📋</span>
+            <span class="section-title">Recent Vaults</span>
+          </div>
+          
+          <div class="recent-vault-item" id="recentVaultTemplate" style="display: none;">
+            <span class="vault-icon">📁</span>
+            <div class="vault-info">
+              <div class="vault-name"></div>
+              <div class="vault-details"></div>
+            </div>
+          </div>
+          
+          <div class="no-recent-vaults" id="noRecentVaults">
+            <p>No recent vaults found</p>
+            <p class="help-text">Create or open a vault to get started</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Capture State -->
+      <div class="image-capture-state hidden" id="imageCaptureState">
+        
+        <!-- Header -->
+        <div class="image-capture-header">
+          <button class="back-button" id="backToVaultBtn">
+            <span class="btn-icon">←</span>
+          </button>
+          <div class="header-content">
+            <h2 class="capture-title">Capture Images</h2>
+            <p class="capture-subtitle" id="captureSubtitle">Scanning for images...</p>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="image-controls">
+          <div class="selection-summary">
+            <span id="selectedCount">0</span> of <span id="totalCount">0</span> selected
+          </div>
+          <div class="control-buttons">
+            <button class="btn-small" id="selectAllBtn">All</button>
+            <button class="btn-small" id="selectNoneBtn">None</button>
+          </div>
+        </div>
+
+        <!-- Image Grid -->
+        <div class="image-grid-container">
+          <div class="image-grid" id="imageGrid">
+            <!-- Images will be populated here -->
+          </div>
+          
+          <!-- Loading State -->
+          <div class="loading-state" id="imageLoadingState">
+            <div class="emma-orb-container">
+              <div class="emma-orb" id="loadingOrb"></div>
+            </div>
+            <p>Scanning page for images...</p>
+          </div>
+          
+          <!-- Empty State -->
+          <div class="empty-state hidden" id="imageEmptyState">
+            <div class="empty-icon">🖼️</div>
+            <h3>No Images Found</h3>
+            <p>This page doesn't contain any capturable images.</p>
+          </div>
+          
+          <!-- Error State -->
+          <div class="error-state hidden" id="imageErrorState">
+            <div class="error-icon">⚠️</div>
+            <h3>Detection Failed</h3>
+            <p id="errorMessage">Unable to scan for images on this page.</p>
+            <button class="btn-secondary" id="retryDetectionBtn">Try Again</button>
+          </div>
+        </div>
+
+        <!-- Created Capsule Preview -->
+        <div class="created-preview hidden" id="createdPreview">
+          <div class="capsule-card">
+            <div class="capsule-thumbs" id="createdThumbs"></div>
+            <div class="capsule-info">
+              <div class="capsule-title" id="createdTitle">Memory created</div>
+              <div class="capsule-meta" id="createdMeta"></div>
+            </div>
+            <div class="capsule-actions">
+              <button class="btn-small" id="viewInWebAppPreviewBtn">Open Web App</button>
+              <button class="btn-small" id="captureMoreBtn">Capture More</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <button class="btn-primary" id="createMemoryCapsuleBtn" disabled>
+            <span class="btn-icon">💾</span>
+            <span class="btn-text">Create Memory Capsule</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Vault State -->
+      <div class="active-vault-state hidden" id="activeVaultState">
+        
+        <!-- Vault Info -->
+        <div class="vault-info-card">
+          <div class="vault-header">
+            <div class="vault-icon-large">📁</div>
+            <div class="vault-details">
+              <h3 class="vault-name" id="activeVaultName">My Memories</h3>
+              <p class="vault-path" id="activeVaultPath">debbe-memories.emma</p>
+            </div>
+            <div class="vault-status">
+              <span class="status-indicator" id="vaultStatusIndicator">🟢</span>
+            </div>
+          </div>
+          
+          <div class="vault-stats">
+            <div class="stat-item">
+              <span class="stat-label">Memories:</span>
+              <span class="stat-value" id="memoryCount">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">People:</span>
+              <span class="stat-value" id="peopleCount">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Size:</span>
+              <span class="stat-value" id="vaultSize">0 KB</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Last sync:</span>
+              <span class="stat-value" id="lastSyncTime">Never</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <button class="action-btn emma-orb-btn" id="addMemoryBtn">
+            <div class="action-orb" id="addMemoryOrb"></div>
+            <span class="action-text">Add Memory</span>
+          </button>
+          
+          <button class="action-btn" id="captureImagesBtn">
+            <span class="action-icon">🖼️</span>
+            <span class="action-text">Capture Images</span>
+          </button>
+          
+          <button class="action-btn" id="openWebAppBtn">
+            <span class="action-icon">🌐</span>
+            <span class="action-text">Web App</span>
+          </button>
+          
+          <button class="action-btn" id="downloadVaultBtn">
+            <span class="action-icon">⬇️</span>
+            <span class="action-text">Download</span>
+          </button>
+        </div>
+
+        <!-- Vault Actions -->
+        <div class="vault-actions">
+          <button class="btn-secondary" id="closeVaultBtn">
+            <span class="btn-icon">🔒</span>
+            <span class="btn-text">Close Vault</span>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <div class="footer-content">
+        <small>Built with 💜 for Debbe</small>
+        <small>v<span id="version">1.0.0</span></small>
+      </div>
+    </footer>
+
+    <!-- Modals -->
+    <div class="modal-overlay hidden" id="modalOverlay">
+      <div class="modal-content" id="modalContent">
+        <!-- Modal content will be populated by JavaScript -->
+      </div>
+    </div>
+
+  </div>
+
+  <script nonce="c3RhdGljLWlubGluZQ==" src="emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="vault-state-monitor.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="popup-vault-checker.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="popup.js"></script>
+</body>
+</html>

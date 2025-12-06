@@ -26,6 +26,7 @@ function getApiKey() {
 
 const DEFAULT_DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000'];
 const DEFAULT_PROD_ORIGINS = ['https://emma-lite-optimized.onrender.com'];
+const DEFAULT_MOBILE_ORIGINS = ['capacitor://localhost', 'http://localhost', 'http://127.0.0.1', 'http://10.0.2.2'];
 
 function normalizeOrigin(value) {
   if (!value || typeof value !== 'string') return null;
@@ -51,7 +52,7 @@ function resolveAllowedOrigins() {
     ? DEFAULT_PROD_ORIGINS
     : DEFAULT_DEV_ORIGINS;
 
-  const origins = [...envOrigins, ...fallback]
+  const origins = [...envOrigins, ...fallback, ...DEFAULT_MOBILE_ORIGINS]
     .map(normalizeOrigin)
     .filter(Boolean);
 
@@ -78,7 +79,18 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "wss://api.openai.com", "https://api.openai.com", "https://cdn.jsdelivr.net", "https://emma-lite-optimized.onrender.com", "wss://emma-lite-optimized.onrender.com"],
+      connectSrc: [
+        "'self'",
+        "wss://api.openai.com",
+        "https://api.openai.com",
+        "https://cdn.jsdelivr.net",
+        "https://emma-lite-optimized.onrender.com",
+        "wss://emma-lite-optimized.onrender.com",
+        "capacitor://localhost",
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://10.0.2.2"
+      ],
       mediaSrc: ["'self'", "blob:", "data:"],
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:"]

@@ -1,0 +1,1423 @@
+/**
+ * Emma Vault Bridge - Content Script
+ * Injected into Emma Web App pages to enable real-time vault synchronization
+ * Dedicated to Debbe - preserving memories with love
+ */
+
+console.log('🚨🔗 CONTENT SCRIPT LOADING TEST - Version 7.2 - This should appear immediately on dashboard!');
+console.log('🚨🔗 Content script URL:', window.location.href);
+
+// Configuration
+const EMMA_VAULT_CHANNEL = 'emma-vault-bridge';
+const SYNC_DEBOUNCE_MS = 500; // Debounce rapid changes
+
+// Track sync state
+let syncEnabled = false;
+let syncDebounceTimer = null;
+let lastSyncHash = null;
+
+/**
+ * WEBAPP-FIRST: Handle extension popup vault status requests
+ */
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('🚨📨 CONTENT SCRIPT: MESSAGE RECEIVED!', request.action, 'from:', sender);
+  
+  if (request.action === 'checkVaultStatus') {
+    console.log('🚨🔐 Content Script: *** VAULT STATUS CHECK REQUEST ***');
+    console.log('🚨🔐 Content Script: Checking webapp vault status on:', window.location.href);
+    console.log('🚨🔐 Content Script: Request details:', request);
+    console.log('🚨🔐 Content Script: Sender details:', sender);
+    
+    // Check if webapp vault is unlocked by looking for vault indicators
+    const vaultStatus = getWebappVaultStatus();
+    console.log('🚨🔐 Content Script: Vault status result:', vaultStatus);
+    
+    sendResponse(vaultStatus);
+    return true; // Keep message channel open for async response
+  }
+  
+  if (request.action === 'getVaultStats') {
+    console.log('🎯 Content Script: *** PROCESSING getVaultStats REQUEST ***');
+    console.log('🎯 Content Script: Request received from popup extension');
+    console.log('🎯 Content Script: About to call getWebappVaultStats()...');
+    
+    // Get detailed vault statistics from webapp
+    const vaultStats = getWebappVaultStats();
+    console.log('🎯 Content Script: *** VAULT STATS RESULT ***:', vaultStats);
+    console.log('🎯 Content Script: Sending response back to popup');
+    
+    sendResponse(vaultStats);
+    return true; // Keep message channel open for async response
+  }
+  
+  if (request.action === 'SAVE_MEMORY_TO_WEBAPP_VAULT') {
+    console.log('🚨💾 Content Script: *** REAL MEMORY SAVE REQUEST ***');
+    console.log('🚨💾 Content Script: Memory data size:', JSON.stringify(request.memoryData).length);
+    console.log('🚨💾 Content Script: Current page URL:', window.location.href);
+    console.log('🚨💾 Content Script: Document ready state:', document.readyState);
+    console.log('🚨💾 Content Script: Session vault active:', sessionStorage.getItem('emmaVaultActive'));
+    console.log('🚨💾 Content Script: Window.emmaWebVault exists:', !!window.emmaWebVault);
+    console.log('🚨💾 Content Script: Window.emmaWebVault isOpen:', window.emmaWebVault?.isOpen);
+    
+    // ULTIMATE VAULT DEBUG: Check all vault-related globals
+    console.log('🚨🔍 Content Script: ULTIMATE VAULT DEBUG:', {
+      windowKeys: Object.keys(window).filter(k => k.includes('emma')),
+      emmaWebVault: !!window.emmaWebVault,
+      emmaWebVaultType: typeof window.emmaWebVault,
+      emmaWebVaultConstructor: window.emmaWebVault?.constructor?.name,
+      isOpen: window.emmaWebVault?.isOpen,
+      vaultData: !!window.emmaWebVault?.vaultData,
+      EmmaWebVaultClass: typeof EmmaWebVault,
+      currentTime: Date.now()
+    });
+    
+    // 🚨 CRITICAL FIX: Access vault via postMessage (CSP-compliant) - USING PROMISES
+    console.log('🚨🔧 Content Script: Attempting CSP-compliant vault access via postMessage...');
+    
+    // Method 1: Use postMessage to communicate with page context
+    const vaultCheckPromise = new Promise((resolve) => {
+      const messageId = 'vault-check-' + Date.now();
+      
+      // Listen for response from page context
+      const responseHandler = (event) => {
+        if (event.data?.type === 'EMMA_VAULT_RESPONSE' && event.data?.messageId === messageId) {
+          console.log('🚨🔧 Content Script: Received vault status from page:', event.data.vaultStatus);
+          window.removeEventListener('message', responseHandler);
+          resolve(event.data.vaultStatus);
+        }
+      };
+      
+      window.addEventListener('message', responseHandler);
+      
+      // Request vault status from page context
+      window.postMessage({
+        type: 'EMMA_VAULT_CHECK',
+        messageId: messageId
+      }, window.location.origin);
+      
+      // Timeout after 1 second
+      setTimeout(() => {
+        window.removeEventListener('message', responseHandler);
+        resolve(null);
+      }, 1000);
+    });
+    
+    // Check if we can get vault status via postMessage - USING .then() instead of await
+    vaultCheckPromise.then(vaultStatus => {
+      console.log('🚨🔧 Content Script: PostMessage vault status:', vaultStatus);
+      
+      // If vault is available, use postMessage to save
+      if (vaultStatus?.exists && vaultStatus?.isOpen) {
+        console.log('🚨✅ Content Script: FOUND VAULT VIA POSTMESSAGE! Saving...');
+        
+        const savePromise = new Promise((resolve) => {
+          const saveMessageId = 'vault-save-' + Date.now();
+          
+          // Listen for save response
+          const saveResponseHandler = (event) => {
+            if (event.data?.type === 'EMMA_VAULT_SAVE_RESPONSE' && event.data?.messageId === saveMessageId) {
+              console.log('🚨✅ Content Script: Received save response:', event.data.result);
+              window.removeEventListener('message', saveResponseHandler);
+              resolve(event.data.result);
+            }
+          };
+          
+          window.addEventListener('message', saveResponseHandler);
+          
+          // Send save request to page context
+          window.postMessage({
+            type: 'EMMA_VAULT_SAVE',
+            messageId: saveMessageId,
+            memoryData: request.memoryData
+          }, window.location.origin);
+          
+          // Timeout after 10 seconds
+          setTimeout(() => {
+            window.removeEventListener('message', saveResponseHandler);
+            resolve({ success: false, error: 'Save timeout' });
+          }, 10000);
+        });
+        
+        savePromise.then(saveResult => {
+          console.log('🚨✅ Content Script: PostMessage save result:', saveResult);
+          sendResponse(saveResult);
+        });
+      } else {
+        console.log('🚨⚠️ Content Script: PostMessage vault not ready, falling back to waitForWebappVault...');
+        // Fall through to the existing wait logic
+        handleSaveWithFallback();
+      }
+    });
+    
+    // Fallback function for when postMessage doesn't work
+    function handleSaveWithFallback() {
+      // IMMEDIATE VAULT CHECK - before waitForWebappVault timeout
+      if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+        console.log('🚨✅ Content Script: VAULT IS ALREADY READY! Skipping wait...');
+        window.emmaWebVault.addMemory(request.memoryData)
+          .then(result => {
+            console.log('🚨✅ Content Script: IMMEDIATE SAVE SUCCESS:', result);
+            sendResponse({ success: true, result });
+          })
+          .catch(error => {
+            console.error('🚨❌ Content Script: IMMEDIATE SAVE FAILED:', error);
+            sendResponse({ success: false, error: error.message });
+          });
+      } else {
+        console.log('🚨⚠️ Content Script: Vault not immediately ready, trying waitForWebappVault...');
+        
+        // Save to real webapp vault (fallback with wait)
+        saveToWebappVault(request.memoryData)
+          .then(result => {
+            console.log('✅💾 Content Script: Save result SUCCESS:', result);
+            sendResponse(result);
+          })
+          .catch(error => {
+            console.error('❌💾 Content Script: Save FAILED:', error);
+            console.error('❌💾 Content Script: Error details:', {
+              message: error.message,
+              stack: error.stack,
+              vaultExists: !!window.emmaWebVault,
+              vaultIsOpen: window.emmaWebVault?.isOpen
+            });
+            sendResponse({ success: false, error: error.message });
+          });
+      }
+    }
+    
+    // Always return true to keep message channel open for async responses
+    return true;
+  }
+});
+
+/**
+ * Get current webapp vault status by checking DOM/localStorage
+ */
+function getWebappVaultStatus() {
+  try {
+    console.log('🚨🔍 Content Script: *** GETTING WEBAPP VAULT STATUS ***');
+    console.log('🚨🔍 Content Script: Page URL:', window.location.href);
+    console.log('🚨🔍 Content Script: Document ready state:', document.readyState);
+    
+    // Method 1: Check sessionStorage for vault status (CORRECT KEYS!)
+    const sessionVaultActive = sessionStorage.getItem('emmaVaultActive') === 'true';
+    const sessionVaultName = sessionStorage.getItem('emmaVaultName');
+    
+    console.log('🚨🔍 Content Script: Session vault active:', sessionVaultActive);
+    console.log('🚨🔍 Content Script: Session vault name:', sessionVaultName);
+    
+    if (sessionVaultActive && sessionVaultName) {
+      console.log('🚨✅ Content Script: Found active vault in sessionStorage:', sessionVaultName);
+      return {
+        isUnlocked: true,
+        vaultName: sessionVaultName,
+        source: 'sessionStorage'
+      };
+    }
+    
+    // Method 2: Check localStorage for vault state (CORRECT KEYS!)
+    const localVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+    const localVaultName = localStorage.getItem('emmaVaultName');
+    
+    if (localVaultActive && localVaultName) {
+      console.log('🔐 Content Script: Found active vault in localStorage:', localVaultName);
+      return {
+        isUnlocked: true,
+        vaultName: localVaultName,
+        source: 'localStorage'
+      };
+    }
+    
+    // Method 3: Check global vault status object
+    if (window.currentVaultStatus && window.currentVaultStatus.isUnlocked) {
+      console.log('🔐 Content Script: Found vault status in window.currentVaultStatus:', window.currentVaultStatus.name);
+      return {
+        isUnlocked: true,
+        vaultName: window.currentVaultStatus.name || 'Emma Vault',
+        source: 'currentVaultStatus'
+      };
+    }
+    
+    // Method 4: Check for Emma web vault object
+    if (window.emmaWebVault && window.emmaWebVault.isOpen) {
+      console.log('🔐 Content Script: Found open vault in window.emmaWebVault');
+      return {
+        isUnlocked: true,
+        vaultName: window.emmaWebVault.vaultData?.metadata?.name || 'Emma Vault',
+        source: 'webVaultObject'
+      };
+    }
+    
+    // Default: vault is locked
+    console.log('🚨❌ Content Script: No vault indicators found - vault is locked');
+    console.log('🚨❌ Content Script: Final status check summary:', {
+      sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
+      sessionVaultName: sessionStorage.getItem('emmaVaultName'),
+      localVaultActive: localStorage.getItem('emmaVaultActive'),
+      localVaultName: localStorage.getItem('emmaVaultName'),
+      windowEmmaWebVault: !!window.emmaWebVault,
+      windowEmmaWebVaultIsOpen: window.emmaWebVault?.isOpen,
+      windowCurrentVaultStatus: !!window.currentVaultStatus
+    });
+    return {
+      isUnlocked: false,
+      source: 'default'
+    };
+    
+  } catch (error) {
+    console.error('🔐 Content Script: Error checking vault status:', error);
+    return {
+      isUnlocked: false,
+      error: error.message,
+      source: 'error'
+    };
+  }
+}
+
+/**
+ * Get detailed vault statistics from webapp
+ */
+function getWebappVaultStats() {
+  try {
+    console.log('📊 Content Script: Extracting vault statistics from webapp');
+    
+    // Method 1: Get stats from EmmaWebVault object
+    console.log('📊 Content Script: Checking EmmaWebVault:', {
+      exists: !!window.emmaWebVault,
+      isOpen: window.emmaWebVault?.isOpen,
+      hasVaultData: !!window.emmaWebVault?.vaultData,
+      vaultDataKeys: window.emmaWebVault?.vaultData ? Object.keys(window.emmaWebVault.vaultData) : 'none'
+    });
+    
+    if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+      const vaultData = window.emmaWebVault.vaultData;
+      console.log('📊 Content Script: Vault data structure:', {
+        hasContent: !!vaultData.content,
+        contentKeys: vaultData.content ? Object.keys(vaultData.content) : 'none',
+        memoriesType: typeof vaultData.content?.memories,
+        memoriesKeys: vaultData.content?.memories ? Object.keys(vaultData.content.memories) : 'none',
+        peopleType: typeof vaultData.content?.people,
+        peopleKeys: vaultData.content?.people ? Object.keys(vaultData.content.people) : 'none'
+      });
+      
+      const memories = vaultData.content?.memories || {};
+      const people = vaultData.content?.people || {};
+      
+      // Calculate vault size (rough estimate)
+      const vaultSizeBytes = JSON.stringify(vaultData).length;
+      const vaultSizeKB = Math.round(vaultSizeBytes / 1024);
+      
+      const stats = {
+        success: true,
+        memoryCount: Object.keys(memories).length,
+        peopleCount: Object.keys(people).length,
+        vaultSize: `${vaultSizeKB} KB`,
+        vaultName: vaultData.metadata?.name || window.emmaWebVault.currentVault?.name || 'Emma Vault',
+        lastSync: 'Live',
+        source: 'emmaWebVault'
+      };
+      
+      console.log('📊 Content Script: Stats from EmmaWebVault:', stats);
+      console.log('📊 Content Script: Raw memories object:', memories);
+      console.log('📊 Content Script: Raw people object:', people);
+      return stats;
+    }
+    
+    // Method 2: Get basic stats from session/localStorage
+    const vaultName = sessionStorage.getItem('emmaVaultName') || 
+                     localStorage.getItem('emmaVaultName') || 
+                     'Emma Vault';
+    
+    const isUnlocked = sessionStorage.getItem('emmaVaultActive') === 'true' || 
+                      localStorage.getItem('emmaVaultActive') === 'true';
+    
+    if (isUnlocked) {
+      // Try to get stats from DOM or global objects
+      let memoryCount = 0;
+      let peopleCount = 0;
+      
+      // Check if dashboard constellation shows memory count
+      const constellationMemories = document.querySelectorAll('.memory-node, .constellation-memory');
+      if (constellationMemories.length > 0) {
+        memoryCount = constellationMemories.length;
+      }
+      
+      // Check for any people indicators
+      const peopleElements = document.querySelectorAll('.people-avatar, .person-node');
+      if (peopleElements.length > 0) {
+        peopleCount = peopleElements.length;
+      }
+      
+      const stats = {
+        success: true,
+        memoryCount: memoryCount,
+        peopleCount: peopleCount,
+        vaultSize: '? KB',
+        vaultName: vaultName,
+        lastSync: 'Live',
+        source: 'sessionStorage'
+      };
+      
+      console.log('📊 Content Script: Stats from sessionStorage/DOM:', stats);
+      return stats;
+    }
+    
+    // Method 3: Default fallback
+    console.log('📊 Content Script: No vault data found, returning defaults');
+    return {
+      success: false,
+      memoryCount: 0,
+      peopleCount: 0,
+      vaultSize: '0 KB',
+      vaultName: 'No Vault',
+      lastSync: 'Never',
+      source: 'default'
+    };
+    
+  } catch (error) {
+    console.error('📊 Content Script: Error getting vault stats:', error);
+    return {
+      success: false,
+      error: error.message,
+      memoryCount: 0,
+      peopleCount: 0,
+      vaultSize: '0 KB',
+      vaultName: 'Error',
+      lastSync: 'Never',
+      source: 'error'
+    };
+  }
+}
+
+/**
+ * Initialize connection with Emma Web App
+ */
+function initializeEmmaConnection() {
+  // Check if we're on an Emma Web App page
+  if (!isEmmaWebApp()) {
+    console.log('Not an Emma Web App page, extension inactive');
+    return;
+  }
+  
+  console.log('Emma Web App detected - initializing vault bridge');
+  
+  // Inject our presence marker
+  injectExtensionMarker();
+  
+  // Set up message listeners
+  setupMessageListeners();
+  
+  // If the web app exposes current vault content (initial sync), accept it into background memory
+  try {
+    if (window.__EMMA_CURRENT_VAULT__) {
+      chrome.runtime.sendMessage({ action: 'VAULT_LOAD', data: window.__EMMA_CURRENT_VAULT__ });
+    }
+  } catch {}
+  
+  // Check initial sync status
+  checkSyncStatus();
+  
+  // Notify Emma Web App that extension is available
+  notifyEmmaWebApp();
+}
+
+/**
+ * Check if current page is Emma Web App
+ */
+function isEmmaWebApp() {
+  // Check for Emma-specific elements or patterns
+  const indicators = [
+    document.querySelector('.emma-logo'),
+    document.querySelector('#emma-vault-modal'),
+    document.querySelector('[data-emma-app]'),
+    window.location.pathname.includes('emma'),
+    document.title.toLowerCase().includes('emma')
+  ];
+  
+  return indicators.some(indicator => !!indicator);
+}
+
+/**
+ * Inject extension presence marker
+ */
+function injectExtensionMarker() {
+  // Create a marker that Emma Web App can detect
+  const marker = document.createElement('div');
+  marker.id = 'emma-vault-extension-marker';
+  marker.dataset.version = chrome.runtime.getManifest().version;
+  marker.dataset.enabled = 'true';
+  marker.style.display = 'none';
+  document.documentElement.appendChild(marker);
+  
+  // Also set a window property for easy detection
+  window.EmmaVaultExtension = {
+    version: chrome.runtime.getManifest().version,
+    enabled: true,
+    sync: syncVaultData,
+    checkStatus: checkSyncStatus,
+    enableSync: enableSync,
+    disableSync: disableSync
+  };
+}
+
+/**
+ * Set up message listeners
+ */
+function setupMessageListeners() {
+  // Listen for messages from Emma Web App
+  window.addEventListener('message', (event) => {
+    // Validate origin
+    if (!isValidOrigin(event.origin)) return;
+    
+    // Check if it's an Emma Vault message
+    if (event.data?.channel !== EMMA_VAULT_CHANNEL) return;
+    
+    handleEmmaMessage(event.data);
+  });
+  
+  // Listen for storage events (cross-tab sync)
+  window.addEventListener('storage', (event) => {
+    if (event.key?.startsWith('emma-vault-')) {
+      handleStorageSync(event);
+    }
+  });
+}
+
+/**
+ * Handle messages from Emma Web App
+ */
+function handleEmmaMessage(message) {
+  console.log('Received Emma message:', message.type);
+  
+  switch (message.type) {
+    case 'SET_LLM_KEY':
+      // Forward to background for secure, encrypted storage
+      chrome.runtime.sendMessage({ action: 'SET_LLM_KEY', key: message.key }, (response) => {
+        postToEmma({
+          channel: EMMA_VAULT_CHANNEL,
+          type: 'EMMA_RESPONSE',
+          messageId: message.messageId,
+          success: response?.success || false,
+          error: response?.error
+        });
+      });
+      break;
+    case 'VAULT_UPDATE':
+      handleVaultUpdate(message.data);
+      break;
+      
+    case 'REQUEST_SYNC_STATUS':
+      sendSyncStatus();
+      break;
+      
+    case 'REQUEST_VAULT_DATA':
+      sendVaultData();
+      break;
+      
+    case 'EMMA_DELETE_MEMORY':
+      handleDeleteMemory(message);
+      break;
+      
+    case 'REQUEST_VAULT_STATUS':
+      sendVaultStatus();
+      break;
+      
+    case 'REQUEST_PEOPLE_DATA':
+      sendPeopleData();
+      break;
+      
+    case 'REQUEST_MEMORIES_DATA':
+      sendMemoriesData();
+      break;
+      
+    case 'REQUEST_VAULT_DATA_FOR_VECTORLESS':
+      sendVaultDataForVectorless();
+      break;
+      
+    case 'ENABLE_SYNC':
+      enableSync();
+      break;
+      
+    case 'DISABLE_SYNC':
+      disableSync();
+      break;
+      
+    case 'SAVE_MEMORY':
+      handleSaveMemory(message.data);
+      break;
+      
+    case 'UPDATE_MEMORY':
+      handleUpdateMemory(message.data);
+      break;
+      
+    case 'SAVE_PERSON':
+      handleSavePerson(message.data);
+      break;
+      
+    case 'UPDATE_PERSON':
+      handleUpdatePerson(message.data);
+      break;
+      
+    case 'SAVE_MEDIA':
+      handleSaveMedia(message.data);
+      break;
+      
+    case 'EXTENSION_READY':
+      console.log('✅ Extension ready message received');
+      sendSyncStatus();
+      break;
+      
+    case 'SYNC_STATUS':
+      console.log('📊 Sync status message received');
+      // Extension already knows its own status, just acknowledge
+      break;
+      
+    case 'MEMORY_SAVED':
+    case 'MEMORY_SAVE_ERROR':
+    case 'PERSON_SAVED':
+    case 'PERSON_SAVE_ERROR':
+    case 'MEDIA_SAVED':
+    case 'MEDIA_SAVE_ERROR':
+      console.log('📨 Save response received:', message.type);
+      // These are responses from extension to web app, just log
+      break;
+      
+    case 'VAULT_STATUS':
+      console.log('📊 Vault status response - forwarding to web app');
+      // This is a response from background to web app, just pass through
+      break;
+      
+    case 'PEOPLE_DATA':
+    case 'MEMORIES_DATA':
+      console.log('📊 Data response - forwarding to web app:', message.type);
+      // These are responses from extension to web app, just pass through
+      break;
+      
+    default:
+      console.warn('Unknown message type:', message.type);
+  }
+}
+
+/**
+ * Handle vault update from Emma Web App
+ */
+function handleVaultUpdate(vaultData) {
+  if (!syncEnabled) {
+    console.log('Sync disabled, ignoring vault update');
+    return;
+  }
+  
+  // Debounce rapid updates
+  clearTimeout(syncDebounceTimer);
+  syncDebounceTimer = setTimeout(() => {
+    syncVaultData(vaultData);
+  }, SYNC_DEBOUNCE_MS);
+}
+
+/**
+ * Sync vault data to local file
+ */
+async function syncVaultData(vaultData) {
+  try {
+    // Generate hash to check if data actually changed
+    const currentHash = await generateHash(JSON.stringify(vaultData));
+    if (currentHash === lastSyncHash) {
+      console.log('Vault data unchanged, skipping sync');
+      return;
+    }
+    
+    // Show sync indicator
+    showSyncIndicator('syncing');
+    
+    // Send to background script
+    const response = await chrome.runtime.sendMessage({
+      action: 'VAULT_UPDATE',
+      data: vaultData
+    });
+    
+    if (response.success) {
+      lastSyncHash = currentHash;
+      showSyncIndicator('success');
+      console.log('Vault synced successfully:', response.bytesWritten, 'bytes');
+      
+      // Notify Emma Web App of successful sync
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'SYNC_COMPLETE',
+        data: {
+          bytesWritten: response.bytesWritten,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } else {
+      showSyncIndicator('error');
+      console.error('Vault sync failed:', response.error);
+      
+      // Notify Emma Web App of sync failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'SYNC_ERROR',
+        error: response.error
+      });
+    }
+  } catch (error) {
+    showSyncIndicator('error');
+    console.error('Sync error:', error);
+  }
+}
+
+/**
+ * Check sync status with background script
+ */
+async function checkSyncStatus() {
+  try {
+    const status = await chrome.runtime.sendMessage({
+      action: 'CHECK_STATUS'
+    });
+    
+    syncEnabled = status.syncEnabled;
+    sendSyncStatus(status);
+    
+    return status;
+  } catch (error) {
+    console.error('Status check error:', error);
+    return { connected: false, error: error.message };
+  }
+}
+
+/**
+ * Enable synchronization
+ */
+async function enableSync() {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'ENABLE_SYNC'
+    });
+    
+    if (response.success) {
+      syncEnabled = true;
+      sendSyncStatus({ syncEnabled: true });
+      showSyncIndicator('ready');
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Enable sync error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Disable synchronization
+ */
+async function disableSync() {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'DISABLE_SYNC'
+    });
+    
+    syncEnabled = false;
+    sendSyncStatus({ syncEnabled: false });
+    showSyncIndicator('disabled');
+    
+    return response;
+  } catch (error) {
+    console.error('Disable sync error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Send sync status to Emma Web App
+ */
+function sendSyncStatus(status = {}) {
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'SYNC_STATUS',
+    data: {
+      extensionVersion: chrome.runtime.getManifest().version,
+      syncEnabled: syncEnabled,
+      ...status
+    }
+  });
+}
+
+/**
+ * Send vault data to Emma Web App (extension manages vault, not web app)
+ */
+function sendVaultData() {
+  console.log('📦 Web app requesting vault data - extension manages vault, not web app');
+  
+  // Tell web app that extension manages the vault
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'EXTENSION_MANAGES_VAULT',
+    data: {
+      message: 'Extension manages vault - web app should route all saves through extension',
+      extensionVersion: chrome.runtime.getManifest().version
+    }
+  });
+}
+
+/**
+ * Send vault status to web app
+ */
+async function sendVaultStatus() {
+  console.log('📊 Checking vault status in extension...');
+  
+  // CRITICAL FIX: Check web app localStorage as source of truth
+  const webAppVaultActive = localStorage.getItem('emmaVaultActive') === 'true';
+  const webAppVaultName = localStorage.getItem('emmaVaultName');
+  
+  // Also check extension internal state using new FSM
+  const response = await chrome.runtime.sendMessage({ action: 'CHECK_STATE' });
+  
+  // Use web app state as primary source of truth (it's more persistent)
+  const vaultOpen = webAppVaultActive || (response?.state === 'unlocked');
+  const vaultName = webAppVaultName || response?.fileName || null;
+  
+  console.log('📊 EXTENSION: Vault status determined:', {
+    webAppActive: webAppVaultActive,
+    extensionReady: response?.vaultReady,
+    finalStatus: vaultOpen,
+    vaultName: vaultName
+  });
+  
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'VAULT_STATUS',
+    data: {
+      vaultOpen: vaultOpen,
+      vaultName: vaultName,
+      extensionVersion: chrome.runtime.getManifest().version
+    }
+  });
+}
+
+/**
+ * Send people data to web app
+ */
+async function sendPeopleData() {
+  console.log('👥 Sending people data from extension storage...');
+  
+  // Get people data from extension storage
+  const response = await chrome.runtime.sendMessage({ action: 'GET_PEOPLE_DATA' });
+  
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'PEOPLE_DATA',
+    data: response?.people || []
+  });
+}
+
+/**
+ * Send memories data to web app
+ */
+async function sendMemoriesData() {
+  console.log('📝 Sending memories data from extension storage...');
+  
+  // Get memories data from extension storage
+  const response = await chrome.runtime.sendMessage({ action: 'GET_MEMORIES_DATA' });
+  
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'MEMORIES_DATA',
+    data: response?.memories || []
+  });
+}
+
+/**
+ * Send vault data for vectorless AI processing
+ */
+async function sendVaultDataForVectorless() {
+  console.log('🧠 Sending vault data for vectorless AI processing...');
+  
+  try {
+    // Get full vault data from background script
+    const response = await chrome.runtime.sendMessage({ action: 'GET_VAULT_DATA_FOR_VECTORLESS' });
+    
+    if (response?.success) {
+      console.log('🧠 VECTORLESS: Vault data retrieved, sending to web app');
+      
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'VAULT_DATA_FOR_VECTORLESS',
+        data: response.vaultData
+      });
+    } else {
+      console.warn('🧠 VECTORLESS: No vault data available:', response?.error);
+      
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'VAULT_DATA_FOR_VECTORLESS',
+        data: null,
+        error: response?.error || 'No vault data available'
+      });
+    }
+  } catch (error) {
+    console.error('🧠 VECTORLESS: Failed to get vault data:', error);
+    
+    postToEmma({
+      channel: EMMA_VAULT_CHANNEL,
+      type: 'VAULT_DATA_FOR_VECTORLESS',
+      data: null,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Handle memory deletion request from web app
+ */
+async function handleDeleteMemory(message) {
+  console.log('🗑️ CONTENT SCRIPT: Handling delete memory request:', message.memoryId);
+  
+  try {
+    // Forward delete request to background script
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'DELETE_MEMORY', 
+      memoryId: message.memoryId 
+    });
+    
+    // Send response back to web app
+    postToEmma({
+      channel: EMMA_VAULT_CHANNEL,
+      type: 'EMMA_RESPONSE',
+      messageId: message.messageId,
+      success: response?.success || false,
+      error: response?.error
+    });
+    
+    console.log('🗑️ CONTENT SCRIPT: Delete response sent to web app');
+    
+  } catch (error) {
+    console.error('🗑️ CONTENT SCRIPT: Delete failed:', error);
+    
+    // Send error response back to web app
+    postToEmma({
+      channel: EMMA_VAULT_CHANNEL,
+      type: 'EMMA_RESPONSE',
+      messageId: message.messageId,
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Handle memory save from web app
+ */
+function handleSaveMemory(memoryData) {
+  console.log('💾 Extension: Handling memory save from web app:', memoryData);
+  
+  // Forward to background script for actual vault saving
+  chrome.runtime.sendMessage({
+    action: 'SAVE_MEMORY_TO_VAULT',
+    data: memoryData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Memory saved to vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_SAVED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to save memory to vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle person save from web app
+ */
+function handleSavePerson(personData) {
+  console.log('👥 Extension: Handling person save from web app:', personData);
+  
+  // Forward to background script for actual vault saving
+  chrome.runtime.sendMessage({
+    action: 'SAVE_PERSON_TO_VAULT',
+    data: personData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Person saved to vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_SAVED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to save person to vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle memory update from web app
+ */
+function handleUpdateMemory(memoryData) {
+  console.log('💾 Extension: Handling memory update from web app:', memoryData);
+  
+  // Forward to background script for actual vault updating
+  chrome.runtime.sendMessage({
+    action: 'UPDATE_MEMORY_IN_VAULT',
+    data: memoryData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Memory updated in vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_UPDATED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to update memory in vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEMORY_UPDATE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle person update from web app
+ */
+function handleUpdatePerson(personData) {
+  console.log('👥 Extension: Handling person update from web app:', personData);
+  
+  // Forward to background script for actual vault updating
+  chrome.runtime.sendMessage({
+    action: 'UPDATE_PERSON_IN_VAULT',
+    data: personData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Person updated in vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_UPDATED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to update person in vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'PERSON_UPDATE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Handle media save from web app
+ */
+function handleSaveMedia(mediaData) {
+  console.log('📷 Extension: Handling media save from web app:', mediaData);
+  
+  // Forward to background script for actual vault saving
+  chrome.runtime.sendMessage({
+    action: 'SAVE_MEDIA_TO_VAULT',
+    data: mediaData
+  }, (response) => {
+    if (response && response.success) {
+      console.log('✅ Media saved to vault successfully');
+      // Notify web app of success
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEDIA_SAVED',
+        data: { success: true, id: response.id }
+      });
+    } else {
+      console.error('❌ Failed to save media to vault:', response?.error);
+      // Notify web app of failure
+      postToEmma({
+        channel: EMMA_VAULT_CHANNEL,
+        type: 'MEDIA_SAVE_ERROR',
+        data: { success: false, error: response?.error || 'Unknown error' }
+      });
+    }
+  });
+}
+
+/**
+ * Post message to Emma Web App
+ */
+function postToEmma(message) {
+  window.postMessage(message, window.location.origin);
+}
+
+/**
+ * Notify Emma Web App that extension is available
+ */
+function notifyEmmaWebApp() {
+  // Initial notification
+  postToEmma({
+    channel: EMMA_VAULT_CHANNEL,
+    type: 'EXTENSION_READY',
+    data: {
+      version: chrome.runtime.getManifest().version,
+      capabilities: ['file-sync', 'real-time', 'auto-backup']
+    }
+  });
+  
+  // Also dispatch a custom event
+  window.dispatchEvent(new CustomEvent('emma-vault-extension-ready', {
+    detail: {
+      version: chrome.runtime.getManifest().version
+    }
+  }));
+}
+
+/**
+ * Show sync indicator overlay with progress support
+ */
+function showSyncIndicator(status, progress = null, details = null) {
+  // Remove existing indicator
+  const existing = document.getElementById('emma-sync-indicator');
+  if (existing) existing.remove();
+  
+  // Create indicator
+  const indicator = document.createElement('div');
+  indicator.id = 'emma-sync-indicator';
+  indicator.className = `emma-sync-indicator emma-sync-${status}`;
+  
+  const icons = {
+    syncing: '↻',
+    success: '✓',
+    error: '✗',
+    ready: '●',
+    disabled: '○'
+  };
+  
+  // Build indicator content
+  let content = `
+    <span class="emma-sync-icon">${icons[status] || ''}</span>
+    <span class="emma-sync-text">${getSyncStatusText(status, details)}</span>
+  `;
+  
+  // Add progress bar for syncing status
+  if (status === 'syncing' && progress !== null) {
+    content += `
+      <div class="emma-sync-progress">
+        <div class="emma-sync-progress-bar" style="width: ${progress}%"></div>
+      </div>
+    `;
+  }
+  
+  indicator.innerHTML = content;
+  
+  // Style the indicator
+  indicator.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 24px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 999999;
+    animation: emma-fade-in 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+  `;
+  
+  document.body.appendChild(indicator);
+  
+  // Auto-hide success indicator
+  if (status === 'success') {
+    setTimeout(() => {
+      if (indicator.parentNode) {
+        indicator.style.animation = 'emma-fade-out 0.3s ease';
+        setTimeout(() => indicator.remove(), 300);
+      }
+    }, 2500);
+  }
+  
+  // Auto-hide error indicator after longer delay
+  if (status === 'error') {
+    setTimeout(() => {
+      if (indicator.parentNode) {
+        indicator.style.animation = 'emma-fade-out 0.3s ease';
+        setTimeout(() => indicator.remove(), 300);
+      }
+    }, 5000);
+  }
+}
+
+/**
+ * Get sync status text
+ */
+function getSyncStatusText(status, details = null) {
+  const texts = {
+    syncing: details || 'Saving to vault...',
+    success: details || 'Vault saved',
+    error: details || 'Sync failed',
+    ready: details || 'Vault sync ready',
+    disabled: 'Sync disabled'
+  };
+  
+  return texts[status] || '';
+}
+
+/**
+ * Validate message origin
+ */
+function isValidOrigin(origin) {
+  const validOrigins = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'https://emma-hjjc.onrender.com'
+  ];
+  return validOrigins.includes(origin);
+}
+
+/**
+ * Generate hash for change detection
+ */
+async function generateHash(data) {
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Handle cross-tab storage sync
+ */
+function handleStorageSync(event) {
+  // Implement cross-tab synchronization if needed
+  console.log('Storage sync event:', event.key);
+}
+
+/**
+ * Save memory to webapp vault (REAL save)
+ */
+async function saveToWebappVault(memoryData) {
+  try {
+    console.log('💾 Content Script: Saving memory to real webapp vault');
+    
+    // WAIT FOR WEBAPP VAULT TO BE READY (with timeout)
+    const vault = await waitForWebappVault(8000); // 8 second timeout - allow time for dashboard vault restoration
+    
+    if (!vault) {
+      throw new Error('Webapp vault not available - please ensure dashboard is open and vault is unlocked');
+    }
+    
+    console.log('💾 Content Script: Webapp vault is ready!', {
+      isOpen: vault.isOpen,
+      hasVaultData: !!vault.vaultData,
+      hasAddMemoryMethod: typeof vault.addMemory === 'function'
+    });
+    
+    // Use webapp vault's addMemory method
+    const result = await vault.addMemory(memoryData);
+    
+    console.log('💾 Content Script: Memory saved successfully:', result);
+    
+    // Trigger constellation refresh with longer delay to ensure vault data is saved
+    setTimeout(() => {
+      // Dispatch custom event to refresh constellation
+      window.dispatchEvent(new CustomEvent('emmaMemoryAdded', {
+        detail: { memoryId: result.id, memoryData: memoryData }
+      }));
+    }, 500); // Increased delay to ensure vault save completes
+    
+    return {
+      success: true,
+      memoryId: result.id,
+      message: 'Memory saved to webapp vault successfully'
+    };
+    
+  } catch (error) {
+    console.error('💾 Content Script: Failed to save to webapp vault:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Wait for webapp vault to be ready and unlocked
+ */
+async function waitForWebappVault(timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    
+    const checkVault = () => {
+      // Enhanced DEBUG: Log current state during wait
+      console.log('💾 Content Script: Checking vault readiness...', {
+        emmaWebVaultExists: !!window.emmaWebVault,
+        isOpen: window.emmaWebVault?.isOpen,
+        hasVaultData: !!window.emmaWebVault?.vaultData,
+        hasAddMemoryMethod: typeof window.emmaWebVault?.addMemory === 'function',
+        sessionVaultActive: sessionStorage.getItem('emmaVaultActive'),
+        localVaultActive: localStorage.getItem('emmaVaultActive'),
+        timeElapsed: Date.now() - startTime,
+        pageUrl: window.location.href,
+        documentReady: document.readyState,
+        emmaWebVaultClass: typeof EmmaWebVault,
+        windowKeys: Object.keys(window).filter(k => k.includes('emma')).slice(0, 10)
+      });
+      
+      // ULTIMATE DEBUG: If vault exists, show its full state
+      if (window.emmaWebVault) {
+        console.log('💾 Content Script: VAULT OBJECT DETAILS:', {
+          constructor: window.emmaWebVault.constructor.name,
+          isOpen: window.emmaWebVault.isOpen,
+          hasVaultData: !!window.emmaWebVault.vaultData,
+          vaultDataContent: !!window.emmaWebVault.vaultData?.content,
+          addMemoryExists: typeof window.emmaWebVault.addMemory,
+          restoreStateExists: typeof window.emmaWebVault.restoreVaultState,
+          allMethods: Object.getOwnPropertyNames(Object.getPrototypeOf(window.emmaWebVault)).slice(0, 10)
+        });
+      }
+      
+      // Check if vault exists and is ready (FIXED: Don't require vaultData for new memories)
+      if (window.emmaWebVault && 
+          window.emmaWebVault.isOpen && 
+          typeof window.emmaWebVault.addMemory === 'function') {
+        console.log('✅ Content Script: Webapp vault is ready!');
+        resolve(window.emmaWebVault);
+        return;
+      }
+      
+      // ENHANCED FIX: Try to restore vault if it exists but isn't open
+      if (window.emmaWebVault && 
+          !window.emmaWebVault.isOpen && 
+          typeof window.emmaWebVault.restoreVaultState === 'function' &&
+          sessionStorage.getItem('emmaVaultActive') === 'true') {
+        console.log('🔧 Content Script: Vault exists but not open, attempting emergency restore...');
+        try {
+          // Use .then() instead of await since we're not in an async function
+          window.emmaWebVault.restoreVaultState().then(() => {
+            console.log('🔧 Content Script: Vault restore attempted');
+            // Check again after restore attempt
+            if (window.emmaWebVault.isOpen) {
+              console.log('✅ Content Script: Vault restored and ready!');
+              resolve(window.emmaWebVault);
+              return;
+            }
+          }).catch(restoreError => {
+            console.warn('🔧 Content Script: Vault restore failed:', restoreError);
+          });
+        } catch (restoreError) {
+          console.warn('🔧 Content Script: Vault restore failed:', restoreError);
+        }
+      }
+      
+      // Check for timeout
+      if (Date.now() - startTime > timeoutMs) {
+        console.error('❌ Content Script: Webapp vault timeout after', timeoutMs, 'ms');
+        resolve(null);
+        return;
+      }
+      
+      // Try again in 500ms
+      setTimeout(checkVault, 500);
+    };
+    
+    // Start checking immediately
+    checkVault();
+  });
+}
+
+/**
+ * Add animation styles
+ */
+function injectStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes emma-fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes emma-fade-out {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(10px); }
+    }
+    
+    .emma-sync-indicator {
+      transition: all 0.3s ease;
+    }
+    
+    .emma-sync-syncing .emma-sync-icon {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .emma-sync-success { 
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(56, 142, 60, 0.95)) !important; 
+    }
+    
+    .emma-sync-error { 
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(211, 47, 47, 0.95)) !important; 
+    }
+    
+    .emma-sync-progress {
+      width: 60px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    
+    .emma-sync-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #6F63D9, #D06FA8);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    
+    .emma-sync-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    injectStyles();
+    initializeEmmaConnection();
+  });
+} else {
+  injectStyles();
+  initializeEmmaConnection();
+}

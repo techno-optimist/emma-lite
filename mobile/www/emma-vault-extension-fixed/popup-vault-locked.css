@@ -1,0 +1,200 @@
+/**
+ * Emma Extension Popup - Vault Locked State
+ * WEBAPP-FIRST Architecture - Beautiful locked overlay for extension popup
+ */
+
+/* Vault Locked Overlay for Extension */
+.vault-locked-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  background: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-height: 400px;
+  width: 100%;
+}
+
+.vault-locked-overlay.hidden {
+  display: none;
+}
+
+/* Extension popup is smaller, so compact design */
+.vault-locked-content {
+  text-align: center;
+  max-width: 280px;
+  width: 100%;
+}
+
+/* Smaller Emma Orb for extension popup */
+.vault-locked-orb {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: emma-pulse 2s ease-in-out infinite;
+  box-shadow: 
+    0 0 30px rgba(118, 75, 162, 0.4),
+    0 0 60px rgba(222, 179, 228, 0.2);
+}
+
+.vault-locked-orb::before {
+  content: '🔒';
+  font-size: 32px;
+  opacity: 0.9;
+}
+
+/* Emma Branding */
+.vault-locked-title {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.vault-locked-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 20px;
+  font-weight: 400;
+}
+
+/* Compact message */
+.vault-locked-message {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(20px);
+}
+
+.vault-locked-message h3 {
+  font-size: 14px;
+  color: white;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.vault-locked-message p {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Compact action buttons */
+.vault-locked-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.vault-unlock-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.vault-unlock-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+}
+
+.vault-help-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.vault-help-btn:hover {
+  border-color: #764ba2;
+  color: white;
+  background: rgba(118, 75, 162, 0.1);
+}
+
+/* Status indicator */
+.vault-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 6px;
+  font-size: 10px;
+  color: #f87171;
+}
+
+.vault-status-indicator.checking {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.vault-status-indicator.unlocked {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+/* Loading spinner */
+.vault-checking-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes emma-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(118, 75, 162, 0.4), 0 0 60px rgba(222, 179, 228, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(118, 75, 162, 0.6), 0 0 80px rgba(222, 179, 228, 0.3);
+  }
+}

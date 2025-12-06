@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Cloud - Intelligent Memory Sync</title>
+  <link rel="stylesheet" href="css/theme-tokens.css">
+  <link rel="stylesheet" href="css/main.css">
+  <script src="themes/theme-catalog.js"></script>
+  <script src="js/theme-manager.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .cloud-header {
+      padding: 40px 20px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(139, 69, 255, 0.2) 0%, rgba(88, 28, 135, 0.3) 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(20px);
+    }
+    
+    .cloud-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      filter: grayscale(100%) opacity(0.5);
+    }
+    
+    .cloud-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: var(--emma-gradient-text);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .cloud-subtitle {
+      font-size: 18px;
+      opacity: 0.8;
+      margin-bottom: 30px;
+    }
+    
+    .cloud-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-weight: 600;
+    }
+    
+    .cloud-content {
+      flex: 1;
+      padding: 40px 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin: 40px 0;
+    }
+    
+    .feature-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: left;
+      backdrop-filter: blur(10px);
+    }
+    
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+    
+    .feature-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    
+    .feature-desc {
+      opacity: 0.8;
+      line-height: 1.5;
+    }
+    
+    .coming-soon-btn {
+      background: var(--emma-gradient-1);
+      border: none;
+      color: white;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 30px;
+      transition: all 0.3s ease;
+    }
+    
+    .coming-soon-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(139, 69, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="cloud-header">
+    <div class="cloud-icon">☁️</div>
+    <h1 class="cloud-title">Emma Cloud</h1>
+    <p class="cloud-subtitle">Human Memory Layer (HML) sync is peer‑to‑peer by default. Emma Cloud is an optional encrypted storage service.</p>
+    <div class="cloud-status">
+      <span>ℹ️</span>
+      <span>HML (P2P) Active by Design • Cloud Optional</span>
+    </div>
+  </div>
+  
+  <div class="cloud-content">
+    <h2>HML: Private, Peer‑to‑Peer Sync</h2>
+    <p>The Human Memory Layer is open-source and syncs peer‑to‑peer using end‑to‑end encryption and HML Sync (WebRTC + encrypted bulletin boards). No central server can read your data.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3 class="feature-title">End‑to‑End Encrypted</h3>
+        <p class="feature-desc">Your vault keys never leave your device unencrypted. Collaborators receive wrapped keys and verify with cryptographic identities.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3 class="feature-title">Peer‑to‑Peer by Default</h3>
+        <p class="feature-desc">HML Sync uses browser‑native WebRTC DataChannels for direct device‑to‑device transfer, with public bulletin boards used only for encrypted signaling.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🧩</div>
+        <h3 class="feature-title">Open‑Source & Extensible</h3>
+        <p class="feature-desc">HML is open and local‑first. You can self‑host relay boards, customize transports, and build advanced CRDT sync on top.</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">☁️</div>
+        <h3 class="feature-title">Emma Cloud (Optional)</h3>
+        <p class="feature-desc">Choose encrypted cloud storage for always‑on availability, off‑device backup, and multi‑device presence. Tiered pricing; your data is always encrypted client‑side.</p>
+      </div>
+    </div>
+
+    <h2>Emma Cloud: Encrypted Storage Options</h2>
+    <p>Keep HML P2P for private sync. Add Emma Cloud for reliability and convenience. Planned tiers:</p>
+     
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🌱</div>
+        <h3 class="feature-title">Starter</h3>
+        <p class="feature-desc">Encrypted backup and device sync for personal use. Pairs with HML P2P at no extra cost.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌿</div>
+        <h3 class="feature-title">Plus</h3>
+        <p class="feature-desc">Larger storage, priority relay, and advanced share analytics. Ideal for families.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌳</div>
+        <h3 class="feature-title">Pro</h3>
+        <p class="feature-desc">Team features, audit trails, and self‑hosted relay peering. For professionals and researchers.</p>
+      </div>
+    </div>
+     
+    <button class="coming-soon-btn" id="cloud-early-access">Get Early Access</button>
+     
+    <p style="margin-top: 40px; opacity: 0.6;">
+      Today, your memories live in your local, encrypted vault and sync peer‑to‑peer via HML. Emma Cloud adds optional encrypted storage.
+    </p>
+  </div>
+  
+  <script nonce="c3RhdGljLWlubGluZQ==">
+    (function(){
+      const btn = document.getElementById('cloud-early-access');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          alert('Emma Cloud early access coming soon. HML (P2P) works today — end‑to‑end encrypted and open source.');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

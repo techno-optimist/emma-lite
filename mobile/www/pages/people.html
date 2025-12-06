@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=people-emma.html">
+  <title>People Page Moved</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #0f0c29;
+      color: #fff;
+    }
+    .notice {
+      text-align: center;
+      max-width: 420px;
+      line-height: 1.6;
+    }
+    a {
+      color: #deb3e4;
+    }
+  </style>
+  <script>
+    (function redirect() {
+      var target = 'people-emma.html' + window.location.search + window.location.hash;
+      try {
+        window.location.replace(target);
+      } catch (err) {
+        window.location.href = target;
+      }
+    }());
+  </script>
+</head>
+<body>
+  <div class="notice">
+    <h1>Redirecting…</h1>
+    <p>We moved the People experience to <a href="people-emma.html">people-emma.html</a>. You should be redirected automatically.</p>
+  </div>
+</body>
+</html>

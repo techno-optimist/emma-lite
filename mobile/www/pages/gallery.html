@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="cache-control" content="no-cache">
+  <meta name="cache-control" content="no-store">
+  <meta name="expires" content="-1">
+
+  <title>Memory Gallery - Emma (v2.0)</title>
+  <link rel="stylesheet" href="../css/memory-detail-modal.css?v=1755909423&t=2025-01-16">
+  <style>
+    /* Emma Brand Variables */
+    :root {
+      --emma-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #deb3e4 100%);
+      --emma-gradient-2: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+      --emma-bg-gradient: linear-gradient(135deg, #1a1033 0%, #2d1b69 50%, #0f0c29 100%);
+      --emma-purple: #764ba2;
+      --emma-pink: #deb3e4;
+      --emma-dark: #1a1033;
+      --emma-card-bg: rgba(255, 255, 255, 0.05);
+      --emma-border: rgba(255, 255, 255, 0.1);
+      --emma-text: #ffffff;
+      --emma-text-secondary: rgba(255, 255, 255, 0.7);
+      --emma-text-tertiary: rgba(255, 255, 255, 0.5);
+      --emma-success: #4ade80;
+      --emma-error: #f87171;
+      --emma-warning: #fbbf24;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--emma-bg-gradient);
+      color: var(--emma-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(222, 179, 228, 0.3) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 60%, rgba(118, 75, 162, 0.2) 0%, transparent 50%);
+      animation: float 20s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(-20px, -20px) rotate(180deg); }
+    }
+
+    /* Gallery Title - Simple like People Page */
+    .gallery-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .gallery-title {
+      font-size: 3.5rem;
+      font-weight: 300;
+      background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .gallery-subtitle {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 300;
+    }
+
+    /* Beautiful Buttons */
+    .btn {
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 999999;
+      pointer-events: auto;
+    }
+
+    .btn-primary {
+      background: var(--emma-gradient-1);
+      color: white;
+      box-shadow: 0 8px 32px rgba(118, 75, 162, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--emma-text);
+      border: 1px solid var(--emma-border);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(118, 75, 162, 0.4);
+    }
+
+    .btn-icon {
+      font-size: 20px;
+    }
+
+    /* Memory Gallery Container - Fullscreen like people page */
+    .gallery-container {
+      position: relative;
+      min-height: 100vh;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .gallery-filters {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--emma-border);
+      border-radius: 24px;
+      color: var(--emma-text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 999999;
+      pointer-events: auto;
+    }
+
+    .filter-btn.active {
+      background: var(--emma-gradient-1);
+      color: white;
+      border-color: transparent;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    /* Memory Cards Grid - Responsive Fullscreen like People Page */
+    .memories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 32px;
+      width: 100%;
+      max-width: 100vw;
+      padding: 0 40px;
+      margin-bottom: 40px;
+      grid-auto-rows: minmax(400px, 1fr);
+    }
+
+    /* Responsive grid adjustments - same as people page */
+    @media (min-width: 768px) {
+      .memories-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .memories-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .memories-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* Memory Card - Photo-First Design */
+    .memory-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 0; /* Remove padding for full photo coverage */
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch; /* Stretch to fill */
+      justify-content: flex-end; /* Content at bottom */
+      min-height: 400px;
+      width: 100%;
+    }
+
+    /* Memory Photo Slideshow Background - More visible */
+    .memory-slideshow-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.8; /* Much more visible */
+      transition: opacity 1s ease;
+    }
+
+    .memory-card:hover .memory-slideshow-bg {
+      opacity: 1;
+    }
+
+    /* Touch devices - always show slideshow clearly */
+    @media (hover: none) and (pointer: coarse) {
+      .memory-slideshow-bg {
+        opacity: 0.9;
+      }
+    }
+
+    .memory-slide-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 2s ease-in-out;
+    }
+
+    .memory-slide-bg.active {
+      opacity: 1;
+    }
+
+    /* Subtle Emma Gradient Overlay - Let photos pop! */
+    .memory-slideshow-bg::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        135deg,
+        rgba(111, 99, 217, 0.25) 0%,
+        rgba(208, 111, 168, 0.20) 50%,
+        rgba(6, 182, 212, 0.25) 100%
+      );
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+    }
+
+    /* Ensure content stays above slideshow */
+    .memory-card > *:not(.memory-slideshow-bg) {
+      position: relative;
+      z-index: 1;
+    }
+
+    .memory-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(111, 99, 217, 0.1) 0%, rgba(208, 111, 168, 0.1) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: 20px;
+    }
+
+    .memory-card:hover::before {
+      opacity: 1;
+    }
+
+    .memory-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(111, 99, 217, 0.3);
+      box-shadow:
+        0 20px 40px rgba(111, 99, 217, 0.2),
+        0 0 0 1px rgba(111, 99, 217, 0.1);
+    }
+
+    /* Memory Card Layout - Photo-focused with full coverage */
+    .memory-info-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%; /* Ensure full width */
+      background: linear-gradient(
+        transparent 0%,
+        rgba(0, 0, 0, 0.3) 40%,
+        rgba(0, 0, 0, 0.7) 80%,
+        rgba(0, 0, 0, 0.9) 100%
+      );
+      padding: 40px 20px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 2;
+      border-radius: 0 0 20px 20px; /* Match card border radius */
+      box-sizing: border-box; /* Include padding in width */
+    }
+
+    .memory-text-content {
+      flex: 1;
+      text-align: left;
+      margin-right: 16px;
+      min-width: 0; /* Allow flex shrinking */
+    }
+
+    /* Responsive improvements for smaller screens */
+    @media (max-width: 768px) {
+      .memory-info-overlay {
+        padding: 30px 16px 16px; /* Reduced padding for mobile */
+      }
+      
+      .memory-text-content {
+        margin-right: 12px; /* Less margin on mobile */
+      }
+      
+      .memory-card-title {
+        font-size: 16px !important; /* Smaller title on mobile */
+        line-height: 1.3 !important;
+      }
+      
+      .memory-card-excerpt {
+        font-size: 13px !important; /* Smaller excerpt on mobile */
+        line-height: 1.4 !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .memory-info-overlay {
+        padding: 24px 12px 12px; /* Even more compact for very small screens */
+      }
+      
+      .memory-text-content {
+        margin-right: 8px;
+      }
+    }
+
+    .memory-people-avatars {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .memory-person-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(135deg, #6f63d9 0%, #d06fa8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s ease;
+    }
+
+    .memory-person-avatar:hover {
+      transform: scale(1.2);
+      border-color: white;
+      z-index: 10;
+    }
+
+    .memory-person-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Memory content styles - overlay layout */
+    .memory-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: white;
+      text-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.8),
+        0 0 16px rgba(0, 0, 0, 0.6);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    .memory-excerpt {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.95);
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .memory-date {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .memory-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .memory-tag {
+      padding: 4px 8px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.95);
+      transition: all 0.3s ease;
+      text-shadow: none;
+    }
+
+    .memory-tag:hover {
+      background: rgba(111, 99, 217, 0.4);
+      border-color: rgba(111, 99, 217, 0.6);
+      transform: translateY(-1px);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .empty-icon {
+      font-size: 120px;
+      margin-bottom: 32px;
+      opacity: 0.3;
+      animation: gentle-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes gentle-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.05); opacity: 0.5; }
+    }
+
+    .empty-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--emma-text);
+      margin-bottom: 16px;
+    }
+
+    .empty-message {
+      font-size: 16px;
+      color: var(--emma-text-secondary);
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    /* Empty State Enhancements */
+    .empty-state-card {
+      grid-column: 1 / -1;
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 20px;
+      margin: 2rem;
+      padding: 4rem 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .empty-state-card:hover {
+      border-color: rgba(222, 179, 228, 0.4);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .empty-cta-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      border: 2px solid rgba(255,255,255,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .empty-cta-box:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(222, 179, 228, 0.3);
+    }
+
+    .empty-cta-icon {
+      font-size: 3rem;
+      animation: gentle-bounce 2s ease-in-out infinite;
+    }
+
+    .empty-cta-content {
+      text-align: left;
+    }
+
+    .empty-cta-title {
+      color: var(--emma-text);
+      margin: 0 0 0.5rem 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .empty-cta-text {
+      color: var(--emma-text-secondary);
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    @keyframes gentle-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+
+
+    /* Loading State */
+    .loading-state {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--emma-border);
+      border-top-color: var(--emma-purple);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      color: var(--emma-text-secondary);
+    }
+
+    /* Back Navigation */
+    .back-section {
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      border-top: 1px solid var(--emma-border);
+      margin-top: 40px;
+    }
+
+    /* Responsive - iPad and smaller */
+    @media (max-width: 768px) {
+      .gallery-title {
+        font-size: 2.5rem;
+      }
+
+      .gallery-container {
+        padding: 20px 16px;
+      }
+
+      .memories-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding: 0 20px;
+        grid-auto-rows: minmax(350px, 1fr);
+      }
+
+      .memory-card {
+        min-height: 350px;
+        padding: 32px 24px;
+      }
+
+      .memory-icon-circle {
+        width: 100px;
+        height: 100px;
+        font-size: 40px;
+      }
+
+      .memory-title {
+        font-size: 1.5rem;
+      }
+      
+      .gallery-filters {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0 20px;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    /* Mobile phones */
+    @media (max-width: 480px) {
+      .memories-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    /* Special dedication message */
+    .dedication {
+      text-align: center;
+      padding: 24px;
+      margin: 20px auto;
+      max-width: 600px;
+      background: rgba(222, 179, 228, 0.1);
+      border: 1px solid rgba(222, 179, 228, 0.3);
+      border-radius: 16px;
+      color: var(--emma-text-secondary);
+      font-style: italic;
+    }
+
+    /* Home Navigation Button - Top Left */
+    .home-nav-button {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      width: 56px;
+      height: 56px;
+      background: var(--emma-gradient-2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      z-index: 9999;
+    }
+
+    .home-nav-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      background: var(--emma-gradient-1);
+    }
+
+    .home-nav-button:active {
+      transform: translateY(0);
+    }
+
+    .home-nav-button svg {
+      transition: transform 0.2s ease;
+    }
+
+    .home-nav-button:hover svg {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery-container">
+    <!-- Header -->
+    <div class="gallery-header">
+      <h1 class="gallery-title">emma</h1>
+      <p class="gallery-subtitle">Your Treasured Memories</p>
+    </div>
+
+    <!-- Memory Grid -->
+    <div class="memories-grid" id="memories-grid">
+      <!-- Memory cards will be inserted here -->
+    </div>
+  </div>
+
+  <!-- Home Navigation Button -->
+  <button id="home-nav-button" class="home-nav-button" title="Return to Dashboard" aria-label="Return to Dashboard">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Emma Orb System -->
+  <!-- CRITICAL: Load vault system for memory saving -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-input-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/clean-password-modal.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-web-vault.js?v=2025-01-16"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/web-vault-status.js?v=2025-01-16"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/vault-control-panel.js?v=2025-01-16"></script>
+  
+  <!-- Emma orb system - only load what's needed for chat -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script> 
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js"></script>
+  
+  <!-- Modern Emma Chat Experience (replaces old wizard) -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-chat-experience.js"></script>
+  
+  <!-- Initialize Universal Orb -->
+  <script nonce="c3RhdGljLWlubGluZQ==">
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        // CRITICAL: Initialize vault system for memory saving
+        setTimeout(() => {
+          console.log('🚀 GALLERY: Initializing vault system...');
+          
+          // FIXED: Create vault instance like other pages do!
+          if (!window.emmaWebVault) {
+            window.emmaWebVault = new EmmaWebVault();
+            console.log('✅ GALLERY: Vault instance created successfully');
+          } else {
+            console.log('✅ GALLERY: Vault instance already exists');
+          }
+
+          // 🎯 CHECK URL PARAMETERS FOR DIRECT MEMORY EDITING
+          const urlParams = new URLSearchParams(window.location.search);
+          const memoryIdToEdit = urlParams.get('memory');
+          const mode = urlParams.get('mode');
+          
+          if (memoryIdToEdit && mode === 'chat') {
+            console.log('🎯 GALLERY URL PARAM: Auto-opening edit dialog for memory:', memoryIdToEdit);
+            
+            // Wait for Emma Chat Experience to load, then open edit dialog
+            setTimeout(() => {
+              if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+                console.log('✅ GALLERY: Opening enhanced edit dialog for memory:', memoryIdToEdit);
+                window.chatExperience.editMemoryDetails(memoryIdToEdit);
+              } else {
+                console.warn('⚠️ GALLERY: Emma Chat Experience not ready yet, retrying...');
+                // Retry after another second
+                setTimeout(() => {
+                  if (window.chatExperience && typeof window.chatExperience.editMemoryDetails === 'function') {
+                    console.log('✅ GALLERY: Opening enhanced edit dialog for memory (retry):', memoryIdToEdit);
+                    window.chatExperience.editMemoryDetails(memoryIdToEdit);
+                  } else {
+                    console.error('❌ GALLERY: Could not open edit dialog - Emma Chat Experience not available');
+                  }
+                }, 1000);
+              }
+            }, 1500); // Wait for all systems to load
+          }
+          
+          console.log('🔍 GALLERY: emmaWebVault exists:', !!window.emmaWebVault);
+          console.log('🔍 GALLERY: webVaultStatus exists:', !!window.webVaultStatus);
+          
+          // Pure web app mode - Check if vault is loaded in web app
+          if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+            console.log('🌐 GALLERY: Pure web app mode - vault data available');
+            console.log('📊 GALLERY: Vault has', Object.keys(window.emmaWebVault.vaultData.content?.memories || {}).length, 'memories');
+            
+            // Vault data already loaded in web app - don't overwrite it!
+            console.log('✅ GALLERY: Using existing vault data from web app');
+            console.log('📊 GALLERY: Vault contains', Object.keys(window.emmaWebVault.vaultData.content?.memories || {}).length, 'memories');
+            
+          } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+            (async () => {
+              try {
+                console.log('🔄 GALLERY: Restoring elegant vault state...');
+                const result = await window.emmaWebVault.restoreVaultState();
+                if (result) {
+                  console.log('✅ GALLERY: Vault state restored successfully');
+                  console.log('📊 GALLERY: Passphrase available:', result.hasPassphrase);
+                  console.log('📁 GALLERY: Filename available:', result.hasFileName);
+                  // If in fallback mode, show affordance to re-enable direct save
+                  try {
+                    if (window.emmaWebVault && window.emmaWebVault.isFallbackMode && window.emmaWebVault.isFallbackMode()) {
+                      window.emmaWebVault.showDirectSaveAffordance && window.emmaWebVault.showDirectSaveAffordance();
+                    }
+                  } catch (_) {}
+                } else {
+                  console.log('🔒 GALLERY: Vault session is locked or invalid');
+                }
+                
+                // ALWAYS load memories after vault restoration attempt
+                console.log('🔄 GALLERY: Loading memories after vault restoration...');
+                setTimeout(() => {
+                  if (window.loadMemories) {
+                    window.loadMemories();
+                  }
+                }, 100);
+              } catch (error) {
+                console.warn('⚠️ GALLERY: Could not restore vault state:', error);
+              }
+            })();
+          }
+          
+          // Emma orb disabled on gallery page - using home button instead
+          console.log('🚫 GALLERY: Emma orb disabled - using home button for navigation');
+        }, 100);
+      });
+    } else {
+      setTimeout(() => {
+        // CRITICAL: Initialize vault system for memory saving (fallback)
+        console.log('🚀 GALLERY: Initializing vault system (fallback)...');
+        
+        // CRITICAL FIX: Don't create new instances - use existing ones from global scripts
+        console.log('🔍 GALLERY FALLBACK: Using existing vault instances (no new creation)');
+        
+        // Pure web app mode fallback - Ensure vault is considered active
+        if (window.emmaWebVault && window.emmaWebVault.isOpen && window.emmaWebVault.vaultData) {
+          console.log('🔗 GALLERY: Extension fallback - ensuring vault is active');
+          sessionStorage.setItem('emmaVaultActive', 'true');
+          window.currentVaultStatus = { isUnlocked: true, managedByExtension: true };
+        } else if (sessionStorage.getItem('emmaVaultActive') === 'true' && window.emmaWebVault) {
+          (async () => {
+            try {
+              console.log('🔄 GALLERY: Attempting to restore vault data (fallback)...');
+              const vaultData = await window.emmaWebVault.loadFromIndexedDB();
+              if (vaultData) {
+                window.emmaWebVault.vaultData = vaultData;
+                window.emmaWebVault.isOpen = true;
+                console.log('✅ GALLERY: Vault data restored from IndexedDB (fallback)');
+              }
+            } catch (error) {
+              console.warn('⚠️ GALLERY: Could not restore vault from IndexedDB (fallback):', error);
+            }
+          })();
+        }
+        
+        // Emma orb disabled on gallery page - using home button instead
+        console.log('🚫 GALLERY: Emma orb disabled - using home button for navigation');
+      }, 100);
+    }
+  </script>
+
+  <!-- Universal Vault Modal -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-vault-modal.js?v=2025-01-16"></script>
+  
+  <!-- Memory Detail Modal -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/memory-detail-modal-clean.js?v=1755909423&t=2025-01-16&cb=force"></script>
+  
+  <!-- Gallery Script -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/gallery.js?v=1755909423&t=2025-01-16&cb=force"></script>
+  
+  <!-- Anti-Reload Protection Script -->
+  <script nonce="c3RhdGljLWlubGluZQ==">
+    // CRITICAL: Prevent unwanted reloads for 5 seconds after page load
+    const originalReload = window.location.reload;
+    let reloadBlocked = true;
+    
+    window.location.reload = function(...args) {
+      if (reloadBlocked) {
+        console.warn('🛡️ GALLERY: Blocked automatic reload for stability');
+        console.trace('Reload attempt blocked:');
+        return;
+      }
+      return originalReload.apply(this, args);
+    };
+    
+    // Re-enable reload after 5 seconds
+    setTimeout(() => {
+      reloadBlocked = false;
+      console.log('🛡️ GALLERY: Reload protection disabled after 5 seconds');
+    }, 5000);
+    
+    // DEBUG: Track page lifecycle
+    console.log('🔍 GALLERY DEBUG: Script block starting...');
+    
+    // Track any navigation away from this page
+    window.addEventListener('beforeunload', (e) => {
+      console.log('🔍 GALLERY DEBUG: Page is about to unload!');
+      console.trace('Unload triggered by:');
+    });
+    
+    // Track any window location changes
+    const originalHref = window.location.href;
+    let locationChangeCount = 0;
+    
+    const observer = new MutationObserver(() => {
+      if (window.location.href !== originalHref) {
+        locationChangeCount++;
+        console.log('🔍 GALLERY DEBUG: Location changed!', locationChangeCount, 'from:', originalHref, 'to:', window.location.href);
+      }
+    });
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🏠 HOME NAV: Setting up home button...');
+      console.log('🔍 GALLERY DEBUG: DOM loaded, original href:', originalHref);
+      
+      const homeBtn = document.getElementById('home-nav-button');
+      console.log('🏠 HOME NAV: Found home button:', homeBtn);
+      
+      if (homeBtn) {
+        homeBtn.addEventListener('click', () => {
+          console.log('🏠 HOME NAV: Home button clicked!');
+          // Navigate back to the HTML dashboard
+          window.location.href = '../dashboard.html';
+        });
+        console.log('🏠 HOME NAV: Event listener attached');
+      } else {
+        console.error('🏠 HOME NAV: Home button not found!');
+      }
+      
+      // Start observing changes
+      observer.observe(document, {subtree: true, childList: true});
+      console.log('🔍 GALLERY DEBUG: Started observing DOM changes');
+    });
+  </script>
+</body>
+</html>

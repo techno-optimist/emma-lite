@@ -1,0 +1,530 @@
+/**
+ * Base class for Emma experience popups
+ */
+
+// Emma Experience Popup Base - Production Ready
+
+class ExperiencePopup {
+  constructor(position, settings) {
+    this.position = position;
+    this.settings = settings;
+    this.element = null;
+    this.isVisible = false;
+  }
+
+  /**
+   * Show the popup
+   */
+  async show() {
+    if (this.isVisible) return;
+
+    this.element = this.createElement();
+    document.body.appendChild(this.element);
+    document.body.classList.add('modal-open');
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      // Ensure within viewport before fade-in
+      this.ensureOnScreen();
+      // If still bottom-clipped, nudge upward by the clipped amount
+      const rect = this.element.getBoundingClientRect();
+      const bottomOverflow = rect.bottom - window.innerHeight;
+      if (bottomOverflow > 0) {
+        const top = Math.max(8, rect.top - bottomOverflow - 8);
+        this.element.style.top = `${top}px`;
+        this.position.top = top;
+      }
+      this.element.style.opacity = '1';
+      this.element.style.transform = 'translateY(0) scale(1)';
+    });
+
+    this.isVisible = true;
+    this.setupEventListeners();
+    await this.initialize();
+    
+    // Enable drag-to-move with header handle(s) after content is initialized
+    this.setupDragHandles();
+    // Resize handle removed - using built-in browser resize (bottom-right)
+  }
+
+  /**
+   * Close the popup
+   */
+  close() {
+    console.log('🔵 SIMPLIFIED Close: Starting close sequence');
+    
+    // Bulletproof close - capture all context immediately
+    const element = this.element;
+    const isVisible = this.isVisible;
+    
+    if (!isVisible || !element) {
+      console.log('🔵 SIMPLIFIED Close: Already closed or no element');
+      return;
+    }
+
+    // Set state immediately
+    this.isVisible = false;
+    
+    // Simple animation
+    element.style.opacity = '0';
+    element.style.transform = 'translateY(-10px) scale(0.95)';
+    
+    // Remove after animation with captured element reference
+    setTimeout(() => {
+      console.log('🔵 SIMPLIFIED Close: Removing element');
+      if (element && element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    }, 200);
+
+    // Clear reference immediately
+    this.element = null;
+    
+    // Cleanup
+    this.cleanup();
+    console.log('🔵 SIMPLIFIED Close: Complete');
+    if (!document.querySelector('.emma-experience-popup')) {
+      document.body.classList.remove('modal-open');
+    }
+  }
+
+  /**
+   * Create the popup DOM element
+   */
+  createElement() {
+    // Store reference to this for use in event handlers
+    const self = this;
+    const popup = document.createElement('div');
+    popup.className = 'emma-experience-popup';
+    
+    // MOBILE RESPONSIVENESS: Detect mobile and adjust positioning
+    const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const isMobile = viewportWidth <= 768;
+    const isTablet = viewportWidth > 768 && viewportWidth <= 1024;
+    
+    let finalPosition = { ...this.position };
+    
+    if (isMobile) {
+      // Mobile: Full screen with proper padding
+      finalPosition = {
+        left: 12,
+        top: 24,
+        width: viewportWidth - 24,
+        height: viewportHeight - 48
+      };
+    } else if (isTablet) {
+      // Tablet: Larger but not full screen
+      finalPosition = {
+        left: Math.max(20, (viewportWidth - Math.min(this.position.width, 700)) / 2),
+        top: Math.max(20, (viewportHeight - Math.min(this.position.height, 600)) / 2),
+        width: Math.min(this.position.width, 700),
+        height: Math.min(this.position.height, 600)
+      };
+    } else {
+      // Desktop: Ensure it fits within viewport
+      finalPosition = {
+        left: Math.max(8, Math.min(viewportWidth - this.position.width - 8, this.position.left)),
+        top: Math.max(8, Math.min(viewportHeight - this.position.height - 8, this.position.top)),
+        width: this.position.width,
+        height: this.position.height
+      };
+    }
+    
+    // Store the final position for reference
+    this.finalPosition = finalPosition;
+    
+    popup.style.cssText = `
+      position: fixed;
+      left: ${finalPosition.left}px;
+      top: ${finalPosition.top}px;
+      width: ${finalPosition.width}px;
+      height: ${finalPosition.height}px;
+      background: linear-gradient(145deg, rgba(111, 99, 217, 0.15), rgba(222, 179, 228, 0.10));
+      border: 2px solid rgba(111, 99, 217, 0.3);
+      border-radius: ${isMobile ? '16px' : '24px'};
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 80px rgba(111, 99, 217, 0.4);
+      z-index: 10000;
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: white;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      ${isMobile ? '' : 'resize: both;'}
+      min-width: ${isMobile ? 'auto' : '400px'};
+      min-height: ${isMobile ? 'auto' : '300px'};
+      max-width: calc(100vw - ${isMobile ? '24px' : '16px'});
+      max-height: calc(100vh - ${isMobile ? '48px' : '16px'});
+      max-height: calc(100dvh - ${isMobile ? '48px' : '16px'});
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    `;
+
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'popup-header';
+    header.style.cssText = `
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    `;
+
+    const title = document.createElement('h3');
+    title.style.cssText = `
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    `;
+    title.textContent = this.getTitle();
+
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'popup-header-left';
+    headerLeft.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1 1 auto;
+      min-width: 0;
+    `;
+    headerLeft.appendChild(title);
+
+    const headerActions = (this.getHeaderActions() || []).filter(Boolean);
+    for (const action of headerActions) {
+      headerLeft.appendChild(action);
+    }
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.style.cssText = `
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease;
+    `;
+    closeBtn.onmouseover = () => closeBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+    closeBtn.onmouseout = () => closeBtn.style.backgroundColor = 'transparent';
+    
+    // BULLETPROOF: Multiple debugging layers for close button
+    closeBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔥 CLOSE DEBUG: Close button clicked - starting debug sequence');
+      console.log('🔥 CLOSE DEBUG: this =', this);
+      console.log('🔥 CLOSE DEBUG: this.element =', this.element);
+      console.log('🔥 CLOSE DEBUG: this.isVisible =', this.isVisible);
+      console.log('🔥 CLOSE DEBUG: this.close =', typeof this.close);
+      
+      try {
+        console.log('🔥 CLOSE DEBUG: About to call this.close()');
+        this.close();
+        console.log('🔥 CLOSE DEBUG: this.close() completed successfully');
+      } catch (error) {
+        console.error('🔥 CLOSE DEBUG: ERROR in this.close():', error);
+        console.error('🔥 CLOSE DEBUG: Error stack:', error.stack);
+        
+        // EMERGENCY FALLBACK: Manual DOM removal
+        console.log('🔥 CLOSE DEBUG: Attempting emergency fallback removal');
+        if (this.element && this.element.parentNode) {
+          this.element.parentNode.removeChild(this.element);
+          console.log('🔥 CLOSE DEBUG: Emergency removal successful');
+        } else {
+          console.log('🔥 CLOSE DEBUG: No element to remove');
+        }
+      }
+    };
+
+    header.appendChild(headerLeft);
+    header.appendChild(closeBtn);
+
+    // Customize header appearance based on title
+    const titleText = this.getTitle();
+    const hasActions = headerActions.length > 0;
+    if (!titleText || titleText.trim() === '') {
+      title.style.display = 'none';
+      if (!hasActions) {
+        // No title or actions - collapse header to just the close button
+        header.style.borderBottom = 'none';
+        header.style.padding = '8px 12px 0 0';
+        header.style.justifyContent = 'flex-end';
+        headerLeft.style.display = 'none';
+      }
+    }
+
+    // Create content area
+    const content = document.createElement('div');
+    content.className = 'popup-content';
+    
+    // Enhanced padding for better spacing
+    let contentPadding;
+    if (!titleText || titleText.trim() === '') {
+      // No title - adjust padding accordingly
+      contentPadding = isMobile ? '8px 16px 16px 16px' : '12px 24px 24px 24px';
+    } else {
+      // With title - standard padding
+      contentPadding = isMobile ? '16px' : '24px';
+    }
+    
+    content.style.cssText = `
+      padding: ${contentPadding};
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    `;
+
+    popup.appendChild(header);
+    popup.appendChild(content);
+
+    this.renderContent(content);
+
+    return popup;
+  }
+
+  /**
+   * Setup event listeners
+   */
+  setupEventListeners() {
+    // SIMPLIFIED: Arrow functions preserve 'this' automatically
+    
+    // Close on Escape
+    this.escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        console.log('🔵 SIMPLIFIED: Escape key pressed');
+        this.close();
+      }
+    };
+    document.addEventListener('keydown', this.escapeHandler);
+
+    // Close on outside click
+    this.clickHandler = (e) => {
+      // Don't close if clicking on the orb itself
+      if (e.target.closest('.universal-emma-orb')) {
+        return;
+      }
+      // Don't close if clicking on any modal (password, input, memory detail, etc.)
+      if (e.target.closest('.clean-modal-overlay') || 
+          e.target.closest('.emma-input-modal-overlay') || 
+          e.target.closest('.memory-modal') ||
+          e.target.closest('[role="dialog"]') ||
+          e.target.closest('.modal')) {
+        // Clicked on modal - don't close popup
+        return;
+      }
+      
+      // Close when clicking outside the popup
+      if (this.element && !this.element.contains(e.target)) {
+        this.close();
+      }
+    };
+    // Use setTimeout to ensure this handler is added after any orb handlers
+    setTimeout(() => {
+      document.addEventListener('click', this.clickHandler);
+    }, 100);
+  }
+
+  /**
+   * Remove event listeners
+   */
+  cleanup() {
+    if (this.escapeHandler) {
+      document.removeEventListener('keydown', this.escapeHandler);
+    }
+    if (this.clickHandler) {
+      document.removeEventListener('click', this.clickHandler);
+    }
+  }
+
+  // Abstract methods to be overridden by subclasses
+  getTitle() {
+    return 'Emma';
+  }
+
+  renderContent(contentElement) {
+    contentElement.innerHTML = '<p>Experience content goes here</p>';
+  }
+
+  getHeaderActions() {
+    return [];
+  }
+
+  async initialize() {
+    // Override in subclasses for initialization logic
+  }
+
+  /**
+   * Measure current content height and resize popup to fit without scrolling.
+   * Keeps current left/top position (no jumping). Bounds to viewport height.
+   */
+  resizeToContent(options = {}) {
+    const defaults = { minHeight: 420, maxHeight: Math.max(360, window.innerHeight - 32), animate: true };
+    const settings = { ...defaults, ...options };
+
+    if (!this.element) return;
+
+    const header = this.element.querySelector('.popup-header');
+    const content = this.element.querySelector('.popup-content');
+    if (!content) return;
+
+    // Temporarily allow natural sizing for measurement
+    const prevContentHeight = content.style.height;
+    const prevOverflow = content.style.overflow;
+    content.style.height = 'auto';
+    content.style.overflow = 'visible';
+
+    const headerHeight = header ? header.offsetHeight : 0;
+    // Measure content height robustly, even if children are position:absolute
+    let contentHeight = Math.max(content.scrollHeight, content.offsetHeight);
+    const activeTab = content.querySelector('.tab-content.active');
+    if (activeTab) {
+      const tabRect = activeTab.getBoundingClientRect();
+      contentHeight = Math.max(contentHeight, Math.ceil(tabRect.height));
+      // If the tab uses an inner container, prefer that
+      const inner = activeTab.querySelector('.voice-wizard-container') || activeTab.firstElementChild;
+      if (inner) {
+        const innerRect = inner.getBoundingClientRect();
+        contentHeight = Math.max(contentHeight, Math.ceil(innerRect.height));
+      }
+    }
+    let requiredHeight = headerHeight + contentHeight; // padding already included in content
+
+    // Apply bounds
+    requiredHeight = Math.max(settings.minHeight, Math.min(settings.maxHeight, requiredHeight));
+
+    // Apply
+    if (settings.animate) {
+      this.element.style.transition = this.element.style.transition || 'height 120ms ease';
+    }
+    this.element.style.height = `${requiredHeight}px`;
+
+    // Restore
+    content.style.height = prevContentHeight || 'auto';
+    content.style.overflow = prevOverflow || 'visible';
+    // Final safety: keep on screen
+    this.ensureOnScreen();
+  }
+
+  /** Ensure popup stays fully within viewport */
+  ensureOnScreen() {
+    if (!this.element) return;
+    const rect = this.element.getBoundingClientRect();
+    const padding = 8;
+    let left = rect.left;
+    let top = rect.top;
+    const maxLeft = Math.max(padding, window.innerWidth - rect.width - padding);
+    const maxTop = Math.max(padding, window.innerHeight - rect.height - padding);
+    left = Math.min(Math.max(left, padding), maxLeft);
+    top = Math.min(Math.max(top, padding), maxTop);
+    this.element.style.left = `${left}px`;
+    this.element.style.top = `${top}px`;
+    this.position.left = left;
+    this.position.top = top;
+  }
+
+  /**
+   * Attach drag-to-move behavior using either a custom in-content header
+   * (e.g., `.custom-header`) or the base `.popup-header`.
+   */
+  setupDragHandles() {
+    if (!this.element) return;
+    const custom = this.element.querySelector('.custom-header');
+    const base = this.element.querySelector('.popup-header');
+    if (custom) this.enableDragWithHandle(custom);
+    else if (base) this.enableDragWithHandle(base);
+  }
+
+  /**
+   * Enable dragging the popup by the given handle element.
+   */
+  enableDragWithHandle(handleElement) {
+    if (!handleElement || !this.element) return;
+    const popup = this.element;
+    handleElement.style.cursor = 'move';
+    handleElement.style.userSelect = 'none';
+    handleElement.style.webkitUserSelect = 'none';
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    const threshold = 3; // pixels before we consider it a drag
+
+    const onPointerMove = (e) => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!isDragging && (Math.abs(dx) > threshold || Math.abs(dy) > threshold)) {
+        isDragging = true;
+      }
+      if (!isDragging) return;
+
+      const width = popup.offsetWidth;
+      const height = popup.offsetHeight;
+      const maxLeft = Math.max(0, window.innerWidth - width);
+      const maxTop = Math.max(0, window.innerHeight - height);
+
+      let newLeft = startLeft + dx;
+      let newTop = startTop + dy;
+      newLeft = Math.min(maxLeft, Math.max(0, newLeft));
+      newTop = Math.min(maxTop, Math.max(0, newTop));
+
+      popup.style.left = `${newLeft}px`;
+      popup.style.top = `${newTop}px`;
+
+      // Persist position
+      this.position.left = newLeft;
+      this.position.top = newTop;
+    };
+
+    const endDrag = (e) => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', endDrag, true);
+      document.removeEventListener('pointercancel', endDrag, true);
+      handleElement.releasePointerCapture?.(e.pointerId);
+      isDragging = false;
+      popup.style.willChange = '';
+    };
+
+    const onPointerDown = (e) => {
+      // Left click / primary touch only
+      if (e.button !== undefined && e.button !== 0) return;
+      // Don't start drag from interactive controls (e.g., close button)
+      if (e.target.closest('button, a, input, textarea, select')) return;
+
+      const rect = popup.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      startX = e.clientX;
+      startY = e.clientY;
+      isDragging = false;
+      popup.style.willChange = 'left, top';
+
+      handleElement.setPointerCapture?.(e.pointerId);
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', endDrag, true);
+      document.addEventListener('pointercancel', endDrag, true);
+    };
+
+    handleElement.addEventListener('pointerdown', onPointerDown);
+  }
+
+  // Removed setupResizeHandle - using browser's built-in resize (bottom-right corner)
+}
+
+// Export for use
+window.ExperiencePopup = ExperiencePopup;

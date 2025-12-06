@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relationships - Emma</title>
+  <link rel="stylesheet" href="../css/theme-tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+  <script src="../themes/theme-catalog.js"></script>
+  <script src="../js/theme-manager.js"></script>
+  <style>
+    .relationships-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      background: var(--emma-bg-gradient);
+    }
+
+    .relationships-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .relationships-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--emma-text);
+      margin: 0 0 12px 0;
+    }
+
+    .relationships-header p {
+      color: var(--emma-text-secondary);
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .relationship-categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .category-card {
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .category-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .category-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(118, 75, 162, 0.2);
+      border-color: var(--emma-purple);
+    }
+
+    .category-card:hover::before {
+      opacity: 1;
+    }
+
+    .category-card.family::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
+    .category-card.friends::before { background: linear-gradient(90deg, #10b981, #3b82f6); }
+    .category-card.romantic::before { background: linear-gradient(90deg, #d06fa8, #f43f5e); }
+    .category-card.colleagues::before { background: linear-gradient(90deg, #6366f1, #6f63d9); }
+
+    .category-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .category-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--emma-text);
+      margin: 0 0 8px 0;
+    }
+
+    .category-count {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--emma-purple);
+      margin: 0 0 12px 0;
+    }
+
+    .category-description {
+      color: var(--emma-text-secondary);
+      font-size: 14px;
+      margin: 0 0 20px 0;
+    }
+
+    .view-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--emma-purple);
+      color: white;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .view-btn:hover {
+      background: var(--emma-purple-hover);
+      transform: translateY(-2px);
+      color: white;
+    }
+
+    .insights-section {
+      background: var(--emma-card-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--emma-border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 40px;
+    }
+
+    .insights-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--emma-text);
+      margin: 0 0 24px 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .insight-item {
+      background: var(--emma-bg);
+      border: 1px solid var(--emma-border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .insight-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--emma-purple);
+      margin: 0 0 8px 0;
+    }
+
+    .insight-label {
+      color: var(--emma-text-secondary);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--emma-card-bg);
+      border: 1px solid var(--emma-border);
+      border-radius: 12px;
+      color: var(--emma-text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--emma-purple);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .relationships-container {
+        padding: 16px;
+      }
+
+      .relationship-categories {
+        grid-template-columns: 1fr;
+      }
+
+      .insights-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="relationships-container">
+    <div class="relationships-header">
+      <h1>Relationships</h1>
+      <p>Overview of your connections and relationship network</p>
+    </div>
+
+    <!-- Relationship Categories -->
+    <div class="relationship-categories">
+      <div class="category-card family" data-relationship="family">
+        <span class="category-icon">👨‍👩‍👧‍👦</span>
+        <h2 class="category-title">Family</h2>
+        <div class="category-count" id="familyCount">0</div>
+        <p class="category-description">Close family members and relatives</p>
+        <a href="people-emma.html?filter=family" class="view-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          View Family
+        </a>
+      </div>
+
+      <div class="category-card friends" data-relationship="friend">
+        <span class="category-icon">👫</span>
+        <h2 class="category-title">Friends</h2>
+        <div class="category-count" id="friendsCount">0</div>
+        <p class="category-description">Friends and close companions</p>
+        <a href="people-emma.html?filter=friend" class="view-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          View Friends
+        </a>
+      </div>
+
+      <div class="category-card friends" data-relationship="best_friend">
+        <span class="category-icon">💝</span>
+        <h2 class="category-title">Best Friends</h2>
+        <div class="category-count" id="bestFriendsCount">0</div>
+        <p class="category-description">Your closest and dearest friends</p>
+        <a href="people-emma.html?filter=best_friend" class="view-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          View Best Friends
+        </a>
+      </div>
+
+      <div class="category-card romantic" data-relationship="romantic">
+        <span class="category-icon">💕</span>
+        <h2 class="category-title">Romantic</h2>
+        <div class="category-count" id="romanticCount">0</div>
+        <p class="category-description">Romantic partners and relationships</p>
+        <a href="people-emma.html?filter=romantic" class="view-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          View Partners
+        </a>
+      </div>
+
+      <div class="category-card colleagues" data-relationship="colleague">
+        <span class="category-icon">💼</span>
+        <h2 class="category-title">Colleagues</h2>
+        <div class="category-count" id="colleaguesCount">0</div>
+        <p class="category-description">Work colleagues and professional contacts</p>
+        <a href="people-emma.html?filter=colleague" class="view-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          View Colleagues
+        </a>
+      </div>
+    </div>
+
+    <!-- Insights Section -->
+    <div class="insights-section">
+      <h2 class="insights-title">
+        <span>📊</span>
+        Network Insights
+      </h2>
+      <div class="insights-grid">
+        <div class="insight-item">
+          <div class="insight-value" id="totalPeople">0</div>
+          <p class="insight-label">Total People in Network</p>
+        </div>
+        <div class="insight-item">
+          <div class="insight-value" id="recentlyAdded">0</div>
+          <p class="insight-label">Added This Month</p>
+        </div>
+        <div class="insight-item">
+          <div class="insight-value" id="strongConnections">0</div>
+          <p class="insight-label">Strong Connections</p>
+        </div>
+        <div class="insight-item">
+          <div class="insight-value" id="professionalNetwork">0</div>
+          <p class="insight-label">Professional Network</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <a href="add-person.html" class="action-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="8.5" cy="7" r="4"/>
+          <line x1="20" y1="8" x2="20" y2="14"/>
+          <line x1="23" y1="11" x2="17" y2="11"/>
+        </svg>
+        Add New Person
+      </a>
+      <a href="people-emma.html" class="action-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 6h18"/>
+          <path d="M3 12h18"/>
+          <path d="M3 18h18"/>
+        </svg>
+        View All People
+      </a>
+      <a href="memories.html" class="action-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        View Memories
+      </a>
+    </div>
+  </div>
+
+  <script nonce="c3RhdGljLWlubGluZQ==">
+    // Load and display relationship statistics
+    document.addEventListener('DOMContentLoaded', function() {
+      loadRelationshipStats();
+    });
+
+    function loadRelationshipStats() {
+      // Get people from localStorage
+      const storedPeople = localStorage.getItem('emma-people');
+      const allPeople = storedPeople ? JSON.parse(storedPeople) : [];
+
+      // Calculate counts by relationship type
+      const counts = {
+        family: allPeople.filter(p => p.relationship === 'family').length,
+        friend: allPeople.filter(p => p.relationship === 'friend').length,
+        best_friend: allPeople.filter(p => p.relationship === 'best_friend').length,
+        romantic: allPeople.filter(p => p.relationship === 'romantic').length,
+        colleague: allPeople.filter(p => p.relationship === 'colleague').length
+      };
+
+      // Update category counts
+      document.getElementById('familyCount').textContent = counts.family;
+      document.getElementById('friendsCount').textContent = counts.friend;
+      document.getElementById('bestFriendsCount').textContent = counts.best_friend;
+      document.getElementById('romanticCount').textContent = counts.romantic;
+      document.getElementById('colleaguesCount').textContent = counts.colleague;
+
+      // Calculate insights
+      const totalPeople = allPeople.length;
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const recentlyAdded = allPeople.filter(p => {
+        const addedDate = new Date(p.dateAdded);
+        return addedDate.getMonth() === currentMonth && addedDate.getFullYear() === currentYear;
+      }).length;
+      const strongConnections = counts.family + counts.best_friend + counts.romantic;
+      const professionalNetwork = counts.colleague;
+
+      // Update insights
+      document.getElementById('totalPeople').textContent = totalPeople;
+      document.getElementById('recentlyAdded').textContent = recentlyAdded;
+      document.getElementById('strongConnections').textContent = strongConnections;
+      document.getElementById('professionalNetwork').textContent = professionalNetwork;
+
+      // Add click handlers for category cards
+      document.querySelectorAll('.category-card').forEach(card => {
+        card.addEventListener('click', function() {
+          const relationship = this.dataset.relationship;
+          if (relationship) {
+            window.location.href = `people-emma.html?filter=${relationship}`;
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>

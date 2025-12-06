@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emma Persona Prompt</title>
+  <link rel="stylesheet" href="../css/popup.css" />
+  <style>
+    :root { --bg: #0f0a1f; --card: rgba(255,255,255,0.06); --border: rgba(255,255,255,0.12); }
+    body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color: #fff; background: radial-gradient(1200px 800px at 90% -20%, rgba(139,69,255,.25), transparent), radial-gradient(1000px 600px at -10% 120%, rgba(88,28,135,.25), transparent), var(--bg); }
+    a { color: #a78bfa; text-decoration: none; }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
+    .title { display:flex; align-items:center; gap:12px; }
+    .logo { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6f63d9 0%, #6d28d9 100%); display:flex; align-items:center; justify-content:center; font-size:20px; }
+    .heading { font-weight: 700; font-size: 20px; }
+    .actions { display:flex; gap:10px; }
+    .btn { background: linear-gradient(135deg, #7c3aed, #6d28d9); border:1px solid var(--border); color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; }
+    .btn.secondary { background: transparent; border-color: var(--border); }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,.35) inset, 0 2px 16px rgba(88,28,135,.2); }
+    .section { margin-top: 16px; }
+    #status { margin-top:8px; color:#c4b5fd; font-size: 13px; }
+    #prompt { width:100%; min-height: 420px; white-space: pre-wrap; background: rgba(0,0,0,0.35); color:#e9d5ff; border:1px solid var(--border); border-radius:12px; padding:14px; box-sizing:border-box; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .chip { padding:6px 10px; border-radius:999px; background: rgba(139,69,255,.12); border:1px solid rgba(139,69,255,.25); font-size:12px; color:#ddd; }
+  </style>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/persona.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/settings-service.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/base-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/emma-assistant.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/emma-dementia-styles.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/emma-dementia-companion.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/emma-mirror-companion.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" defer src="../js/orb-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==">
+    // Small helper for nav from a normal tab (cannot open popup.html directly)
+    function openDashboard() { chrome.tabs.create({ url: chrome.runtime.getURL('memories.html') }); }
+    
+    // Initialize Universal Orb System
+    (function() {
+      function initPersonaOrb() {
+        if (window.OrbManager) {
+          window.orbManagerInstance = new OrbManager();
+          window.orbManagerInstance.init();
+          console.log('🎯 Persona: Universal OrbManager initialized');
+        } else {
+          console.warn('🎯 Persona: OrbManager not available');
+        }
+      }
+      
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPersonaOrb);
+      } else {
+        initPersonaOrb();
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">
+        <div class="logo">🧬</div>
+        <div>
+          <div class="heading">Emma Persona Prompt</div>
+          <div style="opacity:.75; font-size:13px">A living summary of your HML for pasting into ChatGPT or Claude</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary" onclick="openDashboard()">← Dashboard</button>
+        <button id="refresh" class="btn">Regenerate</button>
+        <button id="copy" class="btn">Copy Prompt</button>
+        <button id="copy-openai" class="btn secondary">Copy → Open ChatGPT</button>
+        <button id="copy-claude" class="btn secondary">Copy → Open Claude</button>
+      </div>
+    </div>
+
+    <div id="status">Loading your HML summary…</div>
+
+    <div class="section card">
+      <textarea id="prompt" spellcheck="false" placeholder="Your persona prompt will appear here…"></textarea>
+    </div>
+
+    <div class="section">
+      <div style="opacity:.8; font-size:13px">Tip: keep this prompt pinned in your AI chats. The more your AI knows you, the better it can help.</div>
+      <div id="highlights" class="chips"></div>
+    </div>
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+

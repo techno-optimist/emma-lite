@@ -1,0 +1,223 @@
+/**
+ * Emma Voice-First Chat Integration Styles
+ * Beautiful visual displays for voice tool results
+ * Built with love for Debbe 💜
+ */
+
+/* Voice button active state */
+.voice-btn.active {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  color: #22c55e !important;
+}
+
+.voice-btn.listening {
+  animation: voice-pulse 2s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+  }
+}
+
+/* People results grid */
+.people-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 12px;
+}
+
+.people-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.people-result:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.person-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6F63D9, #DEB3E4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.person-info {
+  flex: 1;
+}
+
+.person-name {
+  font-weight: 600;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.person-relationship {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Memory results grid */
+.memories-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+}
+
+.memory-result {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.memory-result:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.memory-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+}
+
+.memory-title {
+  font-weight: 500;
+  color: white;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.memory-people {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Voice transcription display */
+.voice-transcription {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.voice-transcription::before {
+  content: "🎤 ";
+  margin-right: 6px;
+}
+
+/* Voice message indicators */
+.user-message[data-voice="true"] {
+  border-left: 4px solid #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.user-message[data-voice="true"]::before {
+  content: "🎤";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.emma-message[data-voice="true"] {
+  border-left: 4px solid #6f63d9;
+  background: rgba(111, 99, 217, 0.1);
+}
+
+.emma-message[data-voice="true"]::before {
+  content: "🗣️";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Voice transcription styling */
+.message-content.voice-transcription {
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.message-content.voice-transcription::after {
+  content: " (spoken)";
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: normal;
+}
+
+/* System messages for voice events */
+.system-message {
+  text-align: center;
+  padding: 8px 16px;
+  margin: 8px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.system-message.voice-status {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+/* Voice session active indicator */
+.chat-container.voice-active {
+  border: 2px solid rgba(34, 197, 94, 0.3);
+}
+
+.chat-container.voice-active::before {
+  content: "🎙️ Voice conversation active";
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}

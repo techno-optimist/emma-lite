@@ -1,0 +1,105 @@
+{
+  "manifest_version": 3,
+  "name": "Emma Vault Bridge",
+  "version": "2.0.0",
+  "description": "WEBAPP-FIRST: Enables secure communication between Emma Web App and extension for memory capture",
+  "author": "Emma Team - In honor of Debbe",
+  
+  "permissions": [
+    "storage",
+    "tabs",
+    "notifications",
+    "downloads", 
+    "scripting",
+    "activeTab"
+  ],
+  
+  "host_permissions": [
+    "https://emma-lite-extension.onrender.com/*",
+    "https://emma-hjjc.onrender.com/*",
+    "https://photos.google.com/*",
+    "https://www.facebook.com/*",
+    "https://instagram.com/*",
+    "https://www.instagram.com/*",
+    "https://twitter.com/*",
+    "https://x.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://emma-lite-extension.onrender.com/*",
+        "https://emma-hjjc.onrender.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.facebook.com/*",
+        "https://instagram.com/*",
+        "https://www.instagram.com/*",
+        "https://twitter.com/*",
+        "https://x.com/*",
+        "https://photos.google.com/*"
+      ],
+      "js": [
+        "universal-media-capture.js",
+        "smart-photo-capture.js", 
+        "emma-intelligent-capture.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://photos.google.com/*"
+      ],
+      "js": ["google-photos-capture.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*"
+      ],
+      "matches": [
+        "https://emma-lite-extension.onrender.com/*",
+        "https://emma-hjjc.onrender.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ]
+    }
+  ]
+}

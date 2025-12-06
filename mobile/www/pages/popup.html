@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-static-inline'; connect-src 'self' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emma Memory</title>
+  <link rel="stylesheet" href="../css/popup.css">
+  <link rel="stylesheet" href="../css/vault-locked-overlay.css">
+</head>
+<body>
+  <!-- WEBAPP-FIRST: Vault Locked Overlay -->
+  <div id="vault-locked-overlay" class="vault-locked-overlay hidden">
+    <div class="vault-locked-branding">
+      <!-- Emma Orb with Lock -->
+      <div class="vault-locked-orb"></div>
+      
+      <!-- Emma Title -->
+      <h1 class="vault-locked-title">emma</h1>
+      <p class="vault-locked-subtitle">intelligent memory</p>
+      
+      <!-- Status Message -->
+      <div class="vault-locked-message">
+        <h3>Vault Locked</h3>
+        <p>Your Emma vault needs to be unlocked in the webapp to access memory features. This keeps your memories secure and encrypted.</p>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="vault-locked-actions">
+        <button type="button" id="unlock-webapp-btn" class="vault-unlock-btn">
+          🌐 Open Webapp to Unlock
+        </button>
+        <button type="button" id="vault-help-btn" class="vault-help-btn">
+          ❓ How does this work?
+        </button>
+      </div>
+      
+      <!-- Status Indicator -->
+      <div id="vault-status-indicator" class="vault-status-indicator">
+        <span class="vault-checking-spinner"></span>
+        <span>Checking vault status...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-content">
+        <div class="emma-header">
+          <div class="emma-orb-container" id="emma-orb"></div>
+          <div class="emma-header-content">
+            <span class="emma-title">emma</span>
+            <span class="emma-subtitle">intelligent memory</span>
+          </div>
+        </div>
+        <div class="header-right-actions">
+          <button type="button" id="header-cloud-btn" class="icon-btn cloud-disconnected" title="HML Sync (P2P) — Private and open-source. Emma Cloud is optional (tiered pricing)." aria-label="HML Sync and Emma Cloud">☁️</button>
+          <button type="button" id="header-vault-btn" class="icon-btn" title="Unlock Vault">🔒</button>
+          <button type="button" id="header-settings-btn" class="icon-btn" title="Settings">⚙️</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Vault setup is handled on memories page; dashboard stays focused. -->
+    <section id="vault-setup-section" class="vault-setup-compact" style="display:none;"></section>
+
+    <!-- Memory Stats (Top Priority) -->
+    <section class="memory-management-top">
+      <div class="memory-stats-bar">
+        <div class="stat-item stat-clickable" data-stat="total">
+          <span class="stat-icon">📊</span>
+          <div class="stat-content">
+            <span class="stat-value" id="total-memories">0</span>
+            <span class="stat-label">Total Memories</span>
+          </div>
+        </div>
+        <div class="stat-item stat-clickable" data-stat="today">
+          <span class="stat-icon">📅</span>
+          <div class="stat-content">
+            <span class="stat-value" id="today-count">0</span>
+            <span class="stat-label">Today</span>
+          </div>
+        </div>
+        <div class="stat-item stat-clickable" data-stat="storage">
+          <span class="stat-icon">💾</span>
+          <div class="stat-content">
+            <span class="stat-value" id="storage-used">0 KB</span>
+            <span class="stat-label">Storage</span>
+          </div>
+        </div>
+      </div>
+      <!-- Manage shortcuts inside the stats card -->
+      <div class="memory-manage-grid memory-tools-grid">
+        <button type="button" id="create-memory-btn" class="tool-btn">
+          <span class="tool-icon">✨</span>
+          <span class="tool-label">Create</span>
+        </button>
+        <button type="button" id="people-btn" class="tool-btn">
+          <span class="tool-icon">👥</span>
+          <span class="tool-label">People</span>
+        </button>
+        <button type="button" id="relationships-btn" class="tool-btn">
+          <span class="tool-icon">💝</span>
+          <span class="tool-label">Relations</span>
+        </button>
+        <button type="button" id="export-btn" class="tool-btn">
+          <span class="tool-icon">📤</span>
+          <span class="tool-label">Export</span>
+        </button>
+        <button type="button" id="import-btn" class="tool-btn">
+          <span class="tool-icon">📥</span>
+          <span class="tool-label">Import</span>
+        </button>
+        <button type="button" id="settings-btn" class="tool-btn">
+          <span class="tool-icon">⚙️</span>
+          <span class="tool-label">Settings</span>
+        </button>
+        <button type="button" id="memories-gallery-btn" class="tool-btn">
+          <span class="tool-icon">📖</span>
+          <span class="tool-label">Gallery</span>
+        </button>
+        <button type="button" id="chat-btn" class="tool-btn">
+          <span class="tool-icon">💬</span>
+          <span class="tool-label">Chat</span>
+        </button>
+        <button type="button" id="persona-btn" class="tool-btn">
+          <span class="tool-icon">🧬</span>
+          <span class="tool-label">Persona</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Automation Quick Capture (moved to top) -->
+    <section class="dashboard-main dashboard-compact">
+      <div class="feature-section">
+        <div class="section-title"><span class="section-icon">🤖</span>Autonomous Capture</div>
+        <div class="automation-capture-container">
+          <div class="automation-status" id="automation-status">
+            <span class="status-dot" id="automation-status-dot"></span>
+            <span class="status-text" id="automation-status-text">Checking service...</span>
+          </div>
+          <div class="automation-input-container">
+            <textarea 
+              id="auto-capture-query" 
+              class="automation-query-input"
+              placeholder="e.g., Find all posts about my mom on Facebook, Extract all travel photos from Instagram, Collect all work-related emails from Gmail..."
+              rows="3"
+            ></textarea>
+            <button type="button" id="start-auto-capture" class="emma-btn primary automation-btn">
+              Start Autonomous Capture
+            </button>
+          </div>
+          <div id="auto-capture-progress" class="automation-progress hidden">
+            <div class="progress-message"></div>
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+          </div>
+          <div id="auto-capture-results" class="automation-results"></div>
+        </div>
+      </div>
+
+      <!-- Staging Area (Ephemeral Memories) -->
+      <div class="feature-section">
+        <div class="section-title"><span class="section-icon">🗂️</span>Staging — Review & Approve</div>
+        <div id="staging-container" class="staging-container">
+          <div id="staging-list" class="staging-list"></div>
+          <div class="staging-empty" id="staging-empty" style="display:none;">No staged memories. Run an autonomous capture or save a post to add items here.</div>
+        </div>
+      </div>
+      <!-- Capture Category -->
+      <div class="feature-section">
+        <div class="section-title"><span class="section-icon">📸</span>Capture</div>
+        <div class="memory-tools-grid">
+          <button type="button" id="capture-btn" class="tool-btn">
+            <span class="tool-icon">📸</span>
+            <span class="tool-label">Capture</span>
+          </button>
+          <button type="button" id="save-selection-btn" class="tool-btn">
+            <span class="tool-icon">✂️</span>
+            <span class="tool-label">Selection</span>
+          </button>
+          <button type="button" id="batch-import-btn" class="tool-btn">
+            <span class="tool-icon">🖼️</span>
+            <span class="tool-label">Import Media</span>
+          </button>
+          <button type="button" id="add-media-only-btn" class="tool-btn">
+            <span class="tool-icon">➕</span>
+            <span class="tool-label">Add Media</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Explore Category -->
+      <div class="feature-section">
+        <div class="section-title"><span class="section-icon">🧭</span>Explore</div>
+        <div class="memory-tools-grid">
+          <button type="button" id="search-quick-btn" class="tool-btn">
+            <span class="tool-icon">🔍</span>
+            <span class="tool-label">Search</span>
+          </button>
+          <button type="button" id="chat-btn" class="tool-btn">
+            <span class="tool-icon">💬</span>
+            <span class="tool-label">Chat</span>
+          </button>
+          <button type="button" id="constellation-btn" class="tool-btn">
+            <span class="tool-icon">✨</span>
+            <span class="tool-label">Constellation</span>
+          </button>
+          <button type="button" id="memories-gallery-btn" class="tool-btn">
+            <span class="tool-icon">📖</span>
+            <span class="tool-label">Gallery</span>
+          </button>
+        </div>
+      </div>
+
+      
+
+      
+
+      <!-- Inline Emma Chat Panel (hidden by default) -->
+      <section id="chat-panel" class="chat-panel hidden">
+        <div class="chat-header-inline">
+          <div class="chat-title">
+            <div class="emma-orb-container small" id="chat-orb"></div>
+            <div>
+              <div class="chat-title-text">Emma</div>
+              <div class="chat-subtitle-text">Your memory companion</div>
+            </div>
+          </div>
+          <button type="button" id="close-chat" class="close-chat-btn">×</button>
+        </div>
+        <div id="chat-messages-inline" class="chat-messages-inline">
+          <div class="chat-welcome">
+            Ask me about your memories. For example: "What did I discuss about onboarding last week?"
+          </div>
+        </div>
+        <div class="chat-input-inline">
+          <textarea id="chat-input-inline" rows="1" placeholder="Type a message..." ></textarea>
+          <button type="button" id="chat-send-inline" class="send-inline">→</button>
+        </div>
+      </section>
+
+      
+
+    </section>
+
+    <!-- Search Panel (Hidden by default) -->
+    <section id="search-panel" class="search-panel hidden">
+      <div class="search-header">
+        <div class="search-container">
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="Search your memories..."
+          >
+          <button type="button" id="search-btn" class="search-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+        <button type="button" id="close-search" class="close-search-btn">×</button>
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="dashboard-footer">
+      <div class="footer-version">Emma v1.1.0</div>
+      <div class="footer-status" id="mtap-status-footer">MTAP Enabled</div>
+    </footer>
+  </div>
+
+  <!-- Hidden file input for import -->
+  <input type="file" id="import-file" accept=".json" class="hidden-input">
+
+  <!-- Persona Modal -->
+  <div id="persona-modal" class="persona-modal-overlay">
+    <div class="persona-modal">
+      <div class="persona-modal-header">
+        <div class="chat-title" style="gap:10px;">
+          <div class="emma-orb-container small" id="persona-orb"></div>
+          <div>
+            <div class="chat-title-text">Emma Persona</div>
+            <div class="chat-subtitle-text">A living summary of your HML</div>
+          </div>
+        </div>
+        <button type="button" id="persona-close" class="persona-close">×</button>
+      </div>
+      <div class="persona-modal-body">
+        <div id="persona-status" class="vault-status-compact" style="margin: 4px 0 8px 0;"></div>
+        <textarea id="persona-textarea" rows="14" style="width:100%; box-sizing:border-box; background: rgba(0,0,0,0.35); color:#e9d5ff; border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+        <div id="persona-highlights" class="chips" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
+      <div class="persona-modal-actions">
+        <div class="group">
+          <button type="button" id="persona-refresh" class="btn small">Regenerate</button>
+        </div>
+        <div class="group">
+          <button type="button" id="persona-copy" class="btn primary small">Copy Prompt</button>
+          <button type="button" id="persona-copy-openai" class="btn small">Copy → Open ChatGPT</button>
+          <button type="button" id="persona-copy-claude" class="btn small">Copy → Open Claude</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Input Modal -->
+  <div id="password-modal" class="password-modal" style="display: none;">
+    <div class="password-modal-content">
+      <div class="password-modal-header">
+        <h3 id="password-modal-title">Enter Vault Code</h3>
+        <button type="button" id="password-modal-close" class="password-modal-close">×</button>
+      </div>
+      <div class="password-modal-body">
+        <input 
+          type="password" 
+          id="password-modal-input" 
+          class="password-modal-input"
+          placeholder="•••••••••"
+          autocomplete="current-password"
+        >
+        <div class="password-modal-actions">
+          <button type="button" id="password-modal-cancel" class="btn-secondary">Cancel</button>
+          <button type="button" id="password-modal-confirm" class="btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HML Sync Control Panel Modal -->
+  <div id="hml-modal-overlay" class="hml-modal-overlay" style="display:none;">
+    <div class="hml-modal">
+      <div class="hml-modal-header">
+        <div class="hml-title">
+          <div class="hml-title-icon-wrapper">
+            <div class="hml-icon-bg"></div>
+            <span class="hml-title-icon">⚡</span>
+          </div>
+          <div>
+            <div class="hml-title-text">Memory Sync</div>
+            <div class="hml-subtitle">Choose how your memories connect</div>
+          </div>
+        </div>
+        <button type="button" id="hml-close" class="hml-close">×</button>
+      </div>
+      
+      <div class="hml-modal-body">
+        <!-- Connection Status Banner -->
+        <div class="hml-status-banner" id="hml-status-banner">
+          <div class="hml-status-content">
+            <div class="hml-status-indicator" id="hml-status-indicator"></div>
+            <div class="hml-status-text">
+              <div class="hml-status-main" id="hml-status-main">Checking connection...</div>
+              <div class="hml-status-detail" id="hml-status-detail"></div>
+            </div>
+          </div>
+          <button type="button" id="hml-refresh" class="hml-refresh-btn" title="Refresh status">
+            ↻
+          </button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="hml-tabs">
+          <button type="button" class="hml-tab active" data-tab="sync">
+            <span class="hml-tab-icon">⟳</span>
+            <span>Sync</span>
+          </button>
+          <button type="button" class="hml-tab" data-tab="peers">
+            <span class="hml-tab-icon">👥</span>
+            <span>Peers</span>
+            <span class="hml-tab-badge" id="hml-peers-badge" style="display:none;">0</span>
+          </button>
+          <button type="button" class="hml-tab" data-tab="settings">
+            <span class="hml-tab-icon">⚙️</span>
+            <span>Settings</span>
+          </button>
+          <button type="button" class="hml-tab" data-tab="cloud">
+            <span class="hml-tab-icon">☁️</span>
+            <span>Cloud</span>
+          </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="hml-tab-content">
+          <!-- Sync Tab -->
+          <div class="hml-tab-panel active" id="tab-sync">
+            <div class="hml-sync-overview">
+              <div class="hml-stat-grid">
+                <div class="hml-stat-card">
+                  <div class="hml-stat-value" id="hml-active-vaults">0</div>
+                  <div class="hml-stat-label">Active Vaults</div>
+                </div>
+                <div class="hml-stat-card">
+                  <div class="hml-stat-value" id="hml-total-synced">0</div>
+                  <div class="hml-stat-label">Memories Synced</div>
+                </div>
+                <div class="hml-stat-card">
+                  <div class="hml-stat-value" id="hml-last-sync">Never</div>
+                  <div class="hml-stat-label">Last Sync</div>
+                </div>
+              </div>
+              
+              <div class="hml-sync-vaults">
+                <div class="hml-section-header">
+                  <h3>Synced Vaults</h3>
+                  <button type="button" id="hml-sync-now" class="hml-action-btn">
+                    ⟳ Sync Now
+                  </button>
+                </div>
+                <div id="hml-vault-list" class="hml-vault-list">
+                  <div class="hml-empty-state">
+                    <div style="font-size: 32px;">📁</div>
+                    <p>No vaults are currently syncing</p>
+                    <span>Share a vault with someone to start syncing</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Peers Tab -->
+          <div class="hml-tab-panel" id="tab-peers">
+            <div class="hml-identity-card">
+              <div class="hml-identity-header">
+                <span>🆔</span>
+                <span>Your Identity</span>
+              </div>
+                              <div class="hml-identity-content">
+                  <code id="hml-fingerprint" class="hml-fingerprint">—</code>
+                  <div class="hml-identity-actions">
+                    <button type="button" id="hml-copy-fp" class="hml-icon-btn" title="Copy fingerprint">
+                      📋
+                    </button>
+                    <button type="button" id="hml-share-fp" class="hml-icon-btn" title="Share identity">
+                      📤
+                    </button>
+                  </div>
+                </div>
+              <button type="button" id="hml-create-id" class="hml-create-id-btn" style="display:none;">
+                ➕ Create Identity
+              </button>
+              <div id="hml-identity-hint" class="hml-hint" style="display:none;">
+                Create an identity to enable peer-to-peer sync
+              </div>
+            </div>
+
+            <div class="hml-peers-section">
+                              <div class="hml-section-header">
+                  <h3>Connected Peers</h3>
+                  <button type="button" id="hml-add-peer" class="hml-action-btn">
+                    ➕ Add Peer
+                  </button>
+                </div>
+              <div id="hml-peers" class="hml-peers-grid"></div>
+            </div>
+
+            <div class="hml-invites-section" id="hml-invites-section" style="display:none;">
+              <div class="hml-section-header">
+                <h3>Pending Invites</h3>
+              </div>
+              <div id="hml-invites" class="hml-invites-list"></div>
+            </div>
+          </div>
+
+          <!-- Settings Tab -->
+          <div class="hml-tab-panel" id="tab-settings">
+            <div class="hml-settings-group">
+              <h3>Sync Preferences</h3>
+              <label class="hml-switch">
+                <input type="checkbox" id="hml-auto-sync" checked>
+                <span class="hml-switch-slider"></span>
+                <span class="hml-switch-label">Auto-sync on changes</span>
+              </label>
+              <label class="hml-switch">
+                <input type="checkbox" id="hml-auto-accept-viewer">
+                <span class="hml-switch-slider"></span>
+                <span class="hml-switch-label">Auto-accept viewer invites</span>
+              </label>
+            </div>
+
+            <div class="hml-settings-group">
+              <h3>Connection Settings</h3>
+              <div class="hml-form-field">
+                <label>Signaling Method</label>
+                <select id="hml-provider" class="hml-select">
+                  <option value="both">Automatic (Recommended)</option>
+                  <option value="github">GitHub Gist</option>
+                  <option value="mock">Local Testing</option>
+                </select>
+              </div>
+              
+              <div class="hml-form-field">
+                <label>Sync Interval</label>
+                <select id="hml-sync-interval" class="hml-select">
+                  <option value="30">Every 30 seconds</option>
+                  <option value="60">Every minute</option>
+                  <option value="300">Every 5 minutes</option>
+                  <option value="0">Manual only</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hml-settings-group">
+              <h3>Advanced</h3>
+              <details class="hml-details">
+                <summary>TURN Servers</summary>
+                <div class="hml-turn-config">
+                  <p class="hml-help-text">Configure TURN servers for connections behind strict firewalls</p>
+                  <div id="hml-turn-servers" class="hml-turn-list"></div>
+                  <button type="button" id="hml-add-turn" class="hml-text-btn">
+                    + Add TURN Server
+                  </button>
+                </div>
+              </details>
+              
+              <details class="hml-details">
+                <summary>Diagnostics</summary>
+                <div class="hml-diagnostics">
+                  <button type="button" id="hml-test-connection" class="hml-text-btn">
+                    Test Connection
+                  </button>
+                  <button type="button" id="hml-check-rendezvous" class="hml-text-btn">
+                    Check Rendezvous
+                  </button>
+                  <div id="hml-board-log" class="hml-log"></div>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Cloud Tab -->
+          <div class="hml-tab-panel" id="tab-cloud">
+            <div class="hml-cloud-promo">
+              <div class="hml-cloud-icon">
+                <i class="material-icons">cloud_queue</i>
+              </div>
+              <h3>Emma Cloud Storage</h3>
+              <p>Secure cloud backup for your memories</p>
+              
+              <div class="hml-feature-list">
+                <div class="hml-feature">
+                  <i class="material-icons">backup</i>
+                  <span>Automatic backup of all memories</span>
+                </div>
+                <div class="hml-feature">
+                  <i class="material-icons">devices</i>
+                  <span>Sync across unlimited devices</span>
+                </div>
+                <div class="hml-feature">
+                  <i class="material-icons">history</i>
+                  <span>30-day version history</span>
+                </div>
+                <div class="hml-feature">
+                  <i class="material-icons">lock</i>
+                  <span>End-to-end encrypted</span>
+                </div>
+              </div>
+              
+              <div class="hml-cloud-plans">
+                <div class="hml-plan">
+                  <h4>Free</h4>
+                  <div class="hml-plan-price">$0/mo</div>
+                  <ul>
+                    <li>P2P sync only</li>
+                    <li>Local storage</li>
+                    <li>Manual backups</li>
+                  </ul>
+                  <div class="hml-plan-status active">Current Plan</div>
+                </div>
+                
+                <div class="hml-plan featured">
+                  <div class="hml-plan-badge">Popular</div>
+                  <h4>Personal</h4>
+                  <div class="hml-plan-price">$5/mo</div>
+                  <ul>
+                    <li>5GB cloud storage</li>
+                    <li>Auto backup</li>
+                    <li>Priority sync</li>
+                  </ul>
+                  <button type="button" class="hml-plan-btn">Upgrade</button>
+                </div>
+                
+                <div class="hml-plan">
+                  <h4>Family</h4>
+                  <div class="hml-plan-price">$12/mo</div>
+                  <ul>
+                    <li>50GB shared storage</li>
+                    <li>5 family members</li>
+                    <li>Shared vaults</li>
+                  </ul>
+                  <button type="button" class="hml-plan-btn">Upgrade</button>
+                </div>
+              </div>
+              
+              <button type="button" id="hml-cloud-btn" class="hml-cloud-cta">
+                Learn More About Emma Cloud
+                <i class="material-icons">arrow_forward</i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Universal Emma Orb System - Direct Loading for Extension Pages -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/emma-orb.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/settings-service.js"></script> 
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/orb-experience-manager.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/experience-popup-base.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/assistant-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/dementia-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/mirror-experience-popup.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/universal-emma-orb.js"></script>
+  
+  <!-- Initialize Universal Orb for Extension Page -->
+  <script nonce="c3RhdGljLWlubGluZQ==">
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
+      });
+    } else {
+      setTimeout(() => window.UniversalEmmaOrb.initialize(), 100);
+    }
+  </script>
+  
+  <!-- WEBAPP-FIRST: Load vault status checker before popup -->
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/vault-status-checker.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/popup-vault-integration.js"></script>
+  <script nonce="c3RhdGljLWlubGluZQ==" src="../js/popup.js"></script>
+</body>
+</html>

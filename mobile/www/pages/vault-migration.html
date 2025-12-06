@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emma Vault Migration - Revolutionary Memory Preservation</title>
+    <link rel="stylesheet" href="../css/dashboard-base.css">
+    <style>
+        /* Migration-specific styles with Emma branding */
+        .migration-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .migration-hero {
+            text-align: center;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, rgba(111, 99, 217, 0.1), rgba(208, 111, 168, 0.1));
+            border-radius: 20px;
+            padding: 3rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(111, 99, 217, 0.2);
+        }
+
+        .migration-hero h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #6f63d9, #d06fa8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .migration-hero .subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        .revolution-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #6f63d9, #d06fa8);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .migration-steps {
+            display: grid;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .migration-step {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(111, 99, 217, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #6f63d9, #d06fa8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            margin-right: 1rem;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .step-description {
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .migration-progress {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(111, 99, 217, 0.2);
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(111, 99, 217, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6f63d9, #d06fa8);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-phase {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .migration-form {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(111, 99, 217, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(111, 99, 217, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #6f63d9;
+            box-shadow: 0 0 0 2px rgba(111, 99, 217, 0.2);
+        }
+
+        .migration-button {
+            background: linear-gradient(135deg, #6f63d9, #d06fa8);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .migration-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(111, 99, 217, 0.3);
+        }
+
+        .migration-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .warning-box {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .warning-box h3 {
+            color: #fbbf24;
+            margin-bottom: 0.5rem;
+        }
+
+        .warning-box p {
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .success-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            display: none;
+        }
+
+        .success-box h2 {
+            color: #22c55e;
+            margin-bottom: 1rem;
+        }
+
+        .success-box p {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+
+        .home-button {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #6f63d9, #d06fa8);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(111, 99, 217, 0.3);
+        }
+
+        .home-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(111, 99, 217, 0.4);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .benefit-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(111, 99, 217, 0.2);
+            text-align: center;
+        }
+
+        .benefit-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .benefit-title {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .benefit-desc {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+    <!-- Aurora Background -->
+    <div class="aurora-bg">
+        <div class="aurora-layer aurora-layer-1"></div>
+        <div class="aurora-layer aurora-layer-2"></div>
+        <div class="aurora-layer aurora-layer-3"></div>
+    </div>
+
+    <!-- Home Button -->
+    <button class="home-button" onclick="navigateHome()" title="Back to Dashboard">
+        🏠
+    </button>
+
+    <div class="migration-container">
+        <!-- Hero Section -->
+        <div class="migration-hero">
+            <div class="revolution-badge">🌟 REVOLUTIONARY TECHNOLOGY</div>
+            <h1>Vault Migration</h1>
+            <p class="subtitle">Transform your memories into the industry's most advanced preservation format</p>
+        </div>
+
+        <!-- Benefits Grid -->
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">🔐</div>
+                <div class="benefit-title">Military-Grade Security</div>
+                <div class="benefit-desc">XChaCha20-Poly1305 encryption with individual memory keys</div>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">📱</div>
+                <div class="benefit-title">Zero Dependencies</div>
+                <div class="benefit-desc">No Docker, no databases - just pure Emma magic</div>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">💾</div>
+                <div class="benefit-title">Portable Vaults</div>
+                <div class="benefit-desc">Email, backup, and share your memories like documents</div>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">🌍</div>
+                <div class="benefit-title">Future-Proof</div>
+                <div class="benefit-desc">Files designed to last 100+ years across all platforms</div>
+            </div>
+        </div>
+
+        <!-- Warning Box -->
+        <div class="warning-box">
+            <h3>⚠️ Important Migration Information</h3>
+            <p>This process will create a new .emma vault file containing all your memories. Your original PostgreSQL data will remain untouched as a backup. The migration includes all memories, people, and media attachments with zero data loss guaranteed.</p>
+        </div>
+
+        <!-- Migration Steps -->
+        <div class="migration-steps">
+            <div class="migration-step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Data Validation & Backup</div>
+                </div>
+                <div class="step-description">
+                    Emma will validate your PostgreSQL vault and create a safety backup before beginning migration. This ensures your memories are protected throughout the process.
+                </div>
+            </div>
+
+            <div class="migration-step">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Memory Extraction</div>
+                </div>
+                <div class="step-description">
+                    All memories, people, and media attachments are carefully extracted from PostgreSQL with full metadata preservation and integrity verification.
+                </div>
+            </div>
+
+            <div class="migration-step">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Revolutionary Vault Creation</div>
+                </div>
+                <div class="step-description">
+                    A new .emma vault file is created with military-grade encryption, optimized compression, and future-proof formatting for generational preservation.
+                </div>
+            </div>
+
+            <div class="migration-step">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Integrity Verification</div>
+                </div>
+                <div class="step-description">
+                    Every memory and attachment is verified for perfect data integrity. The migration only completes when 100% data accuracy is confirmed.
+                </div>
+            </div>
+        </div>
+
+        <!-- Migration Progress (Hidden initially) -->
+        <div class="migration-progress" id="migrationProgress">
+            <div class="progress-phase" id="progressPhase">Preparing migration...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Initializing...</div>
+        </div>
+
+        <!-- Success Box (Hidden initially) -->
+        <div class="success-box" id="successBox">
+            <h2>🎉 Migration Complete!</h2>
+            <p>Your memories have been successfully migrated to the revolutionary .emma format. You're now using the industry's most advanced memory preservation technology.</p>
+            <button class="migration-button" onclick="navigateHome()">
+                Explore Your Revolutionary Vault
+            </button>
+        </div>
+
+        <!-- Migration Form -->
+        <div class="migration-form" id="migrationForm">
+            <h2 style="color: white; margin-bottom: 1.5rem; text-align: center;">
+                🌟 Start Your Memory Revolution
+            </h2>
+            
+            <div class="form-group">
+                <label class="form-label" for="vaultName">Vault Name</label>
+                <input type="text" 
+                       id="vaultName" 
+                       class="form-input" 
+                       placeholder="My Precious Memories"
+                       value="My Precious Memories">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="vaultPassphrase">Vault Passphrase</label>
+                <input type="password" 
+                       id="vaultPassphrase" 
+                       class="form-input" 
+                       placeholder="Enter a strong passphrase">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="vaultLocation">Vault Location</label>
+                <input type="text" 
+                       id="vaultLocation" 
+                       class="form-input" 
+                       placeholder="Documents/Emma Vaults (default)"
+                       readonly>
+                <small style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.5rem; display: block;">
+                    Your vault will be saved in your Documents folder for easy access
+                </small>
+            </div>
+
+            <button class="migration-button" id="startMigrationBtn" onclick="startMigration()">
+                🚀 Begin Revolutionary Migration
+            </button>
+        </div>
+    </div>
+
+    <script nonce="c3RhdGljLWlubGluZQ==">
+        // Migration management
+        let migrationInProgress = false;
+
+        function navigateHome() {
+            window.location.href = '../dashboard.html';
+        }
+
+        async function startMigration() {
+            const vaultName = document.getElementById('vaultName').value.trim();
+            const passphrase = document.getElementById('vaultPassphrase').value;
+            
+            if (!vaultName) {
+                alert('Please enter a vault name');
+                return;
+            }
+            
+            if (!passphrase || passphrase.length < 8) {
+                alert('Please enter a passphrase with at least 8 characters');
+                return;
+            }
+            
+            if (migrationInProgress) return;
+            
+            console.log('🚀 Starting revolutionary migration...');
+            
+            // Show progress UI
+            document.getElementById('migrationForm').style.display = 'none';
+            document.getElementById('migrationProgress').style.display = 'block';
+            
+            migrationInProgress = true;
+            
+            try {
+                // Start the migration process
+                const result = await window.emmaAPI.vault.migrateToEmma({
+                    vaultName: vaultName,
+                    passphrase: passphrase,
+                    onProgress: updateProgress
+                });
+                
+                if (result.success) {
+                    showSuccess(result);
+                } else {
+                    showError(result.error || 'Migration failed');
+                }
+                
+            } catch (error) {
+                console.error('❌ Migration error:', error);
+                showError(error.message || 'Migration failed');
+            }
+        }
+
+        function updateProgress(progress) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const progressPhase = document.getElementById('progressPhase');
+            
+            // Update progress bar
+            const percentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
+            progressFill.style.width = percentage + '%';
+            
+            // Update phase
+            const phaseNames = {
+                'validation': '🔍 Phase 1: Validation & Backup',
+                'extraction': '📦 Phase 2: Data Extraction', 
+                'vault_creation': '🌟 Phase 3: Vault Creation',
+                'memory_migration': '💝 Phase 4: Memory Migration',
+                'people_migration': '👥 Phase 5: People Migration',
+                'media_migration': '🖼️ Phase 6: Media Migration',
+                'verification': '✅ Phase 7: Verification',
+                'completion': '🎉 Phase 8: Completion'
+            };
+            
+            progressPhase.textContent = phaseNames[progress.phase] || progress.phase;
+            progressText.textContent = progress.message || 'Processing...';
+            
+            // Show current progress
+            if (progress.total > 0) {
+                progressText.textContent += ` (${progress.current}/${progress.total})`;
+            }
+            
+            console.log('📊 Migration progress:', progress);
+        }
+
+        function showSuccess(result) {
+            document.getElementById('migrationProgress').style.display = 'none';
+            document.getElementById('successBox').style.display = 'block';
+            
+            console.log('🎉 Migration completed successfully!');
+            console.log('   Vault path:', result.vaultPath);
+            console.log('   Memories migrated:', result.stats?.memoriesMigrated);
+            console.log('   People migrated:', result.stats?.peopleMigrated);
+            console.log('   Media migrated:', result.stats?.mediaMigrated);
+            
+            migrationInProgress = false;
+        }
+
+        function showError(errorMessage) {
+            document.getElementById('migrationProgress').style.display = 'none';
+            document.getElementById('migrationForm').style.display = 'block';
+            
+            alert('Migration Error: ' + errorMessage);
+            
+            migrationInProgress = false;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🌟 Migration page loaded');
+            
+            // Check if vault is available for migration
+            try {
+                const status = await window.emmaAPI.vault.status();
+                if (!status.hasVault || !status.isUnlocked) {
+                    alert('Please unlock your vault first before migrating');
+                    navigateHome();
+                    return;
+                }
+                
+                console.log('✅ Vault ready for migration');
+                
+            } catch (error) {
+                console.error('❌ Vault status check failed:', error);
+                alert('Unable to check vault status. Please return to dashboard.');
+                navigateHome();
+            }
+        });
+    </script>
+</body>
+</html>
