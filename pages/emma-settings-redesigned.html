@@ -347,6 +347,11 @@
       box-sizing: border-box;
     }
 
+    .settings-section[hidden],
+    .settings-nav__item[hidden] {
+      display: none !important;
+    }
+
     .settings-section::before {
       content: none;
     }
@@ -1436,8 +1441,8 @@
           <button type="button" class="settings-nav__item is-active" data-target="#section-visual">Visual Themes</button>
           <button type="button" class="settings-nav__item" data-target="#section-ai">Intelligence</button>
           <button type="button" class="settings-nav__item" data-target="#section-care">Memory &amp; Care</button>
+          <button type="button" class="settings-nav__item" data-target="#section-accessibility" hidden>Care &amp; Accessibility</button>
           <button type="button" class="settings-nav__item" data-target="#section-privacy">Privacy &amp; Security</button>
-          <button type="button" class="settings-nav__item" data-target="#section-accessibility">Care &amp; Accessibility</button>
           <button type="button" class="settings-nav__item" data-target="#section-system">System Information</button>
         </nav>
 
@@ -1712,6 +1717,17 @@
           <div class="settings-section__content">
             <div class="setting-item">
               <div class="setting-label">
+                <strong>Enable Dementia Care &amp; Accessibility</strong>
+                <span>Show specialized dementia care and accessibility controls in settings.</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="care-accessibility-toggle">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
                 <strong>Dementia Care Mode</strong>
                 <span>Enables validation therapy principles and specialized responses for users with memory impairment. Designed with love for Debbe.</span>
               </div>
@@ -1734,53 +1750,8 @@
           </div>
         </section>
 
-        <!-- Privacy & Security -->
-        <section id="section-privacy" class="settings-section" data-section-title="Privacy & Security">
-          <div class="settings-section__header">
-            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">PS</span> Privacy &amp; Security</h2>
-            <p class="section-description">
-              Emma prioritizes your privacy with local-only processing and secure vault encryption.
-            </p>
-          </div>
-          <div class="settings-section__content">
-            <div class="setting-item">
-              <div class="setting-label">
-                <strong>Local Processing</strong>
-                <span>All memory analysis happens on your device. No data is sent to external servers.</span>
-              </div>
-              <div class="status-indicator">
-                <div class="status-dot active"></div>
-                <span>Always Enabled</span>
-              </div>
-            </div>
-            
-            <div class="setting-item">
-              <div class="setting-label">
-                <strong>Vault Encryption</strong>
-                <span>Your .emma files are protected with AES-256 encryption and PBKDF2 key derivation.</span>
-              </div>
-              <div class="status-indicator">
-                <div class="status-dot active"></div>
-                <span>Always Enabled</span>
-              </div>
-            </div>
-
-            <div class="setting-item" id="auto-save-setting">
-              <div class="setting-label">
-                <strong>Vault Auto-Save</strong>
-                <span>Automatically write updates to your .emma vault whenever memories or people change.</span>
-                <span id="auto-save-disabled-reason" class="setting-help" style="display:none;"></span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="auto-save-toggle" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-        </section>
-
         <!-- Dementia Care & Accessibility -->
-        <section id="section-accessibility" class="settings-section" data-section-title="Care & Accessibility">
+        <section id="section-accessibility" class="settings-section" data-section-title="Care & Accessibility" hidden>
           <div class="settings-section__header">
             <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">CA</span> Dementia Care &amp; Accessibility</h2>
             <p class="section-description">
@@ -1858,7 +1829,50 @@
           </div>
         </section>
 
-        <!-- System Information -->
+        <!-- Privacy & Security -->
+        <section id="section-privacy" class="settings-section" data-section-title="Privacy & Security">
+          <div class="settings-section__header">
+            <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">PS</span> Privacy &amp; Security</h2>
+            <p class="section-description">
+              Emma prioritizes your privacy with local-only processing and secure vault encryption.
+            </p>
+          </div>
+          <div class="settings-section__content">
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Local Processing</strong>
+                <span>All memory analysis happens on your device. No data is sent to external servers.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-label">
+                <strong>Vault Encryption</strong>
+                <span>Your .emma files are protected with AES-256 encryption and PBKDF2 key derivation.</span>
+              </div>
+              <div class="status-indicator">
+                <div class="status-dot active"></div>
+                <span>Always Enabled</span>
+              </div>
+            </div>
+
+            <div class="setting-item" id="auto-save-setting">
+              <div class="setting-label">
+                <strong>Vault Auto-Save</strong>
+                <span>Automatically write updates to your .emma vault whenever memories or people change.</span>
+                <span id="auto-save-disabled-reason" class="setting-help" style="display:none;"></span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="auto-save-toggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>        <!-- System Information -->
         <section id="section-system" class="settings-section" data-section-title="System Information">
           <div class="settings-section__header">
             <h2 class="section-title"><span class="section-title__icon" aria-hidden="true">SI</span> System Information</h2>
@@ -1919,12 +1933,16 @@
             fontSize: 100,
             reducedMotion: false,
             highContrast: false,
+            careAccessibilityEnabled: false,
             autoSaveEnabled: true
           };
           
           console.log('[Settings] Settings loaded:', this.settings);
           if (!this.supportsDirectAutoSave()) {
             this.settings.autoSaveEnabled = false;
+          }
+          if (typeof this.settings.careAccessibilityEnabled !== 'boolean') {
+            this.settings.careAccessibilityEnabled = false;
           }
         } catch (error) {
           console.error('[Settings] Failed to load settings:', error);
@@ -1935,10 +1953,14 @@
             fontSize: 100,
             reducedMotion: false,
             highContrast: false,
+            careAccessibilityEnabled: false,
             autoSaveEnabled: true
           };
           if (!this.supportsDirectAutoSave()) {
             this.settings.autoSaveEnabled = false;
+          }
+          if (typeof this.settings.careAccessibilityEnabled !== 'boolean') {
+            this.settings.careAccessibilityEnabled = false;
           }
         }
       }
@@ -2057,13 +2079,16 @@
         const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
         const highContrastToggle = document.getElementById('high-contrast-toggle');
         const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const careAccessibilityToggle = document.getElementById('care-accessibility-toggle');
         
         if (memoryToggle) memoryToggle.checked = this.settings.memoryDetection !== false;
         if (peopleToggle) peopleToggle.checked = this.settings.peopleRecognition !== false;
         if (reducedMotionToggle) reducedMotionToggle.checked = this.settings.reducedMotion || false;
         if (highContrastToggle) highContrastToggle.checked = this.settings.highContrast || false;
         if (autoSaveToggle) autoSaveToggle.checked = this.settings.autoSaveEnabled !== false;
+        if (careAccessibilityToggle) careAccessibilityToggle.checked = this.settings.careAccessibilityEnabled === true;
 
+        this.updateCareAccessibilityVisibility();
         this.updateAutoSaveAvailability();
         
         // Update font size
@@ -2091,6 +2116,24 @@
           statusText.textContent = 'Intelligent Offline Mode';
         }
       }
+
+      updateCareAccessibilityVisibility() {
+        const enabled = this.settings.careAccessibilityEnabled === true;
+        const section = document.getElementById('section-accessibility');
+        const navItem = document.querySelector('.settings-nav__item[data-target="#section-accessibility"]');
+
+        if (section) {
+          section.hidden = !enabled;
+        }
+
+        if (navItem) {
+          navItem.hidden = !enabled;
+          if (!enabled) {
+            navItem.classList.remove('is-active');
+            navItem.removeAttribute('aria-current');
+          }
+        }
+      }
       
       setupEventListeners() {
         // API Key button
@@ -2108,6 +2151,7 @@
         const reducedMotionToggle = document.getElementById('reduced-motion-toggle');
         const highContrastToggle = document.getElementById('high-contrast-toggle');
         const autoSaveToggle = document.getElementById('auto-save-toggle');
+        const careAccessibilityToggle = document.getElementById('care-accessibility-toggle');
         
         if (memoryToggle) {
           memoryToggle.addEventListener('change', (e) => {
@@ -2140,6 +2184,13 @@
             const enabled = e.target.checked;
             this.settings.autoSaveEnabled = enabled;
             this.applyAutoSavePreference(enabled);
+          });
+        }
+
+        if (careAccessibilityToggle) {
+          careAccessibilityToggle.addEventListener('change', (e) => {
+            this.settings.careAccessibilityEnabled = e.target.checked;
+            this.updateCareAccessibilityVisibility();
           });
         }
 

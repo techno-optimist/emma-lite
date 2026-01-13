@@ -1,0 +1,20 @@
+[
+  {
+    "filename": "vault-100000.emma",
+    "passphrase": "emma-native-fixture",
+    "iterations": 100000,
+    "saltHex": "3a2bd8db647c089c2ed387129e7605eb60fc265175af8bb0a084bebf112914e4",
+    "ivHex": "f5f27752e118c17a3a85e4e7",
+    "totalLength": 506,
+    "sha256": "628bbe1ccac03b41d16c7fcc68b18c78964337f70b3df40bb40462a2e17de68d"
+  },
+  {
+    "filename": "vault-310000.emma",
+    "passphrase": "emma-native-fixture",
+    "iterations": 310000,
+    "saltHex": "e71fa22431ed0da6df05fdea3978f1eabad377d32ff65b27a0fee20ba68a6b3e",
+    "ivHex": "d3be551b369d10e602cef7c4",
+    "totalLength": 508,
+    "sha256": "38c1b28640361ed42923d175eab5f46ea13ed416175956b04d3b4a23f8586f08"
+  }
+]

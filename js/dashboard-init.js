@@ -621,6 +621,33 @@
         return this.lowPowerMode || this.isCompactViewport();
       }
 
+      getOrbitRadius(orbRect) {
+        const sizeBased = Math.max(60, orbRect.width * 0.45); // ~90px for 200px orb
+        const viewportLimit = Math.min(window.innerWidth || 0, window.innerHeight || orbRect.width || 0) * 0.22;
+        return Math.max(60, Math.min(90, Math.min(sizeBased, viewportLimit || sizeBased)));
+      }
+
+      getMenuTarget(angle, radius, orbCenterX, orbCenterY) {
+        const rawX = orbCenterX + Math.cos(angle) * radius;
+        const rawY = orbCenterY + Math.sin(angle) * radius;
+        const viewW = window.innerWidth || document.documentElement.clientWidth || 0;
+        const viewH = window.innerHeight || document.documentElement.clientHeight || 0;
+        const margin = 18;
+        const bottomGuard = 150; // keep clear of bottom corner icons
+        const clampedX = Math.min(Math.max(rawX, margin), Math.max(margin, viewW - margin));
+        const clampedY = Math.min(Math.max(rawY, margin), Math.max(margin, (viewH ? viewH - bottomGuard : rawY)));
+        return { x: clampedX, y: clampedY };
+      }
+
+      anchorRadialMenu(orbRect) {
+        if (!this.radialMenu || !orbRect) return;
+        this.radialMenu.style.position = 'fixed';
+        this.radialMenu.style.width = `${orbRect.width}px`;
+        this.radialMenu.style.height = `${orbRect.height}px`;
+        this.radialMenu.style.left = `${orbRect.left}px`;
+        this.radialMenu.style.top = `${orbRect.top}px`;
+      }
+
       initNeuralNetwork() {
         // 🎯 BACK TO BASICS: Orb-relative positioning that actually works
         console.log('🔧 initNeuralNetwork: Using orb-relative positioning');
@@ -632,10 +659,12 @@
         const orbCenterX = orbRect.left + orbRect.width / 2;
         const orbCenterY = orbRect.top + orbRect.height / 2;
 
+        this.anchorRadialMenu(orbRect);
+
         console.log('🎯 Actual orb center:', { x: orbCenterX, y: orbCenterY, orbRect });
 
         // 🌌 SIMPLIFIED: One radius that works great for all devices - true orbiting feel
-        const radius = 140; // Proper orbiting distance - feels like satellites around Emma orb
+        const radius = Math.max(40, orbRect.width * 0.35); // Keep orbit tight so buttons stay in view
 
         console.log('🌌 Using unified orbiting radius:', radius, 'px for all devices');
 
@@ -646,16 +675,19 @@
           const angle = (i / items.length) * Math.PI * 2 - Math.PI / 2;
           
           // 🔗 ORB-RELATIVE: Calculate position relative to actual orb center
-          const targetX = orbCenterX + Math.cos(angle) * radius;
-          const targetY = orbCenterY + Math.sin(angle) * radius;
+          const { x: targetX, y: targetY } = this.getMenuTarget(angle, radius, orbCenterX, orbCenterY);
+          const localX = targetX - orbRect.left;
+          const localY = targetY - orbRect.top;
+          
 
           // 🎬 ANIMATION SETUP: Start at actual orb center for animate-out effect
           const startX = orbCenterX;
           const startY = orbCenterY;
 
           // Position at target location (no scaling animation needed)
-          item.style.left = (targetX - 45) + 'px'; // Center the 90px item
-          item.style.top = (targetY - 45) + 'px';
+          const itemHalf = (item.offsetWidth || 72) / 2;
+          item.style.left = (localX - itemHalf) + 'px'; // Center the item
+          item.style.top = (localY - itemHalf) + 'px';
           
           // CRITICAL FIX: Ensure item is visible after exitMemoryConstellation reset
           item.style.opacity = '1';
@@ -758,18 +790,23 @@
         const orbRect = this.orb.getBoundingClientRect();
         const orbCenterX = orbRect.left + orbRect.width / 2;
         const orbCenterY = orbRect.top + orbRect.height / 2;
-        const radius = 140; // Consistent distance from orb
+
+        this.anchorRadialMenu(orbRect);
+        const radius = Math.max(40, orbRect.width * 0.35); // Consistent but tight distance from orb
 
         const menuItems = this.radialMenu.querySelectorAll('.radial-item');
         
         menuItems.forEach((item, i) => {
           const angle = (i / menuItems.length) * Math.PI * 2 - Math.PI / 2;
-          const targetX = orbCenterX + Math.cos(angle) * radius;
-          const targetY = orbCenterY + Math.sin(angle) * radius;
+          const { x: targetX, y: targetY } = this.getMenuTarget(angle, radius, orbCenterX, orbCenterY);
+          
           
           // Position the item (center the 90px item)
-          item.style.left = (targetX - 45) + 'px';
-          item.style.top = (targetY - 45) + 'px';
+          const itemHalf = (item.offsetWidth || 72) / 2;
+          const localX = targetX - orbRect.left;
+          const localY = targetY - orbRect.top;
+          item.style.left = (localX - itemHalf) + 'px';
+          item.style.top = (localY - itemHalf) + 'px';
         });
       }
 
@@ -815,6 +852,8 @@
         const orbRect = this.orb.getBoundingClientRect();
         const orbCenterX = orbRect.left + orbRect.width / 2;
         const orbCenterY = orbRect.top + orbRect.height / 2;
+
+        this.anchorRadialMenu(orbRect);
         
         this.nodes.forEach((node, i) => {
           // Set orb center as the new target for neural physics
@@ -858,21 +897,26 @@
         const orbRect = this.orb.getBoundingClientRect();
         const orbCenterX = orbRect.left + orbRect.width / 2;
         const orbCenterY = orbRect.top + orbRect.height / 2;
+
+        this.anchorRadialMenu(orbRect);
         
         // 🌌 SIMPLIFIED: Same orbiting radius for all devices
-        const radius = 140; // Consistent orbiting distance - satellites around Emma orb
+        const radius = Math.max(40, orbRect.width * 0.35); // Consistent orbiting distance - satellites around Emma orb
         
         // Update all node positions relative to actual orb center
         this.nodes.forEach((node, i) => {
           const angle = (i / this.nodes.length) * Math.PI * 2 - Math.PI / 2;
-          const newTargetX = orbCenterX + Math.cos(angle) * radius;
-          const newTargetY = orbCenterY + Math.sin(angle) * radius;
+          const { x: newTargetX, y: newTargetY } = this.getMenuTarget(angle, radius, orbCenterX, orbCenterY);
+          
           
           // Update positions with fast smooth transition
           const item = node.element;
+          const itemHalf = (item.offsetWidth || 72) / 2;
           item.style.transition = 'all 0.15s ease';
-          item.style.left = (newTargetX - 45) + 'px';
-          item.style.top = (newTargetY - 45) + 'px';
+          const localX = newTargetX - orbRect.left;
+          const localY = newTargetY - orbRect.top;
+          item.style.left = (localX - itemHalf) + 'px';
+          item.style.top = (localY - itemHalf) + 'px';
           
           // Update node data
           node.x = newTargetX;
@@ -1222,6 +1266,34 @@
         }
 
         return null;
+      }
+
+      getPersonDisplayName(person) {
+        if (!person) return 'Unknown';
+        if (typeof person === 'string' || typeof person === 'number') {
+          const trimmed = String(person).trim();
+          return trimmed || 'Unknown';
+        }
+        const candidates = [
+          person.name,
+          person.fullName,
+          person.title,
+          person.contact,
+          person.email,
+          person.phone,
+          person.id
+        ];
+        for (const candidate of candidates) {
+          if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim();
+          }
+        }
+        return 'Unknown';
+      }
+
+      getPersonInitial(person) {
+        const displayName = this.getPersonDisplayName(person);
+        return displayName.charAt(0).toUpperCase();
       }
 
       // Check if a line intersects with Emma orb circle
@@ -3378,7 +3450,7 @@
         personElement.className = 'person-node';
 
         // Create person avatar with first letter of name
-        const avatar = person.name.charAt(0).toUpperCase();
+        const avatar = this.getPersonInitial(person);
         const relationColor = this.getRelationColor(person.relation);
         const nodeSize = this.getConstellationNodeSize();
         const personSize = Math.max(56, Math.round(nodeSize * 1.05));
@@ -3554,6 +3626,8 @@
         }
 
         // Create modal HTML
+        const displayName = this.getPersonDisplayName(person);
+        const avatarInitial = this.getPersonInitial(person);
         const modalHTML = `
           <div class="person-summary-modal-overlay" id="person-summary-overlay" onclick="window.memoryConstellation.closePersonSummaryModal()">
             <div class="person-summary-modal" onclick="event.stopPropagation()">
@@ -3561,10 +3635,10 @@
 
               <div class="person-summary-header">
                 <div class="person-summary-avatar" id="person-summary-avatar">
-                  ${person.name.charAt(0).toUpperCase()}
+                  ${avatarInitial}
                 </div>
                 <div class="person-summary-info">
-                  <h2 class="person-summary-name">${person.name}</h2>
+                  <h2 class="person-summary-name">${displayName}</h2>
                   <p class="person-summary-relation">${person.relation || 'other'}</p>
                   <p class="person-summary-contact">${person.contact || 'No contact info'}</p>
                 </div>

@@ -1628,12 +1628,40 @@
         console.error('[PEOPLE] Error loading people:', error);
         people = [];
         await renderPeople();
+        }
       }
-    }
 
-    async function renderPeople() {
-      const grid = document.getElementById('people-grid');
-      const emptyState = document.getElementById('empty-state');
+      function getPersonDisplayName(person) {
+        if (!person) return 'Unknown';
+        if (typeof person === 'string' || typeof person === 'number') {
+          const trimmed = String(person).trim();
+          return trimmed || 'Unknown';
+        }
+        const candidates = [
+          person.name,
+          person.fullName,
+          person.title,
+          person.contact,
+          person.email,
+          person.phone,
+          person.id
+        ];
+        for (const candidate of candidates) {
+          if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim();
+          }
+        }
+        return 'Unknown';
+      }
+
+      function getPersonInitial(person) {
+        const displayName = getPersonDisplayName(person);
+        return displayName.charAt(0).toUpperCase();
+      }
+
+      async function renderPeople() {
+        const grid = document.getElementById('people-grid');
+        const emptyState = document.getElementById('empty-state');
 
       // Clear existing people cards (keep add button)
       const existingCards = grid.querySelectorAll('.person-card');
@@ -1659,9 +1687,10 @@
       }
     }
 
-    async function createPersonCard(person) {
-      const card = document.createElement('div');
-      card.className = 'person-card';
+      async function createPersonCard(person) {
+        const displayName = getPersonDisplayName(person);
+        const card = document.createElement('div');
+        card.className = 'person-card';
 
       // Create memory slideshow background
       const slideshow = await createMemorySlideshow(person);
@@ -1669,22 +1698,22 @@
         card.appendChild(slideshow);
       }
 
-      const avatar = document.createElement('div');
-      avatar.className = `person-avatar ${person.relation || 'other'}`;
+        const avatar = document.createElement('div');
+        avatar.className = `person-avatar ${person.relation || 'other'}`;
 
-      // Start with letter, then try to load avatar
-      avatar.textContent = person.name.charAt(0).toUpperCase();
+        // Start with letter, then try to load avatar
+        avatar.textContent = getPersonInitial(person);
 
       // Prefer direct avatarUrl provided by extension (already reconstructed)
-      if (person.avatarUrl) {
+        if (person.avatarUrl) {
 
-        const img = document.createElement('img');
-        img.src = person.avatarUrl;
-        img.alt = `${person.name} avatar`;
-        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
-        img.onload = () => {
-          avatar.innerHTML = '';
-          avatar.appendChild(img);
+          const img = document.createElement('img');
+          img.src = person.avatarUrl;
+          img.alt = `${displayName} avatar`;
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+          img.onload = () => {
+            avatar.innerHTML = '';
+            avatar.appendChild(img);
 
         };
         img.onerror = () => {
@@ -1727,11 +1756,11 @@
         } catch (error) {
           console.error('[AVATAR] Error loading avatar for:', person.name, error);
         }
-      }
+        }
 
-      const name = document.createElement('div');
-      name.className = 'person-name';
-      name.textContent = person.name;
+        const name = document.createElement('div');
+        name.className = 'person-name';
+        name.textContent = displayName;
 
       const relation = document.createElement('div');
       relation.className = 'person-relation';
@@ -2086,12 +2115,14 @@
     // Person detail modal functions
     let currentPerson = null;
 
-    async function openPersonDetailModal(person) {
-      currentPerson = person;
+      async function openPersonDetailModal(person) {
+        currentPerson = person;
+        const displayName = getPersonDisplayName(person);
+        const relation = person && person.relation ? person.relation : 'other';
 
-      // Update modal content
-      document.getElementById('person-detail-name').textContent = person.name;
-      document.getElementById('person-detail-relation').textContent = person.relation || 'other';
+        // Update modal content
+        document.getElementById('person-detail-name').textContent = displayName;
+        document.getElementById('person-detail-relation').textContent = relation;
 
       // Update contact info
       const contactInfo = document.getElementById('person-contact-info');
@@ -2116,34 +2147,34 @@
       await updatePersonMemoryConnections(person.id);
 
       // Load avatar for detail view - SAME LOGIC AS PERSON CARDS
-      const detailAvatar = document.getElementById('person-detail-avatar');
-      detailAvatar.className = `person-detail-avatar ${person.relation || 'other'}`;
+        const detailAvatar = document.getElementById('person-detail-avatar');
+        detailAvatar.className = `person-detail-avatar ${relation}`;
 
       // Use the same logic as createPersonCard - prefer avatarUrl from extension
       // Clear existing content safely
       detailAvatar.innerHTML = '';
 
-      if (person.avatarUrl) {
+        if (person.avatarUrl) {
 
-        // Safely create img element
-        const img = document.createElement('img');
-        img.src = person.avatarUrl;
-        img.alt = `${person.name} avatar`; // Safe - browser escapes alt text
-        img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
-        detailAvatar.appendChild(img);
-      } else {
+          // Safely create img element
+          const img = document.createElement('img');
+          img.src = person.avatarUrl;
+          img.alt = `${displayName} avatar`; // Safe - browser escapes alt text
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; border-radius: 50%;';
+          detailAvatar.appendChild(img);
+        } else {
 
         // Safely create placeholder elements
-        const placeholder = document.createElement('div');
-        placeholder.className = 'avatar-placeholder';
+          const placeholder = document.createElement('div');
+          placeholder.className = 'avatar-placeholder';
 
-        const icon = document.createElement('div');
-        icon.className = 'avatar-icon';
-        icon.textContent = person.name.charAt(0).toUpperCase(); // Safe - textContent auto-escapes
+          const icon = document.createElement('div');
+          icon.className = 'avatar-icon';
+          icon.textContent = getPersonInitial(person); // Safe - textContent auto-escapes
 
-        placeholder.appendChild(icon);
-        detailAvatar.appendChild(placeholder);
-      }
+          placeholder.appendChild(icon);
+          detailAvatar.appendChild(placeholder);
+        }
 
       // Show modal
       document.getElementById('person-detail-modal').classList.add('active');

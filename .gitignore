@@ -24,3 +24,25 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Android signing
+mobile-native/keystore.properties
+mobile-native/*.jks
+mobile-native/*.keystore
+
+# Android local config
+mobile-native/local.properties
+mobile-native/app/local.properties
+
+# Gradle/Android build outputs
+.gradle/
+mobile-native/**/build/
+mobile-native/gradle-tmp/
+
+# Tool distributions
+gradle-*-bin/
+gradle-*-bin.zip
+tools/jdk-*/
+
+# JVM heap dumps
+*.hprof
