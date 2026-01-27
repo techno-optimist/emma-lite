@@ -1,45 +1,46 @@
-# AGENTS.md - emma-lite
+# Repository Guidelines
 
-## Overview
-This repo ships two versions of Emma:
-- Web app: static HTML/JS/CSS served by a small Express server in `server.js`.
-- Android native app: Jetpack Compose app in `mobile-native/` (no WebView).
+## Project Structure & Module Organization
+- Web entry points live at the repo root (`index.html`, `dashboard.html`, `add-person.html`, `emma-cloud.html`); additional screens are in `pages/`.
+- Browser logic and styles live in `js/`, `css/`, and `themes/`; shared vault logic is in `lib/`, and app wiring in `apps/`.
+- Chrome extension code is in `emma-vault-extension-fixed/` (manifest, background/content scripts, popup UI).
+- Native Android app lives in `mobile-native/` (Jetpack Compose + Gradle).
+- Plans and audits are in `docs/`; sample data in `data/vault.json`.
 
-Note: There is also a Capacitor WebView shell in `mobile/` that wraps the web build, but the primary Android native app lives in `mobile-native/`.
+## Subprojects & Focus Areas
+- Web app + backend: update `index.html`/`dashboard.html` and `js/`; `server.js` serves static assets plus `/token` and `/voice`.
+- Extension: `emma-vault-extension-fixed/popup.{html,js,css}` for UI; `background.js` and `content-*.js` for capture + vault syncing.
+- Android: `mobile-native/app/src/main/java/.../ui` for screens, `.../vault` for `.emma` crypto/data, and `app/src/main/assets/orb/` for shaders.
 
-## Project map
-- `server.js` - Express backend, token endpoint, and WebSocket `/voice`.
-- `index.html`, `dashboard.html`, `add-person.html`, `emma-cloud.html` - primary web pages.
-- `js/`, `css/`, `themes/`, `pages/` - web assets.
-- `apps/` - Emma app manifests and tools.
-- `lib/` - backend helpers (vault, utilities).
-- `mobile/` - Capacitor wrapper and `mobile/www` web build output.
-- `mobile-native/` - native Android app (Compose).
+## Build, Test, and Development Commands
+- `npm install` then `npm run dev` (or `npm start`) to run the local server at `http://localhost:3000`.
+- `npm run build:web` copies web assets into `mobile/www` for Capacitor builds; `npm run sync:android` syncs Capacitor assets.
+- Android (from `mobile-native/`): `.\gradlew.bat assembleDebug` / `./gradlew assembleDebug`; `./gradlew installDebug`.
 
-## Web app (version 1)
-- Install: `npm install`
-- Run: `npm run dev` (starts `server.js` on port 3000) or `npm start`
-- Build: `npm run build` (no-op for static assets)
-- Optional (WebView wrapper): `npm run build:web` then `npm run sync:android`
-- Config: set `OPENAI_API_KEY` to override the default beta key in `server.js`
+## Coding Style & Naming Conventions
+- JavaScript/HTML/CSS: 2-space indentation; avoid mass reformatting.
+- Use `camelCase` for variables/functions, `PascalCase` for classes, and kebab-case filenames (e.g., `memory-gallery-new.html`).
 
-## Android native app (version 2)
-- Requirements: JDK 17, Android SDK 34, Gradle wrapper in `mobile-native/`
-- Build: `cd mobile-native` then `./gradlew assembleDebug` (or `.\gradlew.bat assembleDebug` on Windows)
-- Install: `./gradlew installDebug`
-- Backend URL: `mobile-native/app/build.gradle.kts` -> `BuildConfig.EMMA_BASE_URL`
+## Testing Guidelines
+- Web: run the server and smoke test vault open/save, dashboard flows, and media capture.
+- Extension: reload in `chrome://extensions/` and verify content scripts + popup flows.
+- Android: run `./gradlew test` for unit tests (e.g., `VaultCryptoTest.kt`) and spot-check vault compatibility.
 
-## Tests
-- Web app: no automated test runner configured.
-- Android native app: `cd mobile-native` then `./gradlew test` or `./gradlew connectedAndroidTest`
+## Architecture Overview (Short)
+- Local-first vault: the web app stores vault state locally and syncs with extension helpers.
+- Voice: the browser connects to `/token` and `/voice` on `server.js`, which brokers OpenAI realtime sessions.
+- Android mirrors the `.emma` format for cross-compatibility.
 
-## Doc upkeep reference
-Maintain:
-* `README.md` — stable overview.
-* `HANDOFF.md` — current status for continuity.
+## Commit & Pull Request Guidelines
+- Commit messages are short and descriptive; `feat:` appears in recent history.
+- Keep changes scoped to one area (web, extension, or Android) when possible.
+- PRs should include a summary, testing notes (commands + results), and UI screenshots/GIFs; link issues if available.
 
-Refresh triggers: contradictions, omissions, flaky tests, or version uncertainty.
+## Release Checklist (Short)
+- Web: validate `index.html`/`dashboard.html`, memory capture, and vault export/import.
+- Extension: confirm capture works on supported sites and vault open/export succeeds.
+- Android: build/install debug and verify vault open/create + voice connection.
 
-Refresh includes:
-* `README.md`: purpose, architecture, stack with versions, run instructions, changelog-lite.
-* `HANDOFF.md`: current status, next steps, test results, artifacts, environment details.
+## Security & Configuration Tips
+- Prefer environment variables; `OPENAI_API_KEY` is read by `server.js`.
+- CORS and hosting are controlled by `EMMA_ALLOWED_ORIGINS`/`ALLOWED_ORIGINS`, `PORT`, and `NODE_ENV`.

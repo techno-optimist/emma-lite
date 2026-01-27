@@ -303,7 +303,18 @@ class OfflineEmmaResponder(
             "good evening"
         )
         private val GRATITUDE = listOf("thank", "thanks", "appreciate")
-        private val SEARCH_HINTS = listOf("remember", "memory", "memories", "show me", "find", "look up", "tell me about")
+        private val SEARCH_HINTS = listOf(
+            "remember",
+            "memory",
+            "memories",
+            "show me",
+            "show memories",
+            "find",
+            "search",
+            "list memories",
+            "look up",
+            "tell me about"
+        )
         private val SAVE_HINTS = listOf("save this", "remember this", "add a memory", "store this", "save it")
         private val STORY_VERBS = listOf("went", "met", "saw", "visited", "shared", "celebrated", "had", "was", "were")
         private val PEOPLE_LIST_HINTS = listOf(
@@ -315,7 +326,13 @@ class OfflineEmmaResponder(
             "all people",
             "my contacts",
             "my family",
-            "my friends"
+            "my friends",
+            "who are my people",
+            "all my people",
+            "people in my vault",
+            "family list",
+            "friends list",
+            "contacts list"
         )
         private val MEMORY_STOP_WORDS = setOf(
             "about",

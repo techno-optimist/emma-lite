@@ -1,9 +1,13 @@
 package com.yourorg.emma.nativeapp.voice
 
+import com.yourorg.emma.nativeapp.vault.MemoryAttachmentInput
+
 data class VoiceTranscript(
     val sender: VoiceSender,
     val text: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val payload: VoicePayload? = null,
+    val attachments: List<MemoryAttachmentInput> = emptyList()
 )
 
 enum class VoiceSender { User, Emma, System }

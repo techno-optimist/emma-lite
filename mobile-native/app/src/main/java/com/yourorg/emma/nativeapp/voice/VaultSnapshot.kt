@@ -24,9 +24,29 @@ object VaultSnapshotBuilder {
 
     fun build(repository: VaultRepository): VaultSnapshot {
         val payload = repository.state.value.payload
-        val people = repository.decodePeople(payload)
+        return buildFromPayload(payload)
+    }
+
+    fun buildFromPayload(payload: VaultPayload?): VaultSnapshot {
+        val people = parsePeople(payload)
         val memories = parseMemories(payload)
         return VaultSnapshot(payload = payload, people = people, memories = memories)
+    }
+
+    private fun parsePeople(payload: VaultPayload?): List<PersonRecord> {
+        if (payload == null) return emptyList()
+        return payload.content.people.mapNotNull { (id, raw) ->
+            if (raw.isBlank()) return@mapNotNull null
+            runCatching { json.decodeFromString<PersonRecord>(raw) }
+                .getOrElse {
+                    PersonRecord(
+                        id = id,
+                        name = raw.take(24).ifBlank { "Unknown" },
+                        relation = "other",
+                        created = payload.created
+                    )
+                }
+        }
     }
 
     private fun parseMemories(payload: VaultPayload?): List<MemoryRecord> {

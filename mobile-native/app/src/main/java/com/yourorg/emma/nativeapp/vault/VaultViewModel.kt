@@ -109,10 +109,18 @@ class VaultViewModel(
             .getOrNull()
     }
 
-    fun addMemory(title: String, body: String, attachments: List<MemoryAttachmentInput> = emptyList()) {
-        if (title.isBlank() && body.isBlank() && attachments.isEmpty()) return
+    fun addMemory(
+        title: String,
+        body: String,
+        attachments: List<MemoryAttachmentInput> = emptyList(),
+        people: List<String> = emptyList(),
+        tags: List<String> = emptyList()
+    ) {
+        val hasPeople = people.any { it.isNotBlank() }
+        val hasTags = tags.any { it.isNotBlank() }
+        if (title.isBlank() && body.isBlank() && attachments.isEmpty() && !hasPeople && !hasTags) return
         viewModelScope.launch {
-            repository.addMemory(title, body, attachments)
+            repository.addMemory(title, body, attachments, people = people, tags = tags)
         }
     }
 

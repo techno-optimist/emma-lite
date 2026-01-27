@@ -90,11 +90,12 @@ fun PeopleScreen(
     onUpsertPerson: (id: String?, name: String, relation: String, contact: String?, avatarData: ByteArray?, avatarMime: String?) -> Unit,
     onDeletePerson: (id: String) -> Unit,
     onNavigateDashboard: () -> Unit,
-    initialQuery: String = ""
+    initialQuery: String = "",
+    startInAddMode: Boolean = false
 ) {
     val palette = LocalEmmaPalette.current
     val colors = MaterialTheme.colorScheme
-    var showEditorSheet by remember { mutableStateOf(false) }
+    var showEditorSheet by rememberSaveable(startInAddMode) { mutableStateOf(startInAddMode) }
     var editingPerson by remember { mutableStateOf<PersonRecord?>(null) }
     var selectedPerson by remember { mutableStateOf<PersonRecord?>(null) }
     var pendingDelete by remember { mutableStateOf<PersonRecord?>(null) }

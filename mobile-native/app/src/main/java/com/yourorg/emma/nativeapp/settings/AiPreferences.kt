@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.aiDataStore: DataStore<Preferences> by preferencesDataStore(name = "ai_prefs")
+private val defaultOpenAiKey = BuildConfig.OPENAI_API_KEY.trim().takeIf { it.isNotBlank() }
 
 data class AiPreferencesState(
-    val openAiApiKey: String? = null,
-    val apiEnabled: Boolean = false
+    val openAiApiKey: String? = defaultOpenAiKey,
+    val apiEnabled: Boolean = defaultOpenAiKey != null
 )
 
 class AiPreferences(private val context: Context) {
@@ -27,14 +28,16 @@ class AiPreferences(private val context: Context) {
     val state: Flow<AiPreferencesState> = context.aiDataStore.data.map { prefs ->
         val storedRawKey = prefs[openAiApiKeyKey]
         val storedKey = storedRawKey?.trim()
+        val storedEnabled = prefs[apiEnabledKey]
         val resolvedKey = when {
-            storedRawKey != null && storedKey.isNullOrBlank() -> null
+            storedRawKey != null && storedKey.isNullOrBlank() && storedEnabled == false -> null
+            storedRawKey != null && storedKey.isNullOrBlank() -> defaultOpenAiApiKey
             !storedKey.isNullOrBlank() -> storedKey
             else -> defaultOpenAiApiKey
         }
         AiPreferencesState(
             openAiApiKey = resolvedKey,
-            apiEnabled = prefs[apiEnabledKey] ?: (resolvedKey != null)
+            apiEnabled = storedEnabled ?: (resolvedKey != null)
         )
     }
 

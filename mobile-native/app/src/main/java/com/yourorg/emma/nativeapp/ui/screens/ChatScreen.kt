@@ -4,8 +4,10 @@ package com.yourorg.emma.nativeapp.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -13,6 +15,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,13 +33,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout. navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -47,6 +51,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -97,8 +102,17 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.yourorg.emma.nativeapp.ui.orb.EmorbSurfaceInline
 import com.yourorg.emma.nativeapp.ui.theme.LocalEmmaPalette
+import com.yourorg.emma.nativeapp.ui.util.decodeMediaMap
+import com.yourorg.emma.nativeapp.ui.util.decodeMediaThumbnail
+import com.yourorg.emma.nativeapp.ui.util.toImageBitmap
 import com.yourorg.emma.nativeapp.vault.VaultState
 import com.yourorg.emma.nativeapp.vault.VaultStatus
+import com.yourorg.emma.nativeapp.vault.MediaRecord
+import com.yourorg.emma.nativeapp.vault.MemoryRecord
+import com.yourorg.emma.nativeapp.vault.MemoryAttachmentInput
+import com.yourorg.emma.nativeapp.vault.PersonRecord
+import com.yourorg.emma.nativeapp.voice.MemoryDraft
+import com.yourorg.emma.nativeapp.voice.VaultSnapshotBuilder
 import com.yourorg.emma.nativeapp.voice.VoiceSender
 import com.yourorg.emma.nativeapp.voice.VoiceSessionState
 import java.time.Instant
@@ -131,16 +145,24 @@ private data class QuickPrompt(
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
 
+private data class PendingChatMessage(
+    val text: String,
+    val attachments: List<MemoryAttachmentInput>
+)
+
 data class PersonCardUi(
+    val id: String,
     val name: String,
     val relationship: String,
     val avatar: ImageBitmap? = null
 )
 
 data class MemoryCardUi(
+    val id: String,
     val dateLabel: String,
     val preview: String,
-    val media: List<ImageBitmap> = emptyList()
+    val media: List<ImageBitmap> = emptyList(),
+    val navigationQuery: String
 )
 
 data class MemoryCapsuleUi(
@@ -151,10 +173,12 @@ data class MemoryCapsuleUi(
 )
 
 data class MemoryResultUi(
+    val id: String,
     val title: String,
     val snippet: String,
     val peopleLabel: String,
-    val mediaPreview: ImageBitmap? = null
+    val mediaPreview: ImageBitmap? = null,
+    val navigationQuery: String
 )
 @Composable
 fun ChatScreen(
@@ -162,7 +186,10 @@ fun ChatScreen(
     voiceState: VoiceSessionState,
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
-    onSend: (String) -> Unit,
+    onSend: (String, List<MemoryAttachmentInput>) -> Unit,
+    onOpenMemory: (String) -> Unit,
+    onOpenPerson: (String) -> Unit,
+    onAddPerson: () -> Unit,
     onToggleRecording: () -> Unit,
     onMicPermissionResult: (Boolean) -> Unit,
     onSetVoicePlayback: (Boolean) -> Unit,
@@ -178,10 +205,20 @@ fun ChatScreen(
 
     var input by remember { mutableStateOf("") }
     var pendingVoiceAction by remember { mutableStateOf(false) }
-    var pendingSendMessage by remember { mutableStateOf<String?>(null) }
+    var pendingSendMessage by remember { mutableStateOf<PendingChatMessage?>(null) }
+    var pendingAttachments by remember { mutableStateOf<List<MemoryAttachmentInput>>(emptyList()) }
     val voicePlaybackEnabled = voiceState.voicePlaybackEnabled
     var inputBounds by remember { mutableStateOf<Rect?>(null) }
     val listState = rememberLazyListState()
+    val vaultSnapshot = remember(vaultState.payload) {
+        VaultSnapshotBuilder.buildFromPayload(vaultState.payload)
+    }
+    val mediaRecords = remember(vaultState.payload?.content?.media) {
+        vaultState.payload?.content?.media.orEmpty().decodeMediaMap()
+    }
+    val peopleLookup = remember(vaultSnapshot.people) {
+        vaultSnapshot.people.associateBy { it.id }.mapValues { it.value.name }
+    }
     val messages = voiceState.transcript.filterNot { transcript ->
         transcript.sender == VoiceSender.System && isEphemeralSystemMessage(transcript.text)
     }
@@ -240,6 +277,32 @@ fun ChatScreen(
         }
     }
 
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris ->
+        if (uris.isNullOrEmpty()) return@rememberLauncherForActivityResult
+        val loaded = uris.mapNotNull { uri ->
+            val type = context.contentResolver.getType(uri) ?: "image/*"
+            val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor ->
+                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (idx >= 0 && cursor.moveToFirst()) cursor.getString(idx) else null
+                }
+                ?.takeIf { it.isNotBlank() }
+                ?: "photo_${System.currentTimeMillis()}.jpg"
+            val bytes = context.contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() }
+            if (bytes != null) {
+                MemoryAttachmentInput(name = name, mime = type, bytes = bytes)
+            } else {
+                Toast.makeText(context, "Unable to load selected photo", Toast.LENGTH_SHORT).show()
+                null
+            }
+        }
+        if (loaded.isNotEmpty()) {
+            pendingAttachments = pendingAttachments + loaded
+        }
+    }
+
     val totalItems = messages.size +
         (if (showQuickPrompts) 1 else 0) +
         (if (showTyping) 1 else 0)
@@ -250,9 +313,9 @@ fun ChatScreen(
     }
     LaunchedEffect(voiceState.isConnected, pendingSendMessage) {
         val queued = pendingSendMessage
-        if (voiceState.isConnected && !queued.isNullOrBlank()) {
+        if (voiceState.isConnected && queued != null) {
             pendingSendMessage = null
-            onSend(queued)
+            onSend(queued.text, queued.attachments)
             focusManager.clearFocus()
             keyboardController?.hide()
         }
@@ -260,13 +323,14 @@ fun ChatScreen(
 
     fun sendMessage(text: String, clearInput: Boolean = true) {
         val trimmed = text.trim()
-        if (trimmed.isEmpty()) return
+        val attachments = pendingAttachments
+        if (trimmed.isEmpty() && attachments.isEmpty()) return
         if (voiceState.isOffline) {
-            onSend(trimmed)
+            onSend(trimmed, attachments)
         } else if (voiceState.isConnected) {
-            onSend(trimmed)
+            onSend(trimmed, attachments)
         } else {
-            pendingSendMessage = trimmed
+            pendingSendMessage = PendingChatMessage(trimmed, attachments)
             if (!voiceState.isConnecting) {
                 onConnect()
             }
@@ -274,8 +338,21 @@ fun ChatScreen(
         if (clearInput) {
             input = ""
         }
+        if (attachments.isNotEmpty()) {
+            pendingAttachments = emptyList()
+        }
         focusManager.clearFocus()
         keyboardController?.hide()
+    }
+
+    fun handleSuggestion(suggestion: String) {
+        val trimmed = suggestion.trim()
+        if (trimmed.isEmpty()) return
+        if (isAddPersonSuggestion(trimmed)) {
+            onAddPerson()
+            return
+        }
+        sendMessage(trimmed, clearInput = false)
     }
 
     Box(
@@ -328,11 +405,17 @@ fun ChatScreen(
                     showQuickPrompts = showQuickPrompts,
                     showTyping = showTyping,
                     onPromptSelected = { prompt -> sendMessage(prompt, clearInput = false) },
+                    onSuggestionSelected = { suggestion -> handleSuggestion(suggestion) },
+                    onOpenMemory = onOpenMemory,
+                    onOpenPerson = onOpenPerson,
+                    mediaRecords = mediaRecords,
+                    peopleLookup = peopleLookup,
                     modifier = Modifier.weight(1f)
                 )
                 ChatInputBar(
                     tokens = tokens,
                     input = input,
+                    attachments = pendingAttachments,
                     enabled = vaultState.status == VaultStatus.Ready,
                     isConnecting = voiceState.isConnecting,
                     isRecording = voiceState.isRecording,
@@ -340,6 +423,14 @@ fun ChatScreen(
                     onInputChange = { input = it },
                     onSend = {
                         sendMessage(input)
+                    },
+                    onAddAttachment = {
+                        photoPicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    onRemoveAttachment = { index ->
+                        pendingAttachments = pendingAttachments.filterIndexed { i, _ -> i != index }
                     },
                     onVoiceClick = {
                         if (vaultState.status != VaultStatus.Ready || voiceState.isConnecting) {
@@ -604,6 +695,11 @@ private fun ChatMessagesList(
     showQuickPrompts: Boolean,
     showTyping: Boolean,
     onPromptSelected: (String) -> Unit,
+    onSuggestionSelected: (String) -> Unit,
+    onOpenMemory: (String) -> Unit,
+    onOpenPerson: (String) -> Unit,
+    mediaRecords: Map<String, MediaRecord>,
+    peopleLookup: Map<String, String>,
     modifier: Modifier = Modifier
 ) {
     val prompts = listOf(
@@ -627,7 +723,15 @@ private fun ChatMessagesList(
         itemsIndexed(messages) { _, message ->
             when (message.sender) {
                 VoiceSender.User -> UserMessageBubble(tokens = tokens, message = message)
-                VoiceSender.Emma -> EmmaMessageBubble(tokens = tokens, message = message)
+                VoiceSender.Emma -> EmmaMessageBubble(
+                    tokens = tokens,
+                    message = message,
+                    onSuggestionSelected = onSuggestionSelected,
+                    onOpenMemory = onOpenMemory,
+                    onOpenPerson = onOpenPerson,
+                    mediaRecords = mediaRecords,
+                    peopleLookup = peopleLookup
+                )
                 VoiceSender.System -> SystemMessageBubble(tokens = tokens, message = message)
             }
         }
@@ -642,6 +746,7 @@ private fun UserMessageBubble(
     tokens: ChatTokens,
     message: com.yourorg.emma.nativeapp.voice.VoiceTranscript
 ) {
+    val hasText = message.text.isNotBlank()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.End
@@ -660,13 +765,23 @@ private fun UserMessageBubble(
                         .background(tokens.userBubble)
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Text(
-                        text = message.text,
-                        color = tokens.userText,
-                        fontSize = 15.sp,
-                        lineHeight = 20.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    if (message.attachments.isNotEmpty()) {
+                        AttachmentMessageRow(tokens = tokens, attachments = message.attachments)
+                        if (hasText) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                    if (hasText) {
+                        Text(
+                            text = message.text,
+                            color = tokens.userText,
+                            fontSize = 15.sp,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    } else if (message.attachments.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
                     Text(
                         text = formatTime(message.timestamp),
                         color = tokens.userMeta,
@@ -679,10 +794,63 @@ private fun UserMessageBubble(
 }
 
 @Composable
+private fun AttachmentMessageRow(
+    tokens: ChatTokens,
+    attachments: List<MemoryAttachmentInput>
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        attachments.forEach { attachment ->
+            AttachmentMessageTile(tokens = tokens, attachment = attachment)
+        }
+    }
+}
+
+@Composable
+private fun AttachmentMessageTile(
+    tokens: ChatTokens,
+    attachment: MemoryAttachmentInput
+) {
+    val preview = remember(attachment.bytes) { attachment.bytes.toImageBitmap() }
+    Box(
+        modifier = Modifier
+            .size(72.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(tokens.surfaceStrong)
+            .border(1.dp, tokens.border, RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (preview != null) {
+            Image(
+                bitmap = preview,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.PhotoCamera,
+                contentDescription = null,
+                tint = tokens.textMuted,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun EmmaMessageBubble(
     tokens: ChatTokens,
-    message: com.yourorg.emma.nativeapp.voice.VoiceTranscript
+    message: com.yourorg.emma.nativeapp.voice.VoiceTranscript,
+    onSuggestionSelected: (String) -> Unit,
+    onOpenMemory: (String) -> Unit,
+    onOpenPerson: (String) -> Unit,
+    mediaRecords: Map<String, MediaRecord>,
+    peopleLookup: Map<String, String>
 ) {
+    val payload = message.payload
     EmmaMessageContainer(tokens = tokens) {
         Text(
             text = message.text,
@@ -690,6 +858,56 @@ private fun EmmaMessageBubble(
             fontSize = 15.sp,
             lineHeight = 20.sp
         )
+        if (payload != null) {
+            if (payload.memoryDraft != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                MemoryCapsuleMessage(
+                    capsule = buildDraftCapsule(payload.memoryDraft),
+                    onSave = { onSuggestionSelected("Save it") },
+                    onMaybeLater = { onSuggestionSelected("Maybe later") }
+                )
+            }
+            if (payload.memoryCards.isNotEmpty()) {
+                payload.memoryCards.forEach { memory ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    val card = buildMemoryCardUi(memory, mediaRecords)
+                    MemoryCardMessage(
+                        memory = card,
+                        onView = { onOpenMemory(card.navigationQuery) }
+                    )
+                }
+            }
+            if (payload.peopleResults.isNotEmpty()) {
+                payload.peopleResults.forEach { person ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    val card = buildPersonCardUi(person, mediaRecords)
+                    PersonCardMessage(
+                        person = card,
+                        onView = { onOpenPerson(card.name) }
+                    )
+                }
+            }
+            val memoryResults = (payload.memoryResults + payload.personMemories)
+                .distinctBy { it.id }
+            if (memoryResults.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                MemoryResultsGrid(
+                    results = memoryResults.map { memory ->
+                        buildMemoryResultUi(memory, peopleLookup, mediaRecords)
+                    },
+                    onOpenMemory = onOpenMemory
+                )
+            }
+            val suggestions = (payload.clarificationOptions + payload.suggestions).distinct()
+            if (suggestions.isNotEmpty() && payload.memoryDraft == null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                SuggestionChips(
+                    tokens = tokens,
+                    suggestions = suggestions,
+                    onSuggestionSelected = onSuggestionSelected
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = formatTime(message.timestamp),
@@ -830,12 +1048,15 @@ private fun TypingDot(tokens: ChatTokens, delayMillis: Int) {
 private fun ChatInputBar(
     tokens: ChatTokens,
     input: String,
+    attachments: List<MemoryAttachmentInput>,
     enabled: Boolean,
     isConnecting: Boolean,
     isRecording: Boolean,
     hasMicPermission: Boolean,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
+    onAddAttachment: () -> Unit,
+    onRemoveAttachment: (Int) -> Unit,
     onVoiceClick: () -> Unit,
     isCompact: Boolean,
     onInputBounds: (Rect) -> Unit
@@ -851,6 +1072,13 @@ private fun ChatInputBar(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Divider(color = tokens.inputBorder.copy(alpha = 0.25f))
+        if (attachments.isNotEmpty()) {
+            AttachmentPreviewRow(
+                tokens = tokens,
+                attachments = attachments,
+                onRemoveAttachment = onRemoveAttachment
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -869,6 +1097,14 @@ private fun ChatInputBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                ChatActionButton(
+                    size = buttonSize,
+                    background = primaryGradient,
+                    icon = Icons.Default.PhotoCamera,
+                    contentDescription = "Attach photo",
+                    enabled = enabled && !isConnecting,
+                    onClick = onAddAttachment
+                )
                 ChatActionButton(
                     size = buttonSize,
                     background = if (isRecording) {
@@ -916,7 +1152,7 @@ private fun ChatInputBar(
                     }
                 )
 
-                val canSend = enabled && input.isNotBlank()
+                val canSend = enabled && (input.isNotBlank() || attachments.isNotEmpty())
                 ChatActionButton(
                     size = buttonSize,
                     width = sendButtonWidth,
@@ -959,6 +1195,79 @@ private fun ChatActionButton(
             tint = Color.White,
             modifier = Modifier.size(20.dp)
         )
+    }
+}
+
+@Composable
+private fun AttachmentPreviewRow(
+    tokens: ChatTokens,
+    attachments: List<MemoryAttachmentInput>,
+    onRemoveAttachment: (Int) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        itemsIndexed(attachments) { index, attachment ->
+            AttachmentPreviewTile(
+                tokens = tokens,
+                attachment = attachment,
+                onRemove = { onRemoveAttachment(index) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AttachmentPreviewTile(
+    tokens: ChatTokens,
+    attachment: MemoryAttachmentInput,
+    onRemove: () -> Unit
+) {
+    val preview = remember(attachment.bytes) { attachment.bytes.toImageBitmap() }
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(tokens.surfaceStrong)
+            .border(1.dp, tokens.border, RoundedCornerShape(12.dp))
+    ) {
+        if (preview != null) {
+            Image(
+                bitmap = preview,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.PhotoCamera,
+                contentDescription = null,
+                tint = tokens.textMuted,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(20.dp)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(tokens.surfaceStrong)
+                .clickable(onClick = onRemove),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Remove attachment",
+                tint = tokens.textStrong,
+                modifier = Modifier.size(12.dp)
+            )
+        }
     }
 }
 
@@ -1023,33 +1332,101 @@ private fun QuickPromptButton(
         }
     }
 }
+
 @Composable
-fun PersonCardMessage(person: PersonCardUi) {
+private fun SuggestionChips(
+    tokens: ChatTokens,
+    suggestions: List<String>,
+    onSuggestionSelected: (String) -> Unit
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        suggestions.forEach { suggestion ->
+            SuggestionChip(
+                tokens = tokens,
+                label = suggestion,
+                onClick = { onSuggestionSelected(suggestion) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuggestionChip(
+    tokens: ChatTokens,
+    label: String,
+    onClick: () -> Unit
+) {
+    val palette = LocalEmmaPalette.current
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(tokens.surfaceStrong)
+            .border(1.dp, palette.primary.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = label,
+            color = tokens.textStrong,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+@Composable
+fun PersonCardMessage(
+    person: PersonCardUi,
+    onView: (() -> Unit)? = null
+) {
     val palette = LocalEmmaPalette.current
     val tokens = rememberChatTokens()
+    val cardModifier = Modifier
+        .fillMaxWidth()
+        .let { base ->
+            if (onView != null) {
+                base.clickable(onClick = onView)
+            } else {
+                base
+            }
+        }
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = palette.primary.copy(alpha = 0.12f)),
         border = BorderStroke(1.dp, palette.primary.copy(alpha = 0.3f)),
-        modifier = Modifier.fillMaxWidth()
+        modifier = cardModifier
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            PersonAvatar(person = person, size = 72.dp)
-            Column {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                PersonAvatar(person = person, size = 72.dp)
+                Column {
+                    Text(
+                        text = person.name,
+                        color = tokens.textStrong,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = person.relationship,
+                        color = tokens.textMuted,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+            if (onView != null) {
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = person.name,
-                    color = tokens.textStrong,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = person.relationship,
-                    color = tokens.textMuted,
-                    fontSize = 14.sp
+                    text = "View this person",
+                    color = palette.primary.copy(alpha = 0.8f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -1070,26 +1447,48 @@ private fun PersonAvatar(person: PersonCardUi, size: Dp) {
             ),
         contentAlignment = Alignment.Center
     ) {
-        val initials = person.name.split(" ").filter { it.isNotBlank() }.take(2)
-            .joinToString(separator = "") { it.take(1).uppercase() }
-        Text(
-            text = initials.ifBlank { "?" },
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
+        val avatar = person.avatar
+        if (avatar != null) {
+            androidx.compose.foundation.Image(
+                bitmap = avatar,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        } else {
+            val initials = person.name.split(" ").filter { it.isNotBlank() }.take(2)
+                .joinToString(separator = "") { it.take(1).uppercase() }
+            Text(
+                text = initials.ifBlank { "?" },
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
 @Composable
-fun MemoryCardMessage(memory: MemoryCardUi) {
+fun MemoryCardMessage(
+    memory: MemoryCardUi,
+    onView: (() -> Unit)? = null
+) {
     val palette = LocalEmmaPalette.current
     val tokens = rememberChatTokens()
+    val cardModifier = Modifier
+        .fillMaxWidth()
+        .let { base ->
+            if (onView != null) {
+                base.clickable(onClick = onView)
+            } else {
+                base
+            }
+        }
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = tokens.surfaceStrong),
         border = BorderStroke(2.dp, tokens.border),
-        modifier = Modifier.fillMaxWidth()
+        modifier = cardModifier
     ) {
         Column {
             MemoryMediaGrid(media = memory.media)
@@ -1110,12 +1509,14 @@ fun MemoryCardMessage(memory: MemoryCardUi) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "View this memory",
-                    color = palette.primary.copy(alpha = 0.8f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                if (onView != null) {
+                    Text(
+                        text = "View this memory",
+                        color = palette.primary.copy(alpha = 0.8f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
@@ -1195,7 +1596,11 @@ private fun ImageTile(bitmap: ImageBitmap, modifier: Modifier) {
 }
 
 @Composable
-fun MemoryCapsuleMessage(capsule: MemoryCapsuleUi) {
+fun MemoryCapsuleMessage(
+    capsule: MemoryCapsuleUi,
+    onSave: (() -> Unit)? = null,
+    onMaybeLater: (() -> Unit)? = null
+) {
     val palette = LocalEmmaPalette.current
     val tokens = rememberChatTokens()
     Card(
@@ -1271,12 +1676,14 @@ fun MemoryCapsuleMessage(capsule: MemoryCapsuleUi) {
                 CapsuleButton(
                     label = "Save",
                     primary = true,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = onSave
                 )
                 CapsuleButton(
                     label = "Maybe later",
                     primary = false,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = onMaybeLater
                 )
             }
         }
@@ -1287,7 +1694,8 @@ fun MemoryCapsuleMessage(capsule: MemoryCapsuleUi) {
 private fun CapsuleButton(
     label: String,
     primary: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val palette = LocalEmmaPalette.current
     val colors = MaterialTheme.colorScheme
@@ -1297,10 +1705,16 @@ private fun CapsuleButton(
         Brush.linearGradient(listOf(palette.primary.copy(alpha = 0.2f), palette.secondary.copy(alpha = 0.2f)))
     }
     val textColor = if (primary) colors.onPrimary else colors.onSurface
+    val clickableModifier = if (onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .background(background)
+            .then(clickableModifier)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -1314,7 +1728,10 @@ private fun CapsuleButton(
 }
 
 @Composable
-fun MemoryResultsGrid(results: List<MemoryResultUi>) {
+fun MemoryResultsGrid(
+    results: List<MemoryResultUi>,
+    onOpenMemory: (String) -> Unit
+) {
     val palette = LocalEmmaPalette.current
     val tokens = rememberChatTokens()
     Card(
@@ -1336,7 +1753,10 @@ fun MemoryResultsGrid(results: List<MemoryResultUi>) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 results.forEach { result ->
-                    MemoryResultCard(result = result)
+                    MemoryResultCard(
+                        result = result,
+                        onClick = { onOpenMemory(result.navigationQuery) }
+                    )
                 }
             }
         }
@@ -1344,14 +1764,26 @@ fun MemoryResultsGrid(results: List<MemoryResultUi>) {
 }
 
 @Composable
-private fun MemoryResultCard(result: MemoryResultUi) {
+private fun MemoryResultCard(
+    result: MemoryResultUi,
+    onClick: (() -> Unit)? = null
+) {
     val palette = LocalEmmaPalette.current
     val tokens = rememberChatTokens()
+    val cardModifier = Modifier
+        .widthIn(min = 180.dp, max = 220.dp)
+        .let { base ->
+            if (onClick != null) {
+                base.clickable(onClick = onClick)
+            } else {
+                base
+            }
+        }
     Card(
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = palette.primary.copy(alpha = 0.12f)),
         border = BorderStroke(1.dp, palette.primary.copy(alpha = 0.2f)),
-        modifier = Modifier.widthIn(min = 180.dp, max = 220.dp)
+        modifier = cardModifier
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Box(
@@ -1403,6 +1835,133 @@ private fun MemoryResultCard(result: MemoryResultUi) {
         }
     }
 }
+
+private fun buildPersonCardUi(person: PersonRecord, mediaRecords: Map<String, MediaRecord>): PersonCardUi {
+    val relationship = person.relation.takeIf { it.isNotBlank() && !it.equals("other", ignoreCase = true) }
+        ?: "Someone special"
+    val avatar = person.avatarId?.let { id ->
+        decodeMediaThumbnail(mediaRecords[id], maxPx = 160)
+    }
+    return PersonCardUi(id = person.id, name = person.name, relationship = relationship, avatar = avatar)
+}
+
+private fun buildMemoryCardUi(memory: MemoryRecord, mediaRecords: Map<String, MediaRecord>): MemoryCardUi {
+    val preview = buildMemoryPreview(memory)
+    val media = resolveMemoryMedia(memory, mediaRecords, maxItems = 3, maxPx = 220)
+    val navigationQuery = buildMemoryNavigationQuery(memory, preview)
+    return MemoryCardUi(
+        id = memory.id,
+        dateLabel = formatMemoryDate(memory),
+        preview = preview,
+        media = media,
+        navigationQuery = navigationQuery
+    )
+}
+
+private fun buildMemoryResultUi(
+    memory: MemoryRecord,
+    peopleLookup: Map<String, String>,
+    mediaRecords: Map<String, MediaRecord>
+): MemoryResultUi {
+    val snippet = buildMemoryPreview(memory)
+    val preview = resolveMemoryMedia(memory, mediaRecords, maxItems = 1, maxPx = 160).firstOrNull()
+    val navigationQuery = buildMemoryNavigationQuery(memory, snippet)
+    return MemoryResultUi(
+        id = memory.id,
+        title = memory.title.ifBlank { "Untitled memory" },
+        snippet = snippet,
+        peopleLabel = buildPeopleLabel(memory, peopleLookup),
+        mediaPreview = preview,
+        navigationQuery = navigationQuery
+    )
+}
+
+private fun resolveMemoryMedia(
+    memory: MemoryRecord,
+    mediaRecords: Map<String, MediaRecord>,
+    maxItems: Int,
+    maxPx: Int
+): List<ImageBitmap> {
+    if (memory.attachments.isEmpty()) return emptyList()
+    return memory.attachments.asSequence()
+        .mapNotNull { attachment ->
+            val id = attachment.id.trim()
+            if (id.isBlank()) null else decodeMediaThumbnail(mediaRecords[id], maxPx = maxPx)
+        }
+        .take(maxItems)
+        .toList()
+}
+
+private fun buildDraftCapsule(draft: MemoryDraft): MemoryCapsuleUi {
+    return MemoryCapsuleUi(
+        title = draft.title.ifBlank { "New memory" },
+        story = draft.content.ifBlank { draft.sourceText },
+        details = buildDraftDetails(draft),
+        media = emptyList()
+    )
+}
+
+private fun buildDraftDetails(draft: MemoryDraft): List<Pair<String, String>> {
+    val details = mutableListOf<Pair<String, String>>()
+    if (draft.people.isNotEmpty()) {
+        details.add("People" to draft.people.joinToString(", "))
+    }
+    if (draft.emotions.isNotEmpty()) {
+        details.add("Emotion" to draft.emotions.joinToString(", "))
+    }
+    draft.location?.takeIf { it.isNotBlank() }?.let { details.add("Place" to it) }
+    draft.dateLabel?.takeIf { it.isNotBlank() }?.let { details.add("When" to it) }
+    draft.importance?.takeIf { it.isNotBlank() }?.let { details.add("Importance" to it) }
+    return details
+}
+
+private fun buildPeopleLabel(memory: MemoryRecord, peopleLookup: Map<String, String>): String {
+    val names = memory.people.mapNotNull { entry ->
+        val trimmed = entry.trim()
+        if (trimmed.isBlank()) return@mapNotNull null
+        peopleLookup[trimmed] ?: trimmed
+    }
+    return if (names.isNotEmpty()) {
+        "With " + names.take(3).joinToString(", ")
+    } else {
+        "No people tagged"
+    }
+}
+
+private fun buildMemoryPreview(memory: MemoryRecord): String {
+    val candidate = memory.summary
+        ?: memory.metadata?.summary
+        ?: memory.body.ifBlank { memory.content.orEmpty() }
+    val trimmed = candidate.replace("\\s+".toRegex(), " ").trim()
+    if (trimmed.isBlank()) return "Memory saved."
+    return if (trimmed.length <= 140) trimmed else trimmed.take(140).trimEnd() + "..."
+}
+
+private fun buildMemoryNavigationQuery(memory: MemoryRecord, fallback: String): String {
+    val title = memory.title.ifBlank { memory.metadata?.title.orEmpty() }.trim()
+    if (title.isNotBlank()) return title
+    val tag = memory.tags.firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+    if (tag.isNotBlank()) return tag
+    val snippet = buildMemoryPreview(memory).trim()
+    if (snippet.isNotBlank() && !snippet.equals("Memory saved.", ignoreCase = true)) {
+        return snippet.take(48)
+    }
+    val safeFallback = fallback.trim()
+    return if (safeFallback.isNotBlank() && !safeFallback.equals("Memory saved.", ignoreCase = true)) {
+        safeFallback.take(48)
+    } else {
+        ""
+    }
+}
+
+private val memoryDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("MMM d, yyyy").withZone(ZoneId.systemDefault())
+
+private fun formatMemoryDate(memory: MemoryRecord): String {
+    val raw = memory.updated ?: memory.created
+    return runCatching { memoryDateFormatter.format(Instant.parse(raw)) }
+        .getOrDefault("Recently")
+}
 private val timeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
 
@@ -1413,4 +1972,23 @@ private fun formatTime(timestamp: Long): String {
 private fun isEphemeralSystemMessage(text: String): Boolean {
     return text.contains("Emma ready", ignoreCase = true) ||
         text.contains("ready to talk", ignoreCase = true)
+}
+
+private val addPersonSuggestionLabels = setOf(
+    "add a new person",
+    "add a person",
+    "add person",
+    "create a new person",
+    "create a person"
+)
+
+private fun normalizeSuggestionLabel(label: String): String {
+    return label.lowercase()
+        .replace("[^a-z0-9\\s]".toRegex(), "")
+        .replace("\\s+".toRegex(), " ")
+        .trim()
+}
+
+private fun isAddPersonSuggestion(label: String): Boolean {
+    return normalizeSuggestionLabel(label) in addPersonSuggestionLabels
 }

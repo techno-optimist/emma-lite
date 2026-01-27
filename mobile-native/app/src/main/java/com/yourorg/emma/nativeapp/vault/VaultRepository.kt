@@ -289,8 +289,18 @@ class VaultRepository(
         }
     }
 
-    suspend fun addMemory(title: String, body: String, attachments: List<MemoryAttachmentInput> = emptyList()) {
-        if (title.isBlank() && body.isBlank() && attachments.isEmpty()) return
+    suspend fun addMemory(
+        title: String,
+        body: String,
+        attachments: List<MemoryAttachmentInput> = emptyList(),
+        people: List<String> = emptyList(),
+        tags: List<String> = emptyList()
+    ) {
+        val normalizedPeople = people.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+        val normalizedTags = tags.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+        val hasPeople = normalizedPeople.isNotEmpty()
+        val hasTags = normalizedTags.isNotEmpty()
+        if (title.isBlank() && body.isBlank() && attachments.isEmpty() && !hasPeople && !hasTags) return
         updateVault { payload ->
             val id = "mem-${System.currentTimeMillis()}"
             val memories = payload.content.memories.toMutableMap()
@@ -316,8 +326,13 @@ class VaultRepository(
                 content = body,
                 summary = summary,
                 created = Instant.now().toString(),
+                people = normalizedPeople,
+                selectedPeople = normalizedPeople,
+                tags = normalizedTags,
                 metadata = MemoryMetadata(
                     title = resolvedTitle,
+                    tags = normalizedTags,
+                    people = normalizedPeople,
                     summary = summary
                 ),
                 attachments = createdAttachments

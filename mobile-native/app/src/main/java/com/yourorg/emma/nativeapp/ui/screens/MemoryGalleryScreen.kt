@@ -68,6 +68,7 @@ import com.yourorg.emma.nativeapp.ui.components.ManualMemoryDialog
 import com.yourorg.emma.nativeapp.ui.theme.LocalEmmaPalette
 import com.yourorg.emma.nativeapp.ui.util.toImageBitmap
 import com.yourorg.emma.nativeapp.vault.MediaRecord
+import com.yourorg.emma.nativeapp.vault.MemoryAttachmentInput
 import com.yourorg.emma.nativeapp.vault.MemoryRecord
 import com.yourorg.emma.nativeapp.vault.PersonRecord
 import java.time.Instant
@@ -81,7 +82,8 @@ fun MemoryGalleryScreen(
     media: Map<String, MediaRecord>,
     onBack: () -> Unit,
     onCreateMemory: () -> Unit,
-    onCreateMemoryManually: (String, String) -> Unit,
+    onCreateMemoryManually: (String, String, List<String>, List<MemoryAttachmentInput>, List<String>) -> Unit,
+    onManagePeople: () -> Unit = {},
     initialQuery: String = "",
     memoryPreview: @Composable (MemoryRecord, onDismiss: () -> Unit, onEdit: (() -> Unit)?) -> Unit,
     onEditMemory: (MemoryRecord) -> Unit = {}
@@ -168,9 +170,15 @@ fun MemoryGalleryScreen(
 
     if (showManualMemoryDialog) {
         ManualMemoryDialog(
+            people = people,
+            media = media,
             onDismiss = { showManualMemoryDialog = false },
-            onSave = { title, body ->
-                onCreateMemoryManually(title, body)
+            onManagePeople = {
+                showManualMemoryDialog = false
+                onManagePeople()
+            },
+            onSave = { title, body, selectedPeople, attachments, tags ->
+                onCreateMemoryManually(title, body, selectedPeople, attachments, tags)
                 showManualMemoryDialog = false
             }
         )

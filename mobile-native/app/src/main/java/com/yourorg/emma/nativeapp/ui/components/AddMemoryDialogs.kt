@@ -2,6 +2,7 @@ package com.yourorg.emma.nativeapp.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -28,14 +27,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -159,168 +152,6 @@ fun AddMemoryOptionsDialog(
                                 .height(52.dp)
                         ) {
                             Text("Add manually")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ManualMemoryDialog(
-    onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit
-) {
-    val colors = MaterialTheme.colorScheme
-    val palette = LocalEmmaPalette.current
-    var title by rememberSaveable { mutableStateOf("") }
-    var body by rememberSaveable { mutableStateOf("") }
-    val canSave = title.isNotBlank() || body.isNotBlank()
-    val scrollState = rememberScrollState()
-    val cardSurface = colors.surface
-    val headerTint = lerp(cardSurface, palette.primary, 0.16f)
-    val midTint = lerp(cardSurface, palette.secondary, 0.12f)
-    val iconBrush = Brush.linearGradient(listOf(palette.primary, palette.secondary))
-    val cardBorder = colors.outlineVariant
-    val textFieldColors = TextFieldDefaults.colors(
-        focusedContainerColor = colors.surfaceVariant,
-        unfocusedContainerColor = colors.surfaceVariant,
-        focusedIndicatorColor = palette.primary,
-        unfocusedIndicatorColor = colors.onSurface.copy(alpha = 0.18f),
-        cursorColor = palette.primary,
-        focusedLabelColor = colors.onSurface.copy(alpha = 0.7f),
-        unfocusedLabelColor = colors.onSurface.copy(alpha = 0.6f)
-    )
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                shape = RoundedCornerShape(26.dp),
-                colors = CardDefaults.cardColors(containerColor = cardSurface),
-                border = BorderStroke(1.dp, cardBorder),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 640.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    headerTint,
-                                    midTint,
-                                    cardSurface
-                                )
-                            )
-                        )
-                        .padding(20.dp)
-                        .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Add memory", fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(iconBrush, CircleShape)
-                                .border(1.dp, colors.onPrimary.copy(alpha = 0.2f), CircleShape)
-                        ) {
-                            Icon(Icons.Filled.Close, contentDescription = "Close", tint = colors.onPrimary)
-                        }
-                    }
-
-                    Text(
-                        text = "Write it down now and refine later in Emma.",
-                        color = colors.onSurface.copy(alpha = 0.72f),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    Text(
-                        text = "Title (optional)",
-                        color = colors.onSurface.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        colors = textFieldColors,
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Text(
-                        text = "Memory",
-                        color = colors.onSurface.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    OutlinedTextField(
-                        value = body,
-                        onValueChange = { body = it },
-                        colors = textFieldColors,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp),
-                        minLines = 5,
-                        maxLines = 8
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Button(
-                            onClick = {
-                                onSave(title.trim(), body.trim())
-                            },
-                            enabled = canSave,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = palette.primary,
-                                contentColor = colors.onPrimary,
-                                disabledContainerColor = colors.surfaceVariant,
-                                disabledContentColor = colors.onSurface.copy(alpha = 0.6f)
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                        ) {
-                            Text("Save memory")
-                        }
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, cardBorder),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.onSurface)
-                        ) {
-                            Text("Cancel")
                         }
                     }
                 }

@@ -3,6 +3,7 @@ package com.yourorg.emma.nativeapp.voice
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.yourorg.emma.nativeapp.vault.MemoryAttachmentInput
 import kotlinx.coroutines.flow.StateFlow
 
 class VoiceViewModel(
@@ -14,7 +15,9 @@ class VoiceViewModel(
 
     fun disconnect() = manager.disconnect()
 
-    fun sendText(text: String) = manager.sendUserText(text)
+    fun sendText(text: String, attachments: List<MemoryAttachmentInput> = emptyList()) {
+        manager.sendUserText(text, attachments)
+    }
 
     fun updateMicPermission(granted: Boolean) = manager.updateMicPermission(granted)
 

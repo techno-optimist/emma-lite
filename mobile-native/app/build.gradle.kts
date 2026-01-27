@@ -57,11 +57,11 @@ android {
         applicationId = "com.yourorg.emma.nativeapp"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 4
+        versionName = "0.1.3"
         buildConfigField("String", "EMMA_BASE_URL", "\"https://emma-lite-optimized.onrender.com\"")
         buildConfigField("String", "EMMA_WS_PATH", "\"/voice\"")
-        buildConfigField("String", "OPENAI_API_KEY", "\"\"")
+        buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKeyEscaped\"")
 
         vectorDrawables {
             useSupportLibrary = true

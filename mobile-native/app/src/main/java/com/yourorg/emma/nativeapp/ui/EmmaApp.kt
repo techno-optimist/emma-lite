@@ -545,7 +545,20 @@ fun EmmaApp() {
                         voiceState = voiceState,
                         onConnect = { voiceViewModel.connect() },
                         onDisconnect = { voiceViewModel.disconnect() },
-                        onSend = { voiceViewModel.sendText(it) },
+                        onSend = { text, attachments -> voiceViewModel.sendText(text, attachments) },
+                        onOpenMemory = { query ->
+                            val encoded = Uri.encode(query)
+                            navController.navigate(AppDestination.Memories.route + "?mode=gallery&query=$encoded") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenPerson = { name ->
+                            val encoded = Uri.encode(name)
+                            navController.navigate(AppDestination.People.route + "?query=$encoded") { launchSingleTop = true }
+                        },
+                        onAddPerson = {
+                            navController.navigate(AppDestination.People.route + "?query=&add=true") { launchSingleTop = true }
+                        },
                         onToggleRecording = { voiceViewModel.toggleRecording() },
                         onMicPermissionResult = { voiceViewModel.updateMicPermission(it) },
                         onSetVoicePlayback = { voiceViewModel.setVoicePlaybackEnabled(it) },
@@ -586,8 +599,14 @@ fun EmmaApp() {
                         onCreateMemory = {
                             navController.navigate(AppDestination.Chat.route) { launchSingleTop = true }
                         },
-                        onCreateMemoryManually = { title, body ->
-                            vaultViewModel.addMemory(title, body)
+                        onCreateMemoryManually = { title, body, selectedPeople, attachments, tags ->
+                            vaultViewModel.addMemory(
+                                title = title,
+                                body = body,
+                                attachments = attachments,
+                                people = selectedPeople,
+                                tags = tags
+                            )
                         },
                         memoryPreview = { mem, onDismiss, onEdit ->
                             MemoryPreviewDialog(
@@ -634,10 +653,14 @@ fun EmmaApp() {
                 }
 
                 composable(
-                    route = AppDestination.People.route + "?query={query}",
-                    arguments = listOf(navArgument("query") { type = NavType.StringType; defaultValue = "" })
+                    route = AppDestination.People.route + "?query={query}&add={add}",
+                    arguments = listOf(
+                        navArgument("query") { type = NavType.StringType; defaultValue = "" },
+                        navArgument("add") { type = NavType.BoolType; defaultValue = false }
+                    )
                 ) { backStackEntry ->
                     val initialQuery = backStackEntry.arguments?.getString("query").orEmpty()
+                    val startInAddMode = backStackEntry.arguments?.getBoolean("add") ?: false
                     PeopleScreen(
                         vaultState = vaultState,
                         memories = memories,
@@ -651,7 +674,8 @@ fun EmmaApp() {
                                 navController.navigate(AppDestination.Dashboard.route) { launchSingleTop = true }
                             }
                         },
-                        initialQuery = initialQuery
+                        initialQuery = initialQuery,
+                        startInAddMode = startInAddMode
                     )
                 }
 
@@ -2743,6 +2767,7 @@ private fun SettingsScreen(
                   IntelligenceSection(
                       hasApiKey = hasApiKey,
                       apiEnabled = apiEnabled,
+                      vaultReady = vaultState.status == VaultStatus.Ready,
                       onManageApiKey = {
                           apiKeyInput = ""
                           showApiKey = false
@@ -3549,6 +3574,7 @@ private fun IntelligenceSection(
     peopleRecognition: Boolean,
     hasApiKey: Boolean,
     apiEnabled: Boolean,
+    vaultReady: Boolean,
     onManageApiKey: () -> Unit,
     onToggleApiEnabled: (Boolean) -> Unit,
     onToggleMemory: (Boolean) -> Unit,
@@ -3565,6 +3591,12 @@ private fun IntelligenceSection(
         "Add an API key to enable online responses."
     }
     val apiButtonLabel = if (hasApiKey) "Update API Key" else "Set Up API Key"
+    val vectorlessActive = vaultReady && memoryDetection
+    val vectorlessStatus = when {
+        !vaultReady -> "Vault closed"
+        memoryDetection -> "Active"
+        else -> "Paused"
+    }
     SectionContainer(
         iconText = "AI",
         title = "Artificial Intelligence",
@@ -3630,8 +3662,8 @@ private fun IntelligenceSection(
             SettingStatusRow(
                 title = "Vectorless AI Status",
                 description = "Real-time status of Emma's intelligent memory processing system.",
-                statusText = "Initializing...",
-                active = false
+                statusText = vectorlessStatus,
+                active = vectorlessActive
             )
         }
     }

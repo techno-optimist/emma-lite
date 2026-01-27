@@ -26,6 +26,9 @@ This is the primary Android implementation (no WebView). It targets parity with 
 - `mobile-native/app/build.gradle.kts`:
   - `BuildConfig.EMMA_BASE_URL` (default `https://emma-lite-optimized.onrender.com`)
   - `BuildConfig.EMMA_WS_PATH` (default `/voice`)
+- `OPENAI_API_KEY` (required for voice + AI features):
+  - Add to `mobile-native/local.properties` or `mobile-native/gradle.properties` as `OPENAI_API_KEY=...`, or set an `OPENAI_API_KEY` environment variable.
+  - Keep the key out of Git (do not commit it).
 
 ### Current Gaps
 - Memory editing, tags, and people linking UI.

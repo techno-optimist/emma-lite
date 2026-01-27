@@ -14,7 +14,7 @@ import org.json.JSONObject
 import java.time.Instant
 
 class AndroidToolExecutor(
-    private val repository: VaultRepository
+    val repository: VaultRepository
 ) {
     suspend fun execute(toolName: String, params: JSONObject): JSONObject {
         return when (toolName) {
@@ -55,16 +55,23 @@ class AndroidToolExecutor(
         }
         val query = params.optString("query", "").trim()
         val snapshot = VaultSnapshotBuilder.build(repository)
-        val matches = if (query.isBlank()) {
+        val normalized = query.lowercase()
+        val listAllQuery = query.isBlank() || looksLikePeopleListQuery(normalized)
+        val matches = if (listAllQuery) {
             snapshot.people
         } else {
-            val lowered = query.lowercase()
             snapshot.people.filter { person ->
                 val haystack = listOf(person.name, person.relation, person.contact)
                     .filterNot { it.isNullOrBlank() }
                     .joinToString(" ")
                     .lowercase()
-                haystack.contains(lowered)
+                haystack.contains(normalized)
+            }
+        }.let { results ->
+            if (results.isEmpty() && looksLikePeopleListQuery(normalized)) {
+                snapshot.people
+            } else {
+                results
             }
         }
         val peopleJson = JSONArray()
@@ -91,9 +98,15 @@ class AndroidToolExecutor(
         val people = snapshot.people
         var results = snapshot.memories
 
-        if (personId.isNotBlank()) {
+        val resolvedPersonId = resolvePersonId(personId, people)
+        if (resolvedPersonId != null) {
             results = results.filter { memory ->
-                resolvePeopleIdsForMemory(memory, people).contains(personId)
+                resolvePeopleIdsForMemory(memory, people).contains(resolvedPersonId)
+            }
+        } else if (personId.isNotBlank()) {
+            val needle = personId.lowercase()
+            results = results.filter { memory ->
+                buildSearchText(memory).contains(needle)
             }
         }
 
@@ -112,10 +125,44 @@ class AndroidToolExecutor(
         }
 
         return JSONObject().apply {
-            put("personId", if (personId.isBlank()) JSONObject.NULL else personId)
+            put("personId", resolvedPersonId ?: if (personId.isBlank()) JSONObject.NULL else personId)
             put("dateRange", if (dateRange.isBlank()) JSONObject.NULL else dateRange)
             put("memories", memoriesJson)
         }
+    }
+
+    private fun looksLikePeopleListQuery(normalized: String): Boolean {
+        if (normalized.isBlank()) return true
+        val hints = listOf(
+            "people",
+            "person",
+            "my people",
+            "all people",
+            "saved people",
+            "list people",
+            "show people",
+            "contacts",
+            "family",
+            "friends",
+            "everyone"
+        )
+        return hints.any { normalized.contains(it) } &&
+            listOf("show", "list", "who", "all", "my", "saved", "people", "contacts").any { normalized.contains(it) }
+    }
+
+    private fun resolvePersonId(personId: String, people: List<PersonRecord>): String? {
+        if (personId.isBlank()) return null
+        val trimmed = personId.trim()
+        val direct = people.firstOrNull { it.id.equals(trimmed, ignoreCase = true) }?.id
+        if (direct != null) return direct
+        val byName = people.firstOrNull { it.name.equals(trimmed, ignoreCase = true) }?.id
+        if (byName != null) return byName
+        val lowered = trimmed.lowercase()
+        val matches = people.filter { person ->
+            val name = person.name.trim().lowercase()
+            name.contains(lowered) || lowered.contains(name)
+        }
+        return if (matches.size == 1) matches.first().id else null
     }
 
     private fun summarizeMemory(params: JSONObject): JSONObject {

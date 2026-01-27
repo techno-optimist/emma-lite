@@ -96,6 +96,7 @@ import com.yourorg.emma.nativeapp.ui.theme.EmmaPalette
 import com.yourorg.emma.nativeapp.ui.theme.LocalEmmaPalette
 import com.yourorg.emma.nativeapp.ui.util.decodeMediaThumbnail
 import com.yourorg.emma.nativeapp.vault.MediaRecord
+import com.yourorg.emma.nativeapp.vault.MemoryAttachmentInput
 import com.yourorg.emma.nativeapp.vault.MemoryRecord
 import com.yourorg.emma.nativeapp.vault.PersonRecord
 import com.yourorg.emma.nativeapp.vault.ConstellationLayoutNode
@@ -128,7 +129,7 @@ fun ConstellationScreen(
     onPersistLayoutToVault: (ConstellationLayoutRecord) -> Unit = {},
     onBack: () -> Unit,
     onCreateMemory: () -> Unit,
-    onCreateMemoryManually: (String, String) -> Unit,
+    onCreateMemoryManually: (String, String, List<String>, List<MemoryAttachmentInput>, List<String>) -> Unit,
     memoryPreview: @Composable (MemoryRecord, onDismiss: () -> Unit, onEdit: (() -> Unit)?) -> Unit,
     onEditPerson: (PersonRecord) -> Unit = {},
     onEditMemory: (MemoryRecord) -> Unit = {},
@@ -780,9 +781,15 @@ fun ConstellationScreen(
 
     if (showManualMemoryDialog) {
         ManualMemoryDialog(
+            people = people,
+            media = media,
             onDismiss = { showManualMemoryDialog = false },
-            onSave = { title, body ->
-                onCreateMemoryManually(title, body)
+            onManagePeople = {
+                showManualMemoryDialog = false
+                onManagePeople()
+            },
+            onSave = { title, body, selectedPeople, attachments, tags ->
+                onCreateMemoryManually(title, body, selectedPeople, attachments, tags)
                 showManualMemoryDialog = false
             }
         )
